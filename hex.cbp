@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="hex" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Debug">
+				<Option output="hex_d" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj\Debug\" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-g" />
+					<Add directory="\usr\include\qt4" />
+					<Add directory="\usr\include\qt4\Qt" />
+				</Compiler>
+			</Target>
+			<Target title="Release">
+				<Option output="hex_r" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj\Release\" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-march=pentium4" />
+					<Add option="-O3" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
+			</Target>
+			<Target title="Release gl2.1">
+				<Option output="hex_r_gl2" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj\Release_gl2.1\" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-march=pentium4" />
+					<Add option="-O3" />
+					<Add option="-DOGL21" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-std=c++0x" />
+			<Add directory="C:\Qt\include" />
+			<Add directory="C:\Qt\include\Qt" />
+			<Add directory="C:\Qt\include\QtCore" />
+			<Add directory="C:\Qt\include\QtGui" />
+			<Add directory="C:\Qt\include\QtOpenGL" />
+		</Compiler>
+		<Linker>
+			<Add library="C:\Qt\lib\libQtCore4.a" />
+			<Add library="C:\Qt\lib\libQtGui4.a" />
+			<Add library="C:\Qt\lib\libQtOpenGL4.a" />
+			<Add library="C:\Program Files\CodeBlocks10\MinGW\lib\libopengl32.a" />
+			<Add directory="C:\Qt\lib" />
+		</Linker>
+		<Unit filename="src\block.cpp" />
+		<Unit filename="src\block.hpp" />
+		<Unit filename="src\block_collision.cpp" />
+		<Unit filename="src\block_collision.hpp" />
+		<Unit filename="src\chunk.cpp" />
+		<Unit filename="src\chunk.hpp" />
+		<Unit filename="src\chunk_phys_mesh.cpp" />
+		<Unit filename="src\chunk_phys_mesh.hpp" />
+		<Unit filename="src\hex-logo.ico" />
+		<Unit filename="src\hex.hpp" />
+		<Unit filename="src\main.cpp" />
+		<Unit filename="src\main_loop.cpp" />
+		<Unit filename="src\main_loop.hpp" />
+		<Unit filename="src\math_lib\collection.hpp" />
+		<Unit filename="src\math_lib\m_math.cpp" />
+		<Unit filename="src\math_lib\m_math.h" />
+		<Unit filename="src\math_lib\matrix.cpp" />
+		<Unit filename="src\math_lib\matrix.h" />
+		<Unit filename="src\math_lib\minmax.hpp" />
+		<Unit filename="src\math_lib\rand.cpp" />
+		<Unit filename="src\math_lib\rand.h" />
+		<Unit filename="src\math_lib\vec.cpp" />
+		<Unit filename="src\math_lib\vec.h" />
+		<Unit filename="src\moc\moc_main_loop.cpp" />
+		<Unit filename="src\moc\moc_renderer.cpp" />
+		<Unit filename="src\moc\moc_thread.cpp" />
+		<Unit filename="src\moc\moc_world.cpp" />
+		<Unit filename="src\player.cpp" />
+		<Unit filename="src\player.hpp" />
+		<Unit filename="src\renderer\chunk_info.cpp" />
+		<Unit filename="src\renderer\frame_buffer.cpp" />
+		<Unit filename="src\renderer\frame_buffer.h" />
+		<Unit filename="src\renderer\func_addresses.cpp" />
+		<Unit filename="src\renderer\func_declarations.h" />
+		<Unit filename="src\renderer\glsl_program.cpp" />
+		<Unit filename="src\renderer\glsl_program.h" />
+		<Unit filename="src\renderer\ph.h" />
+		<Unit filename="src\renderer\polygon_buffer.cpp" />
+		<Unit filename="src\renderer\polygon_buffer.h" />
+		<Unit filename="src\renderer\renderer.cpp" />
+		<Unit filename="src\renderer\renderer.hpp" />
+		<Unit filename="src\renderer\text.cpp" />
+		<Unit filename="src\renderer\text.hpp" />
+		<Unit filename="src\renderer\texture.cpp" />
+		<Unit filename="src\renderer\texture.h" />
+		<Unit filename="src\renderer\texture_array.cpp" />
+		<Unit filename="src\renderer\texture_array.h" />
+		<Unit filename="src\renderer\texture_manager.cpp" />
+		<Unit filename="src\renderer\texture_manager.hpp" />
+		<Unit filename="src\renderer\win_bitmap.h" />
+		<Unit filename="src\res.rc">
+			<Option compilerVar="WINDRES" />
+			<Option target="Release" />
+			<Option target="Release gl2.1" />
+		</Unit>
+		<Unit filename="src\thread.hpp" />
+		<Unit filename="src\world.cpp" />
+		<Unit filename="src\world.hpp" />
+		<Unit filename="src\world_lighting.cpp" />
+		<Extensions>
+			<code_completion />
+			<debugger />
+			<envvars />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>

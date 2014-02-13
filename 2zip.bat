@@ -1,0 +1,2 @@
+"C:\Program Files\7-Zip\7z.exe" a ../hex.zip src/* hex.cbp hex_r.exe hex_r_gl2.exe shaders/* textures/*  docs/* mingwm10.dll libgcc_s_dw2-1.dll QtCore4.dll QtGui4.dll QtOpenGL4.dll 2zip.bat rm_tmp.bat hex-logo.png  -r
+PAUSE

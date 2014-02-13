@@ -1,0 +1,169 @@
+#ifndef CHUNK_HPP
+#define CHUNK_HPP
+
+#include "hex.hpp"
+#include "block.hpp"
+#include "math_lib/collection.hpp"
+
+class h_World;
+
+#define BlockAddr( x, y, z ) ( (z) |\
+	( (y) << H_CHUNK_HEIGHT_LOG2 ) |\
+	( (x) << ( H_CHUNK_HEIGHT_LOG2 + H_CHUNK_WIDTH_LOG2 ) ) )
+
+
+class h_Chunk
+{
+
+    friend class h_World;
+
+public:
+
+    h_Chunk( h_World* world, int longitude= 0, int latitude= 0 );
+    ~h_Chunk() {}
+
+    //get functions - local coordinates
+    unsigned char Transparency( short x, short y, short z );
+    h_Block* 	GetBlock ( short x, short y, short z );
+    const m_Collection< h_LiquidBlock* >* GetWaterList() const;
+    h_World* GetWorld();
+
+
+    short Longitude();
+    short Latitude();
+    bool IsEdgeChunk();
+
+    unsigned int GetWaterColumnHeight( short x, short y, short z );
+    unsigned char SunLightLevel( short x, short y, short z );
+    unsigned char FireLightLevel( short x, short y, short z );
+
+private:
+
+    h_World* world;
+
+
+    void GenChunk();
+    void PlantTrees();
+    void PlantGrass();
+    unsigned int CalculateWaterBlockCount();
+    void GenWaterBlocks();
+    void MakeLight();
+
+//water management
+    h_LiquidBlock* NewWaterBlock();
+    void DeleteWaterBlock( h_LiquidBlock* b );//
+
+    void SetSunLightLevel( short x, short y, short z, unsigned char l );
+    void SetFireLightLevel( short x, short y, short z, unsigned char l );
+
+    void SetBlock( short x, short y, short z, h_Block* b );
+    void SetBlockAndTransparency( short x, short y, short z, h_Block* b, h_TransparencyType t );
+    void SetTransparency( short x, short y, short z, h_TransparencyType t );
+
+    unsigned char transparency	[ H_CHUNK_WIDTH * H_CHUNK_WIDTH * H_CHUNK_HEIGHT ];
+    h_Block* 	blocks	  		[ H_CHUNK_WIDTH * H_CHUNK_WIDTH * H_CHUNK_HEIGHT ];
+    unsigned char sun_light_map	[ H_CHUNK_WIDTH * H_CHUNK_WIDTH * H_CHUNK_HEIGHT ];
+    unsigned char fire_light_map[ H_CHUNK_WIDTH * H_CHUNK_WIDTH * H_CHUNK_HEIGHT ];
+    int longitude, latitude;
+
+
+    //water management
+    struct
+    {
+        h_LiquidBlock* initial_water_blocks;
+        unsigned int initial_water_block_buffer_size;
+        unsigned int free_blocks_position;//offset from 'initial_water_blocks', where is free space for new water blocks
+        m_Collection< h_LiquidBlock* > water_block_list;
+    } water_blocks_data;
+};
+
+
+inline const m_Collection< h_LiquidBlock* >* h_Chunk::GetWaterList() const
+{
+    return & water_blocks_data.water_block_list;
+}
+
+inline unsigned char h_Chunk::Transparency( short x, short y, short z )
+{
+    return transparency[	 z |
+                             ( y << H_CHUNK_HEIGHT_LOG2 ) |
+                             ( x << ( H_CHUNK_HEIGHT_LOG2 + H_CHUNK_WIDTH_LOG2 ) )
+                       ];
+}
+
+inline h_Block* h_Chunk::GetBlock( short x, short y, short z )
+{
+    return blocks[	 z |
+                     ( y << H_CHUNK_HEIGHT_LOG2 ) |
+                     ( x << ( H_CHUNK_HEIGHT_LOG2 + H_CHUNK_WIDTH_LOG2 ) )
+                 ];
+}
+
+
+inline void h_Chunk::SetBlock( short x, short y, short z, h_Block* b )
+{
+    blocks[	 z |
+             ( y << H_CHUNK_HEIGHT_LOG2 ) |
+             ( x << ( H_CHUNK_HEIGHT_LOG2 + H_CHUNK_WIDTH_LOG2 ) )
+          ] = b;
+}
+
+inline void h_Chunk::SetTransparency( short x, short y, short z, h_TransparencyType t )
+{
+    transparency[	 z |
+                     ( y << H_CHUNK_HEIGHT_LOG2 ) |
+                     ( x << ( H_CHUNK_HEIGHT_LOG2 + H_CHUNK_WIDTH_LOG2 ) )
+                ]= t;
+}
+
+inline void h_Chunk::SetBlockAndTransparency( short x, short y, short z, h_Block* b, h_TransparencyType t )
+{
+    short addr= z |( y << H_CHUNK_HEIGHT_LOG2 ) |( x << ( H_CHUNK_HEIGHT_LOG2 + H_CHUNK_WIDTH_LOG2 ) );
+
+    transparency[addr]= t;
+    blocks[addr]=b;
+}
+
+inline unsigned char h_Chunk::SunLightLevel( short x, short y, short z )
+{
+    return sun_light_map[  z |
+                           ( y << H_CHUNK_HEIGHT_LOG2 ) |
+                           ( x << ( H_CHUNK_HEIGHT_LOG2 + H_CHUNK_WIDTH_LOG2 ) ) ];
+}
+
+inline unsigned char h_Chunk::FireLightLevel( short x, short y, short z )
+{
+    return fire_light_map[  z |
+                            ( y << H_CHUNK_HEIGHT_LOG2 ) |
+                            ( x << ( H_CHUNK_HEIGHT_LOG2 + H_CHUNK_WIDTH_LOG2 ) ) ];
+}
+
+inline void h_Chunk::SetSunLightLevel( short x, short y, short z, unsigned char l )
+{
+    sun_light_map[  z |
+                    ( y << H_CHUNK_HEIGHT_LOG2 ) |
+                    ( x << ( H_CHUNK_HEIGHT_LOG2 + H_CHUNK_WIDTH_LOG2 ) ) ]= l;
+}
+inline void h_Chunk::SetFireLightLevel( short x, short y, short z, unsigned char l )
+{
+    fire_light_map[  z |
+                     ( y << H_CHUNK_HEIGHT_LOG2 ) |
+                     ( x << ( H_CHUNK_HEIGHT_LOG2 + H_CHUNK_WIDTH_LOG2 ) ) ]= l;
+}
+
+
+inline short h_Chunk::Longitude()
+{
+    return longitude;
+}
+inline short h_Chunk::Latitude()
+{
+    return latitude;
+}
+
+inline h_World* h_Chunk::GetWorld()
+{
+    return world;
+}
+
+#endif//CHUNK_HPP
