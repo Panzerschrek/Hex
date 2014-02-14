@@ -6,12 +6,32 @@
 
 h_TransparencyType h_Block::Transparency()
 {
-    if( type == AIR )
+	h_TransparencyType t;
+	switch (type)
+	{
+		case AIR:
+		t= TRANSPARENCY_AIR;
+		break;
+
+		case WATER:
+		t= TRANSPARENCY_LIQUID;
+		break;
+
+		case FIRE:
+		t= TRANSPARENCY_SOLID;
+		break;
+
+		default:
+		t= TRANSPARENCY_SOLID;
+		break;
+	};
+	return t;
+   /* if( type == AIR )
         return TRANSPARENCY_AIR;
     else if( type == WATER )
         return TRANSPARENCY_LIQUID;
     else
-        return TRANSPARENCY_SOLID;
+        return TRANSPARENCY_SOLID;*/
 }
 
 #define MACRO_TO_STR(X) #X
@@ -24,7 +44,8 @@ static const char* block_names[NUM_BLOCK_TYPES]= {
     MACRO_TO_STR(GRASS),
     MACRO_TO_STR(WATER),
     MACRO_TO_STR(SAND),
-    MACRO_TO_STR(FOLIAGE) };
+    MACRO_TO_STR(FOLIAGE),
+    MACRO_TO_STR(FIRE) };
 
 h_BlockType h_Block::GetGetBlockTypeByName( const char* name )
 {

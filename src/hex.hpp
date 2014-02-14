@@ -49,7 +49,7 @@ inline void usleep(int n){ Sleep(n/1000);}
 
 
 #define H_MAX_SUN_LIGHT 8
-
+#define H_MAX_FIRE_LIGHT 13
 
 #include "math_lib/minmax.hpp"
 
@@ -67,7 +67,8 @@ unsigned short
     WATER,
     SAND,
     FOLIAGE,
-    NUM_BLOCK_TYPES= 8,
+    FIRE,
+    NUM_BLOCK_TYPES= 9,
     BLOCK_UNKNOWN= 65535
 };
 

@@ -78,6 +78,9 @@ private:
 	void SetSunLightLevel( short x, short y, short z, unsigned char l );
 	void SetFireLightLevel( short x, short y, short z, unsigned char l );
 
+	//add light from light sources in cube
+	void ShineFireLight( short x_min, short y_min, short z_min, short x_max, short y_max, short z_max );
+
 
 	bool InBorders( short x, short y, short z );
 	bool CanBuild( short x, short y, short z );

@@ -229,13 +229,16 @@ void r_ChunkInfo::BuildWaterSurfaceMesh()
 
                 for( unsigned int k= 0; k< 6; k++ )
                     v[k].coord[2]= ((b->z-1)<<7) +  vertex_water_level[k] / ( vertex_water_block_count[k] * ( H_MAX_WATER_LEVEL / 128) );
-                //v[0].light[0]= v[1].light[0]= v[2].light[0]= v[3].light[0]= v[4].light[0]= v[5].light[0]= chunk->SunLightLevel( b->x, b->y, b->z + 1 );
                 v[0].light[0]= world->GetForwardVertexSunLight( b->x + chunk_loaded_zone_X - 1, b->y + chunk_loaded_zone_Y - (b->x&1), b->z );
                 v[1].light[0]= world->GetBackVertexSunLight( b->x + chunk_loaded_zone_X, b->y + chunk_loaded_zone_Y + 1, b->z );
                 v[2].light[0]= world->GetForwardVertexSunLight( b->x + chunk_loaded_zone_X, b->y + chunk_loaded_zone_Y, b->z );
                 v[3].light[0]= world->GetBackVertexSunLight( b->x + chunk_loaded_zone_X + 1, b->y + chunk_loaded_zone_Y + ((1+b->x)&1), b->z );
                 v[4].light[0]= world->GetForwardVertexSunLight( b->x + chunk_loaded_zone_X, b->y + chunk_loaded_zone_Y - 1, b->z );
                 v[5].light[0]= world->GetBackVertexSunLight(  b->x + chunk_loaded_zone_X, b->y + chunk_loaded_zone_Y, b->z );
+
+                v[0].light[1]= v[1].light[1]= v[2].light[1]= v[3].light[1]= v[4].light[1]= v[5].light[1]=
+                chunk->FireLightLevel( b->x, b->y, b->z + 1 ) << 4;
+
 
             }
         }
@@ -262,21 +265,13 @@ void r_ChunkInfo::BuildWaterSurfaceMesh()
                 v[4].coord[1]= v[5].coord[1]= v[0].coord[1] - 1;
 
                 h= ( (b->z -1) << 7 )+ ( b->LiquidLevel() * 128 / H_MAX_WATER_LEVEL );
-                //h= b->z+1;
                 v[0].coord[2]= v[1].coord[2]= v[2].coord[2]= v[3].coord[2]= v[4].coord[2]= v[5].coord[2]= h;
 
                 unsigned char light= chunk->SunLightLevel( b->x, b->y, b->z + 1 );
                 v[0].light[0]= v[1].light[0]= v[2].light[0]= v[3].light[0]= v[4].light[0]= v[5].light[0]= light << 4;
-                //  unsigned char water_depth;
-                //if( chunk->GetBlock( b->x, b->y, b->z - 1 )->Type() == WATER )
-                //	water_depth= 255;
-                //else
-                //	water_depth= ( b->LiquidLevel() * 255 / H_MAX_WATER_LEVEL );
 
-                // v[0].water_depth= v[1].water_depth= v[2].water_depth=
-                //  v[3].water_depth= v[4].water_depth= v[5].water_depth=
-                //                                         water_depth;
-
+                v[0].light[1]= v[1].light[1]= v[2].light[1]= v[3].light[1]= v[4].light[1]= v[5].light[1]=
+                chunk->FireLightLevel( b->x, b->y, b->z + 1 ) << 4;
             }// if water surface
         }//for
     }

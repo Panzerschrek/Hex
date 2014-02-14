@@ -379,9 +379,22 @@ void h_World::Destroy( short x, short y, short z )
     y&= H_CHUNK_WIDTH - 1;
 
     h_Chunk* ch=GetChunk( X, Y );
-    if( ch->GetBlock( x, y, z )->Type() != WATER )
+    if( ch->GetBlock( x, y, z )->Type() == WATER )
     {
-        ch-> SetBlockAndTransparency( x, y, z, NormalBlock( AIR ),
+
+    }
+    else if( ch->GetBlock( x, y, z )->Type() == FIRE )
+    {
+    	ch->DeleteLightSource( x, y, z );
+    	ch->SetBlockAndTransparency( x, y, z, NormalBlock( AIR ),
+                                      TRANSPARENCY_AIR );
+		RelightBlockAdd( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), z );
+		RelightBlockRemove( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), z );
+		UpdateInRadius( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), H_MAX_FIRE_LIGHT );
+    }
+    else
+    {
+        ch->SetBlockAndTransparency( x, y, z, NormalBlock( AIR ),
                                       TRANSPARENCY_AIR );
 		RelightBlockRemove( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), z );
 		//AddFireLight_r( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), z, 10 );
@@ -432,13 +445,23 @@ void h_World::Build( short x, short y, short z, h_BlockType block_type )
         b->y= y;
         b->z= z;
     }
+    else if( block_type == FIRE )
+    {
+    	  h_Chunk* ch=GetChunk( X, Y );
+    	  h_LightSource* s= ch->NewLightSource( x, y, z, FIRE );
+    	  ch->SetBlockAndTransparency( x, y, z, s, TRANSPARENCY_SOLID );
+    	  AddFireLight_r( x + X* H_CHUNK_WIDTH, y + Y* H_CHUNK_WIDTH, z, H_MAX_FIRE_LIGHT );
+	}
     else
         GetChunk( X, Y )->
         SetBlockAndTransparency( x, y, z, NormalBlock( block_type ),
                                  NormalBlock( block_type )->Transparency() );
 
 	short r= 1;
-	if( block_type != WATER )
+	if( block_type == WATER )
+	{
+	}
+	else
 		 r= RelightBlockAdd( X * H_CHUNK_WIDTH + x,Y * H_CHUNK_WIDTH + y, z ) + 1;
 
 	UpdateInRadius( X * H_CHUNK_WIDTH + x,Y * H_CHUNK_WIDTH + y, r );

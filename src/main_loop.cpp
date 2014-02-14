@@ -217,7 +217,7 @@ void h_MainLoop::mousePressEvent(QMouseEvent* e)
     if( e->button() == Qt::RightButton )
         world->Build( build_pos_x - world->Longitude() * H_CHUNK_WIDTH,
                       build_pos_y - world->Latitude() * H_CHUNK_WIDTH,
-                      build_pos_z, WATER );
+                      build_pos_z, FIRE );
     else if( e->button() == Qt::LeftButton )
     {
     	short new_build_pos[]= { build_pos_x, build_pos_y, build_pos_z };

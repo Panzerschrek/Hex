@@ -26,6 +26,7 @@ public:
     unsigned char Transparency( short x, short y, short z );
     h_Block* 	GetBlock ( short x, short y, short z );
     const m_Collection< h_LiquidBlock* >* GetWaterList() const;
+    const m_Collection< h_LightSource* >* GetLightSourceList() const;
     h_World* GetWorld();
 
 
@@ -36,6 +37,8 @@ public:
     unsigned int GetWaterColumnHeight( short x, short y, short z );
     unsigned char SunLightLevel( short x, short y, short z );
     unsigned char FireLightLevel( short x, short y, short z );
+
+
 
 private:
 
@@ -51,7 +54,10 @@ private:
 
 //water management
     h_LiquidBlock* NewWaterBlock();
-    void DeleteWaterBlock( h_LiquidBlock* b );//
+    void DeleteWaterBlock( h_LiquidBlock* b );
+
+    h_LightSource* NewLightSource( short x, short y, short z, h_BlockType type );
+    void DeleteLightSource( short x, short y, short z );
 
     void SetSunLightLevel( short x, short y, short z, unsigned char l );
     void SetFireLightLevel( short x, short y, short z, unsigned char l );
@@ -75,12 +81,21 @@ private:
         unsigned int free_blocks_position;//offset from 'initial_water_blocks', where is free space for new water blocks
         m_Collection< h_LiquidBlock* > water_block_list;
     } water_blocks_data;
+
+
+    //light management
+    m_Collection< h_LightSource* > light_source_list;
 };
 
 
 inline const m_Collection< h_LiquidBlock* >* h_Chunk::GetWaterList() const
 {
     return & water_blocks_data.water_block_list;
+}
+
+inline const m_Collection< h_LightSource* >* h_Chunk::GetLightSourceList() const
+{
+	return & light_source_list;
 }
 
 inline unsigned char h_Chunk::Transparency( short x, short y, short z )

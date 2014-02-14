@@ -60,43 +60,44 @@ public:
 
 inline h_LiquidBlock::h_LiquidBlock( h_BlockType block_type, unsigned short liquid_level ):
     h_Block( block_type, liquid_level )  {}
-
 inline h_LiquidBlock::h_LiquidBlock():
     h_Block( WATER, H_MAX_WATER_LEVEL )  {} //water block with pressure = 0 and max water level
-
 
 inline unsigned short h_LiquidBlock::LiquidLevel() const
 {
     return additional_data;
 }
-
-/*inline unsigned short h_LiquidBlock::LuiquidPressure()
-{
-    return h_Block::additional_data;
-}*/
-
 inline void h_LiquidBlock::SetLiquidLevel( unsigned short l )
 {
     additional_data= l;
 }
-
-/*inline void h_LiquidBlock::SetLiquidPressure( unsigned short p )
-{
-    h_Block::additional_data= p;
-}*/
-
-
 inline void h_LiquidBlock::IncreaseLiquidLevel( unsigned short l )
 {
 	additional_data+= l;
 }
-
 inline void h_LiquidBlock::DecreaseLiquidLevel( unsigned short l )
 {
 	additional_data-= l;
 }
 
 
+class h_LightSource : public h_Block
+{
+	//h_Block::AdditionalData in this class is light power
+	public:
+	h_LightSource( h_BlockType block_type, unsigned char light_level= H_MAX_FIRE_LIGHT );
+	unsigned char LightLevel();
 
+	unsigned char x, y, z, reserved;//relative liquid block coordinates ( in chunk )
+
+};
+
+inline h_LightSource::h_LightSource( h_BlockType block_type, unsigned char light_level ):
+h_Block( block_type, light_level ){}
+
+inline unsigned char h_LightSource::LightLevel()
+{
+	return h_Block::additional_data;
+}
 
 #endif//BLOCK_HPP

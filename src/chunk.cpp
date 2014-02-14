@@ -70,7 +70,7 @@ void h_Chunk::GenChunk()
         {
             h= H_CHUNK_HEIGHT/2 + short( 24.0f * FinalNoise( short( float( x + longitude * H_CHUNK_WIDTH ) * H_SPACE_SCALE_VECTOR_X  ),
                                          y + latitude * H_CHUNK_WIDTH ) );
-			if( longitude == -1 &&  latitude == -1 )h= 3;
+			//if( longitude == -1 &&  latitude == -1 )h= 3;
 
             soil_h= 4 + short( 2.0f * FinalNoise( short( float( x + longitude * H_CHUNK_WIDTH ) * H_SPACE_SCALE_VECTOR_X ) * 4,
                                                   ( y + latitude * H_CHUNK_WIDTH ) * 4  ) );
@@ -86,7 +86,7 @@ void h_Chunk::GenChunk()
                 blocks[ addr ]= world->NormalBlock( SOIL );
             }
 
-			if( !( longitude == -1 && latitude == -1 ) )
+			//if( !( longitude == -1 && latitude == -1 ) )
             for( ; z<= H_SEA_LEVEL; z++ )
             {
                 transparency[ addr=BlockAddr( x, y, z )  ]= TRANSPARENCY_LIQUID;
@@ -266,6 +266,29 @@ void h_Chunk::DeleteWaterBlock( h_LiquidBlock* b )
     }
 }
 
+
+ h_LightSource* h_Chunk::NewLightSource( short x, short y, short z, h_BlockType type )
+ {
+ 	h_LightSource* s;
+ 	light_source_list.Add( s= new h_LightSource( type ) );
+ 	s->x= x;
+ 	s->y= y;
+ 	s->z= z;
+ 	return s;
+ }
+void h_Chunk::DeleteLightSource( short x, short y, short z )
+{
+	h_LightSource* s= (h_LightSource*) GetBlock( x, y, z );
+
+	m_Collection< h_LightSource* >::Iterator it( &light_source_list );
+	for( it.Begin(); it.IsValid() ; it.Next() )
+		if( *it == s )
+		{
+			it.RemoveCurrent();
+			delete s;
+			break;
+		}
+}
 
 void h_Chunk::MakeLight()
 {
