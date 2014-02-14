@@ -37,7 +37,7 @@ void main()
 	int i_normal= int(normal);
 	block_side_light_k[8];
 	f_normal= normals[ i_normal  ];
-	f_light= light.x * LIGHT_MULTIPLER * block_side_light_k[ i_normal ];
+	f_light= ( light.x + light.y * 0.33 ) * LIGHT_MULTIPLER * block_side_light_k[ i_normal ];
 
 	f_tex_coord= ( tex_coord.xy  )* TEX_SCALE_VECTOR.xy * inv_textures_in_atlas;
 	f_tex_coord_shift.x= mod( tex_coord.z, textures_in_atlas ) * inv_textures_in_atlas;
