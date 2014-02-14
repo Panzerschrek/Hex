@@ -37,13 +37,9 @@ public:
 
 
 	//returns light level of forward-forwardright upper vertex of prism X16. coordinates - relative
-	unsigned char GetForwardVertexSunLight( short x, short y, short z );
+	void GetForwardVertexLight( short x, short y, short z, unsigned char* out_light );
 	//returns light level of back-backleft upper vertex of prism X16. coordinates - relative
-	unsigned char GetBackVertexSunLight( short x, short y, short z );
-	//returns light level of forward-forwardright upper vertex of prism X16. coordinates - relative
-	unsigned char GetForwardVertexFireLight( short x, short y, short z );
-	//returns light level of back-backleft upper vertex of prism X16. coordinates - relative
-	unsigned char GetBackVertexFireLight( short x, short y, short z );
+	void GetBackVertexLight( short x, short y, short z, unsigned char* out_light );
 	//returns nominal value of lightmaps
 	unsigned char SunLightLevel( short x, short y, short z );
 	unsigned char FireLightLevel( short x, short y, short z );

@@ -177,10 +177,10 @@ void h_World::RelightBlockRemove( short x, short y, short z )
     AddFireLight_r( x-1, y- (x&1), z , FireLightLevel(x-1, y- (x&1), z) );
 }
 
-unsigned char h_World::GetForwardVertexSunLight( short x, short y, short z )
+void h_World::GetForwardVertexLight( short x, short y, short z, unsigned char* out_light )
 {
     unsigned short block_count= 0;
-    unsigned char light= 0;
+    unsigned char light[2]= { 0, 0 };
     short  x1, y1;
     h_Chunk* ch;
     unsigned int addr;
@@ -190,13 +190,15 @@ unsigned char h_World::GetForwardVertexSunLight( short x, short y, short z )
     addr= BlockAddr( x& (H_CHUNK_WIDTH-1), y&(H_CHUNK_WIDTH-1), z );
     if( ch->transparency[addr] != TRANSPARENCY_SOLID )
     {
-        light+= ch->sun_light_map[ addr ];
+        light[0]+= ch->sun_light_map[ addr ];
+        light[1]+= ch->fire_light_map[ addr ];
         block_count++;
     }
     addr++;
     if( ch->transparency[addr] != TRANSPARENCY_SOLID )
     {
-        light+= ch->sun_light_map[ addr ];
+        light[0]+= ch->sun_light_map[ addr ];
+        light[1]+= ch->fire_light_map[ addr ];
         block_count++;
     }
 
@@ -206,13 +208,15 @@ unsigned char h_World::GetForwardVertexSunLight( short x, short y, short z )
     addr= BlockAddr( x& (H_CHUNK_WIDTH-1), y1&(H_CHUNK_WIDTH-1), z );
     if( ch->transparency[addr] != TRANSPARENCY_SOLID )
     {
-        light+= ch->sun_light_map[ addr ];
+        light[0]+= ch->sun_light_map[ addr ];
+        light[1]+= ch->fire_light_map[ addr ];
         block_count++;
     }
     addr++;
     if( ch->transparency[addr] != TRANSPARENCY_SOLID )
     {
-        light+= ch->sun_light_map[ addr ];
+       light[0]+= ch->sun_light_map[ addr ];
+        light[1]+= ch->fire_light_map[ addr ];
         block_count++;
     }
 
@@ -223,25 +227,28 @@ unsigned char h_World::GetForwardVertexSunLight( short x, short y, short z )
     addr= BlockAddr( x1& (H_CHUNK_WIDTH-1), y1&(H_CHUNK_WIDTH-1), z );
     if( ch->transparency[addr] != TRANSPARENCY_SOLID )
     {
-        light+= ch->sun_light_map[ addr ];
+        light[0]+= ch->sun_light_map[ addr ];
+        light[1]+= ch->fire_light_map[ addr ];
         block_count++;
     }
     addr++;
     if( ch->transparency[addr] != TRANSPARENCY_SOLID )
     {
-        light+= ch->sun_light_map[ addr ];
+        light[0]+= ch->sun_light_map[ addr ];
+        light[1]+= ch->fire_light_map[ addr ];
         block_count++;
     }
 
     //return (unsigned char)( ( ((unsigned short)(light)) << 4 ) / block_count );
     //return (unsigned char)( ( ((unsigned short)(light)) * ( 29 + block_count ) ) / ( block_count << 1 ) );
-    return (unsigned char)( ( ((unsigned short)(light)) * ( 13 + block_count ) ) / block_count  );
+	out_light[0]= (unsigned char)( ( ((unsigned short)(light[0])) * ( 13 + block_count ) ) / block_count  );
+	out_light[1]= (unsigned char)( ( ((unsigned short)(light[1])) * ( 13 + block_count ) ) / block_count  );
 }
 
-unsigned char h_World::GetBackVertexSunLight( short x, short y, short z )
+void h_World::GetBackVertexLight( short x, short y, short z, unsigned char* out_light )
 {
     unsigned short block_count= 0;
-    unsigned char light= 0;
+    unsigned char light[2]= { 0, 0 };
     short  x1, y1;
     h_Chunk* ch;
     unsigned int addr;
@@ -251,13 +258,15 @@ unsigned char h_World::GetBackVertexSunLight( short x, short y, short z )
     addr= BlockAddr( x& (H_CHUNK_WIDTH-1), y&(H_CHUNK_WIDTH-1), z );
     if( ch->transparency[addr] != TRANSPARENCY_SOLID )
     {
-        light+= ch->sun_light_map[ addr ];
+        light[0]+= ch->sun_light_map[ addr ];
+        light[1]+= ch->fire_light_map[ addr ];
         block_count++;
     }
     addr++;
     if( ch->transparency[addr] != TRANSPARENCY_SOLID )
     {
-        light+= ch->sun_light_map[ addr ];
+        light[0]+= ch->sun_light_map[ addr ];
+        light[1]+= ch->fire_light_map[ addr ];
         block_count++;
     }
 
@@ -267,13 +276,15 @@ unsigned char h_World::GetBackVertexSunLight( short x, short y, short z )
     addr= BlockAddr( x& (H_CHUNK_WIDTH-1), y1&(H_CHUNK_WIDTH-1), z );
     if( ch->transparency[addr] != TRANSPARENCY_SOLID )
     {
-        light+= ch->sun_light_map[ addr ];
+        light[0]+= ch->sun_light_map[ addr ];
+        light[1]+= ch->fire_light_map[ addr ];
         block_count++;
     }
     addr++;
     if( ch->transparency[addr] != TRANSPARENCY_SOLID )
     {
-        light+= ch->sun_light_map[ addr ];
+       light[0]+= ch->sun_light_map[ addr ];
+        light[1]+= ch->fire_light_map[ addr ];
         block_count++;
     }
 
@@ -284,23 +295,23 @@ unsigned char h_World::GetBackVertexSunLight( short x, short y, short z )
     addr= BlockAddr( x1& (H_CHUNK_WIDTH-1), y1&(H_CHUNK_WIDTH-1), z );
     if( ch->transparency[addr] != TRANSPARENCY_SOLID )
     {
-        light+= ch->sun_light_map[ addr ];
+        light[0]+= ch->sun_light_map[ addr ];
+        light[1]+= ch->fire_light_map[ addr ];
         block_count++;
     }
     addr++;
     if( ch->transparency[addr] != TRANSPARENCY_SOLID )
     {
-        light+= ch->sun_light_map[ addr ];
+        light[0]+= ch->sun_light_map[ addr ];
+        light[1]+= ch->fire_light_map[ addr ];
         block_count++;
     }
 
 
-
-
-
     //return (unsigned char)( ( ((unsigned short)(light)) << 4 ) / block_count );
     //return (unsigned char)( ( ((unsigned short)(light)) * ( 29 + block_count ) ) / ( block_count << 1 ) );
-    return (unsigned char)( ( ((unsigned short)(light)) * ( 13 + block_count ) ) / block_count  );
+   out_light[0]= (unsigned char)( ( ((unsigned short)(light[0])) * ( 13 + block_count ) ) / block_count  );
+   out_light[1]= (unsigned char)( ( ((unsigned short)(light[1])) * ( 13 + block_count ) ) / block_count  );
 }
 
 

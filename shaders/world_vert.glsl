@@ -35,6 +35,6 @@ void main()
 	f_normal= normals[ normal ];
 	f_tex_coord= tex_coord * TEX_SCALE_VECTOR;
 	//f_light= ( light.x + light.y ) * LIGHT_MULTIPLER;
-	f_light= max( light.x, light.y ) * LIGHT_MULTIPLER;
+	f_light= ( light.x  + light.y * 0.33 ) * LIGHT_MULTIPLER;
 	gl_Position= view_matrix * vec4( coord , 1.0 );
 }

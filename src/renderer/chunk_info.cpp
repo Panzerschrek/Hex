@@ -229,12 +229,12 @@ void r_ChunkInfo::BuildWaterSurfaceMesh()
 
                 for( unsigned int k= 0; k< 6; k++ )
                     v[k].coord[2]= ((b->z-1)<<7) +  vertex_water_level[k] / ( vertex_water_block_count[k] * ( H_MAX_WATER_LEVEL / 128) );
-                v[0].light[0]= world->GetForwardVertexSunLight( b->x + chunk_loaded_zone_X - 1, b->y + chunk_loaded_zone_Y - (b->x&1), b->z );
-                v[1].light[0]= world->GetBackVertexSunLight( b->x + chunk_loaded_zone_X, b->y + chunk_loaded_zone_Y + 1, b->z );
-                v[2].light[0]= world->GetForwardVertexSunLight( b->x + chunk_loaded_zone_X, b->y + chunk_loaded_zone_Y, b->z );
-                v[3].light[0]= world->GetBackVertexSunLight( b->x + chunk_loaded_zone_X + 1, b->y + chunk_loaded_zone_Y + ((1+b->x)&1), b->z );
-                v[4].light[0]= world->GetForwardVertexSunLight( b->x + chunk_loaded_zone_X, b->y + chunk_loaded_zone_Y - 1, b->z );
-                v[5].light[0]= world->GetBackVertexSunLight(  b->x + chunk_loaded_zone_X, b->y + chunk_loaded_zone_Y, b->z );
+               	world->GetForwardVertexLight( b->x + chunk_loaded_zone_X - 1, b->y + chunk_loaded_zone_Y - (b->x&1), b->z, v[0].light );
+                world->GetBackVertexLight( b->x + chunk_loaded_zone_X, b->y + chunk_loaded_zone_Y + 1, b->z, v[1].light );
+                world->GetForwardVertexLight( b->x + chunk_loaded_zone_X, b->y + chunk_loaded_zone_Y, b->z, v[2].light );
+                world->GetBackVertexLight( b->x + chunk_loaded_zone_X + 1, b->y + chunk_loaded_zone_Y + ((1+b->x)&1), b->z, v[3].light );
+                world->GetForwardVertexLight( b->x + chunk_loaded_zone_X, b->y + chunk_loaded_zone_Y - 1, b->z, v[4].light );
+                world->GetBackVertexLight(  b->x + chunk_loaded_zone_X, b->y + chunk_loaded_zone_Y, b->z, v[5].light );
 
                 v[0].light[1]= v[1].light[1]= v[2].light[1]= v[3].light[1]= v[4].light[1]= v[5].light[1]=
                 chunk->FireLightLevel( b->x, b->y, b->z + 1 ) << 4;
@@ -617,17 +617,19 @@ void r_ChunkInfo::BuildChunkMesh()
                     v[0].tex_coord[2]= v[1].tex_coord[2]= v[2].tex_coord[2]= v[3].tex_coord[2]= v[7].tex_coord[2]= v[4].tex_coord[2]= \
                     tex_id;\
                     if( flat_lighting )\
+                    {\
                     	v[0].light[0]= v[1].light[0]= v[2].light[0]= v[3].light[0]= v[7].light[0]= v[4].light[0]= light[0] << 4;\
+                    	v[0].light[1]= v[1].light[1]= v[2].light[1]= v[3].light[1]= v[7].light[1]= v[4].light[1]= light[1] << 4;\
+                    }\
 					else\
 					{\
-                    	v[0].light[0]= w->GetForwardVertexSunLight( x + relative_X - 1, y + relative_Y - (x&1), z );\
-                    	v[1].light[0]= w->GetBackVertexSunLight( x + relative_X, y + relative_Y + 1, z );\
-                    	v[2].light[0]= w->GetForwardVertexSunLight( x + relative_X, y + relative_Y, z );\
-                    	v[3].light[0]= w->GetBackVertexSunLight( x + relative_X + 1, y + relative_Y + ((1+x)&1), z );\
-                    	v[7].light[0]= w->GetForwardVertexSunLight( x + relative_X, y + relative_Y - 1, z );\
-                    	v[4].light[0]= w->GetBackVertexSunLight(  x + relative_X, y + relative_Y, z );\
+                    	w->GetForwardVertexLight( x + relative_X - 1, y + relative_Y - (x&1), z, v[0].light );\
+                    	w->GetBackVertexLight( x + relative_X, y + relative_Y + 1, z, v[1].light );\
+                    	w->GetForwardVertexLight( x + relative_X, y + relative_Y, z, v[2].light );\
+                    	w->GetBackVertexLight( x + relative_X + 1, y + relative_Y + ((1+x)&1), z, v[3].light );\
+                    	w->GetForwardVertexLight( x + relative_X, y + relative_Y - 1, z, v[7].light );\
+                    	w->GetBackVertexLight(  x + relative_X, y + relative_Y, z, v[4].light );\
 					}\
-					v[0].light[1]= v[1].light[1]= v[2].light[1]= v[3].light[1]= v[7].light[1]= v[4].light[1]= light[1] << 4;\
                     v[5]= v[0];\
                     v[6]= v[3];\
 \
@@ -673,15 +675,17 @@ void r_ChunkInfo::BuildChunkMesh()
                     v[0].tex_coord[2]= v[1].tex_coord[2]= v[2].tex_coord[2]= v[3].tex_coord[2]=\
                     tex_id;\
 					if( flat_lighting )\
+					{\
+						v[0].light[1]= v[1].light[1]= v[2].light[1]= v[3].light[1]= light[1] << 4;\
 						v[0].light[0]= v[1].light[0]= v[2].light[0]= v[3].light[0]= light[0] << 4;\
+					}\
 					else\
 					{\
-						v[0].light[0]= w->GetBackVertexSunLight( x + relative_X + 1, y + relative_Y + ((x+1)&1), z );\
-						v[ 1 ].light[0]= w->GetForwardVertexSunLight( x + relative_X, y + relative_Y, z );\
-						v[2].light[0]= w->GetForwardVertexSunLight( x + relative_X, y + relative_Y, z-1 );\
-						v[ 3 ].light[0]= w->GetBackVertexSunLight( x + relative_X + 1, y + relative_Y + ((x+1)&1), z-1 );\
+						w->GetBackVertexLight( x + relative_X + 1, y + relative_Y + ((x+1)&1), z, v[0].light );\
+						w->GetForwardVertexLight( x + relative_X, y + relative_Y, z, v[1].light );\
+						w->GetForwardVertexLight( x + relative_X, y + relative_Y, z-1, v[2].light  );\
+						w->GetBackVertexLight( x + relative_X + 1, y + relative_Y + ((x+1)&1), z-1, v[3].light  );\
 					}\
-					v[0].light[1]= v[1].light[1]= v[2].light[1]= v[3].light[1]= light[1] << 4;\
 					v[0].normal_id= v[1].normal_id= v[2].normal_id= v[3].normal_id= normal_id;\
 					if( normal_id == BACK_LEFT )\
 					{\
@@ -734,15 +738,17 @@ void r_ChunkInfo::BuildChunkMesh()
                     v[0].tex_coord[2]= v[1].tex_coord[2]= v[2].tex_coord[2]= v[3].tex_coord[2]=\
                     tex_id;\
 					if( flat_lighting )\
+					{\
+						v[0].light[1]= v[1].light[1]= v[2].light[1]= v[3].light[1]= light[1] << 4;\
                     	v[0].light[0]= v[1].light[0]= v[2].light[0]= v[3].light[0]= light[0] << 4;\
+					}\
 					else\
 					{\
-						v[0].light[0]= w->GetBackVertexSunLight( x + relative_X + 1, y + relative_Y + ((x+1)&1), z );\
-						v[3].light[0]= w->GetBackVertexSunLight( x + relative_X + 1, y + relative_Y + ((x+1)&1), z - 1 );\
-						v[2].light[0]= w->GetForwardVertexSunLight( x + relative_X, y + relative_Y - 1, z - 1 );\
-						v[1].light[0]= w->GetForwardVertexSunLight( x + relative_X, y + relative_Y - 1, z );\
+						w->GetBackVertexLight( x + relative_X + 1, y + relative_Y + ((x+1)&1), z, v[0].light );\
+						w->GetBackVertexLight( x + relative_X + 1, y + relative_Y + ((x+1)&1), z - 1, v[3].light );\
+						w->GetForwardVertexLight( x + relative_X, y + relative_Y - 1, z - 1, v[2].light );\
+						w->GetForwardVertexLight( x + relative_X, y + relative_Y - 1, z, v[1].light );\
 					}\
-					v[0].light[1]= v[1].light[1]= v[2].light[1]= v[3].light[1]= light[1] << 4;\
                     v[0].normal_id= v[1].normal_id= v[2].normal_id= v[3].normal_id= normal_id;\
                     if( normal_id == BACK_RIGHT )\
                     {\
@@ -793,15 +799,17 @@ void r_ChunkInfo::BuildChunkMesh()
                     tex_id;\
                     \
                     if( flat_lighting )\
+                    {\
                     	v[0].light[0]= v[1].light[0]= v[2].light[0]= v[3].light[0]= light[0] << 4;\
+						v[0].light[1]= v[1].light[1]= v[2].light[1]= v[3].light[1]= light[1] << 4;\
+                    }\
 					else\
 					{\
-						v[0].light[0]= w->GetBackVertexSunLight( x + relative_X, y + relative_Y + 1, z );\
-						v[1].light[0]= w->GetBackVertexSunLight( x + relative_X, y + relative_Y + 1, z - 1 );\
-						v[2].light[0]= w->GetForwardVertexSunLight( x + relative_X, y + relative_Y, z - 1 );\
-						v[3].light[0]= w->GetForwardVertexSunLight( x + relative_X, y + relative_Y, z );\
+						w->GetBackVertexLight( x + relative_X, y + relative_Y + 1, z, v[0].light );\
+						w->GetBackVertexLight( x + relative_X, y + relative_Y + 1, z - 1, v[1].light  );\
+						w->GetForwardVertexLight( x + relative_X, y + relative_Y, z - 1, v[2].light  );\
+						w->GetForwardVertexLight( x + relative_X, y + relative_Y, z, v[3].light  );\
 					}\
-					v[0].light[1]= v[1].light[1]= v[2].light[1]= v[3].light[1]= light[1] << 4;\
                     v[0].normal_id= v[1].normal_id= v[2].normal_id= v[3].normal_id= normal_id;\
 					if( normal_id == BACK )\
                     {\
