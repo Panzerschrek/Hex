@@ -5,7 +5,7 @@
 #include "world.hpp"
 #include "math_lib/rand.h"
 
-#define H_SEA_LEVEL  (H_CHUNK_HEIGHT/2 - 2 +7 )
+#define H_SEA_LEVEL  (H_CHUNK_HEIGHT/2  )
 
 float Noise2(const int x, const int y)   //range - [-1;1]
 {
@@ -70,7 +70,7 @@ void h_Chunk::GenChunk()
         {
             h= H_CHUNK_HEIGHT/2 + short( 24.0f * FinalNoise( short( float( x + longitude * H_CHUNK_WIDTH ) * H_SPACE_SCALE_VECTOR_X  ),
                                          y + latitude * H_CHUNK_WIDTH ) );
-			//if( longitude == -1 &&  latitude == -1 )h= 3;
+			//if( longitude == -2 &&  latitude == -3 )h= 3;
 
             soil_h= 4 + short( 2.0f * FinalNoise( short( float( x + longitude * H_CHUNK_WIDTH ) * H_SPACE_SCALE_VECTOR_X ) * 4,
                                                   ( y + latitude * H_CHUNK_WIDTH ) * 4  ) );
@@ -86,7 +86,7 @@ void h_Chunk::GenChunk()
                 blocks[ addr ]= world->NormalBlock( SOIL );
             }
 
-			//if( !( longitude == -1 && latitude == -1 ) )
+			//if( !( longitude == -2 && latitude == -3 ) )
             for( ; z<= H_SEA_LEVEL; z++ )
             {
                 transparency[ addr=BlockAddr( x, y, z )  ]= TRANSPARENCY_LIQUID;

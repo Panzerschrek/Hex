@@ -4,6 +4,7 @@
 #include "renderer.hpp"
 #include <QtOpenGL>
 #include "glcorearb.h"
+#include "rendering_constants.hpp"
 
 
 void r_Renderer::UpdateChunk(unsigned short X,  unsigned short Y )
@@ -411,6 +412,12 @@ void r_Renderer::CalculateMatrices()
     block_final_matrix= block_scale_matrix * view_matrix;
 }
 
+void r_Renderer::CalculateLight()
+{
+	lighting_data.current_sun_light= R_SUN_LIGHT_COLOR / float ( H_MAX_SUN_LIGHT * 16 );
+	lighting_data.current_fire_light= R_FIRE_LIGHT_COLOR / float ( H_MAX_FIRE_LIGHT * 16 );
+}
+
 void r_Renderer::BuildChunkList()
 {
     unsigned int k;
@@ -452,7 +459,7 @@ void r_Renderer::Draw()
 
     UpdateGPUData();
     CalculateMatrices();
-
+	CalculateLight();
 
     //glClearColor( 0.2f, 0.3f, 0.8f, 0.0f );
     ///glClearColor( 0.0f, 0.0f, 0.0f, 0.0f );
@@ -523,6 +530,9 @@ void r_Renderer::DrawWorld()
     world_shader.Uniform( "sun_vector", sun_vector );
     world_shader.Uniform( "view_matrix", block_final_matrix );
 
+    world_shader.Uniform( "sun_light_color", lighting_data.current_sun_light );
+    world_shader.Uniform( "fire_light_color", lighting_data.current_fire_light );
+
     world_vb.vbo.Bind();
 
 #ifdef OGL21
@@ -592,7 +602,9 @@ void r_Renderer::DrawWater()
     water_shader.Uniform( "view_matrix", water_final_matrix );
     water_shader.Uniform( "tex", 0 );
     water_shader.Uniform( "time", float( startup_time.msecsTo(QTime::currentTime()) ) * 0.001f );
-    water_shader.Uniform( "tex", 0 );
+
+   	water_shader.Uniform( "sun_light_color", lighting_data.current_sun_light );
+    water_shader.Uniform( "fire_light_color", lighting_data.current_fire_light );
 
     /*world_vb.vbo.Bind();
     #ifdef OGL21
@@ -881,8 +893,6 @@ void r_Renderer::LoadShaders()
              0.25f * sqrt(3.0f) / float( H_MAX_TEXTURE_SCALE ),
              1.0f );
     world_shader.Define( define_str );
-    sprintf( define_str, "LIGHT_MULTIPLER %f", 1.0f / float( H_MAX_SUN_LIGHT * 16 ) );
-    world_shader.Define( define_str );
     world_shader.MoveOnGPU();
 
 #ifdef OGL21
@@ -894,10 +904,7 @@ void r_Renderer::LoadShaders()
 #endif
 
     water_shader.SetAttribLocation( "coord", 0 );
-   // water_shader.SetAttribLocation( "water_depth", 1 );
     water_shader.SetAttribLocation( "light", 1 );
-    sprintf( define_str, "LIGHT_MULTIPLER %f", 1.0f / float( H_MAX_SUN_LIGHT * 16 ) );
-    water_shader.Define( define_str );
     water_shader.MoveOnGPU();
 
 #ifdef OGL21
@@ -971,8 +978,6 @@ void r_Renderer::InitVertexBuffers()
     r_WaterVertex wv;
     shift= ((char*)&wv.coord[0])- ((char*)&wv );
     water_vb.vbo.VertexAttribPointer( 0, 3, GL_SHORT, false, shift );
-   // shift= ((char*)&wv.water_depth)- ((char*)&wv );
-   // water_vb.vbo.VertexAttribPointer( 1, 1, GL_UNSIGNED_BYTE, true, shift );
     shift= ((char*)&wv.light[0])- ((char*)&wv );
     water_vb.vbo.VertexAttribPointer( 1, 2, GL_UNSIGNED_BYTE, false, shift );
 

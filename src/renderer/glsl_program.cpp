@@ -385,7 +385,7 @@ int	r_GLSLProgram::GetUniform( const char* name ) const
 }
 
 
-int	r_GLSLProgram::Uniform( const char* name, m_Vec3& v) const
+int	r_GLSLProgram::Uniform( const char* name, const m_Vec3& v) const
 {
     int u= GetUniform( name );
     if( u == -1 )
@@ -406,7 +406,7 @@ int	r_GLSLProgram::Uniform( const char* name, int i ) const
     return 0;
 }
 
-int	r_GLSLProgram::Uniform( const char* name, m_Mat4& m ) const
+int	r_GLSLProgram::Uniform( const char* name, const m_Mat4& m ) const
 {
     int u= GetUniform( name );
     if( u == -1 )
@@ -417,7 +417,7 @@ int	r_GLSLProgram::Uniform( const char* name, m_Mat4& m ) const
     return 0;
 }
 
-int	r_GLSLProgram::Uniform( const char* name, m_Mat3& m ) const
+int	r_GLSLProgram::Uniform( const char* name, const m_Mat3& m ) const
 {
     int u= GetUniform( name );
     if( u == -1 )

@@ -4,9 +4,6 @@
 #define INV_MAX_WATER_LEVEL 0.0625
 #endif
 
-#ifndef LIGHT_MULTIPLER
-#define LIGHT_MULTIPLER 0.125
-#endif
 
 uniform mat4 view_matrix;
 
@@ -23,7 +20,7 @@ attribute vec2 light;
 varying float f_water_level;
 varying vec3 f_normal;
 varying vec2 f_tex_coord;
-varying float f_light;
+varying vec2 f_light;
 
 
 void main()
@@ -31,6 +28,6 @@ void main()
 	f_normal= vec3( 0.0, 0.0, 1.0 );
 	f_water_level= water_depth;
 	f_tex_coord= 0.25 * coord.xy * vec2( 0.25, 0.57735 );
-	f_light= light.x * LIGHT_MULTIPLER;
+	f_light= light;
 	gl_Position= view_matrix * vec4( coord, 1.0 );
 }

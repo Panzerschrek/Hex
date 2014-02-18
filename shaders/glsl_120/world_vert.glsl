@@ -4,9 +4,6 @@
 #define TEX_SCALE_VECTOR vec3( 0.0625, 0.125 * 0.86602540, 1.0 )
 #endif
 
-#ifndef LIGHT_MULTIPLER
-#define LIGHT_MULTIPLER 0.125
-#endif
 
 uniform mat4 view_matrix;
 const vec3 normals[8]= vec3[8](
@@ -27,7 +24,7 @@ varying vec2 f_tex_coord;
 varying vec2 f_tex_coord_shift;
 varying float f_color;
 varying vec3 f_normal;
-varying float f_light;
+varying vec2 f_light;
 
 const float textures_in_atlas= 16.0;
 const float inv_textures_in_atlas= 1.0/16.0;
@@ -37,7 +34,7 @@ void main()
 	int i_normal= int(normal);
 	block_side_light_k[8];
 	f_normal= normals[ i_normal  ];
-	f_light= ( light.x + light.y * 0.33 ) * LIGHT_MULTIPLER * block_side_light_k[ i_normal ];
+	f_light= light;
 
 	f_tex_coord= ( tex_coord.xy  )* TEX_SCALE_VECTOR.xy * inv_textures_in_atlas;
 	f_tex_coord_shift.x= mod( tex_coord.z, textures_in_atlas ) * inv_textures_in_atlas;

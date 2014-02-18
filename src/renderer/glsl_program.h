@@ -60,10 +60,10 @@ public:
 	int     SetAttribLocation( const char* name, unsigned int location );
     int		GetUniformId	( const char* name );
 
-	int		Uniform( const char* name, m_Vec3& v) const;
+	int		Uniform( const char* name, const m_Vec3& v) const;
 	int		Uniform( const char* name, int i ) const;
-	int		Uniform( const char* name, m_Mat4& m ) const;
-	int		Uniform( const char* name, m_Mat3& m ) const;
+	int		Uniform( const char* name, const m_Mat4& m ) const;
+	int		Uniform( const char* name, const m_Mat3& m ) const;
 	int		Uniform( const char* name, float f ) const;
 
 	/*int		Uniform( int id, m_Vec3& v) const;

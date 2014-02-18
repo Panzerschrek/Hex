@@ -28,7 +28,6 @@ struct r_WorldVertex
 struct r_WaterVertex
 {
 	qint16 coord[3];
-	//unsigned char water_depth;
 	unsigned char light[2];
 };//8b struct
 
@@ -43,6 +42,7 @@ class r_ChunkInfo
 	r_ChunkInfo();
 	void GetQuadCount();
 	void BuildWaterSurfaceMesh();
+	void BuildWaterSideMesh();
 	void BuildChunkMesh();
 
     struct
@@ -123,6 +123,7 @@ class r_Renderer : public QObject
 	void UpdateGPUData();
 
 	void CalculateMatrices();
+	void CalculateLight();
 	void BuildChunkList();
 
 	void DrawBuildPrism();
@@ -206,6 +207,14 @@ class r_Renderer : public QObject
 		r_PolygonBuffer vbo;
 
 	}water_side_vb;
+
+
+	struct
+	{
+		m_Vec3 current_sun_light;
+		m_Vec3 current_fire_light;
+		m_Vec3 sun_direction;
+	} lighting_data;
 
 	//frame buffers
 	unsigned viewport_x, viewport_y;

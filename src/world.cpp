@@ -288,7 +288,8 @@ void h_World::WaterPhysTick()
                                    b->y  + ( j << H_CHUNK_WIDTH_LOG2 ) - (b->x&1), b->z )  )//BACK_LEFT
                         chunk_modifed= true;
 
-                    if( b->LiquidLevel() <= 16  )
+                    if( b->LiquidLevel() == 0 ||
+					 (  b->LiquidLevel() < 16 && ch->GetBlock( b->x, b->y, b->z-1 )->Type() != WATER ) )
                     {
                         iter.RemoveCurrent();
                         ch->SetBlockAndTransparency( b->x,
