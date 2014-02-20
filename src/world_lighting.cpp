@@ -438,7 +438,7 @@ void h_World::AddSunLightSafe_r( short x, short y, short z, unsigned char l )
     ch= GetChunk( x >> H_CHUNK_WIDTH_LOG2, y >> H_CHUNK_WIDTH_LOG2 );
     ch->sun_light_map[ addr ]= l;
 
-    if( l <= 1 )
+    if( l <= (unsigned char)1 )
         return;
     unsigned char l1= l-1;
 
@@ -649,4 +649,18 @@ void h_World::ShineFireLight( short x_min, short y_min, short z_min, short x_max
             for( ; s!= s_end; s++ )
                 AddFireLight_r( s[0]->x + X, s[0]->y + Y, s[0]->z, s[0]->LightLevel() );
         }
+}
+
+
+void h_World::AddLightToBorderChunk( unsigned int X, unsigned int Y )
+{
+	h_Chunk* ch= GetChunk( X, Y );
+
+	short x= X * H_CHUNK_WIDTH;
+	short y= Y * H_CHUNK_WIDTH;
+
+	for( short i= 0; i< H_CHUNK_WIDTH; i++ )
+		for( short j= 0; j< H_CHUNK_WIDTH; j++ )
+			for( short k= 1; k< H_CHUNK_HEIGHT-1; k++ )
+				AddSunLightSafe_r( x+i, y+j, k, ch->SunLightLevel( i, j, k ) );
 }

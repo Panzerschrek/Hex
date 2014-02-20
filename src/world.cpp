@@ -38,20 +38,20 @@ h_World::h_World():
 {
     InitNormalBlocks();
 
-    chunk_number_x= 18 ;
-    chunk_number_y= 16 ;
+    chunk_number_x= 13 ;
+    chunk_number_y= 12 ;
     longitude= -9;
     latitude= -8;
-    chunk_matrix_size_x_log2= m_Math::NearestPOTLog2( chunk_number_x );
-    chunk_matrix_size_x= 1 << chunk_matrix_size_x_log2;
+    //chunk_matrix_size_x_log2= m_Math::NearestPOTLog2( chunk_number_x );
+    //chunk_matrix_size_x= 1 << chunk_matrix_size_x_log2;
 
-    chunks= new h_Chunk*[ chunk_matrix_size_x * chunk_number_y ];
+   // chunks= new h_Chunk*[ chunk_matrix_size_x * chunk_number_y ];
     // for( int i=0; i< chunk_number_x * chunk_number_y; i++ )
     //    chunks[i]= new h_Chunk( this, (i%chunk_number_x) + longitude, (i/chunk_number_x) + latitude );
     for( unsigned int i= 0; i< chunk_number_x; i++ )
         for( unsigned int j= 0; j< chunk_number_y; j++ )
         {
-            chunks[ i + j * chunk_matrix_size_x ]= new h_Chunk( this, i + longitude, j + latitude );
+            chunks[ i + j * H_MAX_CHUNKS ]= new h_Chunk( this, i + longitude, j + latitude );
         }
 
     LightWorld();
@@ -332,11 +332,24 @@ void h_World::PhysTick()
                    player_coord[1] - 5, player_coord[1] + 5,
                    player_coord[2] - 5, player_coord[2] + 5 );
 
+
+
+	if( player_coord[1]/H_CHUNK_WIDTH > chunk_number_y-5 )
+		MoveWorld( NORTH );
+	else if( player_coord[1]/H_CHUNK_WIDTH <= 5 )
+		MoveWorld( SOUTH );
+	if( player_coord[0]/H_CHUNK_WIDTH > chunk_number_x-5 )
+		MoveWorld( EAST );
+	else if( player_coord[0]/H_CHUNK_WIDTH <= 5 )
+		MoveWorld( WEST );
+
     player->Lock();
     player->SetCollisionMesh( &player_phys_mesh );
     player->Unlock();
 
     WaterPhysTick();
+
+
 
     phys_tick_count++;
     Unlock();
@@ -471,6 +484,88 @@ void h_World::Build( short x, short y, short z, h_BlockType block_type )
     Unlock();
 }
 
+void h_World::MoveWorld( h_WorldMoveDirection dir )
+{
+	unsigned int i, j;
+	switch ( dir )
+	{
+		case NORTH:
+		for( i= 0; i< chunk_number_x; i++ )
+		{
+			delete chunks[ i | ( 0 << H_MAX_CHUNKS_LOG2 ) ];
+			for( j= 1; j< chunk_number_y; j++ )
+			{
+				chunks[ i | ( (j-1) << H_MAX_CHUNKS_LOG2 ) ]=
+				chunks[ i | ( j << H_MAX_CHUNKS_LOG2 ) ];
+			}
+
+			chunks[ i | ( (chunk_number_y-1) << H_MAX_CHUNKS_LOG2 ) ]=
+			new h_Chunk( this, i + longitude, chunk_number_y + latitude );
+		}
+		for( i= 0; i< chunk_number_x; i++ )
+			AddLightToBorderChunk( i, chunk_number_y - 1 );
+		latitude++;
+
+		break;
+
+		case SOUTH:
+		for( i= 0; i< chunk_number_x; i++ )
+		{
+			delete chunks[ i | ( (chunk_number_y-1) << H_MAX_CHUNKS_LOG2 ) ];
+			for( j= chunk_number_y-1; j> 0; j-- )
+			{
+				chunks[ i | ( j << H_MAX_CHUNKS_LOG2 ) ]=
+				chunks[ i | ( (j-1) << H_MAX_CHUNKS_LOG2 ) ];
+			}
+
+			chunks[ i | ( 0 << H_MAX_CHUNKS_LOG2 ) ]=
+			new h_Chunk( this, i + longitude,  latitude-1 );
+		}
+		for( i= 0; i< chunk_number_x; i++ )
+			AddLightToBorderChunk( i, 0 );
+		latitude--;
+
+		break;
+
+		case EAST:
+		for( j= 0; j< chunk_number_y; j++ )
+		{
+			delete chunks[ 0 | ( j << H_MAX_CHUNKS_LOG2 ) ];
+			for( i= 1; i< chunk_number_x; i++ )
+			{
+				chunks[ (i-1) | ( j << H_MAX_CHUNKS_LOG2 ) ]=
+				chunks[ i | ( j << H_MAX_CHUNKS_LOG2 ) ];
+			}
+			chunks[ ( chunk_number_x-1) | ( j << H_MAX_CHUNKS_LOG2 ) ]=
+			new h_Chunk( this, longitude+chunk_number_x, latitude + j );
+		}
+		for( j= 0; j< chunk_number_y; j++ )
+			AddLightToBorderChunk( chunk_number_x-1, j );
+		longitude++;
+
+		break;
+
+		case WEST:
+		for( j= 0; j< chunk_number_y; j++ )
+		{
+			delete chunks[ ( chunk_number_x-1) | ( j << H_MAX_CHUNKS_LOG2 ) ];
+			for( i= chunk_number_x-1; i> 0; i-- )
+			{
+				chunks[ i | ( j << H_MAX_CHUNKS_LOG2 ) ]=
+				chunks[ (i-1) | ( j << H_MAX_CHUNKS_LOG2 ) ];
+			}
+			chunks[ 0 | ( j << H_MAX_CHUNKS_LOG2 ) ]=
+			new h_Chunk( this, longitude-1, latitude + j );
+		}
+		for( j= 0; j< chunk_number_y; j++ )
+			AddLightToBorderChunk( 0, j );
+		longitude--;
+
+		break;
+	};
+
+	emit FullUpdate();
+}
 
 
 h_World::~h_World()

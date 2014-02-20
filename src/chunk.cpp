@@ -53,6 +53,7 @@ float FinalNoise(short x, short y)   //range [-1;1]  middle= 0
 
 bool h_Chunk::IsEdgeChunk()
 {
+	//return true;
 	return longitude == world->Longitude() || latitude == world->Latitude() ||
 	longitude == ( world->Longitude() + world->ChunkNumberX() - 1 ) ||
 	latitude == ( world->Latitude() + world->ChunkNumberY() - 1 );
@@ -325,6 +326,11 @@ h_Chunk::h_Chunk( h_World* world, int longitude, int latitude )
     GenWaterBlocks();
 	MakeLight();
 
+}
+
+h_Chunk::~h_Chunk()
+{
+	delete[] water_blocks_data.initial_water_blocks;
 }
 
  unsigned int h_Chunk::GetWaterColumnHeight( short x, short y, short z )

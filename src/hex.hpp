@@ -19,7 +19,8 @@ inline void usleep(int n){ Sleep(n/1000);}
 #define H_CHUNK_HEIGHT 128
 #define H_CHUNK_HEIGHT_LOG2 7
 
-
+#define H_MAX_CHUNKS 64
+#define H_MAX_CHUNKS_LOG2 6
 
 
 #define H_MAX_WATER_LEVEL 16384
@@ -138,5 +139,13 @@ unsigned char
     TRANSPARENCY_AIR = 		3, //air transparency
 };
 
+enum h_WorldMoveDirection:
+unsigned char
+{
+	NORTH,
+	SOUTH,
+	EAST,
+	WEST
+};
 
 #endif//HEX_HPP

@@ -80,7 +80,7 @@ void r_ChunkInfo::BuildWaterSurfaceMesh()
 
     chunk_loaded_zone_X= ( chunk->Longitude() - world->Longitude() ) * H_CHUNK_WIDTH;
     chunk_loaded_zone_Y= ( chunk->Latitude() - world->Latitude() ) * H_CHUNK_WIDTH;
-    if( ! chunk->IsEdgeChunk()  )
+    if( ! chunk->IsEdgeChunk() )
     {
         for( iter.Begin(); iter.IsValid(); iter.Next() )
         {

@@ -48,8 +48,14 @@ public:
     signals:
     void ChunkUpdated( unsigned short, unsigned short );
     void ChunkWaterUpdated( unsigned short, unsigned short );
+    void FullUpdate();
 private:
 	void UpdateInRadius( short x, short y, short r );//update chunks in square [x-r;x+r] [y-r;x+r]
+
+	void MoveWorld( h_WorldMoveDirection dir );
+
+	//coordinates of chunks in chunk matrix
+	void AddLightToBorderChunk( unsigned int X, unsigned int Y );
 
 	//function uses local coordinates of loaded zone
 	void BuildPhysMesh( h_ChunkPhysMesh* phys_mesh, short x_min, short x_max, short y_min, short y_max, short z_min, short z_max );
@@ -93,7 +99,7 @@ private:
 
     unsigned int chunk_number_x, chunk_number_y;
     unsigned int chunk_matrix_size_x, chunk_matrix_size_x_log2;
-    h_Chunk** chunks;//array of pointers
+    h_Chunk* chunks[ H_MAX_CHUNKS * H_MAX_CHUNKS ];//matrix of pointers
     int longitude, latitude;//loaded zone beginning longitude and latitude
 
 
@@ -124,7 +130,7 @@ inline  unsigned int h_World::ChunkNumberY()
 
 inline h_Chunk* h_World::GetChunk( short X, short Y )
 {
-    return chunks[ X | ( Y << chunk_matrix_size_x_log2 ) ];
+    return chunks[ X | ( Y << H_MAX_CHUNKS_LOG2 ) ];
 }
 
 inline h_Block* h_World::NormalBlock( h_BlockType block_type )

@@ -108,6 +108,7 @@ class r_Renderer : public QObject
 	private slots:
     void UpdateChunk( unsigned short,  unsigned short );
     void UpdateChunkWater( unsigned short,  unsigned short );
+    void FullUpdate();
 
     private:
 

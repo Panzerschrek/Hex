@@ -23,6 +23,50 @@ void r_Renderer::UpdateChunkWater(unsigned short X,  unsigned short Y )
         chunk_info[ X + Y * world->ChunkNumberX() ].chunk_water_data_updated= true;
 }
 
+void r_Renderer::FullUpdate()
+{
+	if( frame_count == 0 )
+        return;
+  	for( unsigned int i= 0; i< world->ChunkNumberX(); i++ )
+  		for( unsigned int j= 0; j< world->ChunkNumberY(); j++ )
+  		{
+  			r_ChunkInfo* ch= &chunk_info[ i + j * world->ChunkNumberX() ];
+			ch->chunk_data_updated= true;
+			ch->chunk_water_data_updated= true;
+			ch->chunk= world->GetChunk( i, j );
+			if( j!= 0 )
+			{
+				ch->chunk_back= world->GetChunk( i, j-1 );
+				if( i!= world->ChunkNumberX() - 1 )
+					ch->chunk_back_right= world->GetChunk( i + 1, j - 1 );
+				else
+					ch->chunk_back_right= NULL;
+			}
+			else
+				ch->chunk_back_right= ch->chunk_back= NULL;
+
+			if( j!= world->ChunkNumberY() - 1 )
+				ch->chunk_front= world->GetChunk( i, j+1 );
+			else
+				ch->chunk_front= NULL;
+
+			if( i!= world->ChunkNumberX() - 1 )
+				ch->chunk_right= world->GetChunk( i+1, j );
+			else
+				ch->chunk_right= NULL;
+
+
+			/*if( i < world->ChunkNumberX() - 1 )
+                chunk_info[k].chunk_right= world->GetChunk( i + 1, j );
+            if( j< world->ChunkNumberY() - 1 )
+                chunk_info[k].chunk_front= world->GetChunk( i, j + 1 );
+            if( j > 0 )
+                chunk_info[k].chunk_back= world->GetChunk( i, j - 1 );
+            if( j > 0 && i < world->ChunkNumberX() - 1 )
+                chunk_info[k].chunk_back_right= world->GetChunk( i + 1, j - 1 );*/
+  		}
+}
+
 void r_Renderer::UpdateWorld()
 {
     host_data_mutex.lock();
@@ -753,12 +797,16 @@ void r_Renderer::BuildWorld()
             chunk_info[k].chunk= world->GetChunk( i, j );
             if( i < world->ChunkNumberX() - 1 )
                 chunk_info[k].chunk_right= world->GetChunk( i + 1, j );
+			else chunk_info[k].chunk_right= NULL;
             if( j< world->ChunkNumberY() - 1 )
                 chunk_info[k].chunk_front= world->GetChunk( i, j + 1 );
+			else chunk_info[k].chunk_front= NULL;
             if( j > 0 )
                 chunk_info[k].chunk_back= world->GetChunk( i, j - 1 );
+			else chunk_info[k].chunk_back= NULL;
             if( j > 0 && i < world->ChunkNumberX() - 1 )
                 chunk_info[k].chunk_back_right= world->GetChunk( i + 1, j - 1 );
+			else chunk_info[k].chunk_back_right= 0;
 
         }
 
@@ -841,6 +889,10 @@ r_Renderer::r_Renderer( h_World* w ):
 
     connect( world, SIGNAL(ChunkWaterUpdated( unsigned short, unsigned short )),
              this, SLOT( UpdateChunkWater( unsigned short, unsigned short ) ), Qt::DirectConnection );
+
+	connect( world, SIGNAL(FullUpdate( void )),
+             this, SLOT( FullUpdate( void ) ), Qt::DirectConnection );
+
 
     startup_time= QTime::currentTime();
 

@@ -20,7 +20,7 @@ class h_Chunk
 public:
 
     h_Chunk( h_World* world, int longitude= 0, int latitude= 0 );
-    ~h_Chunk() {}
+    ~h_Chunk();
 
     //get functions - local coordinates
     unsigned char Transparency( short x, short y, short z );
