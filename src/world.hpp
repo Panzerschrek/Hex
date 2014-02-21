@@ -25,6 +25,10 @@ public:
     void Build( short x, short y, short z, h_BlockType block_type );//coordinates - relative
     void Destroy( short x, short y, short z );
 
+	//replace all blocks in radius in this layer( z=const )
+	//ACHTUNG! This function unfinished. It ignores destruction of light sources. also, danger of stack owerflow. time ~ 6^radius
+    void Blast( short x, short y, short z, short radius );
+
 	void SetPlayer( h_Player* p );
     short Longitude();
     short Latitude();
@@ -50,6 +54,7 @@ public:
     void ChunkWaterUpdated( unsigned short, unsigned short );
     void FullUpdate();
 private:
+
 	void UpdateInRadius( short x, short y, short r );//update chunks in square [x-r;x+r] [y-r;x+r]
 
 	void MoveWorld( h_WorldMoveDirection dir );
@@ -84,6 +89,7 @@ private:
 	void ShineFireLight( short x_min, short y_min, short z_min, short x_max, short y_max, short z_max );
 
 
+	void BlastBlock_r( short x, short y, short z, short blast_power );
 	bool InBorders( short x, short y, short z );
 	bool CanBuild( short x, short y, short z );
 

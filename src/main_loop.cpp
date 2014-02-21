@@ -211,13 +211,12 @@ void h_MainLoop::initializeGL()
     renderer->InitGL();
 }
 
-
 void h_MainLoop::mousePressEvent(QMouseEvent* e)
 {
     if( e->button() == Qt::RightButton )
         world->Build( build_pos_x - world->Longitude() * H_CHUNK_WIDTH,
                       build_pos_y - world->Latitude() * H_CHUNK_WIDTH,
-                      build_pos_z, WATER );
+                      build_pos_z, FIRE );
     else if( e->button() == Qt::LeftButton )
     {
     	short new_build_pos[]= { build_pos_x, build_pos_y, build_pos_z };
@@ -259,9 +258,14 @@ void h_MainLoop::mousePressEvent(QMouseEvent* e)
     		default:
     		new_build_pos[2]= 1024;// make build position not in bounds
     	};
+    	//if( keys[ Qt::Key_Q ] )
         world->Destroy( new_build_pos[0] - world->Longitude() * H_CHUNK_WIDTH,
                       new_build_pos[1] - world->Latitude() * H_CHUNK_WIDTH,
                       new_build_pos[2] );
+		/*else
+			world->Blast( new_build_pos[0] - world->Longitude() * H_CHUNK_WIDTH,
+                      new_build_pos[1] - world->Latitude() * H_CHUNK_WIDTH,
+                      new_build_pos[2], 8 );*/
     }
     else if( e->button() == Qt::MiddleButton )
         world->Build( build_pos_x - world->Longitude() * H_CHUNK_WIDTH,

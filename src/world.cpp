@@ -38,10 +38,10 @@ h_World::h_World():
 {
     InitNormalBlocks();
 
-    chunk_number_x= 13 ;
+    chunk_number_x= 14 ;
     chunk_number_y= 12 ;
-    longitude= -9;
-    latitude= -8;
+    longitude= -7;
+    latitude= -6;
     //chunk_matrix_size_x_log2= m_Math::NearestPOTLog2( chunk_number_x );
     //chunk_matrix_size_x= 1 << chunk_matrix_size_x_log2;
 
@@ -56,6 +56,7 @@ h_World::h_World():
 
     LightWorld();
 
+	phys_thread.setStackSize( 16 * 1024 * 1024 );//inrease stack for recursive methods( lighting, blasts, etc )
     phys_thread.start();
 }
 
@@ -334,13 +335,13 @@ void h_World::PhysTick()
 
 
 
-	if( player_coord[1]/H_CHUNK_WIDTH > chunk_number_y-5 )
+	if( player_coord[1]/H_CHUNK_WIDTH > chunk_number_y/2+1 )
 		MoveWorld( NORTH );
-	else if( player_coord[1]/H_CHUNK_WIDTH <= 5 )
+	else if( player_coord[1]/H_CHUNK_WIDTH < chunk_number_y/2-1 )
 		MoveWorld( SOUTH );
-	if( player_coord[0]/H_CHUNK_WIDTH > chunk_number_x-5 )
+	if( player_coord[0]/H_CHUNK_WIDTH > chunk_number_x/2+1 )
 		MoveWorld( EAST );
-	else if( player_coord[0]/H_CHUNK_WIDTH <= 5 )
+	else if( player_coord[0]/H_CHUNK_WIDTH < chunk_number_x/2-1 )
 		MoveWorld( WEST );
 
     player->Lock();
@@ -428,6 +429,56 @@ void h_World::Destroy( short x, short y, short z )
     Unlock();
 }
 
+ void h_World::Blast( short x, short y, short z, short radius )
+ {
+ 	Lock();
+
+ 	if( !InBorders( x, y, z ) )
+    {
+        Unlock();
+        return;
+    }
+
+	for( short k= z, r=radius; k< z+radius; k++, r-- )
+		BlastBlock_r( x, y, k, r );
+	for( short k= z-1, r=radius-1; k> z-radius; k--, r-- )
+		BlastBlock_r( x, y, k, r );
+
+	for( short i= x - radius; i< x+radius; i++ )
+ 		for( short j= y - radius; j< y+radius; j++ )
+ 			for( short k= z - radius; k< z+radius; k++ )
+ 				RelightBlockRemove( i, j, k );
+
+	UpdateInRadius( x, y, radius );
+
+ 	Unlock();
+ }
+
+void h_World::BlastBlock_r( short x, short y, short z, short blast_power )
+{
+	if( blast_power == 0 )
+		return;
+
+	h_Chunk* ch= GetChunk( x>>H_CHUNK_WIDTH_LOG2, y>>H_CHUNK_WIDTH_LOG2 );
+	unsigned int addr;
+
+	addr= BlockAddr( x&(H_CHUNK_WIDTH-1), y&(H_CHUNK_WIDTH-1), z );
+	if( ch->blocks[addr]->Type() != WATER )
+	{
+		//ch->SetBlockAndTransparency( local_x, local_y, z, NormalBlock(AIR), TRANSPARENCY_AIR );
+		ch->blocks[ addr ]= NormalBlock(AIR);
+		ch->transparency[ addr ]= TRANSPARENCY_AIR;
+	}
+
+	//BlastBlock_r( x, y, z + 1, blast_power-1 );
+	//BlastBlock_r( x, y, z - 1, blast_power-1 );
+	BlastBlock_r( x, y+1, z, blast_power-1 );
+	BlastBlock_r( x, y-1, z, blast_power-1 );
+	BlastBlock_r( x+1, y+((x+1)&1), z, blast_power-1 );
+	BlastBlock_r( x+1, y-(x&1), z, blast_power-1 );
+	BlastBlock_r( x-1, y+((x+1)&1), z, blast_power-1 );
+	BlastBlock_r( x-1, y-(x&1), z, blast_power-1 );
+}
 
 void h_World::Build( short x, short y, short z, h_BlockType block_type )
 {

@@ -16,7 +16,7 @@ local.properties
 .classpath
 .settings/
 .loadpath
-
+/src/jpeg6/*
 # External tool builders
 .externalToolBuilders/
 
