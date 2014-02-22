@@ -51,6 +51,7 @@ private:
     unsigned int CalculateWaterBlockCount();
     void GenWaterBlocks();
     void MakeLight();
+    void SunRelight();
 
 //water management
     h_LiquidBlock* NewWaterBlock();
@@ -72,6 +73,7 @@ private:
     unsigned char fire_light_map[ H_CHUNK_WIDTH * H_CHUNK_WIDTH * H_CHUNK_HEIGHT ];
     int longitude, latitude;
 
+	bool need_update_light;
 
     //water management
     struct

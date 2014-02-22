@@ -310,8 +310,72 @@ void h_World::WaterPhysTick()
                     emit ChunkWaterUpdated( i, j-1 );
                 if( j < ChunkNumberY() - 1 );
                 emit ChunkWaterUpdated( i, j+1 );
+
+                ch->need_update_light= true;
             }
         }//for chunks
+}
+
+void h_World::RelightWaterModifedChunksLight()
+{
+	unsigned int chunk_count= 0;
+	h_Chunk* ch;
+	short X, Y;
+	 for( unsigned int i= 1; i< ChunkNumberX()-1; i++ )
+        for( unsigned int j= 1; j< ChunkNumberY()-1; j++ )
+        {
+			ch= GetChunk( i, j );
+        	if( ch->need_update_light )
+        		chunk_count++;
+        }
+
+	for( unsigned int i= 1; i< ChunkNumberX()-1; i++ )
+        for( unsigned int j= 1; j< ChunkNumberY()-1; j++ )
+        {
+        	ch= GetChunk( i, j );
+        	if( ch->need_update_light )
+        	{
+        		if(  rand()  < (RAND_MAX/( chunk_count/2) ) )
+        		{
+        			X= i<<H_CHUNK_WIDTH_LOG2;
+        			Y= j<<H_CHUNK_WIDTH_LOG2;
+        			ch->SunRelight();//zero light in chunk and add vertical sun light
+        			//ShineFireLight( X, Y, 1,
+					//				X+H_CHUNK_WIDTH, Y+H_CHUNK_WIDTH, H_CHUNK_HEIGHT-2 );
+					for( short x= 0; x< H_CHUNK_WIDTH; x++ )
+						for( short y=0; y< H_CHUNK_WIDTH; y++ )
+							for( short z= 1; z< H_CHUNK_HEIGHT-1; z++ )
+							{
+								AddSunLight_r( X+x, Y+y, z, SunLightLevel( X+x, Y+y, z) );
+							}
+					for( short x= 0; x< H_CHUNK_WIDTH; x++ )
+						for( short z= 1; z< H_CHUNK_HEIGHT-1; z++ )
+						{
+							AddSunLight_r( X+x, Y-1, z, SunLightLevel( X+x, Y-1, z) );
+							AddSunLight_r( X+x, Y+H_CHUNK_WIDTH, z, SunLightLevel( X+x, Y+H_CHUNK_WIDTH, z) );
+							//AddFireLight_r( X+x, Y-1, z, FireLightLevel( X+x, Y-1, z) );
+							//AddFireLight_r( X+x, Y+H_CHUNK_WIDTH, z, FireLightLevel( X+x, Y+H_CHUNK_WIDTH, z) );
+						}
+					for( short y= 0; y< H_CHUNK_WIDTH; y++ )
+						for( short z= 1; z< H_CHUNK_HEIGHT-1; z++ )
+						{
+							AddSunLight_r( X-1, Y+y, z, SunLightLevel( X-1, Y+y, z) );
+							AddSunLight_r( X+H_CHUNK_WIDTH, Y+y, z, SunLightLevel( X+H_CHUNK_WIDTH, Y+y, z) );
+							//AddFireLight_r( X-1, Y+y, z, FireLightLevel( X-1, Y+y, z) );
+							//AddFireLight_r( X+H_CHUNK_WIDTH, Y+y, z, FireLightLevel( X+H_CHUNK_WIDTH, Y+y, z) );
+						}
+					ch->need_update_light= false;
+
+					emit ChunkUpdated( i, j );
+					emit ChunkUpdated( i+1, j+1 );
+					emit ChunkUpdated( i+1, j-1 );
+					emit ChunkUpdated( i-1, j+1 );
+					emit ChunkUpdated( i-1, j-1 );
+					emit ChunkWaterUpdated( i, j );
+        		}//if rand
+        	}//if need update light
+        }
+
 }
 
 void h_World::PhysTick()
@@ -349,7 +413,7 @@ void h_World::PhysTick()
     player->Unlock();
 
     WaterPhysTick();
-
+	RelightWaterModifedChunksLight();
 
 
     phys_tick_count++;

@@ -71,7 +71,7 @@ void h_Chunk::GenChunk()
         {
             h= H_CHUNK_HEIGHT/2 + short( 24.0f * FinalNoise( short( float( x + longitude * H_CHUNK_WIDTH ) * H_SPACE_SCALE_VECTOR_X  ),
                                          y + latitude * H_CHUNK_WIDTH ) );
-			//if( longitude == -2 &&  latitude == -3 )h= 3;
+			//if( longitude == -1 &&  latitude == -1 )h= 3;
 
             soil_h= 4 + short( 2.0f * FinalNoise( short( float( x + longitude * H_CHUNK_WIDTH ) * H_SPACE_SCALE_VECTOR_X ) * 4,
                                                   ( y + latitude * H_CHUNK_WIDTH ) * 4  ) );
@@ -87,7 +87,7 @@ void h_Chunk::GenChunk()
                 blocks[ addr ]= world->NormalBlock( SOIL );
             }
 
-			//if( !( longitude == -2 && latitude == -3 ) )
+			//if( !( longitude == -1 && latitude == -1 ) )
             for( ; z<= H_SEA_LEVEL; z++ )
             {
                 transparency[ addr=BlockAddr( x, y, z )  ]= TRANSPARENCY_LIQUID;
@@ -314,9 +314,28 @@ void h_Chunk::MakeLight()
 		}
 }
 
+void h_Chunk::SunRelight()
+{
+	for( unsigned int x= 0; x< H_CHUNK_WIDTH; x++ )
+		for( unsigned int y= 0; y< H_CHUNK_WIDTH; y++ )
+		{
+			unsigned int addr= BlockAddr( x, y, H_CHUNK_HEIGHT-2 );
+			unsigned int z;
+
+			for( z= H_CHUNK_HEIGHT-2; z> 0; z--, addr-- )
+			{
+				if( blocks[ addr ]->Type() != AIR )
+					break;
+				sun_light_map[ addr ]= H_MAX_SUN_LIGHT;
+			}
+			for( ; z > 0; z--, addr-- )
+				sun_light_map[ addr ]= 0;
+		}
+}
+
 h_Chunk::h_Chunk( h_World* world, int longitude, int latitude )
 {
-
+	need_update_light= false;
     this->longitude= longitude, this->latitude= latitude;
     this->world= world;
 

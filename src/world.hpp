@@ -93,6 +93,7 @@ private:
 	bool InBorders( short x, short y, short z );
 	bool CanBuild( short x, short y, short z );
 
+	void RelightWaterModifedChunksLight();//relight chunks, where water was modifed in last ticks
 	void WaterPhysTick();
 	bool WaterFlow( h_LiquidBlock* from, short to_x, short to_y, short to_z ); //returns true if chunk was midifed
 	bool WaterFlowDown( h_LiquidBlock* from, short to_x, short to_y, short to_z );
