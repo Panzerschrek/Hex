@@ -5,6 +5,7 @@ uniform vec3 sun_vector;
 uniform sampler2DArray tex;
 uniform vec3 sun_light_color;
 uniform vec3 fire_light_color;
+uniform vec3 ambient_light_color;
 
 in float f_color;
 in vec3 f_tex_coord;
@@ -15,7 +16,7 @@ out vec4 color;
 
 void main()
 {
-	vec3 l= f_light.x * sun_light_color + f_light.y * fire_light_color;	
+	vec3 l= f_light.x * sun_light_color + f_light.y * fire_light_color + ambient_light_color;	
 
 	vec4 c= texture( tex, f_tex_coord );
 	if( c.a < 0.5 )

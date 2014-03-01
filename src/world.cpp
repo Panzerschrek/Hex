@@ -316,74 +316,19 @@ void h_World::WaterPhysTick()
         }//for chunks
 }
 
-void h_World::RelightWaterModifedChunksLight()
-{
-	unsigned int chunk_count= 0;
-	h_Chunk* ch;
-	short X, Y;
-	 for( unsigned int i= 1; i< ChunkNumberX()-1; i++ )
-        for( unsigned int j= 1; j< ChunkNumberY()-1; j++ )
-        {
-			ch= GetChunk( i, j );
-        	if( ch->need_update_light )
-        		chunk_count++;
-        }
-
-	for( unsigned int i= 1; i< ChunkNumberX()-1; i++ )
-        for( unsigned int j= 1; j< ChunkNumberY()-1; j++ )
-        {
-        	ch= GetChunk( i, j );
-        	if( ch->need_update_light )
-        	{
-        		if(  rand()  < (RAND_MAX/( chunk_count/2) ) )
-        		{
-        			X= i<<H_CHUNK_WIDTH_LOG2;
-        			Y= j<<H_CHUNK_WIDTH_LOG2;
-        			ch->SunRelight();//zero light in chunk and add vertical sun light
-        			//ShineFireLight( X, Y, 1,
-					//				X+H_CHUNK_WIDTH, Y+H_CHUNK_WIDTH, H_CHUNK_HEIGHT-2 );
-					for( short x= 0; x< H_CHUNK_WIDTH; x++ )
-						for( short y=0; y< H_CHUNK_WIDTH; y++ )
-							for( short z= 1; z< H_CHUNK_HEIGHT-1; z++ )
-							{
-								AddSunLight_r( X+x, Y+y, z, SunLightLevel( X+x, Y+y, z) );
-							}
-					for( short x= 0; x< H_CHUNK_WIDTH; x++ )
-						for( short z= 1; z< H_CHUNK_HEIGHT-1; z++ )
-						{
-							AddSunLight_r( X+x, Y-1, z, SunLightLevel( X+x, Y-1, z) );
-							AddSunLight_r( X+x, Y+H_CHUNK_WIDTH, z, SunLightLevel( X+x, Y+H_CHUNK_WIDTH, z) );
-							//AddFireLight_r( X+x, Y-1, z, FireLightLevel( X+x, Y-1, z) );
-							//AddFireLight_r( X+x, Y+H_CHUNK_WIDTH, z, FireLightLevel( X+x, Y+H_CHUNK_WIDTH, z) );
-						}
-					for( short y= 0; y< H_CHUNK_WIDTH; y++ )
-						for( short z= 1; z< H_CHUNK_HEIGHT-1; z++ )
-						{
-							AddSunLight_r( X-1, Y+y, z, SunLightLevel( X-1, Y+y, z) );
-							AddSunLight_r( X+H_CHUNK_WIDTH, Y+y, z, SunLightLevel( X+H_CHUNK_WIDTH, Y+y, z) );
-							//AddFireLight_r( X-1, Y+y, z, FireLightLevel( X-1, Y+y, z) );
-							//AddFireLight_r( X+H_CHUNK_WIDTH, Y+y, z, FireLightLevel( X+H_CHUNK_WIDTH, Y+y, z) );
-						}
-					ch->need_update_light= false;
-
-					emit ChunkUpdated( i, j );
-					emit ChunkUpdated( i+1, j+1 );
-					emit ChunkUpdated( i+1, j-1 );
-					emit ChunkUpdated( i-1, j+1 );
-					emit ChunkUpdated( i-1, j-1 );
-					emit ChunkWaterUpdated( i, j );
-        		}//if rand
-        	}//if need update light
-        }
-
-}
 
 void h_World::PhysTick()
 {
     while( player == NULL )
         usleep( 1000000 );
     QTime t0= QTime::currentTime();
+
     Lock();
+
+	FlushActionQueue();
+	WaterPhysTick();
+	RelightWaterModifedChunksLight();
+
 
     player->Lock();
     player_coord[2]= short( player->Pos().z );
@@ -412,9 +357,6 @@ void h_World::PhysTick()
     player->SetCollisionMesh( &player_phys_mesh );
     player->Unlock();
 
-    WaterPhysTick();
-	RelightWaterModifedChunksLight();
-
 
     phys_tick_count++;
     Unlock();
@@ -442,16 +384,27 @@ void h_World::UpdateInRadius( short x, short y, short r )
 			 emit ChunkUpdated( i, j );
 
 }
+void h_World::UpdateWaterInRadius( short x, short y, short r )
+{
+	short x_min, x_max, y_min, y_max;
+	x_min= ClampX( x - r );
+	x_max= ClampX( x + r );
+	y_min= ClampY( y - r );
+	y_max= ClampY( y + r );
+
+	x_min>>= H_CHUNK_WIDTH_LOG2;
+	x_max>>= H_CHUNK_WIDTH_LOG2;
+	y_min>>= H_CHUNK_WIDTH_LOG2;
+	y_max>>= H_CHUNK_WIDTH_LOG2;
+	for( short i= x_min; i<= x_max; i++ )
+		for( short j= y_min; j<= y_max; j++ )
+			 emit ChunkWaterUpdated( i, j );
+}
 
 void h_World::Destroy( short x, short y, short z )
 {
-    Lock();
-
     if( !InBorders( x, y, z ) )
-    {
-        Unlock();
         return;
-    }
 
     short X= x>> H_CHUNK_WIDTH_LOG2, Y = y>> H_CHUNK_WIDTH_LOG2;
     x&= H_CHUNK_WIDTH - 1;
@@ -470,6 +423,7 @@ void h_World::Destroy( short x, short y, short z )
 		RelightBlockAdd( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), z );
 		RelightBlockRemove( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), z );
 		UpdateInRadius( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), H_MAX_FIRE_LIGHT );
+		UpdateWaterInRadius( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), H_MAX_FIRE_LIGHT );
     }
     else
     {
@@ -478,19 +432,8 @@ void h_World::Destroy( short x, short y, short z )
 		RelightBlockRemove( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), z );
 		//AddFireLight_r( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), z, 10 );
 		UpdateInRadius( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), H_MAX_SUN_LIGHT );
+		UpdateWaterInRadius( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), H_MAX_SUN_LIGHT );
     }
-    /*emit ChunkUpdated( X, Y );
-    if( x == 0 && X > 0 )
-        emit ChunkUpdated( X - 1, Y );
-    else if( x == H_CHUNK_WIDTH - 1 && X < ChunkNumberX() - 1 )
-        emit ChunkUpdated( X + 1, Y );
-
-    if( y == 0 && Y > 0 )
-        emit ChunkUpdated( X, Y - 1 );
-    else if( y == H_CHUNK_WIDTH - 1 && Y < ChunkNumberY() - 1 )
-        emit ChunkUpdated( X , Y + 1 );*/
-
-    Unlock();
 }
 
  void h_World::Blast( short x, short y, short z, short radius )
@@ -546,18 +489,10 @@ void h_World::BlastBlock_r( short x, short y, short z, short blast_power )
 
 void h_World::Build( short x, short y, short z, h_BlockType block_type )
 {
-    Lock();
-
     if( !InBorders( x, y, z ) )
-    {
-        Unlock();
         return;
-    }
     if( !CanBuild( x, y, z ) )
-    {
-        Unlock();
         return;
-    }
 
     short X= x>> H_CHUNK_WIDTH_LOG2, Y = y>> H_CHUNK_WIDTH_LOG2;
 
@@ -594,9 +529,54 @@ void h_World::Build( short x, short y, short z, h_BlockType block_type )
 		 r= RelightBlockAdd( X * H_CHUNK_WIDTH + x,Y * H_CHUNK_WIDTH + y, z ) + 1;
 
 	UpdateInRadius( X * H_CHUNK_WIDTH + x,Y * H_CHUNK_WIDTH + y, r );
+	UpdateWaterInRadius( X * H_CHUNK_WIDTH + x,Y * H_CHUNK_WIDTH + y, r );
 
+}
 
-    Unlock();
+void h_World::AddBuildEvent( short x, short y, short z, h_BlockType block_type )
+{
+	action_queue_mutex.lock();
+
+	h_WorldAction act;
+	act.type= ACTION_BUILD;
+	act.block_type= block_type;
+	act.coord[0]= x;
+	act.coord[1]= y;
+	act.coord[2]= z;
+
+	action_queue[0].enqueue( act );
+
+	action_queue_mutex.unlock();
+}
+void h_World::AddDestroyEvent( short x, short y, short z )
+{
+	action_queue_mutex.lock();
+
+	h_WorldAction act;
+	act.type= ACTION_DESTROY;
+	act.coord[0]= x;
+	act.coord[1]= y;
+	act.coord[2]= z;
+
+	action_queue[0].enqueue( act );
+
+	action_queue_mutex.unlock();
+}
+
+void h_World::FlushActionQueue()
+{
+	action_queue_mutex.lock();
+	action_queue[0].swap( action_queue[1] );
+	action_queue_mutex.unlock();
+
+	while( action_queue[1].size() != 0 )
+	{
+		h_WorldAction act= action_queue[1].dequeue();
+		if( act.type == ACTION_BUILD )
+			Build( act.coord[0], act.coord[1], act.coord[2], act.block_type );
+		else if( act.type == ACTION_DESTROY )
+			Destroy( act.coord[0], act.coord[1], act.coord[2] );
+	}
 }
 
 void h_World::MoveWorld( h_WorldMoveDirection dir )

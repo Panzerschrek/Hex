@@ -60,52 +60,54 @@ h_MainLoop::h_MainLoop(QGLFormat format ):
 
 void h_MainLoop::GetBuildPos()
 {
-   /* build_pos_z= (short) floor( cam_pos.z  + 1.0f );
-    GetHexogonCoord( cam_pos.xy(), &build_pos_x, &build_pos_y );
+    /* build_pos_z= (short) floor( cam_pos.z  + 1.0f );
+     GetHexogonCoord( cam_pos.xy(), &build_pos_x, &build_pos_y );
 
-    if( cam_ang.x > M_PI/4.0f )
-        build_pos_z++;
-    else if( cam_ang.x < -M_PI/4.0f )
-        build_pos_z--;
-    else
-    {
-        if( cam_ang.z < M_PI/6.0f )
-            build_pos_y++;
-        else if( cam_ang.z < M_PI/2.0f )
-        {
-            build_pos_y+= ( build_pos_x+1)&1;
-            build_pos_x--;
-        }
-        else if ( cam_ang.z < 5.0f * M_PI / 6.0f )
-        {
-            build_pos_y-= build_pos_x&1;
-            build_pos_x--;
-        }
-        else if( cam_ang.z < 7.0f * M_PI / 6.0f )
-        {
-            build_pos_y--;
-        }
-        else if( cam_ang.z < 3.0f * M_PI / 2.0f )
-        {
-            build_pos_y-= build_pos_x&1;
-            build_pos_x++;
-        }
-        else if ( cam_ang.z < 11.0f * M_PI / 6.0f )
-        {
-            build_pos_y+= ( build_pos_x+ 1 )&1;
-            build_pos_x++;
-        }
-        else
-            build_pos_y++;
+     if( cam_ang.x > M_PI/4.0f )
+         build_pos_z++;
+     else if( cam_ang.x < -M_PI/4.0f )
+         build_pos_z--;
+     else
+     {
+         if( cam_ang.z < M_PI/6.0f )
+             build_pos_y++;
+         else if( cam_ang.z < M_PI/2.0f )
+         {
+             build_pos_y+= ( build_pos_x+1)&1;
+             build_pos_x--;
+         }
+         else if ( cam_ang.z < 5.0f * M_PI / 6.0f )
+         {
+             build_pos_y-= build_pos_x&1;
+             build_pos_x--;
+         }
+         else if( cam_ang.z < 7.0f * M_PI / 6.0f )
+         {
+             build_pos_y--;
+         }
+         else if( cam_ang.z < 3.0f * M_PI / 2.0f )
+         {
+             build_pos_y-= build_pos_x&1;
+             build_pos_x++;
+         }
+         else if ( cam_ang.z < 11.0f * M_PI / 6.0f )
+         {
+             build_pos_y+= ( build_pos_x+ 1 )&1;
+             build_pos_x++;
+         }
+         else
+             build_pos_y++;
 
 
-    }*/
+     }*/
 
     build_dir= player->GetBuildPos( &build_pos_x, &build_pos_y, &build_pos_z );
 
-     m_Vec3 discret_build_pos( ( float( build_pos_x + 0.3333333333f ) ) * H_SPACE_SCALE_VECTOR_X,
-                               float( build_pos_y ) - 0.5f * float(build_pos_x&1) + 0.5f,
-                               float( build_pos_z ) - 1.0f );
+    m_Vec3 discret_build_pos( ( float( build_pos_x + 0.3333333333f ) ) * H_SPACE_SCALE_VECTOR_X,
+                              float( build_pos_y ) - 0.5f * float(build_pos_x&1) + 0.5f,
+                              float( build_pos_z ) - 1.0f );
+	if( build_dir == DIRECTION_UNKNOWN )
+		discret_build_pos.z= -1.0f;
 
     renderer->SetBuildPos( discret_build_pos );
 }
@@ -214,61 +216,65 @@ void h_MainLoop::initializeGL()
 void h_MainLoop::mousePressEvent(QMouseEvent* e)
 {
     if( e->button() == Qt::RightButton )
-        world->Build( build_pos_x - world->Longitude() * H_CHUNK_WIDTH,
+        world->AddBuildEvent( build_pos_x - world->Longitude() * H_CHUNK_WIDTH,
                       build_pos_y - world->Latitude() * H_CHUNK_WIDTH,
                       build_pos_z, FIRE );
     else if( e->button() == Qt::LeftButton )
     {
-    	short new_build_pos[]= { build_pos_x, build_pos_y, build_pos_z };
-    	switch ( build_dir )
-    	{
-    		case UP:
-    		new_build_pos[2]--;
-    		break;
-    		case DOWN:
-    		new_build_pos[2]++;
-    		break;
+        short new_build_pos[]= { build_pos_x, build_pos_y, build_pos_z };
+        switch ( build_dir )
+        {
+        case UP:
+            new_build_pos[2]--;
+            break;
+        case DOWN:
+            new_build_pos[2]++;
+            break;
 
-    		case FORWARD:
-    		new_build_pos[1]--;
-    		break;
-    		case BACK:
-    		new_build_pos[1]++;
-    		break;
+        case FORWARD:
+            new_build_pos[1]--;
+            break;
+        case BACK:
+            new_build_pos[1]++;
+            break;
 
-    		case FORWARD_RIGHT:
-    		new_build_pos[1]-= (new_build_pos[0]&1);
-    		new_build_pos[0]--;
-    		break;
-    		case BACK_RIGHT:
-    		new_build_pos[1]+= ((new_build_pos[0]+1)&1);
-    		new_build_pos[0]--;
-    		break;
+        case FORWARD_RIGHT:
+            new_build_pos[1]-= (new_build_pos[0]&1);
+            new_build_pos[0]--;
+            break;
+        case BACK_RIGHT:
+            new_build_pos[1]+= ((new_build_pos[0]+1)&1);
+            new_build_pos[0]--;
+            break;
 
 
-    		case FORWARD_LEFT:
-    		new_build_pos[1]-= (new_build_pos[0]&1);
-    		new_build_pos[0]++;
-    		break;
-    		case BACK_LEFT:
-    		new_build_pos[1]+= ((new_build_pos[0]+1)&1);
-    		new_build_pos[0]++;
-    		break;
+        case FORWARD_LEFT:
+            new_build_pos[1]-= (new_build_pos[0]&1);
+            new_build_pos[0]++;
+            break;
+        case BACK_LEFT:
+            new_build_pos[1]+= ((new_build_pos[0]+1)&1);
+            new_build_pos[0]++;
+            break;
 
-    		default:
-    		new_build_pos[2]= 1024;// make build position not in bounds
-    	};
-        /*world->Destroy( new_build_pos[0] - world->Longitude() * H_CHUNK_WIDTH,
-                      new_build_pos[1] - world->Latitude() * H_CHUNK_WIDTH,
-                      new_build_pos[2] );*/
-			world->Blast( new_build_pos[0] - world->Longitude() * H_CHUNK_WIDTH,
-                      new_build_pos[1] - world->Latitude() * H_CHUNK_WIDTH,
-                      new_build_pos[2], 8 );
+        default:
+            new_build_pos[2]= 1024;// make build position not in bounds
+        };
+        if( keys[ Qt::Key_X ] )
+            world->Blast( new_build_pos[0] - world->Longitude() * H_CHUNK_WIDTH,
+                          new_build_pos[1] - world->Latitude() * H_CHUNK_WIDTH,
+                          new_build_pos[2], 4 );
+        else
+        world->AddDestroyEvent( new_build_pos[0] - world->Longitude() * H_CHUNK_WIDTH,
+                        new_build_pos[1] - world->Latitude() * H_CHUNK_WIDTH,
+                        new_build_pos[2] );
     }
     else if( e->button() == Qt::MiddleButton )
-        world->Build( build_pos_x - world->Longitude() * H_CHUNK_WIDTH,
+    {
+        world->AddBuildEvent( build_pos_x - world->Longitude() * H_CHUNK_WIDTH,
                       build_pos_y - world->Latitude() * H_CHUNK_WIDTH,
-                      build_pos_z, WOOD );
+                      build_pos_z, SPHERICAL_BLOCK );
+    }
 }
 void h_MainLoop::mouseMoveEvent(QMouseEvent* e)
 {

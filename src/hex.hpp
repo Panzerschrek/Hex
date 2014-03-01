@@ -61,6 +61,7 @@ enum h_BlockType:
 unsigned short
 {
     AIR= 0,
+    SPHERICAL_BLOCK,
     STONE,
     SOIL,
     WOOD,
@@ -69,7 +70,7 @@ unsigned short
     SAND,
     FOLIAGE,
     FIRE,
-    NUM_BLOCK_TYPES= 9,
+    NUM_BLOCK_TYPES= 10,
     BLOCK_UNKNOWN= 65535
 };
 

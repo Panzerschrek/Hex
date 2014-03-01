@@ -156,9 +156,15 @@ h_Direction h_Player::GetBuildPos( short* x, short* y, short* z )
     new_z= (short) intersect_pos.z;
     new_z++;
 
-    *x= new_x;
-    *y= new_y;
-    *z= new_z;
+    if( block_dir != DIRECTION_UNKNOWN )
+    {
+        *x= new_x;
+        *y= new_y;
+        *z= new_z;
+    }
+    else
+        *x = *y= *z= -1;
+
     return block_dir;
 }
 
@@ -171,51 +177,51 @@ void h_Player::Move( m_Vec3 delta )
     p_BlockSide* side;
     unsigned int count;
 
-            face= phys_mesh.upper_block_faces.Data();
-            count= phys_mesh.upper_block_faces.Size();
-            for( unsigned int k= 0; k< count; k++, face++ )
-            {
-                if( delta.z > 0.00001f )
+    face= phys_mesh.upper_block_faces.Data();
+    count= phys_mesh.upper_block_faces.Size();
+    for( unsigned int k= 0; k< count; k++, face++ )
+    {
+        if( delta.z > 0.00001f )
+        {
+            if( face->dir == DOWN )
+                if( face->z > (pos.z+H_PLAYER_HEIGHT) && face->z < (new_pos.z+H_PLAYER_HEIGHT) )
                 {
-                    if( face->dir == DOWN )
-                        if( face->z > (pos.z+H_PLAYER_HEIGHT) && face->z < (new_pos.z+H_PLAYER_HEIGHT) )
-                        {
-                            if(  face->HasCollisionWithCircle( new_pos.xy(), H_PLAYER_RADIUS ) )
-                                //new_pos.z= face->z  - 0.0625f * delta.z;
-                                new_pos.z= face->z- H_PLAYER_HEIGHT - 0.001f;
-                        }
+                    if(  face->HasCollisionWithCircle( new_pos.xy(), H_PLAYER_RADIUS ) )
+                        //new_pos.z= face->z  - 0.0625f * delta.z;
+                        new_pos.z= face->z- H_PLAYER_HEIGHT - 0.001f;
                 }
-                else if( delta.z < -0.000001f )
+        }
+        else if( delta.z < -0.000001f )
+        {
+            if( face->dir == UP )
+                if( face->z < pos.z && face->z > new_pos.z )
                 {
-                    if( face->dir == UP )
-                        if( face->z < pos.z && face->z > new_pos.z )
-                        {
-                            if(  face->HasCollisionWithCircle( new_pos.xy(), H_PLAYER_RADIUS ) )
-                                //new_pos.z= face->z  - 0.0625f * delta.z;
-                                new_pos.z= face->z  + 0.0001f;
-                        }
+                    if(  face->HasCollisionWithCircle( new_pos.xy(), H_PLAYER_RADIUS ) )
+                        //new_pos.z= face->z  - 0.0625f * delta.z;
+                        new_pos.z= face->z  + 0.0001f;
                 }
-            }// upeer faces
+        }
+    }// upeer faces
 
-            side= phys_mesh.block_sides.Data();
-            count= phys_mesh.block_sides.Size();
-            for( unsigned int k= 0; k< count; k++, side++ )
-            {
-                /*float delta[2]=  { new_pos.z - side->z, new_pos.z + H_PLAYER_HEIGHT - side->z };
-                if( ( delta[0] < 1.0f && delta[0] > 0.0f ) || ( delta[1] < 1.0f && delta[1] > 0.0f ) )
-                {
-                    m_Vec2 collide_pos= side->CollideWithCirlce( new_pos.xy(), H_PLAYER_RADIUS );
-                    new_pos.x= collide_pos.x;
-                    new_pos.y= collide_pos.y;
-                }*/
-                if( ( side->z > new_pos.z && side->z < new_pos.z + H_PLAYER_HEIGHT ) ||
-                        ( side->z + 1.0f > new_pos.z && side->z + 1.0f < new_pos.z + H_PLAYER_HEIGHT ) )
-                {
-                    m_Vec2 collide_pos= side->CollideWithCirlce( new_pos.xy(), H_PLAYER_RADIUS );
-                    new_pos.x= collide_pos.x;
-                    new_pos.y= collide_pos.y;
-                }
-            }
+    side= phys_mesh.block_sides.Data();
+    count= phys_mesh.block_sides.Size();
+    for( unsigned int k= 0; k< count; k++, side++ )
+    {
+        /*float delta[2]=  { new_pos.z - side->z, new_pos.z + H_PLAYER_HEIGHT - side->z };
+        if( ( delta[0] < 1.0f && delta[0] > 0.0f ) || ( delta[1] < 1.0f && delta[1] > 0.0f ) )
+        {
+            m_Vec2 collide_pos= side->CollideWithCirlce( new_pos.xy(), H_PLAYER_RADIUS );
+            new_pos.x= collide_pos.x;
+            new_pos.y= collide_pos.y;
+        }*/
+        if( ( side->z > new_pos.z && side->z < new_pos.z + H_PLAYER_HEIGHT ) ||
+                ( side->z + 1.0f > new_pos.z && side->z + 1.0f < new_pos.z + H_PLAYER_HEIGHT ) )
+        {
+            m_Vec2 collide_pos= side->CollideWithCirlce( new_pos.xy(), H_PLAYER_RADIUS );
+            new_pos.x= collide_pos.x;
+            new_pos.y= collide_pos.y;
+        }
+    }
 
     pos= new_pos;
 

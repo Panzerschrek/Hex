@@ -38,6 +38,7 @@ h_TransparencyType h_Block::Transparency()
 
 static const char* block_names[NUM_BLOCK_TYPES]= {
     MACRO_TO_STR(AIR),
+    MACRO_TO_STR(SPHERICAL_BLOCK),
     MACRO_TO_STR(STONE),
     MACRO_TO_STR(SOIL),
     MACRO_TO_STR(WOOD),

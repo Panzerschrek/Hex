@@ -576,6 +576,7 @@ void r_Renderer::DrawWorld()
 
     world_shader.Uniform( "sun_light_color", lighting_data.current_sun_light );
     world_shader.Uniform( "fire_light_color", lighting_data.current_fire_light );
+    world_shader.Uniform( "ambient_light_color", R_AMBIENT_LIGHT_COLOR );
 
     world_vb.vbo.Bind();
 
@@ -649,6 +650,7 @@ void r_Renderer::DrawWater()
 
    	water_shader.Uniform( "sun_light_color", lighting_data.current_sun_light );
     water_shader.Uniform( "fire_light_color", lighting_data.current_fire_light );
+    water_shader.Uniform( "ambient_light_color", R_AMBIENT_LIGHT_COLOR );
 
     /*world_vb.vbo.Bind();
     #ifdef OGL21
@@ -674,6 +676,8 @@ void r_Renderer::DrawWater()
 
 void r_Renderer::DrawBuildPrism()
 {
+	if( build_pos.z < 0.0f )
+		return;
     glDisable( GL_BLEND );
     glEnable( GL_DEPTH_TEST );
     glLineWidth( 4.0f );

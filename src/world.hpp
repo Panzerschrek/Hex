@@ -2,12 +2,15 @@
 #define WORLD_HPP
 
 #include <QMutex>
+#include <QQueue>
 
 #include "hex.hpp"
 #include "block.hpp"
 #include "chunk.hpp"
 #include "thread.hpp"
 #include "chunk_phys_mesh.hpp"
+#include "math_lib/rand.h"
+#include "world_action.hpp"
 
 
 class h_Player;
@@ -22,8 +25,9 @@ public:
     h_Chunk* GetChunk( short X, short Y );//relative chunk coordinates
     unsigned int ChunkNumberX();
     unsigned int ChunkNumberY();
-    void Build( short x, short y, short z, h_BlockType block_type );//coordinates - relative
-    void Destroy( short x, short y, short z );
+
+	void AddBuildEvent( short x, short y, short z, h_BlockType block_type );//coordinates - relative
+    void AddDestroyEvent( short x, short y, short z );
 
 	//replace all blocks in radius in this layer( z=const )
 	//ACHTUNG! This function unfinished. It ignores destruction of light sources. also, danger of stack owerflow. time ~ 6^radius
@@ -55,7 +59,12 @@ public:
     void FullUpdate();
 private:
 
+	 void Build( short x, short y, short z, h_BlockType block_type );//coordinates - relative
+    void Destroy( short x, short y, short z );
+    void FlushActionQueue();
+
 	void UpdateInRadius( short x, short y, short r );//update chunks in square [x-r;x+r] [y-r;x+r]
+	void UpdateWaterInRadius( short x, short y, short r );//update chunks water in square [x-r;x+r] [y-r;x+r]
 
 	void MoveWorld( h_WorldMoveDirection dir );
 
@@ -109,6 +118,7 @@ private:
     h_Chunk* chunks[ H_MAX_CHUNKS * H_MAX_CHUNKS ];//matrix of pointers
     int longitude, latitude;//loaded zone beginning longitude and latitude
 
+	m_Rand phys_processes_rand;
 
 	h_Player* player;
 	short player_coord[3];//global coordinate of player hexagon
@@ -121,6 +131,10 @@ private:
 	h_Thread< h_World > phys_thread;
 	void PhysTick();
 	QMutex world_mutex;
+
+	//queue 0 - for enqueue, queue 1 - fro dequeue
+	QQueue< h_WorldAction > action_queue[2];
+	QMutex action_queue_mutex;
 
 };
 

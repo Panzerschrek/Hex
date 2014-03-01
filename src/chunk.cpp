@@ -74,8 +74,11 @@ void h_Chunk::GenChunk()
 			//if( longitude == -1 &&  latitude == -1 )h= 3;
 
             soil_h= 4 + short( 2.0f * FinalNoise( short( float( x + longitude * H_CHUNK_WIDTH ) * H_SPACE_SCALE_VECTOR_X ) * 4,
-                                                  ( y + latitude * H_CHUNK_WIDTH ) * 4  ) );
-            for( z= 0; z< h - soil_h; z++ )
+					( y + latitude * H_CHUNK_WIDTH ) * 4  ) );
+
+			SetBlockAndTransparency( x, y, 0, world->NormalBlock( SPHERICAL_BLOCK), TRANSPARENCY_SOLID );
+			SetBlockAndTransparency( x, y, H_CHUNK_HEIGHT-1, world->NormalBlock( SPHERICAL_BLOCK), TRANSPARENCY_SOLID );
+            for( z= 1; z< h - soil_h; z++ )
             {
                 transparency[ addr=BlockAddr( x, y, z )  ]= TRANSPARENCY_SOLID;
                 blocks[ addr ]= world->NormalBlock( STONE );
@@ -94,7 +97,7 @@ void h_Chunk::GenChunk()
                 blocks[ addr ]= world->NormalBlock( WATER );
             }
 
-            for( ; z< H_CHUNK_HEIGHT; z++ )
+            for( ; z< H_CHUNK_HEIGHT-1; z++ )
             {
                 transparency[ addr=BlockAddr( x, y, z )  ]= TRANSPARENCY_AIR;
                 blocks[ addr ]= world->NormalBlock( AIR );
@@ -120,7 +123,7 @@ void h_Chunk::PlantTrees()
                 || tree_y < 2 || tree_y > H_CHUNK_WIDTH - 2 )
             continue;
 
-        for( h= H_CHUNK_HEIGHT - 1; h >= 0; h-- )
+        for( h= H_CHUNK_HEIGHT - 2; h > 0; h-- )
             if( GetBlock( tree_x, tree_y, h )->Type() !=AIR )
                 break;
 
@@ -173,7 +176,7 @@ void h_Chunk::PlantGrass()
     {
         for( y= 0; y< H_CHUNK_WIDTH; y++ )
         {
-            for( z= H_CHUNK_HEIGHT - 1; z>= 0; z-- )
+            for( z= H_CHUNK_HEIGHT - 2; z> 0; z-- )
                 if ( GetBlock( x, y, z )->Type() != AIR )
                     break;
 
@@ -349,6 +352,16 @@ h_Chunk::h_Chunk( h_World* world, int longitude, int latitude )
 
 h_Chunk::~h_Chunk()
 {
+	//delete water blocks outside water_blocks_data.initial_water_blocks
+	h_LiquidBlock* last_liquid_block_in_initial_buffer=
+	water_blocks_data.initial_water_blocks + water_blocks_data.initial_water_block_buffer_size - 1;
+ 	for( unsigned int i= 0; i< water_blocks_data.water_block_list.Size(); i++ )
+ 	{
+ 		h_LiquidBlock* b= water_blocks_data.water_block_list.Data()[i];
+ 		if( b < water_blocks_data.initial_water_blocks || b > last_liquid_block_in_initial_buffer )
+ 			delete b;
+ 	}
+
 	delete[] water_blocks_data.initial_water_blocks;
 }
 
