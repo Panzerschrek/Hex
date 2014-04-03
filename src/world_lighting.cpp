@@ -177,6 +177,13 @@ void h_World::RelightBlockRemove( short x, short y, short z )
     AddFireLight_r( x-1, y- (x&1), z , FireLightLevel(x-1, y- (x&1), z) );
 }
 
+
+//table for calculating vertex light without division ( mast be faster, but not precise )
+static const unsigned int vertex_light_div_table[]=
+{
+    0, 65536 * (13+1)/1, 65536 * (13+2)/2, 65536 * (13+3)/3, 65536 * (13+4)/4, 65536 * (13+5)/5, 65536 * (13+6)/6
+};
+
 void h_World::GetForwardVertexLight( short x, short y, short z, unsigned char* out_light )
 {
     unsigned short block_count= 0;
@@ -215,7 +222,7 @@ void h_World::GetForwardVertexLight( short x, short y, short z, unsigned char* o
     addr++;
     if( ch->transparency[addr] != TRANSPARENCY_SOLID )
     {
-       light[0]+= ch->sun_light_map[ addr ];
+        light[0]+= ch->sun_light_map[ addr ];
         light[1]+= ch->fire_light_map[ addr ];
         block_count++;
     }
@@ -239,10 +246,10 @@ void h_World::GetForwardVertexLight( short x, short y, short z, unsigned char* o
         block_count++;
     }
 
-    //return (unsigned char)( ( ((unsigned short)(light)) << 4 ) / block_count );
-    //return (unsigned char)( ( ((unsigned short)(light)) * ( 29 + block_count ) ) / ( block_count << 1 ) );
-	out_light[0]= (unsigned char)( ( ((unsigned short)(light[0])) * ( 13 + block_count ) ) / block_count  );
-	out_light[1]= (unsigned char)( ( ((unsigned short)(light[1])) * ( 13 + block_count ) ) / block_count  );
+   // out_light[0]= (unsigned char)( ( ((unsigned short)(light[0])) * ( 13 + block_count ) ) / block_count  );
+   // out_light[1]= (unsigned char)( ( ((unsigned short)(light[1])) * ( 13 + block_count ) ) / block_count  );
+    out_light[0]= ( ( (unsigned int)light[0] ) * vertex_light_div_table[ block_count ] )>> 16;
+    out_light[1]= ( ( (unsigned int)light[1] ) * vertex_light_div_table[ block_count ] )>> 16;
 }
 
 void h_World::GetBackVertexLight( short x, short y, short z, unsigned char* out_light )
@@ -283,7 +290,7 @@ void h_World::GetBackVertexLight( short x, short y, short z, unsigned char* out_
     addr++;
     if( ch->transparency[addr] != TRANSPARENCY_SOLID )
     {
-       light[0]+= ch->sun_light_map[ addr ];
+        light[0]+= ch->sun_light_map[ addr ];
         light[1]+= ch->fire_light_map[ addr ];
         block_count++;
     }
@@ -307,11 +314,10 @@ void h_World::GetBackVertexLight( short x, short y, short z, unsigned char* out_
         block_count++;
     }
 
-
-    //return (unsigned char)( ( ((unsigned short)(light)) << 4 ) / block_count );
-    //return (unsigned char)( ( ((unsigned short)(light)) * ( 29 + block_count ) ) / ( block_count << 1 ) );
-   out_light[0]= (unsigned char)( ( ((unsigned short)(light[0])) * ( 13 + block_count ) ) / block_count  );
-   out_light[1]= (unsigned char)( ( ((unsigned short)(light[1])) * ( 13 + block_count ) ) / block_count  );
+    //out_light[0]= (unsigned char)( ( ((unsigned short)(light[0])) * ( 13 + block_count ) ) / block_count  );
+    //out_light[1]= (unsigned char)( ( ((unsigned short)(light[1])) * ( 13 + block_count ) ) / block_count  );
+	out_light[0]= ( ( (unsigned int)light[0] ) * vertex_light_div_table[ block_count ] )>> 16;
+    out_light[1]= ( ( (unsigned int)light[1] ) * vertex_light_div_table[ block_count ] )>> 16;
 }
 
 
@@ -647,70 +653,70 @@ void h_World::ShineFireLight( short x_min, short y_min, short z_min, short x_max
 
 void h_World::AddLightToBorderChunk( unsigned int X, unsigned int Y )
 {
-	h_Chunk* ch= GetChunk( X, Y );
+    h_Chunk* ch= GetChunk( X, Y );
 
-	short x= X * H_CHUNK_WIDTH;
-	short y= Y * H_CHUNK_WIDTH;
+    short x= X * H_CHUNK_WIDTH;
+    short y= Y * H_CHUNK_WIDTH;
 
-	for( short i= 0; i< H_CHUNK_WIDTH; i++ )
-		for( short j= 0; j< H_CHUNK_WIDTH; j++ )
-			for( short k= 1; k< H_CHUNK_HEIGHT-1; k++ )
-				AddSunLightSafe_r( x+i, y+j, k, ch->SunLightLevel( i, j, k ) );
+    for( short i= 0; i< H_CHUNK_WIDTH; i++ )
+        for( short j= 0; j< H_CHUNK_WIDTH; j++ )
+            for( short k= 1; k< H_CHUNK_HEIGHT-1; k++ )
+                AddSunLightSafe_r( x+i, y+j, k, ch->SunLightLevel( i, j, k ) );
 }
 
 
 void h_World::RelightWaterModifedChunksLight()
 {
-	unsigned int chunk_count= 0;
-	h_Chunk* ch;
-	short X, Y;
-	 for( unsigned int i= 1; i< ChunkNumberX()-1; i++ )
+    unsigned int chunk_count= 0;
+    h_Chunk* ch;
+    short X, Y;
+    for( unsigned int i= 1; i< ChunkNumberX()-1; i++ )
         for( unsigned int j= 1; j< ChunkNumberY()-1; j++ )
         {
-			ch= GetChunk( i, j );
-        	if( ch->need_update_light )
-        		chunk_count++;
+            ch= GetChunk( i, j );
+            if( ch->need_update_light )
+                chunk_count++;
         }
 
-	for( unsigned int i= 1; i< ChunkNumberX()-1; i++ )
+    for( unsigned int i= 1; i< ChunkNumberX()-1; i++ )
         for( unsigned int j= 1; j< ChunkNumberY()-1; j++ )
         {
-        	ch= GetChunk( i, j );
-        	if( ch->need_update_light )
-        	{
-        		if(  phys_processes_rand.Rand()  <= phys_processes_rand.max_rand/ chunk_count )//chance of one chunk water updating per one phys tick
-        		{
-        			X= i<<H_CHUNK_WIDTH_LOG2;
-        			Y= j<<H_CHUNK_WIDTH_LOG2;
-        			ch->SunRelight();//zero light in chunk and add vertical sun light
-					for( short x= 0; x< H_CHUNK_WIDTH; x++ )
-						for( short y=0; y< H_CHUNK_WIDTH; y++ )
-							for( short z= 1; z< H_CHUNK_HEIGHT-1; z++ )
-							{
-								AddSunLight_r( X+x, Y+y, z, SunLightLevel( X+x, Y+y, z) );
-							}
-					for( short x= 0; x< H_CHUNK_WIDTH; x++ )
-						for( short z= 1; z< H_CHUNK_HEIGHT-1; z++ )
-						{
-							AddSunLight_r( X+x, Y-1, z, SunLightLevel( X+x, Y-1, z) );
-							AddSunLight_r( X+x, Y+H_CHUNK_WIDTH, z, SunLightLevel( X+x, Y+H_CHUNK_WIDTH, z) );
-						}
-					for( short y= 0; y< H_CHUNK_WIDTH; y++ )
-						for( short z= 1; z< H_CHUNK_HEIGHT-1; z++ )
-						{
-							AddSunLight_r( X-1, Y+y, z, SunLightLevel( X-1, Y+y, z) );
-							AddSunLight_r( X+H_CHUNK_WIDTH, Y+y, z, SunLightLevel( X+H_CHUNK_WIDTH, Y+y, z) );
-						}
-					ch->need_update_light= false;
+            ch= GetChunk( i, j );
+            if( ch->need_update_light )
+            {
+                if(  phys_processes_rand.Rand()  <= phys_processes_rand.max_rand/ chunk_count )//chance of one chunk water updating per one phys tick
+                {
+                    X= i<<H_CHUNK_WIDTH_LOG2;
+                    Y= j<<H_CHUNK_WIDTH_LOG2;
+                    ch->SunRelight();//zero light in chunk and add vertical sun light
+                    for( short x= 0; x< H_CHUNK_WIDTH; x++ )
+                        for( short y=0; y< H_CHUNK_WIDTH; y++ )
+                            for( short z= 1; z< H_CHUNK_HEIGHT-1; z++ )
+                            {
+                                AddSunLight_r( X+x, Y+y, z, SunLightLevel( X+x, Y+y, z) );
+                            }
+                    for( short x= 0; x< H_CHUNK_WIDTH; x++ )
+                        for( short z= 1; z< H_CHUNK_HEIGHT-1; z++ )
+                        {
+                            AddSunLight_r( X+x, Y-1, z, SunLightLevel( X+x, Y-1, z) );
+                            AddSunLight_r( X+x, Y+H_CHUNK_WIDTH, z, SunLightLevel( X+x, Y+H_CHUNK_WIDTH, z) );
+                        }
+                    for( short y= 0; y< H_CHUNK_WIDTH; y++ )
+                        for( short z= 1; z< H_CHUNK_HEIGHT-1; z++ )
+                        {
+                            AddSunLight_r( X-1, Y+y, z, SunLightLevel( X-1, Y+y, z) );
+                            AddSunLight_r( X+H_CHUNK_WIDTH, Y+y, z, SunLightLevel( X+H_CHUNK_WIDTH, Y+y, z) );
+                        }
+                    ch->need_update_light= false;
 
-					emit ChunkUpdated( i, j );
-					emit ChunkUpdated( i+1, j+1 );
-					emit ChunkUpdated( i+1, j-1 );
-					emit ChunkUpdated( i-1, j+1 );
-					emit ChunkUpdated( i-1, j-1 );
-					emit ChunkWaterUpdated( i, j );
-        		}//if rand
-        	}//if need update light
+                    emit ChunkUpdated( i, j );
+                    emit ChunkUpdated( i+1, j+1 );
+                    emit ChunkUpdated( i+1, j-1 );
+                    emit ChunkUpdated( i-1, j+1 );
+                    emit ChunkUpdated( i-1, j-1 );
+                    emit ChunkWaterUpdated( i, j );
+                }//if rand
+            }//if need update light
         }
 
 }

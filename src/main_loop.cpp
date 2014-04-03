@@ -273,7 +273,7 @@ void h_MainLoop::mousePressEvent(QMouseEvent* e)
     {
         world->AddBuildEvent( build_pos_x - world->Longitude() * H_CHUNK_WIDTH,
                       build_pos_y - world->Latitude() * H_CHUNK_WIDTH,
-                      build_pos_z, SPHERICAL_BLOCK );
+                      build_pos_z, WOOD );
     }
 }
 void h_MainLoop::mouseMoveEvent(QMouseEvent* e)

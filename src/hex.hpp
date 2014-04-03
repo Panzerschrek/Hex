@@ -24,6 +24,7 @@ inline void usleep(int n){ Sleep(n/1000);}
 
 
 #define H_MAX_WATER_LEVEL 16384
+#define H_MAX_WATER_LEVEL_LOG2 14
 #define H_WATER_COMPRESSION_PER_BLOCK 64//(H_MAX_WATER_LEVEL / 1024)
 
 #define H_CHUNK_INITIAL_WATER_BLOCK_COUNT 256u

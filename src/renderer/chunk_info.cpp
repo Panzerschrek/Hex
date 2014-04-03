@@ -238,12 +238,17 @@ void r_ChunkInfo::BuildWaterSurfaceMesh()
 
                 for( unsigned int k= 0; k< 6; k++ )
                 {
+                	static const unsigned int div_table[]= { 0, 16384/1, 16384/2, 16384/3, 16384/4, 16384/5, 16384/6 };//for faster division ( but not precise )
 					if( upper_block_is_water[k] )
                         v[k].coord[2]= b->z<<7;
                     else if( nearby_block_is_air[k] )
                         v[k].coord[2]= (b->z-1)<<7;
                     else
-                        v[k].coord[2]= ((b->z-1)<<7) +  vertex_water_level[k] / ( vertex_water_block_count[k] * ( H_MAX_WATER_LEVEL / 128) );
+                    {
+                    	v[k].coord[2]= ((b->z-1)<<7) +
+                    	  ( ( vertex_water_level[k] * div_table[vertex_water_block_count[k]] ) >> ( 14 + H_MAX_WATER_LEVEL_LOG2 - 7 ) );
+                        //v[k].coord[2]= ((b->z-1)<<7) + vertex_water_level[k] / ( vertex_water_block_count[k] * ( H_MAX_WATER_LEVEL / 128) );
+                    }
                 }
                 world->GetForwardVertexLight( b->x + chunk_loaded_zone_X - 1, b->y + chunk_loaded_zone_Y - (b->x&1), b->z, v[0].light );
                 world->GetBackVertexLight( b->x + chunk_loaded_zone_X, b->y + chunk_loaded_zone_Y + 1, b->z, v[1].light );
