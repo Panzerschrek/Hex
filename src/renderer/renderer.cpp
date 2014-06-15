@@ -687,6 +687,9 @@ void r_Renderer::DrawBuildPrism()
 
     build_prism_shader.Uniform( "build_prism_pos", build_pos );
 
+   // m_Vec3 sh_cam_pos( cam_pos.x * H_SPACE_SCALE_VECTOR_X, cam_pos.y * H_SPACE_SCALE_VECTOR_Y
+    build_prism_shader.Uniform( "cam_pos", cam_pos );
+
     build_prism_vbo.Bind();
 
     build_prism_vbo.Show();
@@ -915,6 +918,9 @@ r_Renderer::r_Renderer( h_World* w ):
 
 void r_Renderer::InitGL()
 {
+	if( QGLContext::currentContext() == NULL )
+		printf( "error, null gl context" );
+
     GetGLFunctions();
     glClearDepth( 1.0f );
     glDepthFunc( GL_LEQUAL );
@@ -967,7 +973,7 @@ void r_Renderer::LoadShaders()
     if( build_prism_shader.Load( "shaders/glsl_120/build_prism_frag.glsl", "shaders/glsl_120/build_prism_vert.glsl", NULL ) )
         printf( "error, build prism shader not found\n" );
 #else
-    if( build_prism_shader.Load( "shaders/build_prism_frag.glsl", "shaders/build_prism_vert.glsl", NULL ) )
+    if( build_prism_shader.Load( "shaders/build_prism_frag.glsl", "shaders/build_prism_vert.glsl", "shaders/build_prism_geom.glsl" ) )
         printf( "error, build prism shader not found\n" );
 #endif
     build_prism_shader.SetAttribLocation( "coord", 0 );

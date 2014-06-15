@@ -66,10 +66,10 @@ public:
 	int		Uniform( const char* name, const m_Mat3& m ) const;
 	int		Uniform( const char* name, float f ) const;
 
-	/*int		Uniform( int id, m_Vec3& v) const;
+	/*int		Uniform( int id, const m_Vec3& v) const;
 	int		Uniform( int id, int i ) const;
-	int		Uniform( int id, m_Mat4& m ) const;
-	int		Uniform( int id, m_Mat3& m ) const;
+	int		Uniform( int id, const m_Mat4& m ) const;
+	int		Uniform( int id, const m_Mat3& m ) const;
     int		Uniform( int id, float f ) const;*/
 
     int Define( const char* def );

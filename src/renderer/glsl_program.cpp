@@ -338,9 +338,13 @@ void r_GLSLProgram::FindAllUniformsInShader( const char* shader_text )
     unsigned int i;
 
     uniform_str= shader_text;
-    while( uniform_str= strstr( uniform_str, "uniform " ) )
+    while( uniform_str= strstr( uniform_str, "uniform" ) )
     {
-        uniform_str+= 8;//+=strlen( "uniform " )
+        uniform_str+= 7;//+=strlen( "uniform" )
+        if( !( *uniform_str == ' ' ||  *uniform_str == '\t' || *uniform_str == '\n' ) )//if identifer with name [uniform][a-zA-Z0-9]*
+        	continue;
+		uniform_str++;
+
         while( IsCIdentiferCharacter( *uniform_str ) )//skip type of uniform
 			uniform_str++;
 		uniform_str++;

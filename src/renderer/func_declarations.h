@@ -87,8 +87,8 @@ extern PFNGLDRAWELEMENTSINSTANCEDPROC	glDrawElementsInstanced;
 
 extern PFNGLWAITSYNCPROC glWaitSync;
 extern PFNGLFENCESYNCPROC glFenceSync;
-extern GLAPI const GLubyte * APIENTRY (*glGetStringi) (GLenum name, GLuint index);
-extern GLAPI void APIENTRY  ( * glClampColor ) (GLenum target, GLenum clamp);
+//extern GLAPI const GLubyte * APIENTRY (*glGetStringi) (GLenum name, GLuint index);
+//extern GLAPI void APIENTRY  ( * glClampColor ) (GLenum target, GLenum clamp);
 //extern PFNWGLSWAPINTERVALEXTPROC wglSwapInterval;
 
 

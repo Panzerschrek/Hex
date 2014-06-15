@@ -48,7 +48,8 @@ typedef struct//40 bytes
 } r_BitmapInfoHeader;
 #pragma pack(pop)
 
+#ifndef BI_RGB
 #define BI_RGB 0
-
+#endif
 
 #endif//WIN_BITMAP_H

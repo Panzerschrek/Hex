@@ -1,12 +1,12 @@
 #include "world.hpp"
 
 
-unsigned char h_World::SunLightLevel( short x, short y, short z )
+unsigned char h_World::SunLightLevel( short x, short y, short z ) const
 {
     return GetChunk( x >> H_CHUNK_WIDTH_LOG2, y>> H_CHUNK_WIDTH_LOG2 )->
            SunLightLevel( x& (H_CHUNK_WIDTH-1), y& (H_CHUNK_WIDTH-1), z );
 }
-unsigned char h_World::FireLightLevel( short x, short y, short z )
+unsigned char h_World::FireLightLevel( short x, short y, short z ) const
 {
     return GetChunk( x >> H_CHUNK_WIDTH_LOG2, y>> H_CHUNK_WIDTH_LOG2 )->
            FireLightLevel( x& (H_CHUNK_WIDTH-1), y& (H_CHUNK_WIDTH-1), z );
@@ -178,18 +178,18 @@ void h_World::RelightBlockRemove( short x, short y, short z )
 }
 
 
-//table for calculating vertex light without division ( mast be faster, but not precise )
+//table for calculating vertex light without division ( must be faster, but not precise )
 static const unsigned int vertex_light_div_table[]=
 {
     0, 65536 * (13+1)/1, 65536 * (13+2)/2, 65536 * (13+3)/3, 65536 * (13+4)/4, 65536 * (13+5)/5, 65536 * (13+6)/6
 };
 
-void h_World::GetForwardVertexLight( short x, short y, short z, unsigned char* out_light )
+void h_World::GetForwardVertexLight( short x, short y, short z, unsigned char* out_light ) const
 {
     unsigned short block_count= 0;
     unsigned char light[2]= { 0, 0 };
     short  x1, y1;
-    h_Chunk* ch;
+    const h_Chunk* ch;
     unsigned int addr;
 
     //current block
@@ -252,12 +252,12 @@ void h_World::GetForwardVertexLight( short x, short y, short z, unsigned char* o
     out_light[1]= ( ( (unsigned int)light[1] ) * vertex_light_div_table[ block_count ] )>> 16;
 }
 
-void h_World::GetBackVertexLight( short x, short y, short z, unsigned char* out_light )
+void h_World::GetBackVertexLight( short x, short y, short z, unsigned char* out_light ) const
 {
     unsigned short block_count= 0;
     unsigned char light[2]= { 0, 0 };
     short  x1, y1;
-    h_Chunk* ch;
+    const h_Chunk* ch;
     unsigned int addr;
 
     //current block

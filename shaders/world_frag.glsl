@@ -19,6 +19,7 @@ void main()
 	vec3 l= f_light.x * sun_light_color + f_light.y * fire_light_color + ambient_light_color;	
 
 	vec4 c= texture( tex, f_tex_coord );
+
 	if( c.a < 0.5 )
 		discard;
 	//c.xyz= vec3( 0.5, 0.5, 0.5 );

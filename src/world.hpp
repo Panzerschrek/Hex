@@ -23,8 +23,10 @@ class h_World : public QObject
 
 public:
     h_Chunk* GetChunk( short X, short Y );//relative chunk coordinates
-    unsigned int ChunkNumberX();
-    unsigned int ChunkNumberY();
+    const h_Chunk* GetChunk( short X, short Y ) const;//relative chunk coordinates
+
+    unsigned int ChunkNumberX() const;
+    unsigned int ChunkNumberY() const;
 
 	void AddBuildEvent( short x, short y, short z, h_BlockType block_type );//coordinates - relative
     void AddDestroyEvent( short x, short y, short z );
@@ -34,8 +36,8 @@ public:
     void Blast( short x, short y, short z, short radius );
 
 	void SetPlayer( h_Player* p );
-    short Longitude();
-    short Latitude();
+    short Longitude() const;
+    short Latitude() const;
 
     h_World();
     ~h_World();
@@ -45,12 +47,12 @@ public:
 
 
 	//returns light level of forward-forwardright upper vertex of prism X16. coordinates - relative
-	void GetForwardVertexLight( short x, short y, short z, unsigned char* out_light );
+	void GetForwardVertexLight( short x, short y, short z, unsigned char* out_light ) const;
 	//returns light level of back-backleft upper vertex of prism X16. coordinates - relative
-	void GetBackVertexLight( short x, short y, short z, unsigned char* out_light );
+	void GetBackVertexLight( short x, short y, short z, unsigned char* out_light ) const;
 	//returns nominal value of lightmaps
-	unsigned char SunLightLevel( short x, short y, short z );
-	unsigned char FireLightLevel( short x, short y, short z );
+	unsigned char SunLightLevel( short x, short y, short z ) const;
+	unsigned char FireLightLevel( short x, short y, short z ) const;
 
 
     signals:
@@ -81,9 +83,9 @@ private:
 	void AddFireLight_r( short x, short y, short z, unsigned char l );
 	//clamp coordinates to [ 0; H_CHUNK_WIDTH * chunk_number - 1 ) for x and y
 	//and to [ 0; H_CHUNK_HEIGHT - 1 ] for z
-	short ClampX( short x );
-	short ClampY( short y );
-	short ClampZ( short z );
+	short ClampX( short x ) const;
+	short ClampY( short y ) const;
+	short ClampZ( short z ) const;
 	//safe versions of lighting methods.
 	void AddSunLightSafe_r( short x, short y, short z, unsigned char l );
 	void AddFireLightSafe_r( short x, short y, short z, unsigned char l );
@@ -139,17 +141,21 @@ private:
 };
 
 
-inline  unsigned int h_World::ChunkNumberX()
+inline  unsigned int h_World::ChunkNumberX() const
 {
     return chunk_number_x;
 }
 
-inline  unsigned int h_World::ChunkNumberY()
+inline  unsigned int h_World::ChunkNumberY() const
 {
     return chunk_number_y;
 }
 
 inline h_Chunk* h_World::GetChunk( short X, short Y )
+{
+    return chunks[ X | ( Y << H_MAX_CHUNKS_LOG2 ) ];
+}
+inline const h_Chunk* h_World::GetChunk( short X, short Y ) const
 {
     return chunks[ X | ( Y << H_MAX_CHUNKS_LOG2 ) ];
 }
@@ -170,18 +176,18 @@ inline void h_World::SetPlayer( h_Player* p )
     return &water_blocks[ water_level ];
 }*/
 
-inline short h_World::Longitude()
+inline short h_World::Longitude() const
 {
     return longitude;
 }
 
-inline short h_World::Latitude()
+inline short h_World::Latitude() const
 {
     return latitude;
 }
 
 
-inline short h_World::ClampX( short x )
+inline short h_World::ClampX( short x ) const
 {
 	if( x < 0 )
 		return 0;
@@ -191,7 +197,7 @@ inline short h_World::ClampX( short x )
 	return x;
 }
 
-inline short h_World::ClampY( short y )
+inline short h_World::ClampY( short y ) const
 {
 	if( y < 0 )
 		return 0;
@@ -200,7 +206,7 @@ inline short h_World::ClampY( short y )
 		return max_y;
 	return y;
 }
-inline short h_World::ClampZ( short z )
+inline short h_World::ClampZ( short z ) const
 {
 	if( z < 0 )
 		return 0;

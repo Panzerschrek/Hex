@@ -24,11 +24,14 @@ private:
     static unsigned char texture_table[ NUM_BLOCK_TYPES * 8 ];
     static bool texture_mode_table [ NUM_BLOCK_TYPES * 8 ]; // if( true ) - mode per block, else mode - projection
     static unsigned char texture_scale_table[ NUM_BLOCK_TYPES * 8 ];
-#ifdef OGL21
+/*#ifdef OGL21
     r_Texture texture_atlas;
-#else
+#else*/
     r_TextureArray texture_array;
-#endif
+//#endif
+
+	unsigned int texture_size;
+	bool filter_textures;
 
 };
 
@@ -50,10 +53,10 @@ inline unsigned char r_TextureManager::GetTextureScale( unsigned char tex_id )
 }
 inline void r_TextureManager::BindTextureArray( unsigned int unit )
 {
-#ifdef OGL21
+/*#ifdef OGL21
     texture_atlas.BindTexture( unit );
-#else
+#else*/
     texture_array.Bind( unit );
-#endif
+//#endif
 }
 #endif//TEXTURE_MANAGER_HPP

@@ -16,10 +16,9 @@
 #ifndef PH_H
 #define PH_H
 
+//contains main gl.h hrader
 #include <QtOpenGL/QGLWidget>
-#include <QThread>
-#include <QMutex>
-#include <QTime>
+
 
 #include "win_bitmap.h"
 #ifndef _WIN32
@@ -29,16 +28,9 @@
 #include <windows.h>
 #endif
 
-#include "glcorearb.h"
+//#include "glcorearb.h"
 #include "glext.h"
 
-#ifdef _WIN32
-//#include "wglext.h"
-#else
-//#include <X11/X.h>
-//#include <X11/keysym.h>
-//#include "glxext.h"
-#endif
 
 #include "func_declarations.h"
 #include <stdio.h>
@@ -47,15 +39,5 @@
 #define MACRO_TO_STR(X) #X
 #define MACRO_VALUE_TO_STR(X) MACRO_TO_STR(X)
 
-
-
-//#define max( y, x )  ((x)>(y) ? (x) : (y) )
-//#define min( y, x )  ((x)>(y) ? (y) : (x) )
-
-
-#define R_MAX_SUB 32
-#define R_MAX_SUB_LOG2 5
-#define R_MAX_KIND 32
-#define R_MAX_KIND_LOG2 5
 
 #endif//PH_H

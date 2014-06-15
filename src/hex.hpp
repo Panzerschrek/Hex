@@ -4,6 +4,9 @@
 
 #include <QtGlobal>
 #include <QObject>
+#include <QThread>
+#include <QMutex>
+#include <QTime>
 #include <math.h>
 #include <stdio.h>
 
@@ -136,7 +139,7 @@ unsigned char
     TRANSPARENCY_SOLID= 	0, //rock, sand, wood, other blocks with non-alpha textures
     TRANSPARENCY_GLASS= 	1, //glass and other syntetic transparent materials
     TRANSPARENCY_GREENERY = 1, //greenery, leafs, grass
-    TRANSPARENCY_GAS = 		1, // visibly gas ( smoke, plasma, etc )
+    TRANSPARENCY_GAS = 		1, //visibly gas ( smoke, plasma, etc )
     TRANSPARENCY_LIQUID= 	3, //water, oil, other liquids
     TRANSPARENCY_AIR = 		3, //air transparency
 };

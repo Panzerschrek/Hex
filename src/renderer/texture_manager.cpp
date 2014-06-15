@@ -1,6 +1,7 @@
 #ifndef TEXTURE_MANAGER_CPP
 #define TEXTURE_MANAGER_CPP
 #include "texture_manager.hpp"
+#include "rendering_constants.hpp"
 #include "../block.hpp"
 #include <iostream>
 #include <fstream>
@@ -11,59 +12,43 @@ unsigned char r_TextureManager::texture_scale_table[ NUM_BLOCK_TYPES * 8 ];
 
 void r_TextureManager::InitTextureTable()
 {
-	unsigned int i;
+    unsigned int i;
     for( i= 0; i< NUM_BLOCK_TYPES * 8; i++ )
         texture_table[i]= 0;
-	for( i= 0; i< NUM_BLOCK_TYPES * 8; i++ )
-		texture_mode_table[i]= false;
-	for( i= 0; i< NUM_BLOCK_TYPES * 8; i++ )
-		texture_scale_table[i]= H_MAX_TEXTURE_SCALE;
+    for( i= 0; i< NUM_BLOCK_TYPES * 8; i++ )
+        texture_mode_table[i]= false;
+    for( i= 0; i< NUM_BLOCK_TYPES * 8; i++ )
+        texture_scale_table[i]= H_MAX_TEXTURE_SCALE;
+
+
 }
 
 r_TextureManager::r_TextureManager()
 {
     InitTextureTable();
-}
 
+	texture_size= R_MAX_TEXTURE_RESOLUTION/4;
+    filter_textures= false;
+}
 
 void r_TextureManager::LoadTextures()
 {
-    int max_tex_size, atlas_size;
-    float max_lod;
-
     unsigned int tex_id= 0;
-    r_TextureFile tf;
+    r_TextureFile tf[2];
     char str[256];
 
-    glGetIntegerv( GL_MAX_TEXTURE_SIZE, &max_tex_size );
+    tf[1].data= new unsigned char[ R_MAX_TEXTURE_RESOLUTION * R_MAX_TEXTURE_RESOLUTION * 4 ];
 
-
-
-#ifdef OGL21
-    max_lod= 8.0f;
-    atlas_size= 4096;//min( 256 * 16, max_tex_size );
-    texture_atlas.Create();
-    texture_atlas.TextureData( atlas_size, atlas_size, GL_UNSIGNED_BYTE, GL_RGBA, 32, NULL );
-    texture_atlas.SetFiltration( GL_NEAREST_MIPMAP_LINEAR, GL_NEAREST );
-   	//texture_atlas.SetFiltration( GL_NEAREST, GL_NEAREST );
-    texture_atlas.MoveOnGPU();
-    texture_atlas.SetMaxLod( max_lod );
-
-
-#else
-    texture_array.TextureData( 256, 256, 32, GL_UNSIGNED_BYTE, GL_RGBA, 32, NULL );
+    texture_array.TextureData( texture_size, texture_size, 32, GL_UNSIGNED_BYTE, GL_RGBA, 32, NULL );
     texture_array.MoveOnGPU();
-#endif
 
-    if( ! rLoadTextureTGA( &tf, "textures/null.tga" ) )
+    if( ! rLoadTextureTGA( &tf[0], "textures/null.tga" ) )
     {
-#ifdef OGL21
-        texture_atlas.TexSubData2GPU( (tex_id%16)*256, (tex_id/16)*256, 256, 256, tf.data );
-        delete[] tf.data;
-#else
-        texture_array.TextureLayer( tex_id, tf.data );
-        delete[] tf.data;
-#endif
+        int s= 0, d=1;
+        for( int i= R_MAX_TEXTURE_RESOLUTION; i > texture_size; i>>=1, s^=1, d^=1 )
+            rRGBAGetMip( &tf[s], &tf[d] );
+        texture_array.TextureLayer( tex_id, tf[s].data );
+        delete[] tf[0].data;
     }
 
     std::ifstream f( "textures/textures.cfg" );
@@ -77,20 +62,17 @@ void r_TextureManager::LoadTextures()
     while( ! f.eof() )
     {
         f>>str;
-        if( rLoadTextureTGA( &tf, str ) )
-        {
+        if( rLoadTextureTGA( &tf[0], str ) )
             printf( "error, texture \"%s\" not fund\n", str );
-        }
         else
         {
             tex_id++;
-#ifdef OGL21
-            texture_atlas.TexSubData2GPU( (tex_id%16)*256, (tex_id/16)*256, 256, 256, tf.data );
-            delete[] tf.data;
-#else
-            texture_array.TextureLayer( tex_id, tf.data );
-            delete[] tf.data;
-#endif
+
+            int s= 0, d=1;
+            for( int i= R_MAX_TEXTURE_RESOLUTION; i > texture_size; i>>=1, s^=1, d^=1 )
+                rRGBAGetMip( &tf[s], &tf[d] );
+            texture_array.TextureLayer( tex_id, tf[s].data );
+            delete[] tf[0].data;
 
         }
 
@@ -139,27 +121,25 @@ void r_TextureManager::LoadTextures()
             }
             else if( ! strcmp( str, "per_block" ) )
             {
-            	texture_mode_table[ tex_id ]= true;
+                texture_mode_table[ tex_id ]= true;
             }
-             else if( ! strcmp( str, "scale" ) )
+            else if( ! strcmp( str, "scale" ) )
             {
-            	f>>str;
-            	texture_scale_table[ tex_id ]= min( max( atoi(str), 1 ), H_MAX_TEXTURE_SCALE * H_MAX_TEXTURE_SCALE );
+                f>>str;
+                texture_scale_table[ tex_id ]= min( max( atoi(str), 1 ), H_MAX_TEXTURE_SCALE * H_MAX_TEXTURE_SCALE );
             }
             else
-            {
                 printf( "warning, unknown texture property: \"%s\"", str );
-            }
-        }
+        }//while ! eof
 
-    }
+    }//while ! eof
 
-    #ifndef OGL21
-    texture_array.SetFiltration( GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR );
-    //texture_array.SetFiltration( GL_NEAREST_MIPMAP_LINEAR, GL_NEAREST );
+	delete[] tf[1].data;
+	if( filter_textures )
+    	texture_array.SetFiltration( GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR );
+	else
+		texture_array.SetFiltration( GL_NEAREST_MIPMAP_LINEAR, GL_NEAREST );
     texture_array.GenerateMipmap();
-    #endif
-
 }
 
 #endif//TEXTURE_MANAGER_CPP

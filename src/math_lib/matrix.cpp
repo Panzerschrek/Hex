@@ -21,6 +21,12 @@
 #include "matrix.h"
 #include "m_math.h"
 
+//for mmx, sse, sse2
+//#include <mmintrin.h>
+//#include <xmmintrin.h>
+//#include <emmintrin.h>
+//#include <mmintrin.h>
+
 void m_Mat4::Transpose()
 {
     float tmp;
@@ -108,6 +114,14 @@ m_Mat4& m_Mat4::operator*=( m_Mat4& m )
 
 m_Vec3	m_Mat4::operator*( m_Vec3& v )
 {
+	/*float* vp= &v.x;
+	float* mp= this->value;
+	asm( "mulps %%xmm1, %%xmm0"
+		: //output
+		 : "m"(vp), "m"(mp)//input
+		 : "%eax"//registers
+		 );*/
+
     m_Vec3 r;
     r.x= value[0] * v.x + value[1] * v.y + value[2] * v.z + value[3];
     r.y= value[4] * v.x + value[5] * v.y + value[6] * v.z + value[7];

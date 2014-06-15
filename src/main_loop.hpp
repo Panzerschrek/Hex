@@ -1,11 +1,7 @@
 #ifndef MAIN_LOOP_HPP
 #define MAIN_LOOP_HPP
 
-
-#include <QApplication>
-#include <QDesktopWidget>
 #include <QtOpenGL>
-#include <QObject>
 
 #include "renderer/renderer.hpp"
 #include "player.hpp"

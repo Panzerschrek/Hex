@@ -1,7 +1,6 @@
 #ifndef RENDERER_H
 #define RENDERER_H
 
-#include <QObject>
 #include "texture.h"
 #include "func_declarations.h"
 #include "polygon_buffer.h"
@@ -28,7 +27,7 @@ struct r_WorldVertex
 struct r_WaterVertex
 {
 	qint16 coord[3];
-	unsigned char light[2];
+	quint8 light[2];
 };//8b struct
 
 #pragma pack( pop )

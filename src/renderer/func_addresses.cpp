@@ -172,7 +172,7 @@ void GetGLFunctions()
 
     glDrawElementsInstanced= ( PFNGLDRAWELEMENTSINSTANCEDPROC )	GET_PROC_ADDRESS( glDrawElementsInstanced );
 
-    glGetStringi= (GLAPI const GLubyte * APIENTRY (*) (GLenum name, GLuint index))GET_PROC_ADDRESS( glGetStringi );
+   // glGetStringi= (GLAPI const GLubyte * APIENTRY (*) (GLenum name, GLuint index))GET_PROC_ADDRESS( glGetStringi );
 
     glWaitSync= (PFNGLWAITSYNCPROC)    GET_PROC_ADDRESS( glWaitSync );
     glFenceSync= (PFNGLFENCESYNCPROC) GET_PROC_ADDRESS( glFenceSync );

@@ -1,7 +1,6 @@
 #ifndef WORLD_CPP
 #define WORLD_CPP
 
-#include <QTime>
 #include "world.hpp"
 #include "player.hpp"
 #include "math_lib/m_math.h"
@@ -668,6 +667,6 @@ h_World::~h_World()
     for( unsigned int x= 0; x< chunk_number_x; x++ )
         for( unsigned int y= 0; y< chunk_number_y; y++ )
             delete chunks[ x + y * chunk_number_x ];
-    delete[] chunks;
+   // delete[] chunks;
 }
 #endif//WORLD_CPP

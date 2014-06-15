@@ -35,8 +35,8 @@ public:
     bool IsEdgeChunk();
 
     unsigned int GetWaterColumnHeight( short x, short y, short z );
-    unsigned char SunLightLevel( short x, short y, short z );
-    unsigned char FireLightLevel( short x, short y, short z );
+    unsigned char SunLightLevel( short x, short y, short z ) const;
+    unsigned char FireLightLevel( short x, short y, short z ) const;
 
 
 
@@ -141,14 +141,14 @@ inline void h_Chunk::SetBlockAndTransparency( short x, short y, short z, h_Block
     blocks[addr]=b;
 }
 
-inline unsigned char h_Chunk::SunLightLevel( short x, short y, short z )
+inline unsigned char h_Chunk::SunLightLevel( short x, short y, short z ) const
 {
     return sun_light_map[  z |
                            ( y << H_CHUNK_HEIGHT_LOG2 ) |
                            ( x << ( H_CHUNK_HEIGHT_LOG2 + H_CHUNK_WIDTH_LOG2 ) ) ];
 }
 
-inline unsigned char h_Chunk::FireLightLevel( short x, short y, short z )
+inline unsigned char h_Chunk::FireLightLevel( short x, short y, short z ) const
 {
     return fire_light_map[  z |
                             ( y << H_CHUNK_HEIGHT_LOG2 ) |
