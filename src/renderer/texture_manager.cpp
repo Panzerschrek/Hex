@@ -6,6 +6,12 @@
 #include <iostream>
 #include <fstream>
 
+
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonArray>
+#include <QFile>
+
 unsigned char r_TextureManager::texture_table[ NUM_BLOCK_TYPES * 8 ];
 bool r_TextureManager::texture_mode_table[ NUM_BLOCK_TYPES * 8 ];
 unsigned char r_TextureManager::texture_scale_table[ NUM_BLOCK_TYPES * 8 ];
@@ -27,7 +33,7 @@ r_TextureManager::r_TextureManager()
 {
     InitTextureTable();
 
-	texture_size= R_MAX_TEXTURE_RESOLUTION/4;
+    texture_size= R_MAX_TEXTURE_RESOLUTION/4;
     filter_textures= false;
 }
 
@@ -51,94 +57,91 @@ void r_TextureManager::LoadTextures()
         delete[] tf[0].data;
     }
 
-    std::ifstream f( "textures/textures.cfg" );
-    if( f.fail() )
+
+    const char* config_file_name=  "textures/textures.json";
+    QString fn( config_file_name );
+    QFile f( fn );
+    if( !f.open( QIODevice::ReadOnly ) )
     {
-        printf( "error, file \"textures/textures.cfg\" not found\n" );
-        return;
+        printf( "fatal error, file \"%s\" not found\n", config_file_name );
+    }
+    QByteArray ba= f.readAll();
+
+    QJsonParseError err;
+    QJsonDocument doc= QJsonDocument::fromJson( ba, &err );
+
+    if( doc.isArray() )
+    {
+        QJsonArray arr= doc.array();
+
+        //for each texture
+        for( int i= 0; i< arr.size(); i++ )
+        {
+            QJsonObject obj= arr.at(i).toObject();
+            QJsonValue val;
+            val= obj[ "filename" ];
+
+            if( rLoadTextureTGA( &tf[0], obj[ "filename" ].toString().toLocal8Bit().data() ) )
+                printf( "error, texture \"%s\" not fund\n", str );
+            else
+            {
+                tex_id++;
+                int s= 0, d=1;
+                for( int i= R_MAX_TEXTURE_RESOLUTION; i > texture_size; i>>=1, s^=1, d^=1 )
+                    rRGBAGetMip( &tf[s], &tf[d] );
+                texture_array.TextureLayer( tex_id, tf[s].data );
+                delete[] tf[0].data;
+
+            }
+
+            val= obj[ "scale" ];
+            if( val.isDouble() )
+                texture_scale_table[ tex_id ]= min( max( val.toInt(), 1 ), H_MAX_TEXTURE_SCALE * H_MAX_TEXTURE_SCALE );
+
+			val= obj[ "perblock" ];
+			if( val.isBool() )
+				texture_mode_table[ tex_id ]= val.toBool();
+
+            QJsonArray blocks= obj[ "blocks" ].toArray();
+
+            //for each block for texture
+            for( int j= 0; j< blocks.size(); j++ )
+            {
+                QJsonObject block_obj= blocks.at(j).toObject();
+
+                QString blockname, blockside;
+
+                val= block_obj[ "blockname" ];
+                blockname= val.toString();
+
+                val= block_obj[ "blockside" ];
+                blockside= val.toString();
+
+
+                h_BlockType t= h_Block::GetGetBlockTypeByName( blockname.toLocal8Bit().data() );
+
+                if( ! strcmp( blockside.toLocal8Bit().data(), "universal" )  )
+                    for( int k= 0; k< 8; k++ )
+                        texture_table[ (t<<3) | k ]= tex_id;
+
+                h_Direction d= h_Block::GetDirectionByName( blockside.toLocal8Bit().data() );
+                if( d != DIRECTION_UNKNOWN && t!= BLOCK_UNKNOWN  )
+                    texture_table[ (t<<3) |d ]= tex_id;
+
+            }//for blocks
+
+        }//for textures
+    }//if json array
+    else
+    {
+        printf( "invalid JSON file: \"%s\"\n", config_file_name );
     }
 
-
-    while( ! f.eof() )
-    {
-        f>>str;
-        if( rLoadTextureTGA( &tf[0], str ) )
-            printf( "error, texture \"%s\" not fund\n", str );
-        else
-        {
-            tex_id++;
-
-            int s= 0, d=1;
-            for( int i= R_MAX_TEXTURE_RESOLUTION; i > texture_size; i>>=1, s^=1, d^=1 )
-                rRGBAGetMip( &tf[s], &tf[d] );
-            texture_array.TextureLayer( tex_id, tf[s].data );
-            delete[] tf[0].data;
-
-        }
-
-        f>>str;
-        if( strcmp(str, "{" ) )
-        {
-            printf( "texture config parsing error\n" );
-            return;
-        }
-
-        while( ! f.eof() )
-        {
-            f>>str;
-            if( str[0] == '}' && str[1] == 0 )
-                break;
-
-            if( !strcmp( str, "blocks" ) )
-            {
-                f>>str;
-                if( strcmp(str, "{" ) )
-                {
-                    printf( "texture config parsing error - blocks\n" );
-                    return;
-                }
-                while( ! f.eof() )
-                {
-                    f>> str;
-                    if( str[0] == '}' && str[1] == 0 )
-                        break;
-
-                    h_BlockType t= h_Block::GetGetBlockTypeByName( str );
-                    // if( t!= BLOCK_UNKNOWN )
-                    //   texture_table[ t<<3 ] = tex_id;
-
-                    f>>str;
-                    if( !strcmp ( str, "universal" ) )
-                    {
-                        for( int k= 0; k< 8; k++ )
-                            texture_table[ (t<<3) | k ]= tex_id;
-                    }
-
-                    h_Direction d= h_Block::GetDirectionByName( str );
-                    if( d != DIRECTION_UNKNOWN && t!= BLOCK_UNKNOWN  )
-                        texture_table[ (t<<3) |d ]= tex_id;
-                }
-            }
-            else if( ! strcmp( str, "per_block" ) )
-            {
-                texture_mode_table[ tex_id ]= true;
-            }
-            else if( ! strcmp( str, "scale" ) )
-            {
-                f>>str;
-                texture_scale_table[ tex_id ]= min( max( atoi(str), 1 ), H_MAX_TEXTURE_SCALE * H_MAX_TEXTURE_SCALE );
-            }
-            else
-                printf( "warning, unknown texture property: \"%s\"", str );
-        }//while ! eof
-
-    }//while ! eof
-
-	delete[] tf[1].data;
-	if( filter_textures )
-    	texture_array.SetFiltration( GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR );
-	else
-		texture_array.SetFiltration( GL_NEAREST_MIPMAP_LINEAR, GL_NEAREST );
+    delete[] tf[1].data;
+    if( filter_textures )
+        texture_array.SetFiltration( GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR );
+    else
+        texture_array.SetFiltration( GL_NEAREST_MIPMAP_LINEAR, GL_NEAREST );
     texture_array.GenerateMipmap();
 }
 

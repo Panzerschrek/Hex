@@ -1,0 +1,145 @@
+[
+
+{
+ 	"filename": "textures/grass2.tga",
+	"scale": 3,
+	"blocks":
+	[
+		{
+			"blockname": "grass",
+			"blockside": "up"
+		}
+	]
+},
+
+{
+ 	"filename": "textures/leaves2.tga",
+	"scale": 4,
+	"blocks":
+	[
+		{
+			"blockname": "foliage",
+			"blockside": "universal"
+		}
+	]
+
+},
+
+{
+ 	"filename": "textures/stone.tga",
+	"scale": 3,
+	"blocks":
+	[
+		{
+			"blockname": "stone",
+			"blockside": "universal"
+		}
+	]
+
+},
+
+{
+ 	"filename": "textures/fire.tga",
+	"scale": 2,
+	"blocks":
+	[
+		{
+			"blockname": "fire",
+			"blockside": "universal"
+		}
+	]
+
+},
+
+{
+ 	"filename": "textures/wood.tga",
+	"scale": 4,
+	"blocks":
+	[
+		{
+			"blockname": "wood",
+			"blockside": "forward"
+		},
+		{
+			"blockname": "wood",
+			"blockside": "back"
+		},
+		{
+			"blockname": "wood",
+			"blockside": "forward_right"
+		},
+		{
+			"blockname": "wood",
+			"blockside": "back_right"
+		},
+		{
+			"blockname": "wood",
+			"blockside": "forward_left"
+		},
+		{
+			"blockname": "wood",
+			"blockside": "back_left"
+		}
+	]
+
+},
+
+{
+ 	"filename": "textures/soil.tga",
+	"scale": 4,
+	"blocks":
+	[
+		{
+			"blockname": "soil",
+			"blockside": "universal"
+		},
+		{
+			"blockname": "grass",
+			"blockside": "back"
+		},
+		{
+			"blockname": "grass",
+			"blockside": "forward"
+		},
+		{
+			"blockname": "grass",
+			"blockside": "forward_right"
+		},
+		{
+			"blockname": "grass",
+			"blockside": "back_right"
+		},
+		{
+			"blockname": "grass",
+			"blockside": "forward_left"
+		},
+		{
+			"blockname": "grass",
+			"blockside": "back_left"
+		},
+		{
+			"blockname": "grass",
+			"blockside": "down"
+		}
+		
+	]
+},
+
+{
+ 	"filename": "textures/wood-end.tga",
+	"perblock": true,
+	"blocks":
+	[
+		{
+			"blockname": "wood",
+			"blockside": "up"
+		},
+		{
+			"blockname": "wood",
+			"blockside": "down"
+		}
+	]
+
+}
+
+]

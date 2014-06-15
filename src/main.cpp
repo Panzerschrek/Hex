@@ -10,6 +10,7 @@
 
 int main( int argc, char* argv[] )
 {
+
     QApplication hex(argc, argv);
     printf( "hex not first version\n" );
 	h_MainLoop::Start();
