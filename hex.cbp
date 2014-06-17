@@ -4,75 +4,47 @@
 	<Project>
 		<Option title="hex" />
 		<Option pch_mode="2" />
-		<Option compiler="gcc" />
+		<Option compiler="mingw_qt_53" />
 		<Build>
 			<Target title="Release">
 				<Option output="hex_r" prefix_auto="1" extension_auto="1" />
 				<Option object_output="obj\Release\" />
 				<Option type="1" />
-				<Option compiler="gcc" />
+				<Option compiler="mingw_qt_53" />
 				<Compiler>
 					<Add option="-march=pentium4" />
 					<Add option="-O3" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
-					<Add option="--stack,16777216" />
 				</Linker>
 			</Target>
 			<Target title="Debug">
 				<Option output="hex_d" prefix_auto="1" extension_auto="1" />
 				<Option object_output="obj\Debug\" />
 				<Option type="1" />
-				<Option compiler="gcc" />
+				<Option compiler="mingw_qt_53" />
 				<Compiler>
 					<Add option="-g" />
 				</Compiler>
-			</Target>
-			<Target title="Release_Qt5.3">
-				<Option output="hex_r_Qt5.3" prefix_auto="1" extension_auto="1" />
-				<Option object_output="obj\Release_Qt5.3\" />
-				<Option type="1" />
-				<Option compiler="mingw_qt_53" />
-				<Option projectCompilerOptionsRelation="1" />
-				<Option projectLinkerOptionsRelation="1" />
-				<Option projectIncludeDirsRelation="1" />
-				<Option projectLibDirsRelation="1" />
-				<Compiler>
-					<Add option="-march=pentium4" />
-					<Add option="-O3" />
-					<Add option="-std=c++0x" />
-					<Add directory="C:\Qt5.3.0\5.3\mingw482_32\include" />
-					<Add directory="C:\Qt5.3.0\5.3\mingw482_32\include\QtCore" />
-					<Add directory="C:\Qt5.3.0\5.3\mingw482_32\include\QtGui" />
-					<Add directory="C:\Qt5.3.0\5.3\mingw482_32\include\QtOpenGL" />
-					<Add directory="C:\Qt5.3.0\5.3\mingw482_32\include\QtWidgets" />
-				</Compiler>
-				<Linker>
-					<Add option="-s" />
-					<Add library="libQt5Core.a" />
-					<Add library="libQt5Gui.a" />
-					<Add library="libQt5OpenGL.a" />
-					<Add library="C:\Program Files\CodeBlocks10\MinGW\lib\libopengl32.a" />
-					<Add library="libQt5Widgets.a" />
-					<Add directory="C:\Qt5.3.0\5.3\mingw482_32\lib" />
-				</Linker>
 			</Target>
 		</Build>
 		<Compiler>
 			<Add option="-march=pentium4" />
 			<Add option="-std=c++0x" />
-			<Add directory="%QTPATH%\include" />
-			<Add directory="%QTPATH%\include\QtCore" />
-			<Add directory="%QTPATH%\include\QtGui" />
-			<Add directory="%QTPATH%\include\QtOpenGL" />
+			<Add directory="C:\Qt5.3.0\5.3\mingw482_32\include" />
+			<Add directory="C:\Qt5.3.0\5.3\mingw482_32\include\QtCore" />
+			<Add directory="C:\Qt5.3.0\5.3\mingw482_32\include\QtGui" />
+			<Add directory="C:\Qt5.3.0\5.3\mingw482_32\include\QtOpenGL" />
+			<Add directory="C:\Qt5.3.0\5.3\mingw482_32\include\QtWidgets" />
 		</Compiler>
 		<Linker>
 			<Add library="C:\Program Files\CodeBlocks10\MinGW\lib\libopengl32.a" />
-			<Add library="libQtCore4" />
-			<Add library="libQtGui4" />
-			<Add library="libQtOpenGL4" />
-			<Add directory="%QTPATH%\lib" />
+			<Add library="libQt5Core" />
+			<Add library="libQt5Gui" />
+			<Add library="libQt5OpenGL" />
+			<Add library="libQt5Widgets" />
+			<Add directory="C:\Qt5.3.0\5.3\mingw482_32\lib" />
 		</Linker>
 		<Unit filename="src\block.cpp" />
 		<Unit filename="src\block.hpp" />
@@ -99,7 +71,6 @@
 		<Unit filename="src\math_lib\vec.h" />
 		<Unit filename="src\moc\moc_main_loop.cpp" />
 		<Unit filename="src\moc\moc_renderer.cpp" />
-		<Unit filename="src\moc\moc_thread.cpp" />
 		<Unit filename="src\moc\moc_world.cpp" />
 		<Unit filename="src\player.cpp" />
 		<Unit filename="src\player.hpp" />
@@ -130,7 +101,6 @@
 		<Unit filename="src\res.rc">
 			<Option compilerVar="WINDRES" />
 			<Option target="Release" />
-			<Option target="Release_Qt5.3" />
 		</Unit>
 		<Unit filename="src\thread.hpp" />
 		<Unit filename="src\world.cpp" />

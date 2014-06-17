@@ -21,7 +21,8 @@ void h_MainLoop::Start()
 }
 
 h_MainLoop::h_MainLoop(QGLFormat format ):
-    QGLWidget(format, NULL),
+    QGLWidget(format, NULL ),
+    settings( "config.ini", QSettings::IniFormat ),
     cam_pos( 0.0f, 0.0f, 67.0f ),
     cam_ang( 0.0f, 0.0f, 0.0f ),
     startup_time(0,0,0,0),
@@ -32,18 +33,18 @@ h_MainLoop::h_MainLoop(QGLFormat format ):
     player= new h_Player( world );
     world->SetPlayer( player );
 
-    window= new QWidget( NULL, 0);
-    layout= new QVBoxLayout();
+    window= new QMainWindow( NULL, 0 );
 
-    window->setLayout(layout);
     window->move( 0, 0 );
     window->setWindowTitle( "Hex" );
-    layout->addWidget( (QWidget*)this, 0 );
-    layout->setMargin(0);
+    window->setWindowIcon( QIcon( QString( "src/hex-logo.ico" ) ) );
 
+    window->setCentralWidget( this );
+    window->setContentsMargins( 0, 0, 0, 0 );
 
-    screen_height=768;
-    screen_width= 1024;
+	screen_height= min( max( settings.value( "screen_height", 640 ).toInt(), H_MIN_SCREEN_WIDTH  ), H_MAX_SCREEN_WIDTH );
+    screen_width=  min( max( settings.value( "screen_width", 480 ).toInt(), H_MIN_SCREEN_HEIGHT ), H_MAX_SCREEN_HEIGHT );
+
     this->setFixedSize( screen_width, screen_height );
     renderer->SetViewportSize( screen_width, screen_height );
 
@@ -54,8 +55,11 @@ h_MainLoop::h_MainLoop(QGLFormat format ):
     window->show();
     window->setFixedSize( window->size() );
 
+    this->setAutoFillBackground( false );
+
     for( int i= 0; i< 512; i++ )
         keys[i]= false;
+	//window->setWindowState( Qt::WindowFullScreen );
 }
 
 void h_MainLoop::GetBuildPos()
@@ -106,8 +110,8 @@ void h_MainLoop::GetBuildPos()
     m_Vec3 discret_build_pos( ( float( build_pos_x + 0.3333333333f ) ) * H_SPACE_SCALE_VECTOR_X,
                               float( build_pos_y ) - 0.5f * float(build_pos_x&1) + 0.5f,
                               float( build_pos_z ) - 1.0f );
-	if( build_dir == DIRECTION_UNKNOWN )
-		discret_build_pos.z= -1.0f;
+    if( build_dir == DIRECTION_UNKNOWN )
+        discret_build_pos.z= -1.0f;
 
     renderer->SetBuildPos( discret_build_pos );
 }
@@ -205,6 +209,9 @@ void h_MainLoop::paintGL()
     GetBuildPos();
     player->Unlock();
     renderer->Draw();
+
+    //usleep( 1000000 );
+
     glFlush();
     update();
 }
@@ -217,8 +224,8 @@ void h_MainLoop::mousePressEvent(QMouseEvent* e)
 {
     if( e->button() == Qt::RightButton )
         world->AddBuildEvent( build_pos_x - world->Longitude() * H_CHUNK_WIDTH,
-                      build_pos_y - world->Latitude() * H_CHUNK_WIDTH,
-                      build_pos_z, FIRE );
+                              build_pos_y - world->Latitude() * H_CHUNK_WIDTH,
+                              build_pos_z, FIRE );
     else if( e->button() == Qt::LeftButton )
     {
         short new_build_pos[]= { build_pos_x, build_pos_y, build_pos_z };
@@ -265,15 +272,15 @@ void h_MainLoop::mousePressEvent(QMouseEvent* e)
                           new_build_pos[1] - world->Latitude() * H_CHUNK_WIDTH,
                           new_build_pos[2], 4 );
         else
-        world->AddDestroyEvent( new_build_pos[0] - world->Longitude() * H_CHUNK_WIDTH,
-                        new_build_pos[1] - world->Latitude() * H_CHUNK_WIDTH,
-                        new_build_pos[2] );
+            world->AddDestroyEvent( new_build_pos[0] - world->Longitude() * H_CHUNK_WIDTH,
+                                    new_build_pos[1] - world->Latitude() * H_CHUNK_WIDTH,
+                                    new_build_pos[2] );
     }
     else if( e->button() == Qt::MiddleButton )
     {
         world->AddBuildEvent( build_pos_x - world->Longitude() * H_CHUNK_WIDTH,
-                      build_pos_y - world->Latitude() * H_CHUNK_WIDTH,
-                      build_pos_z, SPHERICAL_BLOCK );
+                              build_pos_y - world->Latitude() * H_CHUNK_WIDTH,
+                              build_pos_z, SPHERICAL_BLOCK );
     }
 }
 void h_MainLoop::mouseMoveEvent(QMouseEvent* e)

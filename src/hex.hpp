@@ -7,6 +7,7 @@
 #include <QThread>
 #include <QMutex>
 #include <QTime>
+#include <QSettings>
 #include <math.h>
 #include <stdio.h>
 
@@ -55,6 +56,11 @@ inline void usleep(int n){ Sleep(n/1000);}
 
 #define H_MAX_SUN_LIGHT 8
 #define H_MAX_FIRE_LIGHT 13
+
+#define H_MAX_SCREEN_WIDTH 4096
+#define H_MIN_SCREEN_WIDTH 320
+#define H_MAX_SCREEN_HEIGHT 4096
+#define H_MIN_SCREEN_HEIGHT 240
 
 #include "math_lib/minmax.hpp"
 

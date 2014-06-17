@@ -246,6 +246,9 @@ class r_Renderer : public QObject
 	QMutex host_data_mutex, gpu_data_mutex;
 	QTime startup_time;
 
+	//config variables here:
+	QSettings settings;
+
 };
 
 

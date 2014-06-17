@@ -207,13 +207,6 @@ void h_Player::Move( m_Vec3 delta )
     count= phys_mesh.block_sides.Size();
     for( unsigned int k= 0; k< count; k++, side++ )
     {
-        /*float delta[2]=  { new_pos.z - side->z, new_pos.z + H_PLAYER_HEIGHT - side->z };
-        if( ( delta[0] < 1.0f && delta[0] > 0.0f ) || ( delta[1] < 1.0f && delta[1] > 0.0f ) )
-        {
-            m_Vec2 collide_pos= side->CollideWithCirlce( new_pos.xy(), H_PLAYER_RADIUS );
-            new_pos.x= collide_pos.x;
-            new_pos.y= collide_pos.y;
-        }*/
         if( ( side->z > new_pos.z && side->z < new_pos.z + H_PLAYER_HEIGHT ) ||
                 ( side->z + 1.0f > new_pos.z && side->z + 1.0f < new_pos.z + H_PLAYER_HEIGHT ) )
         {

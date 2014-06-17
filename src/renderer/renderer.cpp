@@ -25,38 +25,38 @@ void r_Renderer::UpdateChunkWater(unsigned short X,  unsigned short Y )
 
 void r_Renderer::FullUpdate()
 {
-	if( frame_count == 0 )
+    if( frame_count == 0 )
         return;
-  	for( unsigned int i= 0; i< world->ChunkNumberX(); i++ )
-  		for( unsigned int j= 0; j< world->ChunkNumberY(); j++ )
-  		{
-  			r_ChunkInfo* ch= &chunk_info[ i + j * world->ChunkNumberX() ];
-			ch->chunk_data_updated= true;
-			ch->chunk_water_data_updated= true;
-			ch->chunk= world->GetChunk( i, j );
-			if( j!= 0 )
-			{
-				ch->chunk_back= world->GetChunk( i, j-1 );
-				if( i!= world->ChunkNumberX() - 1 )
-					ch->chunk_back_right= world->GetChunk( i + 1, j - 1 );
-				else
-					ch->chunk_back_right= NULL;
-			}
-			else
-				ch->chunk_back_right= ch->chunk_back= NULL;
+    for( unsigned int i= 0; i< world->ChunkNumberX(); i++ )
+        for( unsigned int j= 0; j< world->ChunkNumberY(); j++ )
+        {
+            r_ChunkInfo* ch= &chunk_info[ i + j * world->ChunkNumberX() ];
+            ch->chunk_data_updated= true;
+            ch->chunk_water_data_updated= true;
+            ch->chunk= world->GetChunk( i, j );
+            if( j!= 0 )
+            {
+                ch->chunk_back= world->GetChunk( i, j-1 );
+                if( i!= world->ChunkNumberX() - 1 )
+                    ch->chunk_back_right= world->GetChunk( i + 1, j - 1 );
+                else
+                    ch->chunk_back_right= NULL;
+            }
+            else
+                ch->chunk_back_right= ch->chunk_back= NULL;
 
-			if( j!= world->ChunkNumberY() - 1 )
-				ch->chunk_front= world->GetChunk( i, j+1 );
-			else
-				ch->chunk_front= NULL;
+            if( j!= world->ChunkNumberY() - 1 )
+                ch->chunk_front= world->GetChunk( i, j+1 );
+            else
+                ch->chunk_front= NULL;
 
-			if( i!= world->ChunkNumberX() - 1 )
-				ch->chunk_right= world->GetChunk( i+1, j );
-			else
-				ch->chunk_right= NULL;
+            if( i!= world->ChunkNumberX() - 1 )
+                ch->chunk_right= world->GetChunk( i+1, j );
+            else
+                ch->chunk_right= NULL;
 
 
-			/*if( i < world->ChunkNumberX() - 1 )
+            /*if( i < world->ChunkNumberX() - 1 )
                 chunk_info[k].chunk_right= world->GetChunk( i + 1, j );
             if( j< world->ChunkNumberY() - 1 )
                 chunk_info[k].chunk_front= world->GetChunk( i, j + 1 );
@@ -64,7 +64,7 @@ void r_Renderer::FullUpdate()
                 chunk_info[k].chunk_back= world->GetChunk( i, j - 1 );
             if( j > 0 && i < world->ChunkNumberX() - 1 )
                 chunk_info[k].chunk_back_right= world->GetChunk( i + 1, j - 1 );*/
-  		}
+        }
 }
 
 void r_Renderer::UpdateWorld()
@@ -180,7 +180,7 @@ void r_Renderer::UpdateWater()
     bool any_vbo_updated= false;
     bool full_update= false;
 
-   // r_WaterVertex* new_vb_data;
+    // r_WaterVertex* new_vb_data;
     unsigned int new_vertex_count;
 
     //build water meshes for CHUNKS
@@ -283,16 +283,16 @@ void r_Renderer::UpdateFunc()
 {
     while(1)
     {
-    	QTime t0= QTime::currentTime();
+        QTime t0= QTime::currentTime();
 
         UpdateWorld();
         if( update_count&1 )
             UpdateWater();
 
-		QTime t1= QTime::currentTime();
-		unsigned int dt_ms= t0.msecsTo( t1 );
-		if( dt_ms < 50 )
-        	usleep( (50 - dt_ms) * 1000);
+        QTime t1= QTime::currentTime();
+        unsigned int dt_ms= t0.msecsTo( t1 );
+        if( dt_ms < 50 )
+            usleep( (50 - dt_ms) * 1000);
 
         update_count++;
         update_ticks_in_last_second++;
@@ -312,7 +312,7 @@ void r_Renderer::UpdateGPUData()
 
         if( world_vb.need_update_vbo )
         {
-			world_vb.vb_data= world_vb.new_vb_data;
+            world_vb.vb_data= world_vb.new_vb_data;
             world_vb.vbo.VertexData( (float*) world_vb.vb_data, world_vb.allocated_vertex_count * sizeof( r_WorldVertex ),
                                      sizeof( r_WorldVertex ) );
             for( i= 0; i< world->ChunkNumberX(); i++ )
@@ -368,7 +368,7 @@ void r_Renderer::UpdateGPUData()
 
         if( water_vb.need_update_vbo )
         {
-			water_vb.vb_data= water_vb.new_vb_data;
+            water_vb.vb_data= water_vb.new_vb_data;
             water_vb.vbo.VertexData( water_vb.vb_data,
                                      water_vb.allocated_vertex_count * sizeof( r_WaterVertex ),
                                      sizeof( r_WaterVertex ) );
@@ -437,8 +437,8 @@ void r_Renderer::CalculateMatrices()
 
     perspective.Identity();
     perspective.MakePerspective( float(viewport_x)/float(viewport_y), 1.57f,
-								 0.5f*(H_PLAYER_HEIGHT - H_PLAYER_EYE_LEVEL),//znear
-								 1024.0f );
+                                 0.5f*(H_PLAYER_HEIGHT - H_PLAYER_EYE_LEVEL),//znear
+                                 1024.0f );
 
     rotate_x.Identity();
     rotate_x.RotateX( -cam_ang.x );
@@ -458,8 +458,8 @@ void r_Renderer::CalculateMatrices()
 
 void r_Renderer::CalculateLight()
 {
-	lighting_data.current_sun_light= R_SUN_LIGHT_COLOR / float ( H_MAX_SUN_LIGHT * 16 );
-	lighting_data.current_fire_light= R_FIRE_LIGHT_COLOR / float ( H_MAX_FIRE_LIGHT * 16 );
+    lighting_data.current_sun_light= R_SUN_LIGHT_COLOR / float ( H_MAX_SUN_LIGHT * 16 );
+    lighting_data.current_fire_light= R_FIRE_LIGHT_COLOR / float ( H_MAX_FIRE_LIGHT * 16 );
 }
 
 void r_Renderer::BuildChunkList()
@@ -471,20 +471,12 @@ void r_Renderer::BuildChunkList()
         {
             k= i + j * world->ChunkNumberX();
             ch= &chunk_info_to_draw[ k ];
-#ifdef OGL21
-            world_vb.chunk_meshes_index_count[k]= ( ch->chunk_vb.real_vertex_count - ch->chunk_vb.water_vertex_count );//really it is vertex count ( not index count )
-            world_vb.base_vertices[k]= ch->chunk_vb.vb_data - world_vb.vb_data;
-
-            world_vb.chunk_meshes_water_index_count[k]= ch->chunk_vb.water_vertex_count;//really it is vertex count ( not index count )
-            world_vb.base_water_vertices[k]= ch->chunk_vb.water_vb_data - world_vb.vb_data;
-#else
             world_vb.chunk_meshes_index_count[k]= ( ch->chunk_vb.real_vertex_count - ch->chunk_vb.water_vertex_count ) * 6 / 4;
             world_vb.base_vertices[k]= ch->chunk_vb.vb_data - world_vb.vb_data;
             world_vb.multi_indeces[k]= NULL;
 
             world_vb.chunk_meshes_water_index_count[k]= ch->chunk_vb.water_vertex_count * 6 / 4;
             world_vb.base_water_vertices[k]= ch->chunk_vb.water_vb_data - world_vb.vb_data;
-#endif
         }
 
     world_vb.chunks_to_draw= world->ChunkNumberX() * world->ChunkNumberY();
@@ -503,7 +495,7 @@ void r_Renderer::Draw()
 
     UpdateGPUData();
     CalculateMatrices();
-	CalculateLight();
+    CalculateLight();
 
     //glClearColor( 0.2f, 0.3f, 0.8f, 0.0f );
     ///glClearColor( 0.0f, 0.0f, 0.0f, 0.0f );
@@ -517,16 +509,18 @@ void r_Renderer::Draw()
     DrawWater();
     DrawBuildPrism();
 
-    text_manager->AddMultiText( 0, 0, 1, r_Text::default_color, "fps: %d", last_fps );
-    text_manager->AddMultiText( 0, 1, 1, r_Text::default_color, "chunks updated per second: %d", chunk_updates_per_second );
-    text_manager->AddMultiText( 0, 2, 1, r_Text::default_color, "chunks rebuilded per second: %d",chunks_rebuild_per_second );
-    text_manager->AddMultiText( 0, 3, 1, r_Text::default_color, "water quadchunks updated per second: %d", water_quadchunks_updates_per_second );
-    text_manager->AddMultiText( 0, 4, 1, r_Text::default_color, "water quadchunks rebuilded per second: %d", water_quadchunks_rebuild_per_second );
-    text_manager->AddMultiText( 0, 5, 1, r_Text::default_color, "update ticks per second: %d",updade_ticks_per_second );
-    text_manager->AddMultiText( 0, 6, 1, r_Text::default_color, "cam pos: %4.1f %4.1f %4.1f",
-                                cam_pos.x, cam_pos.y, cam_pos.z );
-    text_manager->Draw();
-
+    if( settings.value( "show_debug_info", false ).toBool() )
+    {
+        text_manager->AddMultiText( 0, 0, 1, r_Text::default_color, "fps: %d", last_fps );
+        text_manager->AddMultiText( 0, 1, 1, r_Text::default_color, "chunks updated per second: %d", chunk_updates_per_second );
+        //text_manager->AddMultiText( 0, 2, 1, r_Text::default_color, "chunks rebuilded per second: %d",chunks_rebuild_per_second );
+        text_manager->AddMultiText( 0, 2, 1, r_Text::default_color, "water quadchunks updated per second: %d", water_quadchunks_updates_per_second );
+        //text_manager->AddMultiText( 0, 4, 1, r_Text::default_color, "water quadchunks rebuilded per second: %d", water_quadchunks_rebuild_per_second );
+        text_manager->AddMultiText( 0, 3, 1, r_Text::default_color, "update ticks per second: %d",updade_ticks_per_second );
+        text_manager->AddMultiText( 0, 4, 1, r_Text::default_color, "cam pos: %4.1f %4.1f %4.1f",
+                                    cam_pos.x, cam_pos.y, cam_pos.z );
+        text_manager->Draw();
+    }
     CalculateFPS();
 }
 
@@ -580,16 +574,9 @@ void r_Renderer::DrawWorld()
 
     world_vb.vbo.Bind();
 
-#ifdef OGL21
-    glMultiDrawArrays( GL_QUADS, world_vb.base_vertices,
-                       world_vb.chunk_meshes_index_count, world_vb.chunks_to_draw );
-#else//if ogl=3.3
     glMultiDrawElementsBaseVertex( GL_TRIANGLES, world_vb.chunk_meshes_index_count, GL_UNSIGNED_SHORT,
                                    (const GLvoid**)(world_vb.multi_indeces), world_vb.chunks_to_draw,
                                    world_vb.base_vertices );
-
-#endif
-
 
 }
 
@@ -635,7 +622,7 @@ void r_Renderer::DrawWater()
     glEnable( GL_BLEND );
     glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
 
-	water_texture.BindTexture( 0 );
+    water_texture.BindTexture( 0 );
 
     water_shader.Bind();
 
@@ -648,7 +635,7 @@ void r_Renderer::DrawWater()
     water_shader.Uniform( "tex", 0 );
     water_shader.Uniform( "time", float( startup_time.msecsTo(QTime::currentTime()) ) * 0.001f );
 
-   	water_shader.Uniform( "sun_light_color", lighting_data.current_sun_light );
+    water_shader.Uniform( "sun_light_color", lighting_data.current_sun_light );
     water_shader.Uniform( "fire_light_color", lighting_data.current_fire_light );
     water_shader.Uniform( "ambient_light_color", R_AMBIENT_LIGHT_COLOR );
 
@@ -676,8 +663,8 @@ void r_Renderer::DrawWater()
 
 void r_Renderer::DrawBuildPrism()
 {
-	if( build_pos.z < 0.0f )
-		return;
+    if( build_pos.z < 0.0f )
+        return;
     glDisable( GL_BLEND );
     glEnable( GL_DEPTH_TEST );
     glLineWidth( 4.0f );
@@ -687,7 +674,7 @@ void r_Renderer::DrawBuildPrism()
 
     build_prism_shader.Uniform( "build_prism_pos", build_pos );
 
-   // m_Vec3 sh_cam_pos( cam_pos.x * H_SPACE_SCALE_VECTOR_X, cam_pos.y * H_SPACE_SCALE_VECTOR_Y
+    // m_Vec3 sh_cam_pos( cam_pos.x * H_SPACE_SCALE_VECTOR_X, cam_pos.y * H_SPACE_SCALE_VECTOR_Y
     build_prism_shader.Uniform( "cam_pos", cam_pos );
 
     build_prism_vbo.Bind();
@@ -804,16 +791,16 @@ void r_Renderer::BuildWorld()
             chunk_info[k].chunk= world->GetChunk( i, j );
             if( i < world->ChunkNumberX() - 1 )
                 chunk_info[k].chunk_right= world->GetChunk( i + 1, j );
-			else chunk_info[k].chunk_right= NULL;
+            else chunk_info[k].chunk_right= NULL;
             if( j< world->ChunkNumberY() - 1 )
                 chunk_info[k].chunk_front= world->GetChunk( i, j + 1 );
-			else chunk_info[k].chunk_front= NULL;
+            else chunk_info[k].chunk_front= NULL;
             if( j > 0 )
                 chunk_info[k].chunk_back= world->GetChunk( i, j - 1 );
-			else chunk_info[k].chunk_back= NULL;
+            else chunk_info[k].chunk_back= NULL;
             if( j > 0 && i < world->ChunkNumberX() - 1 )
                 chunk_info[k].chunk_back_right= world->GetChunk( i + 1, j - 1 );
-			else chunk_info[k].chunk_back_right= 0;
+            else chunk_info[k].chunk_back_right= 0;
 
         }
 
@@ -886,6 +873,7 @@ r_Renderer::r_Renderer( h_World* w ):
     world(w),
     host_data_mutex( QMutex::NonRecursive ), gpu_data_mutex( QMutex::NonRecursive ),
     update_thread( &r_Renderer::UpdateFunc, (r_Renderer*) this, 1u ),
+    settings( "config.ini", QSettings::IniFormat ),
     frame_count(0),update_count(0),
     sun_vector( 0.7f, 0.8f, 0.6f )
 {
@@ -897,7 +885,7 @@ r_Renderer::r_Renderer( h_World* w ):
     connect( world, SIGNAL(ChunkWaterUpdated( unsigned short, unsigned short )),
              this, SLOT( UpdateChunkWater( unsigned short, unsigned short ) ), Qt::DirectConnection );
 
-	connect( world, SIGNAL(FullUpdate( void )),
+    connect( world, SIGNAL(FullUpdate( void )),
              this, SLOT( FullUpdate( void ) ), Qt::DirectConnection );
 
 
@@ -918,8 +906,8 @@ r_Renderer::r_Renderer( h_World* w ):
 
 void r_Renderer::InitGL()
 {
-	if( QGLContext::currentContext() == NULL )
-		printf( "error, null gl context" );
+    if( QGLContext::currentContext() == NULL )
+        printf( "error, null gl context" );
 
     GetGLFunctions();
     glClearDepth( 1.0f );
@@ -937,14 +925,8 @@ void r_Renderer::LoadShaders()
 {
     char define_str[128];
 
-
-#ifdef OGL21
-    if( world_shader.Load( "shaders/glsl_120/world_frag.glsl", "shaders/glsl_120/world_vert.glsl", NULL ) )
-        printf( "error, wold shader not found\n" );
-#else
     if( world_shader.Load( "shaders/world_frag.glsl", "shaders/world_vert.glsl", NULL ) )
         printf( "error, wold shader not found\n" );
-#endif
 
     world_shader.SetAttribLocation( "coord", 0 );
     world_shader.SetAttribLocation( "tex_coord", 1 );
@@ -957,46 +939,27 @@ void r_Renderer::LoadShaders()
     world_shader.Define( define_str );
     world_shader.MoveOnGPU();
 
-#ifdef OGL21
-    if( water_shader.Load( "shaders/glsl_120/water_frag.glsl", "shaders/glsl_120/water_vert.glsl", NULL ) )
-        printf( "error, wold shader not found\n" );
-#else
     if( water_shader.Load( "shaders/water_frag.glsl", "shaders/water_vert.glsl", NULL ) )
         printf( "error, wold shader not found\n" );
-#endif
 
     water_shader.SetAttribLocation( "coord", 0 );
     water_shader.SetAttribLocation( "light", 1 );
     water_shader.MoveOnGPU();
 
-#ifdef OGL21
-    if( build_prism_shader.Load( "shaders/glsl_120/build_prism_frag.glsl", "shaders/glsl_120/build_prism_vert.glsl", NULL ) )
-        printf( "error, build prism shader not found\n" );
-#else
     if( build_prism_shader.Load( "shaders/build_prism_frag.glsl", "shaders/build_prism_vert.glsl", "shaders/build_prism_geom.glsl" ) )
         printf( "error, build prism shader not found\n" );
-#endif
     build_prism_shader.SetAttribLocation( "coord", 0 );
     build_prism_shader.MoveOnGPU();
 
-#ifdef OGL21
-    if( skybox_shader.Load( "shaders/glsl_120/sky_frag.glsl", "shaders/glsl_120/sky_vert.glsl", NULL ) )
-        printf( "errror, skybox shader not found\n" );
-#else
     if( skybox_shader.Load( "shaders/sky_frag.glsl", "shaders/sky_vert.glsl", NULL ) )
         printf( "errror, skybox shader not found\n" );
-#endif
     skybox_shader.SetAttribLocation( "coord", 0 );
     skybox_shader.MoveOnGPU();
 
 
-#ifdef OGL21
-    if( sun_shader.Load( "shaders/glsl_120/sun_frag.glsl",  "shaders/glsl_120/sun_vert.glsl", NULL ) )
-        printf( "errror, sun shader not found\n" );
-#else
     if( sun_shader.Load( "shaders/sun_frag.glsl",  "shaders/sun_vert.glsl", NULL ) )
         printf( "errror, sun shader not found\n" );
-#endif
+
     sprintf( define_str, "SUN_SIZE %3.0f\n", float( viewport_x ) * 0.1f );
     sun_shader.Define( define_str );
     sun_shader.MoveOnGPU();
@@ -1022,11 +985,8 @@ void r_Renderer::InitVertexBuffers()
     shift= ((char*)&v.tex_coord[0]) - ((char*)&v );
     world_vb.vbo.VertexAttribPointer( 1, 3, GL_SHORT, false, shift );
     shift= ((char*)&v.normal_id) - ((char*)&v );
-#ifdef OGL21//ogl 2.1 does not supportet integer vertex attributes
-    world_vb.vbo.VertexAttribPointer( 2, 1, GL_UNSIGNED_BYTE, false, shift );
-#else
+
     world_vb.vbo.VertexAttribPointerInt( 2, 1, GL_UNSIGNED_BYTE, shift );
-#endif
     shift= ((char*)&v.light[0] ) - ((char*)&v );
     world_vb.vbo.VertexAttribPointer( 3, 2, GL_UNSIGNED_BYTE, false, shift );
 
@@ -1043,16 +1003,16 @@ void r_Renderer::InitVertexBuffers()
     shift= ((char*)&wv.light[0])- ((char*)&wv );
     water_vb.vbo.VertexAttribPointer( 1, 2, GL_UNSIGNED_BYTE, false, shift );
 
-/*
-    water_side_vb.vbo.VertexData( water_side_vb.vb_data.Data(),
-								 sizeof( r_WaterVertex ) * water_side_vb.quad_count * 4,
-								sizeof( r_WaterVertex ) );
-	water_side_vb.vbo.IndexData( water_side_vb.index_data, sizeof(short) * water_side_vb.quad_count * 6,
-								GL_UNSIGNED_SHORT, GL_TRIANGLES );
-	shift= ((char*)&wv.coord[0])- ((char*)&wv );
-    water_side_vb.vbo.VertexAttribPointer( 0, 3, GL_SHORT, false, shift );
-    shift= ((char*)&wv.water_depth)- ((char*)&wv );
-    water_side_vb.vbo.VertexAttribPointer( 1, 3, GL_UNSIGNED_BYTE, true, shift );*/
+    /*
+        water_side_vb.vbo.VertexData( water_side_vb.vb_data.Data(),
+    								 sizeof( r_WaterVertex ) * water_side_vb.quad_count * 4,
+    								sizeof( r_WaterVertex ) );
+    	water_side_vb.vbo.IndexData( water_side_vb.index_data, sizeof(short) * water_side_vb.quad_count * 6,
+    								GL_UNSIGNED_SHORT, GL_TRIANGLES );
+    	shift= ((char*)&wv.coord[0])- ((char*)&wv );
+        water_side_vb.vbo.VertexAttribPointer( 0, 3, GL_SHORT, false, shift );
+        shift= ((char*)&wv.water_depth)- ((char*)&wv );
+        water_side_vb.vbo.VertexAttribPointer( 1, 3, GL_UNSIGNED_BYTE, true, shift );*/
 
 
     float build_prism[]= { 0.0f, 0.0f, 0.0f,  2.0f, 0.0f, 0.0f,   3.0f, 1.0f, 0.0f,
@@ -1094,6 +1054,11 @@ void r_Renderer::InitVertexBuffers()
 
 void r_Renderer::LoadTextures()
 {
+	texture_manager.SetTextureSize(
+	max( min( settings.value( "texture_size", R_MAX_TEXTURE_RESOLUTION ).toInt(), R_MAX_TEXTURE_RESOLUTION ), R_MIN_TEXTURE_RESOLUTION ) );
+
+	texture_manager.SetFiltration( settings.value( "filter_textures", false ).toBool() );
+
     texture_manager.LoadTextures();
     sun_texture.Load( "textures/sun.tga" );
     water_texture.Load( "textures/water2.tga" );

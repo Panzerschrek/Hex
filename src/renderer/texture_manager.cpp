@@ -29,12 +29,24 @@ void r_TextureManager::InitTextureTable()
 
 }
 
+void r_TextureManager::DrawNullTexture( QImage* img )
+{
+    QPainter p( img );
+
+    p.fillRect( 0, 0, 128, 128, Qt::black );
+    p.fillRect( 128, 0, 128, 128, Qt::magenta );
+    p.fillRect( 0, 128, 128, 128, Qt::magenta );
+    p.fillRect( 128, 128, 128, 128, Qt::black );
+    QFont f( "Courier New", 16 );
+    p.setFont( f );
+    p.setPen( QColor( Qt::white ) );
+    p.drawText( 20, 80, "Texture not found" );
+    p.drawText( 20, 180, "Texture not found" );
+}
+
 r_TextureManager::r_TextureManager()
 {
     InitTextureTable();
-
-    texture_size= R_MAX_TEXTURE_RESOLUTION/4;
-    filter_textures= false;
 }
 
 void r_TextureManager::LoadTextures()
@@ -48,15 +60,21 @@ void r_TextureManager::LoadTextures()
     texture_array.TextureData( texture_size, texture_size, 32, GL_UNSIGNED_BYTE, GL_RGBA, 32, NULL );
     texture_array.MoveOnGPU();
 
-    if( ! rLoadTextureTGA( &tf[0], "textures/null.tga" ) )
-    {
-        int s= 0, d=1;
-        for( int i= R_MAX_TEXTURE_RESOLUTION; i > texture_size; i>>=1, s^=1, d^=1 )
-            rRGBAGetMip( &tf[s], &tf[d] );
-        texture_array.TextureLayer( tex_id, tf[s].data );
-        delete[] tf[0].data;
-    }
+    QImage img( QSize( 256, 256 ), QImage::Format_RGBA8888 );
 
+	//"load" null texture
+	DrawNullTexture( &img );
+    tf[0].data= (unsigned char*)img.constBits();//using inner QImage memory to increase perfomanse
+    tf[0].width= img.width();
+    tf[0].height= img.height();
+    tf[0].data_size= tf[0].width * tf[0].height * 4;
+
+    int s= 0, d=1;
+    for( int i= R_MAX_TEXTURE_RESOLUTION; i > texture_size; i>>=1, s^=1, d^=1 )
+        rRGBAGetMip( &tf[s], &tf[d] );
+
+    rRGBAMirrorVertical( &tf[s] );
+    texture_array.TextureLayer( tex_id, tf[s].data );
 
     const char* config_file_name=  "textures/textures.json";
     QString fn( config_file_name );
@@ -81,26 +99,30 @@ void r_TextureManager::LoadTextures()
             QJsonValue val;
             val= obj[ "filename" ];
 
-            if( rLoadTextureTGA( &tf[0], obj[ "filename" ].toString().toLocal8Bit().data() ) )
-                printf( "error, texture \"%s\" not fund\n", str );
+            if( ! img.load( obj[ "filename" ].toString() ) )
+                printf( "error, texture \"%s\" not fund\n", obj[ "filename" ].toString().toLocal8Bit().data() );
             else
             {
+                tf[0].data= (unsigned char*)img.constBits();//using inner QImage memory to increase perfomanse
+                tf[0].width= img.width();
+                tf[0].height= img.height();
+                tf[0].data_size= tf[0].width * tf[0].height * 4;
                 tex_id++;
                 int s= 0, d=1;
                 for( int i= R_MAX_TEXTURE_RESOLUTION; i > texture_size; i>>=1, s^=1, d^=1 )
                     rRGBAGetMip( &tf[s], &tf[d] );
-                texture_array.TextureLayer( tex_id, tf[s].data );
-                delete[] tf[0].data;
 
+                rRGBAMirrorVertical( &tf[s] );
+                texture_array.TextureLayer( tex_id, tf[s].data );
             }
 
             val= obj[ "scale" ];
             if( val.isDouble() )
                 texture_scale_table[ tex_id ]= min( max( val.toInt(), 1 ), H_MAX_TEXTURE_SCALE * H_MAX_TEXTURE_SCALE );
 
-			val= obj[ "perblock" ];
-			if( val.isBool() )
-				texture_mode_table[ tex_id ]= val.toBool();
+            val= obj[ "perblock" ];
+            if( val.isBool() )
+                texture_mode_table[ tex_id ]= val.toBool();
 
             QJsonArray blocks= obj[ "blocks" ].toArray();
 

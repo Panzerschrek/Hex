@@ -18,17 +18,18 @@ public:
     void LoadTextures();
     void BindTextureArray( unsigned int unit= 0 );
 
+	void SetTextureSize( int size );
+	void SetFiltration( bool filter_textures );
 private:
     void InitTextureTable();
+
+    void DrawNullTexture( QImage* img );
 
     static unsigned char texture_table[ NUM_BLOCK_TYPES * 8 ];
     static bool texture_mode_table [ NUM_BLOCK_TYPES * 8 ]; // if( true ) - mode per block, else mode - projection
     static unsigned char texture_scale_table[ NUM_BLOCK_TYPES * 8 ];
-/*#ifdef OGL21
-    r_Texture texture_atlas;
-#else*/
+
     r_TextureArray texture_array;
-//#endif
 
 	unsigned int texture_size;
 	bool filter_textures;
@@ -53,10 +54,17 @@ inline unsigned char r_TextureManager::GetTextureScale( unsigned char tex_id )
 }
 inline void r_TextureManager::BindTextureArray( unsigned int unit )
 {
-/*#ifdef OGL21
-    texture_atlas.BindTexture( unit );
-#else*/
     texture_array.Bind( unit );
-//#endif
 }
+
+
+inline void r_TextureManager::SetTextureSize( int size )
+{
+	texture_size= size;
+}
+inline void r_TextureManager::SetFiltration( bool filter_textures )
+{
+	this->filter_textures= filter_textures;
+}
+
 #endif//TEXTURE_MANAGER_HPP

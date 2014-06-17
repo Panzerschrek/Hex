@@ -147,13 +147,8 @@ r_Text::r_Text():
 
 
 
-#ifdef OGL21
-    if( text_shader.Load( "shaders/glsl_120/text_frag.glsl", "shaders/glsl_120/text_vert.glsl", NULL ) )
-    	printf( "error, text shader not found\n" );
-#else
 	if( text_shader.Load( "shaders/text_frag.glsl", "shaders/text_vert.glsl", NULL ) )
 		printf( "error, text shader not found\n" );
-#endif
     text_shader.SetAttribLocation( "coord", 0 );
     text_shader.SetAttribLocation( "tex_coord", 1 );
     text_shader.SetAttribLocation( "color", 2 );

@@ -25,18 +25,12 @@ r_PolygonBuffer::r_PolygonBuffer()
 {
     v_array_object= i_buffer= v_buffer= BUFFER_NOT_CREATED;
     is_array= true;
-
-#ifdef OGL21
-    vao_attribs_num= 0;
-#endif
 }
 
 void r_PolygonBuffer::GenVAO()
 {
-	#ifndef OGL21
 	glGenVertexArrays( 1, &v_array_object );
 	glBindVertexArray( v_array_object );
-	#endif
 }
 r_PolygonBuffer::~r_PolygonBuffer()
 {
@@ -134,25 +128,6 @@ void r_PolygonBuffer::Bind() const
 
 	 if( v_buffer != BUFFER_NOT_CREATED )
         glBindBuffer( GL_ARRAY_BUFFER, v_buffer );*/
-
-
-#ifdef OGL21
-
-	if( i_buffer != BUFFER_NOT_CREATED )
-        glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, i_buffer );
-
-	if( v_buffer != BUFFER_NOT_CREATED )
-        glBindBuffer( GL_ARRAY_BUFFER, v_buffer );
-
-	for( int i=0; i< 8; i++ )
-		glDisableVertexAttribArray( i );
-    for( int i=0; i< vao_attribs_num; i++ )
-    {
-        glVertexAttribPointer( vao_attrib[i], vao_components[i], vao_type[i],
-                               vao_normalize[i], vertex_size, (void*) vao_shift[i] );
-    glEnableVertexAttribArray( vao_attrib[i] );
-    }
-#endif
 }
 
 int r_PolygonBuffer::Show() const
@@ -181,16 +156,6 @@ int r_PolygonBuffer::Show() const
 
 int	r_PolygonBuffer::VertexAttribPointer( int v_attrib, int components, GLenum type, bool normalize, int shift )
 {
-#ifdef OGL21
-    vao_attrib[ vao_attribs_num ]= v_attrib;
-    vao_components[ vao_attribs_num ]= components;
-    vao_type[ vao_attribs_num ]= type;
-    vao_normalize[ vao_attribs_num ]= normalize;
-    vao_shift[ vao_attribs_num ] = shift;
-    vao_attribs_num++;
-    return 0;
-#else
-
     if( v_array_object == BUFFER_NOT_CREATED )
         GenVAO();
 
@@ -200,15 +165,10 @@ int	r_PolygonBuffer::VertexAttribPointer( int v_attrib, int components, GLenum t
     glVertexAttribPointer( v_attrib, components, type, normalize, vertex_size, (void*) shift );
     glEnableVertexAttribArray( v_attrib );
     return 0;
-
-#endif
 }
 
 int r_PolygonBuffer::VertexAttribPointerInt( int v_attrib, int components, GLenum type, int shift  ) const
 {
-#ifdef OGL21
-    return 1;
-#endif
     if( v_array_object == BUFFER_NOT_CREATED )
         glGenVertexArrays( 1, (GLuint*) &v_array_object );
 

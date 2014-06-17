@@ -58,17 +58,6 @@ private:
 
 	static r_PolygonBuffer* current_buffer;
 
-	//hack
-	#if OGL21
-	//simulate VAO
-	unsigned int vao_attribs_num;
-
-	unsigned int vao_attrib[ 8 ];
-	unsigned int vao_components[ 8 ];
-	GLenum vao_type[ 8 ];
-	bool vao_normalize[ 8 ];
-	unsigned int vao_shift[ 8 ];
-	#endif
 };
 
 

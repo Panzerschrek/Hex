@@ -49,10 +49,10 @@ private:
 	void Input();
 	void GetBuildPos();
 
-	QVBoxLayout *layout;
-    QWidget* window;
+    QMainWindow* window;
     QCursor cursor;
     QTime startup_time;
+    QSettings settings;
     bool keys[ 512 ];
     bool use_mouse;
 
