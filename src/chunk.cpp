@@ -114,7 +114,7 @@ void h_Chunk::PlantTrees()
     //short addr;
 
     static m_Rand r(0);
-    for( int n= 0; n< 4; n++ )
+    for( int n= 0; n< 16; n++ )
     {
         // get_coord:
         tree_x= ( H_CHUNK_WIDTH * r.Rand() ) / r.max_rand;

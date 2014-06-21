@@ -25,6 +25,10 @@ public:
     h_Chunk* GetChunk( short X, short Y );//relative chunk coordinates
     const h_Chunk* GetChunk( short X, short Y ) const;//relative chunk coordinates
 
+    //really, returns longitude/2 and latitude/2
+	int ChunkCoordToQuadchunkX( int longitude );
+	int ChunkCoordToQuadchunkY( int latitude );
+
     unsigned int ChunkNumberX() const;
     unsigned int ChunkNumberY() const;
 
@@ -138,6 +142,8 @@ private:
 	QQueue< h_WorldAction > action_queue[2];
 	QMutex action_queue_mutex;
 
+	QSettings settings;
+
 };
 
 
@@ -213,6 +219,16 @@ inline short h_World::ClampZ( short z ) const
 	if( z > H_CHUNK_HEIGHT - 1 )
 		return H_CHUNK_HEIGHT - 1;
 	return z;
+}
+
+
+inline int h_World::ChunkCoordToQuadchunkX( int longitude )
+{
+	return longitude>>1;
+}
+inline int h_World::ChunkCoordToQuadchunkY( int latitude )
+{
+	return latitude>>1;
 }
 
 #endif//WORLD_HPP

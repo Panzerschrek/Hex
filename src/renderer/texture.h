@@ -94,8 +94,10 @@ int rLoadTextureBMP( r_TextureFile* tf, const char* file_name, bool data_is_temp
 int rLoadTextureJPG( r_TextureFile* tf, const char* file_name, bool data_is_temp= true );
 int rLoadTextureTGA( r_TextureFile* tf, const char* file_name, bool data_is_temp= true );
 void rDefaultTexture( r_TextureFile* tf, bool data_is_temp= true );
+void rBGRA2RGBA( unsigned char* data, unsigned int size );
 void rRGB2RGBAKeyColor( r_TextureFile* tf, unsigned char key_color[3] );
 void rRGBAMirrorVertical( r_TextureFile* tf );
+void rRGBAMirrorVerticalAndSwapRB( r_TextureFile* tf );
 void rRGBAGetMip( r_TextureFile* tf_src, r_TextureFile* tf_dst );
 void rRGB_RChanenl2NormalMap(  unsigned char* src_data, unsigned char* dst_data,  unsigned int size_x, unsigned int size_y, float normal_z_size= 1.0f );
 

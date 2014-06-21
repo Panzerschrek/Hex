@@ -289,6 +289,27 @@ void rRGBAMirrorVertical( r_TextureFile* tf )
 		}
 }
 
+void rRGBAMirrorVerticalAndSwapRB( r_TextureFile* tf )
+{
+	for( int y= 0; y< tf->height>>1; y++ )
+		for( int x= 0,
+			k= y * tf->width,
+			k2= ( tf->height - y - 1 ) * tf->width
+			; x< tf->width; x++, k++, k2++ )
+		{
+			int* p = (int*) tf->data;
+			int c= p[k];
+			p[k]= p[k2];
+			p[k2]= c;
+			unsigned char tmp= tf->data[k*4];
+			tf->data[k*4]= tf->data[k*4+2];
+			tf->data[k*4+2]= tmp;
+			tmp= tf->data[k2*4];
+			tf->data[k2*4]= tf->data[k2*4+2];
+			tf->data[k2*4+2]= tmp;
+		}
+}
+
 void rRGBAGetMip( r_TextureFile* tf_src, r_TextureFile* tf_dst )
 {
 	unsigned int x, y, i;

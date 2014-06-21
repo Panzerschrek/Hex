@@ -512,12 +512,13 @@ void r_Renderer::Draw()
     if( settings.value( "show_debug_info", false ).toBool() )
     {
         text_manager->AddMultiText( 0, 0, 1, r_Text::default_color, "fps: %d", last_fps );
-        text_manager->AddMultiText( 0, 1, 1, r_Text::default_color, "chunks updated per second: %d", chunk_updates_per_second );
+		text_manager->AddMultiText( 0, 1, 1, r_Text::default_color, "chunks: %dx%d", chunk_num_x, chunk_num_y );
+        text_manager->AddMultiText( 0, 2, 1, r_Text::default_color, "chunks updated per second: %d", chunk_updates_per_second );
         //text_manager->AddMultiText( 0, 2, 1, r_Text::default_color, "chunks rebuilded per second: %d",chunks_rebuild_per_second );
-        text_manager->AddMultiText( 0, 2, 1, r_Text::default_color, "water quadchunks updated per second: %d", water_quadchunks_updates_per_second );
+        text_manager->AddMultiText( 0, 3, 1, r_Text::default_color, "water quadchunks updated per second: %d", water_quadchunks_updates_per_second );
         //text_manager->AddMultiText( 0, 4, 1, r_Text::default_color, "water quadchunks rebuilded per second: %d", water_quadchunks_rebuild_per_second );
-        text_manager->AddMultiText( 0, 3, 1, r_Text::default_color, "update ticks per second: %d",updade_ticks_per_second );
-        text_manager->AddMultiText( 0, 4, 1, r_Text::default_color, "cam pos: %4.1f %4.1f %4.1f",
+        text_manager->AddMultiText( 0, 4, 1, r_Text::default_color, "update ticks per second: %d",updade_ticks_per_second );
+        text_manager->AddMultiText( 0, 5, 1, r_Text::default_color, "cam pos: %4.1f %4.1f %4.1f",
                                     cam_pos.x, cam_pos.y, cam_pos.z );
         text_manager->Draw();
     }
@@ -628,7 +629,7 @@ void r_Renderer::DrawWater()
 
     m_Mat4 water_matrix;
     water_matrix.Identity();
-    m_Vec3 scale( 1.0f, 1.0f, 1.0f/128.0f );
+    m_Vec3 scale( 1.0f, 1.0f, 1.0f/ float( R_WATER_VERTICES_Z_SCALER ) );
     water_matrix.Scale(scale);
     water_final_matrix= water_matrix *  block_final_matrix;
     water_shader.Uniform( "view_matrix", water_final_matrix );
@@ -667,7 +668,7 @@ void r_Renderer::DrawBuildPrism()
         return;
     glDisable( GL_BLEND );
     glEnable( GL_DEPTH_TEST );
-    glLineWidth( 4.0f );
+   // glLineWidth( 4.0f );
 
     build_prism_shader.Bind();
     build_prism_shader.Uniform( "view_matrix", view_matrix );
@@ -695,7 +696,7 @@ void r_Renderer::BuildWorldWater()
     water_quadchunk_info= new r_WaterQuadChunkInfo[ quadchunk_num_x * quadchunk_num_y ];
     water_quadchunk_info_to_draw= new r_WaterQuadChunkInfo[ quadchunk_num_x * quadchunk_num_y ];
 
-    for( unsigned int i= 0; i< quadchunk_num_x; i++ )
+    /*for( unsigned int i= 0; i< quadchunk_num_x; i++ )
         for( unsigned int j= 0; j< quadchunk_num_y; j++ )
         {
             r_WaterQuadChunkInfo* ch= &water_quadchunk_info[ i + j * quadchunk_num_x ];
@@ -709,7 +710,30 @@ void r_Renderer::BuildWorldWater()
                     ch->water_updated= false;
                     ch->water_mesh_rebuilded= false;
                 }
+        }*/
+	for( unsigned int i= 0; i< quadchunk_num_x; i++ )
+        for( unsigned int j= 0; j< quadchunk_num_y; j++ )
+        {
+        	r_WaterQuadChunkInfo* ch= &water_quadchunk_info[ i + j * quadchunk_num_x ];
+        	ch->chunks[0][0]= NULL;
+        	ch->chunks[0][1]= NULL;
+        	ch->chunks[1][0]= NULL;
+        	ch->chunks[1][1]= NULL;
         }
+	int first_quadchunk_longitude= world->ChunkCoordToQuadchunkX( chunk_info[0].chunk->Longitude() );
+	int first_quadchunk_latitude= world->ChunkCoordToQuadchunkY( chunk_info[0].chunk->Latitude() );
+	for( unsigned int i= 0; i< chunk_num_x; i++ )
+        for( unsigned int j= 0; j< chunk_num_y; j++ )
+        {
+        	r_ChunkInfo* ch= &chunk_info[ i + j * chunk_num_x ];
+        	int quadchunk_longitude= ch->chunk->Longitude() >>1;
+        	int quadchunk_latitude= ch->chunk->Latitude() >>1;
+        	int chunk_local_quadchunk_coord[]= { ch->chunk->Longitude()&1, ch->chunk->Latitude()&1 };
+        	water_quadchunk_info[ ( quadchunk_longitude - first_quadchunk_longitude ) +
+        			quadchunk_num_x * ( quadchunk_latitude - first_quadchunk_latitude ) ]
+        			.chunks[ ch->chunk->Longitude()&1 ][ ch->chunk->Latitude()&1 ]= ch;
+        }
+
     /*build quadchunk data structures*/
 
     for( unsigned int i=0; i< chunk_num_x; i++ )

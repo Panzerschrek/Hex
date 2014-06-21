@@ -3,7 +3,7 @@
 
 #include "renderer.hpp"
 #include "texture_manager.hpp"
-
+#include "rendering_constants.hpp"
 
 
 void r_WaterQuadChunkInfo::GetVertexCount()
@@ -238,16 +238,17 @@ void r_ChunkInfo::BuildWaterSurfaceMesh()
 
                 for( unsigned int k= 0; k< 6; k++ )
                 {
-                	static const unsigned int div_table[]= { 0, 16384/1, 16384/2, 16384/3, 16384/4, 16384/5, 16384/6 };//for faster division ( but not precise )
+                	#define DIV_TABLE_SCALER 16384
+                	#define DIV_TABLE_SCALER_LOG2 14
+                	static const unsigned int div_table[]= { 0, DIV_TABLE_SCALER/1, DIV_TABLE_SCALER/2, DIV_TABLE_SCALER/3, DIV_TABLE_SCALER/4, DIV_TABLE_SCALER/5, DIV_TABLE_SCALER/6 };//for faster division ( but not precise )
 					if( upper_block_is_water[k] )
-                        v[k].coord[2]= b->z<<7;
+                        v[k].coord[2]= b->z<<R_WATER_VERTICES_Z_SCALER_LOG2;
                     else if( nearby_block_is_air[k] )
-                        v[k].coord[2]= (b->z-1)<<7;
+                        v[k].coord[2]= (b->z-1)<<R_WATER_VERTICES_Z_SCALER_LOG2;
                     else
                     {
-                    	v[k].coord[2]= ((b->z-1)<<7) +
-                    	  ( ( vertex_water_level[k] * div_table[vertex_water_block_count[k]] ) >> ( 14 + H_MAX_WATER_LEVEL_LOG2 - 7 ) );
-                        //v[k].coord[2]= ((b->z-1)<<7) + vertex_water_level[k] / ( vertex_water_block_count[k] * ( H_MAX_WATER_LEVEL / 128) );
+                    	v[k].coord[2]= ((b->z-1)<<R_WATER_VERTICES_Z_SCALER_LOG2) +
+                    	  ( ( vertex_water_level[k] * div_table[vertex_water_block_count[k]] ) >> (  H_MAX_WATER_LEVEL_LOG2 + DIV_TABLE_SCALER_LOG2 - R_WATER_VERTICES_Z_SCALER_LOG2 ) );
                     }
                 }
                 world->GetForwardVertexLight( b->x + chunk_loaded_zone_X - 1, b->y + chunk_loaded_zone_Y - (b->x&1), b->z, v[0].light );
@@ -281,7 +282,8 @@ void r_ChunkInfo::BuildWaterSurfaceMesh()
                 v[1].coord[1]= v[2].coord[1]= v[0].coord[1] + 1;
                 v[4].coord[1]= v[5].coord[1]= v[0].coord[1] - 1;
 
-                h= ( (b->z -1) << 7 )+ ( b->LiquidLevel() * 128 / H_MAX_WATER_LEVEL );
+                h= ( (b->z -1) << R_WATER_VERTICES_Z_SCALER_LOG2 )
+                + ( b->LiquidLevel() >> ( H_MAX_WATER_LEVEL_LOG2 - R_WATER_VERTICES_Z_SCALER_LOG2 ) );
                 v[0].coord[2]= v[1].coord[2]= v[2].coord[2]= v[3].coord[2]= v[4].coord[2]= v[5].coord[2]= h;
 
                 unsigned char light= chunk->SunLightLevel( b->x, b->y, b->z + 1 );
@@ -649,7 +651,7 @@ void r_ChunkInfo::BuildChunkMesh()
     {
         for( y= 1; y< H_CHUNK_WIDTH - 1; y++ )
         {
-            t_up= chunk->Transparency( x, y, 1 );
+            t_up= chunk->Transparency( x, y, 0 );
             for( z= 0; z< H_CHUNK_HEIGHT - 2; z++ )
             {
                 t= t_up;
@@ -948,7 +950,7 @@ void r_ChunkInfo::BuildChunkMesh()
     y= 0;
     for( x= 0; x< H_CHUNK_WIDTH - 1; x++ )
     {
-        t_up= chunk->Transparency(  x, 0, 1 );
+        t_up= chunk->Transparency(  x, 0, 0 );
         for( z= 0; z< H_CHUNK_HEIGHT - 2; z++ )
         {
             t= t_up;
@@ -1033,7 +1035,7 @@ void r_ChunkInfo::BuildChunkMesh()
     x= H_CHUNK_WIDTH - 1;
     for( y= 1; y< H_CHUNK_WIDTH - 1; y++ )
     {
-        t_up= chunk->Transparency(  H_CHUNK_WIDTH - 1, y, 1 );
+        t_up= chunk->Transparency(  H_CHUNK_WIDTH - 1, y, 0 );
         for( z= 0; z< H_CHUNK_HEIGHT - 2; z++ )
         {
             t= t_up;
@@ -1113,7 +1115,7 @@ void r_ChunkInfo::BuildChunkMesh()
     y= H_CHUNK_WIDTH - 1;
     for( x= 0; x < H_CHUNK_WIDTH - 1; x++ )
     {
-        t_up= chunk->Transparency( x, H_CHUNK_WIDTH - 1, 1 );
+        t_up= chunk->Transparency( x, H_CHUNK_WIDTH - 1, 0 );
         for( z= 0; z< H_CHUNK_HEIGHT - 2; z++ )
         {
             t= t_up;
@@ -1198,7 +1200,7 @@ void r_ChunkInfo::BuildChunkMesh()
 #if 1
     //right up chunk corner
     x= y= H_CHUNK_WIDTH - 1;
-    t_up= chunk->Transparency( H_CHUNK_WIDTH - 1, H_CHUNK_WIDTH - 1, 1 );
+    t_up= chunk->Transparency( H_CHUNK_WIDTH - 1, H_CHUNK_WIDTH - 1, 0 );
     for( z= 0; z< H_CHUNK_HEIGHT - 2; z++ )
     {
         t= t_up;
@@ -1279,7 +1281,7 @@ void r_ChunkInfo::BuildChunkMesh()
 #if 1
     //right down chunk corner
     x= H_CHUNK_WIDTH - 1, y=0;
-    t_up= chunk->Transparency( H_CHUNK_WIDTH - 1, 0, 1 );
+    t_up= chunk->Transparency( H_CHUNK_WIDTH - 1, 0, 0 );
     for( z= 0; z< H_CHUNK_HEIGHT - 2; z++ )
     {
         t= t_up;

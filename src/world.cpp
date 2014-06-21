@@ -33,14 +33,15 @@ h_World::h_World():
     phys_tick_count(0),
     phys_thread( &h_World::PhysTick, this, 1u ),
     world_mutex( QMutex::NonRecursive ),
-    player( NULL )
+    player( NULL ),
+    settings( "config.ini", QSettings::IniFormat )
 {
     InitNormalBlocks();
 
-    chunk_number_x= 14 ;
-    chunk_number_y= 12 ;
-    longitude= -7;
-    latitude= -6;
+    chunk_number_x= max( min( settings.value( QString( "chunk_number_x" ), 14 ).toInt(), H_MAX_CHUNKS ), H_MIN_CHUNKS );
+    chunk_number_y= max( min( settings.value( QString( "chunk_number_y" ), 12 ).toInt(), H_MAX_CHUNKS ), H_MIN_CHUNKS ); ;
+    longitude= 0;
+    latitude= 0;
     //chunk_matrix_size_x_log2= m_Math::NearestPOTLog2( chunk_number_x );
     //chunk_matrix_size_x= 1 << chunk_matrix_size_x_log2;
 
@@ -83,7 +84,7 @@ void h_World::BuildPhysMesh( h_ChunkPhysMesh* phys_mesh, short x_min, short x_ma
 
     x_min= max( short(2), x_min );
     y_min= max( short(2), y_min );
-    z_min= max( short(2), z_min );
+    z_min= max( short(0), z_min );
     x_max= min( x_max, short( chunk_number_x * H_CHUNK_WIDTH - 2 ) );
     y_max= min( y_max, short( chunk_number_y * H_CHUNK_WIDTH - 2 ) );
     z_max= min( z_max, short( H_CHUNK_HEIGHT - 1 ) );
@@ -202,6 +203,11 @@ void h_World::WaterPhysTick()
         {
             bool chunk_modifed= false;
             ch= GetChunk( i, j );
+
+			//skip some quadchunks for updating ( in chessboard order )
+            if( ( ( ChunkCoordToQuadchunkX( ch->Longitude() ) ^ ChunkCoordToQuadchunkY( ch->Latitude() ) ) & 1 ) == (phys_tick_count&1) )
+            	continue;
+
             auto l= & ch->water_blocks_data.water_block_list;
             h_LiquidBlock* b;
             m_Collection< h_LiquidBlock* >::Iterator iter(l);
@@ -343,13 +349,13 @@ void h_World::PhysTick()
 
 
 
-	if( player_coord[1]/H_CHUNK_WIDTH > chunk_number_y/2+1 )
+	if( player_coord[1]/H_CHUNK_WIDTH > chunk_number_y/2+2 )
 		MoveWorld( NORTH );
-	else if( player_coord[1]/H_CHUNK_WIDTH < chunk_number_y/2-1 )
+	else if( player_coord[1]/H_CHUNK_WIDTH < chunk_number_y/2-2 )
 		MoveWorld( SOUTH );
-	if( player_coord[0]/H_CHUNK_WIDTH > chunk_number_x/2+1 )
+	if( player_coord[0]/H_CHUNK_WIDTH > chunk_number_x/2+2 )
 		MoveWorld( EAST );
-	else if( player_coord[0]/H_CHUNK_WIDTH < chunk_number_x/2-1 )
+	else if( player_coord[0]/H_CHUNK_WIDTH < chunk_number_x/2-2 )
 		MoveWorld( WEST );
 
     player->Lock();

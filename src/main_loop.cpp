@@ -42,8 +42,8 @@ h_MainLoop::h_MainLoop(QGLFormat format ):
     window->setCentralWidget( this );
     window->setContentsMargins( 0, 0, 0, 0 );
 
-	screen_height= min( max( settings.value( "screen_height", 640 ).toInt(), H_MIN_SCREEN_WIDTH  ), H_MAX_SCREEN_WIDTH );
-    screen_width=  min( max( settings.value( "screen_width", 480 ).toInt(), H_MIN_SCREEN_HEIGHT ), H_MAX_SCREEN_HEIGHT );
+    screen_height= min( max( settings.value( "screen_height", 640 ).toInt(), H_MIN_SCREEN_HEIGHT ), H_MAX_SCREEN_WIDTH  );
+    screen_width=  min( max( settings.value( "screen_width" , 480 ).toInt(), H_MIN_SCREEN_WIDTH  ), H_MAX_SCREEN_HEIGHT );
 
     this->setFixedSize( screen_width, screen_height );
     renderer->SetViewportSize( screen_width, screen_height );

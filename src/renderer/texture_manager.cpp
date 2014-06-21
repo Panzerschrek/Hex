@@ -37,6 +37,12 @@ void r_TextureManager::DrawNullTexture( QImage* img )
     p.fillRect( 128, 0, 128, 128, Qt::magenta );
     p.fillRect( 0, 128, 128, 128, Qt::magenta );
     p.fillRect( 128, 128, 128, 128, Qt::black );
+
+    p.fillRect( 112, 112, 16, 16, Qt::red );
+    p.fillRect( 128, 112, 16, 16, Qt::green );
+	p.fillRect( 112, 128, 16, 16, Qt::blue );
+	p.fillRect( 128, 128, 16, 16, Qt::gray );
+
     QFont f( "Courier New", 16 );
     p.setFont( f );
     p.setPen( QColor( Qt::white ) );
@@ -73,7 +79,7 @@ void r_TextureManager::LoadTextures()
     for( int i= R_MAX_TEXTURE_RESOLUTION; i > texture_size; i>>=1, s^=1, d^=1 )
         rRGBAGetMip( &tf[s], &tf[d] );
 
-    rRGBAMirrorVertical( &tf[s] );
+	rRGBAMirrorVerticalAndSwapRB( &tf[s] );//convert image from inner QImage format to OpenGL RGBA8 format
     texture_array.TextureLayer( tex_id, tf[s].data );
 
     const char* config_file_name=  "textures/textures.json";
@@ -112,7 +118,7 @@ void r_TextureManager::LoadTextures()
                 for( int i= R_MAX_TEXTURE_RESOLUTION; i > texture_size; i>>=1, s^=1, d^=1 )
                     rRGBAGetMip( &tf[s], &tf[d] );
 
-                rRGBAMirrorVertical( &tf[s] );
+                rRGBAMirrorVerticalAndSwapRB( &tf[s] );//convert image from inner QImage format to OpenGL RGBA8 format
                 texture_array.TextureLayer( tex_id, tf[s].data );
             }
 

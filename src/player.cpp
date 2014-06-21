@@ -3,15 +3,17 @@
 
 #include "player.hpp"
 #include "block_collision.hpp"
-
+#include "world.hpp"
 
 
 h_Player::h_Player( h_World* w ):
     player_data_mutex( QMutex::NonRecursive ),
-    pos( 0.0f, 0.0f, float(H_CHUNK_HEIGHT/2 + 10) ),
     view_angle( 0.0f, 0.0f, 0.0f ),
     world(w)
 {
+	pos.x= ( world->Longitude() + world->ChunkNumberX()/2 ) * H_SPACE_SCALE_VECTOR_X * float( H_CHUNK_WIDTH );
+	pos.y= ( world->Latitude() + world->ChunkNumberY()/2 ) * H_SPACE_SCALE_VECTOR_Y  * float( H_CHUNK_WIDTH );
+	pos.z= float(H_CHUNK_HEIGHT/2 + 10);
 }
 
 
