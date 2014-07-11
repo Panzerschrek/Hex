@@ -17,7 +17,6 @@
 #define TEXTURE_CPP
 
 #include "texture.h"
-#include "jpeglib.h"
 #include "../math_lib/vec.h"
 
 

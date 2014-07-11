@@ -6,12 +6,12 @@
 #include "thread.hpp"
 #include "main_loop.hpp"
 #include "renderer/renderer.hpp"
-
+#include "console.hpp"
 
 int main( int argc, char* argv[] )
 {
     QApplication hex(argc, argv);
-    printf( "hex not first version\n" );
+	h_Console::Message( "hex not first version" );
 	h_MainLoop::Start();
 
     return hex.exec();

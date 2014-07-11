@@ -19,10 +19,11 @@ struct r_TextVertex
 
 #define H_MAX_TEXT_BUFFER_SIZE 8192
 
-#define LETTER_WIDTH 8
-#define LETTER_HEIGHT 18
-#define FONT_BITMAP_WIDTH 768
-#define FONT_BITMAP_HEIGHT 18
+//#define LETTER_WIDTH 8
+//#define LETTER_HEIGHT 18
+//#define FONT_BITMAP_WIDTH 768
+//#define FONT_BITMAP_HEIGHT 18
+#define LETTERS_IN_TEXTURE 96
 
 class r_Text
 {
@@ -30,13 +31,16 @@ class r_Text
 
 	r_Text();
 	~r_Text(){}
-	void AddText( unsigned int colomn, unsigned int row, unsigned int size, const unsigned char* color, const char* text );
-	void AddMultiText( unsigned int colomn, unsigned int row, unsigned int size, const unsigned char* color, const char* text, ... );
+	void AddText( float colomn, float row, unsigned int size, const unsigned char* color, const char* text );
+	void AddMultiText( float colomn, float row, unsigned int size, const unsigned char* color, const char* text, ... );
 
     void DrawCross();
 
 	void Draw();
     void SetViewport( unsigned int x, unsigned int y );
+
+    inline unsigned int ColomnsInScreen()const;
+    inline unsigned int RowsInScreen()const;
 
 	private:
 
@@ -48,6 +52,7 @@ class r_Text
 	float screen_x, screen_y;
 
     unsigned char* text_texture_data;
+    unsigned int letter_width, letter_height;
 
 	//GLuint font_texture_id;
 	r_Texture font_texture;
@@ -74,6 +79,15 @@ inline void r_Text::SetViewport( unsigned int x, unsigned int y )
 {
     screen_x= float(x);
     screen_y= float(y);
+}
+
+ inline unsigned int r_Text::ColomnsInScreen()const
+ {
+ 	return screen_x / letter_width;
+ }
+inline unsigned int r_Text::RowsInScreen()const
+{
+	return screen_y / letter_height;
 }
 
 #endif//TEXT_H

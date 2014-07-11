@@ -21,6 +21,9 @@ void main()
 
 	vec2 tc= f_tex_coord + sin( f_tex_coord.yx * 8.0 + vec2( time, time ) ) * 0.06125;
 	vec4 c=texture( tex, tc);
-	//c= vec4( 0.5, 0.5, 0.5, 1.0 );
+
+	//vec4 c= texelFetch( tex, ivec2( mod( tc, 1.0 ) * 256.0 ), 0 );
+	//c = round( c * 8.0 ) *  0.125;
+
 	color= vec4( l * c.xyz, c.a );
 }

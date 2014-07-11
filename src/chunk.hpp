@@ -47,16 +47,20 @@ private:
 
     void GenChunk();
     void PlantTrees();
+    void PlaneBigTree( short x, short y, short z );//local coordinates
     void PlantGrass();
     unsigned int CalculateWaterBlockCount();
     void GenWaterBlocks();
     void MakeLight();
     void SunRelight();
 
+
+    void ReCalculateHeightmap();
+
 //water management
     h_LiquidBlock* NewWaterBlock();
     void DeleteWaterBlock( h_LiquidBlock* b );
-
+//lights management
     h_LightSource* NewLightSource( short x, short y, short z, h_BlockType type );
     void DeleteLightSource( short x, short y, short z );
 
@@ -67,11 +71,15 @@ private:
     void SetBlockAndTransparency( short x, short y, short z, h_Block* b, h_TransparencyType t );
     void SetTransparency( short x, short y, short z, h_TransparencyType t );
 
+
+
     unsigned char transparency	[ H_CHUNK_WIDTH * H_CHUNK_WIDTH * H_CHUNK_HEIGHT ];
     h_Block* 	blocks	  		[ H_CHUNK_WIDTH * H_CHUNK_WIDTH * H_CHUNK_HEIGHT ];
     unsigned char sun_light_map	[ H_CHUNK_WIDTH * H_CHUNK_WIDTH * H_CHUNK_HEIGHT ];
     unsigned char fire_light_map[ H_CHUNK_WIDTH * H_CHUNK_WIDTH * H_CHUNK_HEIGHT ];
     int longitude, latitude;
+
+    unsigned char height_map [ H_CHUNK_WIDTH * H_CHUNK_WIDTH ];//z coordinates of first nonair block
 
 	bool need_update_light;
 

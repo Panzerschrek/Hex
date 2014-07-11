@@ -131,6 +131,7 @@ class r_Renderer : public QObject
 	void DrawWater();
 	void DrawSky();
 	void DrawSun();
+	void DrawConsole();
 
 	void CalculateFPS();
 
@@ -148,7 +149,7 @@ class r_Renderer : public QObject
 
 
 	//shaders
-	r_GLSLProgram world_shader, build_prism_shader, water_shader, skybox_shader, sun_shader;
+	r_GLSLProgram world_shader, build_prism_shader, water_shader, skybox_shader, sun_shader, console_bg_shader;
 
 
 	//VBO
@@ -223,6 +224,7 @@ class r_Renderer : public QObject
 	r_TextureManager texture_manager;
 	r_Texture sun_texture;
 	r_Texture water_texture;
+	r_Texture console_bg_texture;
 
 
 	//matrices and vectors

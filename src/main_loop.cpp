@@ -4,6 +4,7 @@
 #include "main_loop.hpp"
 //#include "glcorearb.h"
 #include "block_collision.hpp"
+#include "console.hpp"
 
 void h_MainLoop::Start()
 {
@@ -299,7 +300,8 @@ void h_MainLoop::keyPressEvent(QKeyEvent* e)
     }
     else if( e->key() == Qt::Key_B )
         printf( "build: %d %d %d\n", build_pos_x, build_pos_y, build_pos_z );
-
+	else if( e->key() == Qt::Key_QuoteLeft )
+		h_Console::OpenClose();
     return;
 }
 void h_MainLoop::focusOutEvent( QFocusEvent *)

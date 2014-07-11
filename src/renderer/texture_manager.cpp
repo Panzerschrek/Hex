@@ -3,6 +3,7 @@
 #include "texture_manager.hpp"
 #include "rendering_constants.hpp"
 #include "../block.hpp"
+#include "../console.hpp"
 #include <iostream>
 #include <fstream>
 
@@ -11,6 +12,8 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QFile>
+
+
 
 unsigned char r_TextureManager::texture_table[ NUM_BLOCK_TYPES * 8 ];
 bool r_TextureManager::texture_mode_table[ NUM_BLOCK_TYPES * 8 ];
@@ -40,8 +43,8 @@ void r_TextureManager::DrawNullTexture( QImage* img )
 
     p.fillRect( 112, 112, 16, 16, Qt::red );
     p.fillRect( 128, 112, 16, 16, Qt::green );
-	p.fillRect( 112, 128, 16, 16, Qt::blue );
-	p.fillRect( 128, 128, 16, 16, Qt::gray );
+    p.fillRect( 112, 128, 16, 16, Qt::blue );
+    p.fillRect( 128, 128, 16, 16, Qt::gray );
 
     QFont f( "Courier New", 16 );
     p.setFont( f );
@@ -68,8 +71,8 @@ void r_TextureManager::LoadTextures()
 
     QImage img( QSize( 256, 256 ), QImage::Format_RGBA8888 );
 
-	//"load" null texture
-	DrawNullTexture( &img );
+    //"load" null texture
+    DrawNullTexture( &img );
     tf[0].data= (unsigned char*)img.constBits();//using inner QImage memory to increase perfomanse
     tf[0].width= img.width();
     tf[0].height= img.height();
@@ -79,7 +82,7 @@ void r_TextureManager::LoadTextures()
     for( int i= R_MAX_TEXTURE_RESOLUTION; i > texture_size; i>>=1, s^=1, d^=1 )
         rRGBAGetMip( &tf[s], &tf[d] );
 
-	rRGBAMirrorVerticalAndSwapRB( &tf[s] );//convert image from inner QImage format to OpenGL RGBA8 format
+    rRGBAMirrorVerticalAndSwapRB( &tf[s] );//convert image from inner QImage format to OpenGL RGBA8 format
     texture_array.TextureLayer( tex_id, tf[s].data );
 
     const char* config_file_name=  "textures/textures.json";
@@ -87,7 +90,8 @@ void r_TextureManager::LoadTextures()
     QFile f( fn );
     if( !f.open( QIODevice::ReadOnly ) )
     {
-        printf( "fatal error, file \"%s\" not found\n", config_file_name );
+        //printf( "fatal error, file \"%s\" not found\n", config_file_name );
+        h_Console::Error( "fatal error, file \"%s\" not found", config_file_name );
     }
     QByteArray ba= f.readAll();
 
@@ -106,7 +110,11 @@ void r_TextureManager::LoadTextures()
             val= obj[ "filename" ];
 
             if( ! img.load( obj[ "filename" ].toString() ) )
-                printf( "error, texture \"%s\" not fund\n", obj[ "filename" ].toString().toLocal8Bit().data() );
+            {
+               // printf( "error, texture \"%s\" not fund\n", obj[ "filename" ].toString().toLocal8Bit().data() );
+               h_Console::Warning( "texture \"%s\" not fund", obj[ "filename" ].toString().toLocal8Bit().data() );
+                continue;
+            }
             else
             {
                 tf[0].data= (unsigned char*)img.constBits();//using inner QImage memory to increase perfomanse

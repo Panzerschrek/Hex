@@ -17,7 +17,7 @@ void r_Text::DrawCross()
 
 }
 
-void r_Text::AddMultiText( unsigned int colomn, unsigned int row, unsigned int size, const unsigned char* color, const char* text, ... )
+void r_Text::AddMultiText( float colomn, float row, unsigned int size, const unsigned char* color, const char* text, ... )
 {
 	static char str[ H_MAX_TEXT_BUFFER_SIZE ];
     va_list ap;
@@ -28,7 +28,7 @@ void r_Text::AddMultiText( unsigned int colomn, unsigned int row, unsigned int s
     AddText( colomn, row, size, color, str );
 }
 
-void r_Text::AddText( unsigned int colomn, unsigned int row, unsigned int size, const unsigned char* color, const char* text )
+void r_Text::AddText( float colomn, float row, unsigned int size, const unsigned char* color, const char* text )
 {
     const char* str= text;
 
@@ -37,17 +37,17 @@ void r_Text::AddText( unsigned int colomn, unsigned int row, unsigned int size, 
 
     if( draw_crosshair )//HACK for crosshair
     {
-        x= -float( 2*LETTER_WIDTH ) / screen_x;
-        y= -float( 2*LETTER_HEIGHT ) / screen_y;
+        x= -float( 2*letter_width ) / screen_x;
+        y= -float( 2*letter_height ) / screen_y;
     }
     else
     {
-        x0= x=  2.0f * float( colomn * LETTER_WIDTH ) / screen_x - 1.0f;
-        y=  -2.0f * float( (row + 1) * LETTER_HEIGHT ) / screen_y + 1.0f;
+        x0= x=  2.0f * colomn * float( letter_width ) / screen_x - 1.0f;
+        y=  -2.0f * (row + 1) * float( letter_height ) / screen_y + 1.0f;
     }
 
-    dx= 2.0f * float( LETTER_WIDTH * size ) / screen_x;
-    dy= 2.0f * float( LETTER_HEIGHT * size ) / screen_y;
+    dx= 2.0f * float( letter_width * size ) / screen_x;
+    dy= 2.0f * float( letter_height * size ) / screen_y;
 
 
     r_TextVertex* v= vertices + vertex_buffer_pos;
@@ -146,7 +146,6 @@ r_Text::r_Text():
     text_vbo.VertexAttribPointer( 2, 4, GL_UNSIGNED_BYTE, true, sizeof(float)*2 + 2*sizeof(short) );//color
 
 
-
 	if( text_shader.Load( "shaders/text_frag.glsl", "shaders/text_vert.glsl", NULL ) )
 		printf( "error, text shader not found\n" );
     text_shader.SetAttribLocation( "coord", 0 );
@@ -155,4 +154,6 @@ r_Text::r_Text():
     text_shader.MoveOnGPU();
 
     font_texture.Load( "textures/fixedsys8x18.bmp" );
+    letter_height= font_texture.GetHeight();
+    letter_width= font_texture.GetWidth() / LETTERS_IN_TEXTURE;
 }
