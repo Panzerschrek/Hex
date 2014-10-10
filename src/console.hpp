@@ -1,4 +1,5 @@
 #ifndef CONSOLE_HPP
+#define CONSOLE_HPP
 
 #define H_CONSOLE_BUFFER_LEN 4096
 #define H_CONSOLE_BUFFER_MAX_LINES (H_CONSOLE_BUFFER_LEN/2)
@@ -68,5 +69,4 @@ inline float h_Console::GetPosition()
 }
 
 
-#define CONSOLE_HPP
 #endif//console.hpp

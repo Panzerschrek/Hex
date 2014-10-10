@@ -15,11 +15,15 @@ h_TransparencyType h_Block::Transparency()
 		t= TRANSPARENCY_AIR;
 		break;
 
+		case FOLIAGE:
+		t= TRANSPARENCY_GREENERY;
+		break;
+
 		case WATER:
 		t= TRANSPARENCY_LIQUID;
 		break;
 
-		case FIRE:
+		case FIRE_STONE:
 		t= TRANSPARENCY_SOLID;
 		break;
 
@@ -28,12 +32,6 @@ h_TransparencyType h_Block::Transparency()
 		break;
 	};
 	return t;
-   /* if( type == AIR )
-        return TRANSPARENCY_AIR;
-    else if( type == WATER )
-        return TRANSPARENCY_LIQUID;
-    else
-        return TRANSPARENCY_SOLID;*/
 }
 
 #define MACRO_TO_STR(X) #X

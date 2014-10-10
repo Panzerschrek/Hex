@@ -7,6 +7,7 @@
 #include "glcorearb.h"
 #include "rendering_constants.hpp"
 #include "../console.hpp"
+#include "ogl_state_manager.hpp"
 
 void r_Renderer::UpdateChunk(unsigned short X,  unsigned short Y )
 {
@@ -112,17 +113,12 @@ void r_Renderer::UpdateWorld()
         world_vb.new_vb_data= new r_WorldVertex[ new_allocated_vertex_count ];
 
         vb_shift= 0;
-        //water_vb_shift= 0;
         for( i= 0; i< world->ChunkNumberX(); i++ )
             for( j= 0; j< world->ChunkNumberY(); j++ )
             {
                 n=  i + j * world->ChunkNumberX();
                 old_chunk_vb_data= chunk_info[n].chunk_vb.vb_data;
                 chunk_info[n].chunk_vb.vb_data= world_vb.new_vb_data + vb_shift;
-
-                chunk_info[n].chunk_vb.water_vb_data= chunk_info[n].chunk_vb.vb_data +
-                                                      chunk_info[n].chunk_vb.real_vertex_count -
-                                                      chunk_info[n].chunk_vb.water_vertex_count;
 
 
                 if( !chunk_info[n].chunk_data_updated )
@@ -162,7 +158,6 @@ void r_Renderer::UpdateWorld()
         if( full_update )
         {
             delete[] world_vb.vb_data;
-            //world_vb.vb_data= world_vb.new_vb_data;
             world_vb.allocated_vertex_count= new_allocated_vertex_count;
             world_vb.need_update_vbo= true;
         }
@@ -521,7 +516,7 @@ void r_Renderer::Draw()
     DrawBuildPrism();
     DrawWater();
 
-   DrawConsole();
+   	DrawConsole();
 
     if( settings.value( "show_debug_info", false ).toBool() && h_Console::GetPosition() == 0.0f )
     {
@@ -542,10 +537,21 @@ void r_Renderer::Draw()
 
 void r_Renderer::DrawConsole()
 {
+	static const GLenum state_blend_mode[]= { GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA };
+	static const float state_clear_color[]= { 0.0f, 0.0f, 0.0f, 0.0f };
+	static const r_OGLState state(
+								 true, false, true, false,
+								state_blend_mode,
+								state_clear_color,
+								1.0f, GL_FRONT, GL_TRUE );
+
 	h_Console::Move( 0.016f );
 
 	if( h_Console::GetPosition() == 0.0f )
 		return;
+
+	r_OGLStateManager::UpdateState( state );
+
 
 	console_bg_shader.Bind();
 	console_bg_shader.Uniform( "tex", 0 );
@@ -555,8 +561,6 @@ void r_Renderer::DrawConsole()
 
 	console_bg_texture.BindTexture();
 
-	//glDisable( GL_BLEND );
-	glBlendFunc( GL_ONE, GL_SRC_COLOR );
 
 	glDrawArrays( GL_POINTS, 0, 1 );
 	h_Console::Draw( text_manager );
@@ -594,10 +598,14 @@ void r_Renderer::CalculateFPS()
 
 void r_Renderer::DrawWorld()
 {
-    glDisable( GL_BLEND );
-    glCullFace( GL_FRONT );
-    glEnable( GL_CULL_FACE );
-    glEnable( GL_DEPTH_TEST );
+    static const GLenum state_blend_mode[]= { GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA };
+	static const float state_clear_color[]= { 0.0f, 0.0f, 0.0f, 0.0f };
+	static const r_OGLState state(
+								 false, true, true, false,
+								state_blend_mode,
+								state_clear_color,
+								1.0f, GL_FRONT, GL_TRUE );
+	r_OGLStateManager::UpdateState( state );
 
     texture_manager.BindTextureArray( 0 );
 
@@ -615,14 +623,19 @@ void r_Renderer::DrawWorld()
     glMultiDrawElementsBaseVertex( GL_TRIANGLES, world_vb.chunk_meshes_index_count, GL_UNSIGNED_SHORT,
                                    (const GLvoid**)(world_vb.multi_indeces), world_vb.chunks_to_draw,
                                    world_vb.base_vertices );
-
 }
 
 void r_Renderer::DrawSky()
 {
-    glDisable( GL_BLEND );
-    glDisable( GL_CULL_FACE );
-    glEnable( GL_DEPTH_TEST );
+    static const GLenum state_blend_mode[]= { GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA };
+	static const float state_clear_color[]= { 0.0f, 0.0f, 0.0f, 0.0f };
+	static const r_OGLState state(
+								 false, false, true, false,
+								state_blend_mode,
+								state_clear_color,
+								1.0f, GL_FRONT, GL_TRUE );
+	r_OGLStateManager::UpdateState( state );
+
 
     skybox_shader.Bind();
     skybox_shader.Uniform( "cam_pos", cam_pos );
@@ -634,14 +647,16 @@ void r_Renderer::DrawSky()
 
 void r_Renderer::DrawSun()
 {
-    glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
-    glEnable( GL_BLEND );
-    //glEnable( GL_POINT_SPRITE );
-    glEnable(GL_PROGRAM_POINT_SIZE);
-    glEnable( GL_DEPTH_TEST );
-#ifdef OGL21
-    glEnable( GL_POINT_SPRITE );
-#endif
+	static const GLenum state_blend_mode[]= { GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA };
+	static const float state_clear_color[]= { 0.0f, 0.0f, 0.0f, 0.0f };
+	static const r_OGLState state(
+								 true, false, true, true,
+								state_blend_mode,
+								state_clear_color,
+								1.0f, GL_FRONT, GL_TRUE );
+	r_OGLStateManager::UpdateState( state );
+
+
 
     sun_texture.BindTexture(0);
 
@@ -656,9 +671,15 @@ void r_Renderer::DrawSun()
 
 void r_Renderer::DrawWater()
 {
-    glDisable( GL_CULL_FACE );
-    glEnable( GL_BLEND );
-    glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+	static const GLenum state_blend_mode[]= { GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA };
+	static const float state_clear_color[]= { 0.0f, 0.0f, 0.0f, 0.0f };
+	static const r_OGLState state(
+								 true, false, true, false,
+								state_blend_mode,
+								state_clear_color,
+								1.0f, GL_FRONT, GL_TRUE );
+	r_OGLStateManager::UpdateState( state );
+
 
     water_texture.BindTexture( 0 );
 
@@ -693,11 +714,18 @@ void r_Renderer::DrawWater()
 
 void r_Renderer::DrawBuildPrism()
 {
+	static const GLenum state_blend_mode[]= { GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA };
+	static const float state_clear_color[]= { 0.0f, 0.0f, 0.0f, 0.0f };
+	static const r_OGLState state(
+								 false, false, true, false,
+								state_blend_mode,
+								state_clear_color,
+								1.0f, GL_FRONT, GL_TRUE );
+
     if( build_pos.z < 0.0f )
         return;
-    glDisable( GL_BLEND );
-    glEnable( GL_DEPTH_TEST );
-    // glLineWidth( 4.0f );
+
+	r_OGLStateManager::UpdateState( state );
 
     build_prism_shader.Bind();
     build_prism_shader.Uniform( "view_matrix", view_matrix );
@@ -963,14 +991,28 @@ r_Renderer::r_Renderer( h_World* w ):
     updade_ticks_per_second= update_ticks_in_last_second= 0;
 }
 
+
+r_Renderer::~r_Renderer()
+{
+	//update_thread.killTimer(
+	//update_thread.wait();
+	//update_thread.exit();
+}
+
 void r_Renderer::InitGL()
 {
     if( QGLContext::currentContext() == NULL )
         h_Console::Message( "error, null gl context" );
 
     GetGLFunctions();
-    glClearDepth( 1.0f );
-    glDepthFunc( GL_LEQUAL );
+
+	if( settings.value( "antialiasing", 0 ).toInt() != 0 )
+		glEnable( GL_MULTISAMPLE );
+    //glEnable( GL_SAMPLE_ALPHA_TO_COVERAGE );
+
+    r_OGLState state;
+    state.InitialState();
+    r_OGLStateManager::SetState( state );
 
     LoadShaders();
     InitFrameBuffers();
@@ -1134,6 +1176,6 @@ void r_Renderer::LoadTextures()
     	console_bg_texture.MoveOnGPU();
     }
     else
-    h_Console::Warning( "texture \"textures/console_bg_normalized.png\" not found" );
+    	h_Console::Warning( "texture \"textures/console_bg_normalized.png\" not found" );
 }
 #endif//RENDERER_CPP

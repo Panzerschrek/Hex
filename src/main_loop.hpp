@@ -14,7 +14,7 @@ class h_MainLoop : public QGLWidget
 public:
    	static void Start();
     //h_MainLoop(){}
-    virtual ~h_MainLoop() {}
+    virtual ~h_MainLoop();
 
     virtual QSize minimumSizeHint() const;
     virtual QSize sizeHint() const;

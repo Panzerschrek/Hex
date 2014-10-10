@@ -29,6 +29,10 @@ inline void usleep(int n){ Sleep(n/1000);}
 #define H_MAX_CHUNKS_LOG2 6
 
 
+#define H_WORLD_REGION_SIZE_X 24
+#define H_WORLD_REGION_SIZE_Y 20
+
+
 #define H_MAX_WATER_LEVEL 16384
 #define H_MAX_WATER_LEVEL_LOG2 14
 #define H_WATER_COMPRESSION_PER_BLOCK 64//(H_MAX_WATER_LEVEL / 1024)
@@ -72,7 +76,7 @@ inline void usleep(int n){ Sleep(n/1000);}
 enum h_BlockType:
 unsigned short
 {
-    AIR= 0,
+    AIR= 0,//MUST BE ZERO
     SPHERICAL_BLOCK,
     STONE,
     SOIL,
@@ -81,8 +85,8 @@ unsigned short
     WATER,
     SAND,
     FOLIAGE,
-    FIRE,
-    NUM_BLOCK_TYPES= 10,
+    FIRE_STONE,
+    NUM_BLOCK_TYPES,
     BLOCK_UNKNOWN= 65535
 };
 

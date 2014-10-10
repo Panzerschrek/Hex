@@ -418,35 +418,129 @@ void r_ChunkInfo::GetQuadCount()
 
     unsigned int quad_count= 0;
 
-    for( x= 0; x< H_CHUNK_WIDTH - 1; x++ )
-        for( y= 1; y< H_CHUNK_WIDTH - 1; y++ )
+    min_geometry_height= H_CHUNK_HEIGHT;
+    max_geometry_height= 0;
+
+    for( x= 0; x< H_CHUNK_WIDTH; x++ )
+        for( y= 0; y< H_CHUNK_WIDTH; y++ )
         {
-            t_up= chunk->Transparency( x, y, 1 );
+            t_up= chunk->Transparency( x, y, 0 );
+
+            unsigned char* t_up_p= chunk->GetTransparencyData() + BlockAddr(x,y,1);
+            unsigned char* t_fr_p= chunk->GetTransparencyData() + BlockAddr(x + 1, y + (1&(x+1)),0);
+            unsigned char* t_br_p= chunk->GetTransparencyData() + BlockAddr(x + 1, y - ( 1&x )  ,0);
+            unsigned char* t_f_p=  chunk->GetTransparencyData() + BlockAddr(x,y+1,0);
+
+            //front chunk border
+            if( y == H_CHUNK_WIDTH - 1 && x < H_CHUNK_WIDTH - 1 )
+            {
+				if( chunk_front != NULL )
+					t_f_p= chunk_front->GetTransparencyData() + BlockAddr( x, 0, 0 );
+				else
+					t_f_p= chunk->GetTransparencyData() + BlockAddr(x,H_CHUNK_WIDTH - 1,0);//this block transparency
+				if(x&1)
+					t_fr_p= chunk->GetTransparencyData() + BlockAddr( x + 1, H_CHUNK_WIDTH - 1, 0 );
+				else if( chunk_front != NULL )
+					t_fr_p= chunk_front->GetTransparencyData() + BlockAddr( x + 1, 0, 0 );
+				else
+					t_fr_p= chunk->GetTransparencyData() + BlockAddr(x,H_CHUNK_WIDTH - 1,0);//this block transparency
+            }
+            //back chunk border
+            if( y == 0 && x < H_CHUNK_WIDTH - 1 )
+            {
+				if(!(x&1))
+					t_br_p= chunk->GetTransparencyData() + BlockAddr( x + 1, 0, 0 );
+				else if( chunk_back != NULL )
+					t_br_p= chunk_back->GetTransparencyData() + BlockAddr( x+ 1, H_CHUNK_WIDTH - 1, 0 );
+				else
+					t_br_p= chunk->GetTransparencyData() + BlockAddr(x,0,0);//this block transparency
+            }
+            //right chunk border
+            if( x == H_CHUNK_WIDTH - 1 && y> 0 && y< H_CHUNK_WIDTH-1 )
+            {
+            	if( chunk_right != NULL )
+				{
+					t_fr_p= chunk_right->GetTransparencyData() + BlockAddr( 0, y, 0 );
+					t_br_p= chunk_right->GetTransparencyData() + BlockAddr( 0, y - 1, 0 );
+				}
+				else
+					t_fr_p= t_br_p= chunk->GetTransparencyData() + BlockAddr(H_CHUNK_WIDTH - 1,y,0);//this block transparency
+            }
+            if( x == H_CHUNK_WIDTH - 1 && y == H_CHUNK_WIDTH - 1 )
+            {
+				if( chunk_front != NULL )
+					t_f_p= chunk_front->GetTransparencyData() + BlockAddr( H_CHUNK_WIDTH - 1, 0, 0 );
+				else
+					t_f_p= chunk->GetTransparencyData() + BlockAddr(x,y,0);//this block transparency;
+				if( chunk_right != NULL )
+				{
+					t_fr_p= chunk_right->GetTransparencyData() + BlockAddr( 0, H_CHUNK_WIDTH  - 1, 0 );
+					t_br_p= chunk_right->GetTransparencyData() + BlockAddr( 0, H_CHUNK_WIDTH  - 2, 0 );
+				}
+				else
+					t_fr_p= t_br_p= chunk->GetTransparencyData() + BlockAddr(H_CHUNK_WIDTH - 1,H_CHUNK_WIDTH - 1,0);//this block transparency;
+            }
+            if( x == H_CHUNK_WIDTH - 1 && y == 0 )
+            {
+            	//t_f_p= chunk->GetTransparencyData() + BlockAddr( H_CHUNK_WIDTH - 1, 1, 0 );
+				if( chunk_right != NULL )
+					t_fr_p= chunk_right->GetTransparencyData() + BlockAddr( 0, 0, 0 );
+				else
+					t_fr_p= chunk->GetTransparencyData() + BlockAddr(H_CHUNK_WIDTH - 1,0,0);//this block transparency;
+				if( chunk_back_right !=NULL )
+					t_br_p= chunk_back_right->GetTransparencyData() + BlockAddr( 0, H_CHUNK_WIDTH - 1, 0 );
+				else
+					t_br_p= chunk->GetTransparencyData() + BlockAddr(H_CHUNK_WIDTH - 1,0,0);//this block transparency;
+            }
             for( z= 0; z< H_CHUNK_HEIGHT - 2; z++ )
             {
-                t= t_up;
-                t_fr= chunk->Transparency( x + 1, y + ( 1&(x+1) ), z );//forward right
-                t_br= chunk->Transparency( x + 1, y - ( 1&x ), z );	//back right
-                t_up= chunk->Transparency( x, y, z + 1 );//up
-                t_f= chunk->Transparency( x, y + 1, z );//forward
+				t= t_up;
+               	t_fr= *t_fr_p;
+               	t_br= *t_br_p;
+               	t_up= *t_up_p;
+               	t_f= *t_f_p;
 
 #define ADD_QUADS \
                 if( t != t_up ) \
+                {\
                     quad_count+=2; \
+                    if( z > max_geometry_height ) max_geometry_height= z;\
+                    else if( z < min_geometry_height ) min_geometry_height= z;\
+                }\
                 if( t != t_fr ) \
+				{\
                     quad_count++; \
+                    if( z > max_geometry_height ) max_geometry_height= z;\
+                    else if( z < min_geometry_height ) min_geometry_height= z;\
+                }\
                 if( t != t_br ) \
+				{\
                     quad_count++; \
+                    if( z > max_geometry_height ) max_geometry_height= z;\
+                    else if( z < min_geometry_height ) min_geometry_height= z;\
+                }\
                 if( t!= t_f ) \
-                    quad_count++;
+				{\
+                    quad_count++; \
+                    if( z > max_geometry_height ) max_geometry_height= z;\
+                    else if( z < min_geometry_height ) min_geometry_height= z;\
+                }
                 ADD_QUADS
-            }
-        }
+
+				t_fr_p++;
+               	t_br_p++;
+               	t_up_p++;
+               	t_f_p++;
+
+            }//for z
+        }//for y
+
+	goto func_end;
 
     //back chunk border( x E [ 0; H_CHUNK_WIDTH - 2 ], y=0 )
     for( x= 0; x< H_CHUNK_WIDTH - 1; x++ )
     {
-        t_up= chunk->Transparency(  x, 0, 1 );
+        t_up= chunk->Transparency(  x, 0, 0 );
         for( z= 0; z< H_CHUNK_HEIGHT - 2; z++ )
         {
             t= t_up;
@@ -466,7 +560,7 @@ void r_ChunkInfo::GetQuadCount()
     //right chunk border ( y E [ 1; H_CHUNK_WIDTH - 2 ] )
     for( y= 1; y< H_CHUNK_WIDTH - 1; y++ )
     {
-        t_up= chunk->Transparency(  H_CHUNK_WIDTH - 1, y, 1 );
+        t_up= chunk->Transparency(  H_CHUNK_WIDTH - 1, y, 0 );
         for( z= 0; z< H_CHUNK_HEIGHT - 2; z++ )
         {
             t= t_up;
@@ -486,7 +580,7 @@ void r_ChunkInfo::GetQuadCount()
     //front chunk border ( x E[ 0; H_CHUNK_WIDTH - 2 ] )
     for( x= 0; x < H_CHUNK_WIDTH - 1; x++ )
     {
-        t_up= chunk->Transparency( x, H_CHUNK_WIDTH - 1, 1 );
+        t_up= chunk->Transparency( x, H_CHUNK_WIDTH - 1, 0 );
         for( z= 0; z< H_CHUNK_HEIGHT - 2; z++ )
         {
             t= t_up;
@@ -509,7 +603,7 @@ void r_ChunkInfo::GetQuadCount()
     }
 
     //x= y= H_CHUNK_WIDTH - 1
-    t_up= chunk->Transparency( H_CHUNK_WIDTH - 1, H_CHUNK_WIDTH - 1, 1 );
+    t_up= chunk->Transparency( H_CHUNK_WIDTH - 1, H_CHUNK_WIDTH - 1, 0 );
     for( z= 0; z< H_CHUNK_HEIGHT - 2; z++ )
     {
         t= t_up;
@@ -531,7 +625,7 @@ void r_ChunkInfo::GetQuadCount()
     }
 
     //x= H_CHUNK_WIDTH - 1, y=0
-    t_up= chunk->Transparency( H_CHUNK_WIDTH - 1, 0, 1 );
+    t_up= chunk->Transparency( H_CHUNK_WIDTH - 1, 0, 0 );
     for( z= 0; z< H_CHUNK_HEIGHT - 2; z++ )
     {
         t= t_up;
@@ -550,6 +644,7 @@ void r_ChunkInfo::GetQuadCount()
         ADD_QUADS
     }
 
+func_end:
     chunk_vb.new_vertex_count= quad_count * 4;
 
 #undef ADD_QUADS
@@ -623,27 +718,23 @@ v[0].tex_coord[0]= v[0].coord[0] & 127;\
 
 void r_ChunkInfo::BuildChunkMesh()
 {
-    short x, y, z;
+    int x, y, z;
 
     unsigned char t, t_up, t_fr, t_br, t_f;//block transparency
     unsigned char normal_id;
-    unsigned char v13[2];
     unsigned char tex_id, tex_scale, light[2];
 
     r_WorldVertex* v= chunk_vb.vb_data;
-    r_WorldVertex* tmp_v;
     r_WorldVertex tmp_vertex;
 
     h_Block* b;
 
-    short X= chunk->Longitude() * H_CHUNK_WIDTH, Y= chunk->Latitude() * H_CHUNK_WIDTH;
-    short relative_X, relative_Y;
+    int X= chunk->Longitude() * H_CHUNK_WIDTH, Y= chunk->Latitude() * H_CHUNK_WIDTH;
+    int relative_X, relative_Y;
     h_World* w= chunk->GetWorld();
     relative_X= ( chunk->Longitude() - w->Longitude() ) * H_CHUNK_WIDTH;
     relative_Y= ( chunk->Latitude() - w->Latitude() ) * H_CHUNK_WIDTH;
 
-    chunk_vb.water_vb_data= chunk_vb.vb_data + chunk_vb.new_vertex_count - 8;
-    chunk_vb.water_vertex_count= 0;
 
     bool flat_lighting= chunk->IsEdgeChunk();
 
@@ -651,14 +742,20 @@ void r_ChunkInfo::BuildChunkMesh()
     {
         for( y= 1; y< H_CHUNK_WIDTH - 1; y++ )
         {
-            t_up= chunk->Transparency( x, y, 0 );
-            for( z= 0; z< H_CHUNK_HEIGHT - 2; z++ )
+            t_up= chunk->Transparency( x, y, min_geometry_height );
+
+            unsigned char* t_up_p= chunk->GetTransparencyData() + BlockAddr(x,y,min_geometry_height+1);
+            unsigned char* t_fr_p= chunk->GetTransparencyData() + BlockAddr(x + 1, y + (1&(x+1)),min_geometry_height);
+            unsigned char* t_br_p= chunk->GetTransparencyData() + BlockAddr(x + 1, y - ( 1&x )  ,min_geometry_height);
+            unsigned char* t_f_p=  chunk->GetTransparencyData() + BlockAddr(x,y+1,min_geometry_height);
+
+            for( z= min_geometry_height; z<= max_geometry_height; z++ )
             {
                 t= t_up;
-                t_fr= chunk->Transparency( x + 1, y + ( 1&(x+1) ), z );//forward right
-                t_br= chunk->Transparency( x + 1, y - ( 1&x ), z );	//back right
-                t_up= chunk->Transparency( x, y, z + 1 );//up
-                t_f= chunk->Transparency( x, y + 1, z );//forward
+               	t_fr= *t_fr_p;
+               	t_br= *t_br_p;
+               	t_up= *t_up_p;
+               	t_f= *t_f_p;
 
                 if( t != t_up )//up
                 {
@@ -940,10 +1037,15 @@ void r_ChunkInfo::BuildChunkMesh()
                         light[1]= chunk->FireLightLevel( x, y+1, z );
                     }
                     BUILD_QUADS_FORWARD
-                }
-            }
-        }
-    }
+                }//forward quad
+
+                t_fr_p++;
+               	t_br_p++;
+               	t_up_p++;
+               	t_f_p++;
+            }//for z
+        }//for y
+    }//for x
 
 #if 1
     //back chunk border( x E [ 0; H_CHUNK_WIDTH - 2 ], y=0 )
@@ -955,7 +1057,7 @@ void r_ChunkInfo::BuildChunkMesh()
         {
             t= t_up;
             if( ! (x&1) )
-                t_br= chunk->Transparency( x + 1, 0, z );//forward right
+                t_br= chunk->Transparency( x + 1, 0, z );//back right
             else if( chunk_back != NULL )
                 t_br= chunk_back->Transparency( x + 1, H_CHUNK_WIDTH - 1, z );
             else
@@ -1307,8 +1409,6 @@ void r_ChunkInfo::BuildChunkMesh()
             if( t > t_fr )
             {
                 normal_id= BACK_LEFT;
-                v13[0]= 3;
-                v13[1]= 1;
                 b= chunk_right->GetBlock( 0, 0, z );
                 light[0]= chunk->SunLightLevel( x, y, z );
                 light[1]= chunk->FireLightLevel( x, y, z );
@@ -1352,7 +1452,6 @@ void r_ChunkInfo::BuildChunkMesh()
             else
             {
                 normal_id= FORWARD;
-                v13[0]= 1;
                 b= chunk->GetBlock( x, y, z );
                 light[0]= chunk->SunLightLevel( x, y + 1, z );
                 light[1]= chunk->FireLightLevel( x, y + 1, z );
@@ -1362,8 +1461,6 @@ void r_ChunkInfo::BuildChunkMesh()
     }
 #endif
 
-
-    chunk_vb.water_vb_data+= 8;
 }
 
 #endif//CHUNK_INFO_CPP

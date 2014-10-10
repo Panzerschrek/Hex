@@ -5,49 +5,48 @@
 #include "world.hpp"
 #include "math_lib/rand.h"
 
-#define H_SEA_LEVEL  (H_CHUNK_HEIGHT/2 -4 )
+#define H_SEA_LEVEL  (H_CHUNK_HEIGHT/2)
 
-float Noise2(const int x, const int y)   //range - [-1;1]
+
+typedef int fixed16_t;
+
+fixed16_t Noise2( int x, int y )
 {
-    int n = x + y * 57;
+	int n = x + y * 57;
     n = (n << 13) ^ n;
-    return ((n * (n * n * 15731 + 789221) + 1376312589) & 0x7fffffff) /
-           1073741823.5f - 1.0f;
+
+    return ( ( (n * (n * n * 15731 + 789221) + 1376312589) & 0x7fffffff )>>14 ) - 65536;
 }
 
-float InterpolatedNoise(const short x, const short y)   //range - [-1;1]
+fixed16_t InterpolatedNoise( int x, int y )
 {
-    const short X = x >> 6;
-    const short Y = y >> 6;
+	int X= x>>6, Y= y>>6;
 
-    const float noise[4]=
-    {
-        Noise2(X, Y),
+	fixed16_t dx= x&63, dy= y&63;
+	fixed16_t dy1= 64-dy;
+
+	fixed16_t noise[]={
+		Noise2(X, Y),
         Noise2(X + 1, Y),
         Noise2(X + 1, Y + 1),
-        Noise2(X, Y + 1)
-    };
+        Noise2(X, Y + 1) };
 
-    const float dx = (float (x) - float (X << 6))*0.015625f;
-    const float dy = (float (y) - float (Y << 6))*0.015625f;
+	fixed16_t interp_x[]= {
+		noise[3] * dy + noise[0] * dy1,
+		noise[2] * dy + noise[1] * dy1};
 
-    const float interp_x[2]=
-    {
-        dy * noise[3] + (1.0f - dy) * noise[0],
-        dy * noise[2] + (1.0f - dy) * noise[1]
-    };
-    return interp_x[1] * dx + interp_x[0] * (1.0f - dx);
+	return ( interp_x[1] * dx + interp_x[0] * (63-dx) )>>12;
 }
 
-float FinalNoise(short x, short y)   //range [-1;1]  middle= 0
+
+fixed16_t FinalNoise( int x, int y )
 {
-    float r = 0.5f * InterpolatedNoise(x, y);
+	fixed16_t r= InterpolatedNoise(x, y)>>1;
+	r+= InterpolatedNoise(x<<1,y<<1)>>2;
+	r+= InterpolatedNoise(x<<2,y<<2)>>3;
 
-    x <<= 1, y <<= 1;
-    r += 0.25f * InterpolatedNoise(x, y);
+	return r;
 
-    x <<= 1, y <<= 1;
-    return (r += 0.125f * InterpolatedNoise(x, y));
 }
 
 
@@ -65,16 +64,18 @@ void h_Chunk::GenChunk()
     short h, soil_h;
     short addr;
 
+
+
     for( x= 0; x< H_CHUNK_WIDTH; x++ )
     {
         for( y= 0; y< H_CHUNK_WIDTH; y++ )
         {
-            h= H_CHUNK_HEIGHT/2 + short( 24.0f * FinalNoise( short( float( x + longitude * H_CHUNK_WIDTH ) * H_SPACE_SCALE_VECTOR_X  ),
-                                         y + latitude * H_CHUNK_WIDTH ) );
+            h= (H_CHUNK_HEIGHT/2) + (( 2 * 24 * FinalNoise( short( float(x + longitude * H_CHUNK_WIDTH) * H_SPACE_SCALE_VECTOR_X  ),
+                                         y + latitude * H_CHUNK_WIDTH ) ) >>16 ) ;
             //if( longitude == -1 &&  latitude == -1 )h= 3;
 
-            soil_h= 4 + short( 2.0f * FinalNoise( short( float( x + longitude * H_CHUNK_WIDTH ) * H_SPACE_SCALE_VECTOR_X ) * 4,
-                                                  ( y + latitude * H_CHUNK_WIDTH ) * 4  ) );
+            soil_h= 4 + (( 2 * FinalNoise( short( float( x + longitude * H_CHUNK_WIDTH ) * H_SPACE_SCALE_VECTOR_X ) * 4,
+                                                  ( y + latitude * H_CHUNK_WIDTH ) * 4  ) )>>16 );
 
             SetBlockAndTransparency( x, y, 0, world->NormalBlock( SPHERICAL_BLOCK), TRANSPARENCY_SOLID );
             SetBlockAndTransparency( x, y, H_CHUNK_HEIGHT-1, world->NormalBlock( SPHERICAL_BLOCK), TRANSPARENCY_SOLID );
@@ -103,8 +104,104 @@ void h_Chunk::GenChunk()
                 blocks[ addr ]= world->NormalBlock( AIR );
             }
 
-        }
-    }
+        }//for y
+    }//for x
+
+}
+
+
+void h_Chunk::GenChunkFromFile( const HEXCHUNK_header* header, QDataStream& stream )
+{
+	PrepareWaterBlocksCache( header->water_block_count );
+	h_LiquidBlock* water_blocks= water_blocks_data.initial_water_blocks;
+
+	for( int i= 0; i< H_CHUNK_WIDTH * H_CHUNK_WIDTH * H_CHUNK_HEIGHT; i++ )
+	{
+		h_BlockType block_id;
+		unsigned short s_block_id;
+		//HACK. if block type basic integer type changed, this must be changed too
+		stream >> s_block_id;
+		block_id= (h_BlockType)s_block_id;
+
+		unsigned short water_level;
+		h_LightSource* light_source;
+		h_Block* b;
+
+		switch(block_id)
+		{
+			case AIR:
+			case SPHERICAL_BLOCK:
+			case STONE:
+    		case SOIL:
+   			case WOOD:
+    		case GRASS:
+    		case SAND:
+    		case FOLIAGE:
+    		blocks[i]= b= world->NormalBlock(block_id);
+    		transparency[i]= b->Transparency();
+    		break;
+
+    		case FIRE_STONE:
+    		blocks[i]= light_source= new h_LightSource( FIRE_STONE, H_MAX_FIRE_LIGHT );
+    		light_source_list.Add( light_source );
+    		transparency[i]= blocks[i]->Transparency();
+
+    		light_source->x= i >> (H_CHUNK_WIDTH_LOG2 + H_CHUNK_HEIGHT_LOG2);
+			light_source->y= (i>>H_CHUNK_HEIGHT_LOG2) & (H_CHUNK_WIDTH-1);
+			light_source->z= i & (H_CHUNK_HEIGHT-1);
+    		break;
+
+    		case WATER:
+    		blocks[i]= water_blocks;
+    		transparency[i]= TRANSPARENCY_LIQUID;
+    		stream >> water_level;
+
+    		water_blocks->x= i >> (H_CHUNK_WIDTH_LOG2 + H_CHUNK_HEIGHT_LOG2);
+			water_blocks->y= (i>>H_CHUNK_HEIGHT_LOG2) & (H_CHUNK_WIDTH-1);
+			water_blocks->z= i & (H_CHUNK_HEIGHT-1);
+
+    		water_blocks->SetLiquidLevel( water_level );
+    		water_blocks_data.water_block_list.Add( water_blocks );
+			water_blocks++;
+    		break;
+
+    		default:
+    		break;
+		};
+	}//for blocks in
+}
+
+
+void h_Chunk::SaveChunkToFile( QDataStream& stream )
+{
+	for( int i= 0; i< H_CHUNK_WIDTH * H_CHUNK_WIDTH * H_CHUNK_HEIGHT; i++ )
+	{
+		h_Block* b= blocks[i];
+
+		stream << ((unsigned short)b->Type());
+
+		unsigned short water_level;
+		switch(b->Type())
+		{
+			case AIR:
+			case SPHERICAL_BLOCK:
+			case STONE:
+    		case SOIL:
+   			case WOOD:
+    		case GRASS:
+    		case SAND:
+    		case FOLIAGE:
+    		case FIRE_STONE:
+    		break;
+
+    		case WATER:
+			stream  << ( (unsigned short) ( ((h_LiquidBlock*)b)->LiquidLevel() ) );
+    		break;
+
+    		default:
+    		break;
+		};
+	}
 
 }
 
@@ -269,6 +366,17 @@ unsigned int h_Chunk::CalculateWaterBlockCount()
     return c;
 }
 
+
+void h_Chunk::PrepareWaterBlocksCache( int needed_block_count )
+{
+	unsigned int final_buffer_size= needed_block_count * 5 / 4;
+    water_blocks_data.initial_water_block_buffer_size= max( final_buffer_size, H_CHUNK_INITIAL_WATER_BLOCK_COUNT );
+    water_blocks_data.initial_water_blocks= new
+    h_LiquidBlock[ water_blocks_data.initial_water_block_buffer_size ];
+
+    water_blocks_data.free_blocks_position= needed_block_count;
+}
+
 void h_Chunk::GenWaterBlocks()
 {
     unsigned int c= CalculateWaterBlockCount();
@@ -416,6 +524,16 @@ h_Chunk::h_Chunk( h_World* world, int longitude, int latitude )
     GenWaterBlocks();
     MakeLight();
 
+}
+
+h_Chunk::h_Chunk( h_World* world, const HEXCHUNK_header* header, QDataStream& stream  )
+{
+	need_update_light= false;
+    this->longitude= header->longitude, this->latitude= header->latitude;
+    this->world= world;
+
+    GenChunkFromFile( header, stream );
+    MakeLight();
 }
 
 h_Chunk::~h_Chunk()

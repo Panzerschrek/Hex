@@ -49,11 +49,11 @@ class r_ChunkInfo
         r_WorldVertex* vb_data;//pointer to r_Renderer::world_vb::vb_data
         unsigned int allocated_vertex_count, real_vertex_count;
         unsigned int new_vertex_count;
-
-        r_WorldVertex* water_vb_data;//pointer to water quads - in end of buffer
-        unsigned int water_vertex_count;
-
     }chunk_vb;
+
+
+	//geomentry up and down range borders. Used only for generation of center chunk blocks( not for border blocks )
+    int max_geometry_height, min_geometry_height;
 
     m_Collection< r_WaterVertex > water_surface_mesh_vertices;
     m_Collection< r_WaterVertex > water_side_mesh_vertices;
@@ -90,7 +90,7 @@ class r_Renderer : public QObject
 	public:
 
 	r_Renderer( h_World* w );
-	~r_Renderer(){}
+	~r_Renderer();
 
 
 	void Draw();

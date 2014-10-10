@@ -9,14 +9,15 @@
 void h_MainLoop::Start()
 {
     QGLFormat format;
-    format.setSwapInterval(1);
-#ifdef OGL21
-    format.setVersion( 2, 1 );
-    format.setProfile( QGLFormat::CoreProfile );
-#else
+
+    QSettings settings( "config.ini", QSettings::IniFormat );
+    int antialiasing= min( max( settings.value( "antialiasing", 4 ).toInt(), 0 ), 16  );
+	if( antialiasing )
+		 format.setSamples( antialiasing );
+
     format.setVersion( 3, 3 );
     format.setProfile( QGLFormat::CoreProfile );
-#endif
+    format.setSwapInterval(1);
 
     new h_MainLoop( format );
 }
@@ -61,6 +62,15 @@ h_MainLoop::h_MainLoop(QGLFormat format ):
     for( int i= 0; i< 512; i++ )
         keys[i]= false;
 	//window->setWindowState( Qt::WindowFullScreen );
+
+}
+
+h_MainLoop::~h_MainLoop()
+{
+	//delete renderer;
+	//delete window;
+	//delete world;
+//	delete player;
 }
 
 void h_MainLoop::GetBuildPos()
@@ -226,7 +236,7 @@ void h_MainLoop::mousePressEvent(QMouseEvent* e)
     if( e->button() == Qt::RightButton )
         world->AddBuildEvent( build_pos_x - world->Longitude() * H_CHUNK_WIDTH,
                               build_pos_y - world->Latitude() * H_CHUNK_WIDTH,
-                              build_pos_z, FIRE );
+                              build_pos_z, FIRE_STONE );
     else if( e->button() == Qt::LeftButton )
     {
         short new_build_pos[]= { build_pos_x, build_pos_y, build_pos_z };
@@ -302,6 +312,8 @@ void h_MainLoop::keyPressEvent(QKeyEvent* e)
         printf( "build: %d %d %d\n", build_pos_x, build_pos_y, build_pos_z );
 	else if( e->key() == Qt::Key_QuoteLeft )
 		h_Console::OpenClose();
+	else if( e->key() == Qt::Key_Q )
+		world->Save();
     return;
 }
 void h_MainLoop::focusOutEvent( QFocusEvent *)

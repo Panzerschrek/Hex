@@ -30,6 +30,7 @@ void h_World::InitNormalBlocks()
 
 
 h_World::h_World():
+	chunk_loader( "world" ),
     phys_tick_count(0),
     phys_thread( &h_World::PhysTick, this, 1u ),
     world_mutex( QMutex::NonRecursive ),
@@ -40,8 +41,8 @@ h_World::h_World():
 
     chunk_number_x= max( min( settings.value( QString( "chunk_number_x" ), 14 ).toInt(), H_MAX_CHUNKS ), H_MIN_CHUNKS );
     chunk_number_y= max( min( settings.value( QString( "chunk_number_y" ), 12 ).toInt(), H_MAX_CHUNKS ), H_MIN_CHUNKS ); ;
-    longitude= 0;
-    latitude= 0;
+    longitude= -(chunk_number_x/2);
+    latitude= -(chunk_number_y/2);
     //chunk_matrix_size_x_log2= m_Math::NearestPOTLog2( chunk_number_x );
     //chunk_matrix_size_x= 1 << chunk_matrix_size_x_log2;
 
@@ -51,7 +52,8 @@ h_World::h_World():
     for( unsigned int i= 0; i< chunk_number_x; i++ )
         for( unsigned int j= 0; j< chunk_number_y; j++ )
         {
-            chunks[ i + j * H_MAX_CHUNKS ]= new h_Chunk( this, i + longitude, j + latitude );
+            chunks[ i + j * H_MAX_CHUNKS ]= LoadChunk( i+longitude, j+latitude);
+            //new h_Chunk( this, i + longitude, j + latitude );
         }
 
     LightWorld();
@@ -420,7 +422,7 @@ void h_World::Destroy( short x, short y, short z )
     {
 
     }
-    else if( ch->GetBlock( x, y, z )->Type() == FIRE )
+    else if( ch->GetBlock( x, y, z )->Type() == FIRE_STONE )
     {
     	ch->DeleteLightSource( x, y, z );
     	ch->SetBlockAndTransparency( x, y, z, NormalBlock( AIR ),
@@ -514,10 +516,11 @@ void h_World::Build( short x, short y, short z, h_BlockType block_type )
         b->y= y;
         b->z= z;
     }
-    else if( block_type == FIRE )
+    else if( block_type == FIRE_STONE )
     {
     	  h_Chunk* ch=GetChunk( X, Y );
-    	  h_LightSource* s= ch->NewLightSource( x, y, z, FIRE );
+    	  h_LightSource* s= ch->NewLightSource( x, y, z, FIRE_STONE );
+    	  s->SetLightLevel( H_MAX_FIRE_LIGHT );
     	  ch->SetBlockAndTransparency( x, y, z, s, TRANSPARENCY_SOLID );
     	  AddFireLight_r( x + X* H_CHUNK_WIDTH, y + Y* H_CHUNK_WIDTH, z, H_MAX_FIRE_LIGHT );
 	}
@@ -586,13 +589,16 @@ void h_World::FlushActionQueue()
 
 void h_World::MoveWorld( h_WorldMoveDirection dir )
 {
-	unsigned int i, j;
+	int i, j;
 	switch ( dir )
 	{
 		case NORTH:
 		for( i= 0; i< chunk_number_x; i++ )
 		{
-			delete chunks[ i | ( 0 << H_MAX_CHUNKS_LOG2 ) ];
+			h_Chunk* deleted_chunk= chunks[ i | ( 0 << H_MAX_CHUNKS_LOG2 ) ];
+			SaveChunk( deleted_chunk );
+			chunk_loader.FreeChunkData( deleted_chunk->Longitude(), deleted_chunk->Latitude() );
+			delete deleted_chunk;
 			for( j= 1; j< chunk_number_y; j++ )
 			{
 				chunks[ i | ( (j-1) << H_MAX_CHUNKS_LOG2 ) ]=
@@ -600,7 +606,7 @@ void h_World::MoveWorld( h_WorldMoveDirection dir )
 			}
 
 			chunks[ i | ( (chunk_number_y-1) << H_MAX_CHUNKS_LOG2 ) ]=
-			new h_Chunk( this, i + longitude, chunk_number_y + latitude );
+			LoadChunk( i + longitude, chunk_number_y + latitude );
 		}
 		for( i= 0; i< chunk_number_x; i++ )
 			AddLightToBorderChunk( i, chunk_number_y - 1 );
@@ -611,7 +617,10 @@ void h_World::MoveWorld( h_WorldMoveDirection dir )
 		case SOUTH:
 		for( i= 0; i< chunk_number_x; i++ )
 		{
-			delete chunks[ i | ( (chunk_number_y-1) << H_MAX_CHUNKS_LOG2 ) ];
+			h_Chunk* deleted_chunk= chunks[ i | ( (chunk_number_y-1) << H_MAX_CHUNKS_LOG2 ) ];
+			SaveChunk( deleted_chunk );
+			chunk_loader.FreeChunkData( deleted_chunk->Longitude(), deleted_chunk->Latitude() );
+			delete deleted_chunk;
 			for( j= chunk_number_y-1; j> 0; j-- )
 			{
 				chunks[ i | ( j << H_MAX_CHUNKS_LOG2 ) ]=
@@ -619,7 +628,7 @@ void h_World::MoveWorld( h_WorldMoveDirection dir )
 			}
 
 			chunks[ i | ( 0 << H_MAX_CHUNKS_LOG2 ) ]=
-			new h_Chunk( this, i + longitude,  latitude-1 );
+			LoadChunk( i + longitude,  latitude-1 );
 		}
 		for( i= 0; i< chunk_number_x; i++ )
 			AddLightToBorderChunk( i, 0 );
@@ -630,14 +639,17 @@ void h_World::MoveWorld( h_WorldMoveDirection dir )
 		case EAST:
 		for( j= 0; j< chunk_number_y; j++ )
 		{
-			delete chunks[ 0 | ( j << H_MAX_CHUNKS_LOG2 ) ];
+			h_Chunk* deleted_chunk= chunks[ 0 | ( j << H_MAX_CHUNKS_LOG2 ) ];
+			SaveChunk( deleted_chunk );
+			chunk_loader.FreeChunkData( deleted_chunk->Longitude(), deleted_chunk->Latitude() );
+			delete deleted_chunk;
 			for( i= 1; i< chunk_number_x; i++ )
 			{
 				chunks[ (i-1) | ( j << H_MAX_CHUNKS_LOG2 ) ]=
 				chunks[ i | ( j << H_MAX_CHUNKS_LOG2 ) ];
 			}
 			chunks[ ( chunk_number_x-1) | ( j << H_MAX_CHUNKS_LOG2 ) ]=
-			new h_Chunk( this, longitude+chunk_number_x, latitude + j );
+			LoadChunk( longitude+chunk_number_x, latitude + j );
 		}
 		for( j= 0; j< chunk_number_y; j++ )
 			AddLightToBorderChunk( chunk_number_x-1, j );
@@ -648,14 +660,17 @@ void h_World::MoveWorld( h_WorldMoveDirection dir )
 		case WEST:
 		for( j= 0; j< chunk_number_y; j++ )
 		{
-			delete chunks[ ( chunk_number_x-1) | ( j << H_MAX_CHUNKS_LOG2 ) ];
+			h_Chunk* deleted_chunk= chunks[ ( chunk_number_x-1) | ( j << H_MAX_CHUNKS_LOG2 ) ];
+			SaveChunk( deleted_chunk );
+			chunk_loader.FreeChunkData( deleted_chunk->Longitude(), deleted_chunk->Latitude() );
+			delete deleted_chunk;
 			for( i= chunk_number_x-1; i> 0; i-- )
 			{
 				chunks[ i | ( j << H_MAX_CHUNKS_LOG2 ) ]=
 				chunks[ (i-1) | ( j << H_MAX_CHUNKS_LOG2 ) ];
 			}
 			chunks[ 0 | ( j << H_MAX_CHUNKS_LOG2 ) ]=
-			new h_Chunk( this, longitude-1, latitude + j );
+			LoadChunk( longitude-1, latitude + j );
 		}
 		for( j= 0; j< chunk_number_y; j++ )
 			AddLightToBorderChunk( 0, j );
@@ -668,11 +683,100 @@ void h_World::MoveWorld( h_WorldMoveDirection dir )
 }
 
 
+void h_World::SaveChunk( h_Chunk* ch )
+{
+	/*QByteArray array;
+	QDataStream stream( &array, QIODevice::WriteOnly );
+
+	HEXCHUNK_header header;
+	//strcpy( header.format_key, "HEXchunk" );
+	header.water_block_count= ch->GetWaterList()->Size();
+	header.longitude= ch->Longitude();
+	header.latitude= ch->Latitude();
+
+	header.Write( stream );
+
+	ch->SaveChunkToFile( stream );
+
+	QByteArray compressed_chunk= qCompress( array );
+
+	char file_name[128];
+	sprintf( file_name, "world/ch_%d_%d", ch->Longitude(), ch->Latitude() );
+	FILE* f= fopen( file_name, "wb" );
+	fwrite( compressed_chunk.constData(), 1, compressed_chunk.size(), f );
+	fclose(f);*/
+
+	QByteArray array;
+	QDataStream stream( &array, QIODevice::WriteOnly );
+
+	HEXCHUNK_header header;
+	//strcpy( header.format_key, "HEXchunk" );
+	header.water_block_count= ch->GetWaterList()->Size();
+	header.longitude= ch->Longitude();
+	header.latitude= ch->Latitude();
+
+	header.Write( stream );
+	ch->SaveChunkToFile( stream );
+
+	chunk_loader.GetChunkData( ch->Longitude(), ch->Latitude() )= qCompress( array );
+}
+h_Chunk* h_World::LoadChunk( int lon, int lat )
+{
+	/*char file_name[128];
+	sprintf( file_name, "world/ch_%d_%d", lon, lat );
+	FILE* f= fopen( file_name, "rb" );
+	if( f == NULL )
+		return  new h_Chunk( this, lon, lat );
+
+	int file_len;
+	fseek( f, 0, SEEK_END );
+	file_len= ftell( f );
+	fseek( f, 0, SEEK_SET );
+
+	unsigned char* file_data= new unsigned char[ file_len ];
+	fread( file_data, 1, file_len, f );
+	fclose(f);
+
+	QByteArray uncompressed_chunk= qUncompress( file_data, file_len );
+	delete[] file_data;
+	QDataStream stream( &uncompressed_chunk, QIODevice::ReadOnly );
+
+	HEXCHUNK_header header;
+	header.Read( stream );
+
+	return new h_Chunk( this, &header, stream );*/
+
+	QByteArray& ba= chunk_loader.GetChunkData( lon, lat );
+	if( ba.size() == 0 )
+		return new h_Chunk( this, lon, lat );
+
+
+	QByteArray uncompressed_chunk= qUncompress( ba );
+	QDataStream stream( &uncompressed_chunk, QIODevice::ReadOnly );
+
+	HEXCHUNK_header header;
+	header.Read( stream );
+
+	return new h_Chunk( this, &header, stream );
+}
+
+
 h_World::~h_World()
 {
     for( unsigned int x= 0; x< chunk_number_x; x++ )
         for( unsigned int y= 0; y< chunk_number_y; y++ )
-            delete chunks[ x + y * chunk_number_x ];
-   // delete[] chunks;
+        {
+        	SaveChunk( GetChunk(x,y) );
+            delete GetChunk(x,y);
+        }
+}
+
+
+void h_World::Save()
+{
+	 for( unsigned int x= 0; x< chunk_number_x; x++ )
+        for( unsigned int y= 0; y< chunk_number_y; y++ )
+        	SaveChunk( GetChunk(x,y) );
+	chunk_loader.ForceSaveAllChunks();
 }
 #endif//WORLD_CPP

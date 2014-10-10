@@ -333,6 +333,11 @@ void h_World::LightWorld()
                 for( short y= 0; y< H_CHUNK_WIDTH; y++ )
                     for( short z= 1; z< H_CHUNK_HEIGHT - 1; z++ )
                         AddSunLight_r( X+x, Y+y, z, ch->SunLightLevel(x,y,z) );
+
+			int fire_light_count= ch->GetLightSourceList()->Size();
+			auto fire_lights= ch->GetLightSourceList()->Data();
+			for( int l= 0; l< fire_light_count; l++ )
+				AddFireLight_r( X+fire_lights[l]->x, Y+fire_lights[l]->y, fire_lights[l]->z, fire_lights[l]->LightLevel() );
         }
 
     //north and south chunks
@@ -346,6 +351,11 @@ void h_World::LightWorld()
                 for( short y= 0; y< H_CHUNK_WIDTH; y++ )
                     for( short z= 1; z< H_CHUNK_HEIGHT-1; z++ )
                         AddSunLightSafe_r( X+x, Y+y, z, ch->SunLightLevel(x,y,z) );
+
+			int fire_light_count= ch->GetLightSourceList()->Size();
+			auto fire_lights= ch->GetLightSourceList()->Data();
+			for( int l= 0; l< fire_light_count; l++ )
+				AddFireLightSafe_r( X+fire_lights[l]->x, Y+fire_lights[l]->y, fire_lights[l]->z, fire_lights[l]->LightLevel() );
         }
     }
     //east and west chunks
@@ -359,6 +369,11 @@ void h_World::LightWorld()
                 for( short y= 0; y< H_CHUNK_WIDTH; y++ )
                     for( short z= 1; z< H_CHUNK_HEIGHT-1; z++ )
                         AddSunLightSafe_r( X+x, Y+y, z, ch->SunLightLevel(x,y,z) );
+
+			int fire_light_count= ch->GetLightSourceList()->Size();
+			auto fire_lights= ch->GetLightSourceList()->Data();
+			for( int l= 0; l< fire_light_count; l++ )
+				AddFireLightSafe_r( X+fire_lights[l]->x, Y+fire_lights[l]->y, fire_lights[l]->z, fire_lights[l]->LightLevel() );
         }
     }
 }
@@ -662,6 +677,13 @@ void h_World::AddLightToBorderChunk( unsigned int X, unsigned int Y )
         for( short j= 0; j< H_CHUNK_WIDTH; j++ )
             for( short k= 1; k< H_CHUNK_HEIGHT-1; k++ )
                 AddSunLightSafe_r( x+i, y+j, k, ch->SunLightLevel( i, j, k ) );
+
+	//add fire lights to border chunk
+	int fire_light_count= ch->GetLightSourceList()->Size();
+	auto fire_lights= ch->GetLightSourceList()->Data();
+	for( int l= 0; l< fire_light_count; l++ )
+		AddFireLightSafe_r( x+fire_lights[l]->x, y+fire_lights[l]->y, fire_lights[l]->z, fire_lights[l]->LightLevel() );
+
 }
 
 

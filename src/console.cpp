@@ -104,7 +104,7 @@ void h_Console::Draw( r_Text* text )
 			c= msg_colors + 8;
 		else
 			c= msg_colors;
-		text->AddText( 0, i, 1, c, lines_beginning[ l ] );
+		text->AddText( 0.5f, i, 1, c, lines_beginning[ l ] );
 	}
 }
 

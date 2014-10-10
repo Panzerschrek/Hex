@@ -11,7 +11,7 @@
 #include "chunk_phys_mesh.hpp"
 #include "math_lib/rand.h"
 #include "world_action.hpp"
-
+#include "chunk_loader.hpp"
 
 class h_Player;
 
@@ -29,8 +29,8 @@ public:
 	int ChunkCoordToQuadchunkX( int longitude );
 	int ChunkCoordToQuadchunkY( int latitude );
 
-    unsigned int ChunkNumberX() const;
-    unsigned int ChunkNumberY() const;
+	int ChunkNumberX() const;
+	int ChunkNumberY() const;
 
 	void AddBuildEvent( short x, short y, short z, h_BlockType block_type );//coordinates - relative
     void AddDestroyEvent( short x, short y, short z );
@@ -42,6 +42,8 @@ public:
 	void SetPlayer( h_Player* p );
     short Longitude() const;
     short Latitude() const;
+
+    void Save();//save world data to disk
 
     h_World();
     ~h_World();
@@ -73,6 +75,8 @@ private:
 	void UpdateWaterInRadius( short x, short y, short r );//update chunks water in square [x-r;x+r] [y-r;x+r]
 
 	void MoveWorld( h_WorldMoveDirection dir );
+	void SaveChunk( h_Chunk* ch );
+	h_Chunk* LoadChunk( int longitude, int lattude );
 
 	//coordinates of chunks in chunk matrix
 	void AddLightToBorderChunk( unsigned int X, unsigned int Y );
@@ -119,6 +123,9 @@ private:
    // h_Block* WaterBlock( unsigned char water_level= MAX_WATER_LEVEL );
     void InitNormalBlocks();
 
+
+    h_ChunkLoader chunk_loader;
+
     unsigned int chunk_number_x, chunk_number_y;
     unsigned int chunk_matrix_size_x, chunk_matrix_size_x_log2;
     h_Chunk* chunks[ H_MAX_CHUNKS * H_MAX_CHUNKS ];//matrix of pointers
@@ -147,12 +154,12 @@ private:
 };
 
 
-inline  unsigned int h_World::ChunkNumberX() const
+inline  int h_World::ChunkNumberX() const
 {
     return chunk_number_x;
 }
 
-inline  unsigned int h_World::ChunkNumberY() const
+inline  int h_World::ChunkNumberY() const
 {
     return chunk_number_y;
 }
@@ -168,9 +175,7 @@ inline const h_Chunk* h_World::GetChunk( short X, short Y ) const
 
 inline h_Block* h_World::NormalBlock( h_BlockType block_type )
 {
-    return &normal_blocks[ block_type ];
-    if( block_type  > 6 )
-        printf( "error" );
+    return &normal_blocks[ (int)block_type ];
 }
 
 inline void h_World::SetPlayer( h_Player* p )

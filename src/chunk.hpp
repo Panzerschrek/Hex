@@ -4,6 +4,7 @@
 #include "hex.hpp"
 #include "block.hpp"
 #include "math_lib/collection.hpp"
+#include "world_loading.hpp"
 
 class h_World;
 
@@ -19,11 +20,14 @@ class h_Chunk
 
 public:
 
-    h_Chunk( h_World* world, int longitude= 0, int latitude= 0 );
+    h_Chunk( h_World* world, int longitude, int latitude );
+    h_Chunk( h_World* world, const HEXCHUNK_header* header, QDataStream& stream  );
+
     ~h_Chunk();
 
     //get functions - local coordinates
     unsigned char Transparency( short x, short y, short z );
+    unsigned char* GetTransparencyData();
     h_Block* 	GetBlock ( short x, short y, short z );
     const m_Collection< h_LiquidBlock* >* GetWaterList() const;
     const m_Collection< h_LightSource* >* GetLightSourceList() const;
@@ -44,8 +48,12 @@ private:
 
     h_World* world;
 
-
     void GenChunk();
+
+	//chunk save\load
+    void GenChunkFromFile( const HEXCHUNK_header* header, QDataStream& stream );
+    void SaveChunkToFile( QDataStream& stream );
+
     void PlantTrees();
     void PlaneBigTree( short x, short y, short z );//local coordinates
     void PlantGrass();
@@ -53,6 +61,8 @@ private:
     void GenWaterBlocks();
     void MakeLight();
     void SunRelight();
+
+    void PrepareWaterBlocksCache( int needed_block_count );
 
 
     void ReCalculateHeightmap();
@@ -176,6 +186,10 @@ inline void h_Chunk::SetFireLightLevel( short x, short y, short z, unsigned char
                      ( x << ( H_CHUNK_HEIGHT_LOG2 + H_CHUNK_WIDTH_LOG2 ) ) ]= l;
 }
 
+inline unsigned char* h_Chunk::GetTransparencyData()
+{
+	return transparency;
+}
 
 inline short h_Chunk::Longitude()
 {

@@ -1,4 +1,5 @@
 #include "text.hpp"
+#include "ogl_state_manager.hpp"
 
 
 
@@ -101,9 +102,11 @@ void r_Text::Draw()
     text_shader.Bind();
     text_shader.Uniform( "tex", 0 );
 
-    glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
-    glEnable( GL_BLEND );
-	glDisable( GL_DEPTH_TEST );
+    r_OGLStateManager::BlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+    //glEnable( GL_BLEND );
+	//glDisable( GL_DEPTH_TEST );
+	r_OGLStateManager::EnableBlend();
+	r_OGLStateManager::DisableDepthTest();
 
     glDrawElements( GL_TRIANGLES, vertex_buffer_pos * 6 / 4, GL_UNSIGNED_SHORT, NULL );
 

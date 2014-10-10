@@ -48,14 +48,11 @@ public:
     h_LiquidBlock( h_BlockType block_type, unsigned short liquid_level );
 
     unsigned short LiquidLevel() const;
-   // unsigned short LuiquidPressure();
     void SetLiquidLevel( unsigned short l );
-    //void SetLiquidPressure( unsigned short p );
     void IncreaseLiquidLevel( unsigned short l );
     void DecreaseLiquidLevel( unsigned short l );
 
     unsigned char x, y, z, reserved;//relative liquid block coordinates ( in chunk )
-   // unsigned char liquid_level;
 };
 
 inline h_LiquidBlock::h_LiquidBlock( h_BlockType block_type, unsigned short liquid_level ):
@@ -87,8 +84,9 @@ class h_LightSource : public h_Block
 	public:
 	h_LightSource( h_BlockType block_type, unsigned char light_level= H_MAX_FIRE_LIGHT );
 	unsigned char LightLevel();
+	void SetLightLevel( unsigned char level );
 
-	unsigned char x, y, z, reserved;//relative liquid block coordinates ( in chunk )
+	unsigned char x, y, z, reserved;//relative light source block coordinates ( in chunk )
 
 };
 
@@ -99,5 +97,12 @@ inline unsigned char h_LightSource::LightLevel()
 {
 	return h_Block::additional_data;
 }
+
+inline void h_LightSource::SetLightLevel( unsigned char level )
+{
+	h_Block::additional_data= level;
+}
+
+
 
 #endif//BLOCK_HPP

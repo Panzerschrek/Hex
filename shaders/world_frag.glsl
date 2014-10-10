@@ -18,15 +18,10 @@ out vec4 color;
 
 void main()
 {
-	vec3 l= f_light.x * sun_light_color + f_light.y * fire_light_color + ambient_light_color;	
-
 	vec4 c= texture( tex, f_tex_coord );
-
 	if( c.a < 0.5 )
 		discard;
-	//c.xyz= vec3( 0.5, 0.5, 0.5 );
 
-	//c.xyz= vec3( 1.0, 1.0, 1.0 ) - exp( -c.xyz * light_scale_k );
-	//c.xyz= round( c.xyz * 8.0 ) *  0.125;
+	vec3 l= f_light.x * sun_light_color + f_light.y * fire_light_color + ambient_light_color;	
 	color= vec4( c.xyz * l, 1.0 );
 }

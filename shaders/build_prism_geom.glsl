@@ -34,9 +34,9 @@ void main()
 	vec4 out_coord[6];
 
 	out_coord[0]= view_matrix * vec4( g_coord[0] + (   norm - edge_vec ) * STRIP_SIZE, 1.0 );
-	out_coord[1]= view_matrix * vec4( g_coord[0] + ( - norm - edge_vec )* STRIP_SIZE, 1.0 );
-	out_coord[2]= view_matrix * vec4( g_coord[1] + ( - norm + edge_vec )* STRIP_SIZE, 1.0 );
-	out_coord[3]= view_matrix * vec4( g_coord[1] + (   norm + edge_vec )* STRIP_SIZE, 1.0 );
+	out_coord[1]= view_matrix * vec4( g_coord[0] + ( - norm - edge_vec ) * STRIP_SIZE, 1.0 );
+	out_coord[2]= view_matrix * vec4( g_coord[1] + ( - norm + edge_vec ) * STRIP_SIZE, 1.0 );
+	out_coord[3]= view_matrix * vec4( g_coord[1] + (   norm + edge_vec ) * STRIP_SIZE, 1.0 );
 	out_coord[4]= view_matrix * vec4( g_coord[0], 1.0 );
 	out_coord[5]= view_matrix * vec4( g_coord[1], 1.0 );
 
