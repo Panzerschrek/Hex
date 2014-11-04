@@ -56,7 +56,7 @@ void m_Mat4::Transpose()
     value[14]= tmp;
 
 }
-m_Mat4 m_Mat4::operator*( m_Mat4& m )
+m_Mat4 m_Mat4::operator*( const m_Mat4& m )
 {
     m_Mat4 r;
 
@@ -83,7 +83,7 @@ m_Mat4 m_Mat4::operator*( m_Mat4& m )
 }
 
 
-m_Mat4& m_Mat4::operator*=( m_Mat4& m )
+m_Mat4& m_Mat4::operator*=( const m_Mat4& m )
 {
     m_Mat4 r;
 
@@ -112,7 +112,7 @@ m_Mat4& m_Mat4::operator*=( m_Mat4& m )
 }
 
 
-m_Vec3	m_Mat4::operator*( m_Vec3& v )
+m_Vec3	m_Mat4::operator*( const m_Vec3& v )
 {
 	/*float* vp= &v.x;
 	float* mp= this->value;
@@ -129,7 +129,7 @@ m_Vec3	m_Mat4::operator*( m_Vec3& v )
     return r;
 }
 
-m_Vec3 operator*( m_Vec3& v, m_Mat4& m )
+m_Vec3 operator*( const m_Vec3& v, const m_Mat4& m )
 {
     m_Vec3 r;
     r.x= v.x * m.value[0] + v.y * m.value[4] + v.z * m.value[8] + m.value[12];
@@ -147,13 +147,13 @@ float m_Mat4::operator[]( int i )const
     return value[i];
 }
 
-void m_Mat4::Translate( m_Vec3& v)
+void m_Mat4::Translate( const m_Vec3& v)
 {
     value[12]+= v.x;
     value[13]+= v.y;
     value[14]+= v.z;
 }
-void m_Mat4::Scale( m_Vec3& v)
+void m_Mat4::Scale( const m_Vec3& v)
 {
     value[0 ]*= v.x;
     value[5 ]*= v.y;
@@ -269,7 +269,7 @@ void m_Mat4::RotateZ( float a )
 
 
 
-m_Mat3::m_Mat3( m_Mat4& m )
+m_Mat3::m_Mat3( const m_Mat4& m )
 {
 	value[0]= m.value[0];
 	value[1]= m.value[1];
@@ -304,7 +304,7 @@ void m_Mat3::Transpose()
 
 }
 
-m_Mat3 m_Mat3::operator*( m_Mat3& m )
+m_Mat3 m_Mat3::operator*( const m_Mat3& m )
 {
     m_Mat3 r;
 
@@ -323,7 +323,7 @@ m_Mat3 m_Mat3::operator*( m_Mat3& m )
     return r;
 }
 
-m_Mat3& m_Mat3::operator*=( m_Mat3& m )
+m_Mat3& m_Mat3::operator*=( const m_Mat3& m )
 {
     m_Mat3 r;
 
@@ -343,7 +343,7 @@ m_Mat3& m_Mat3::operator*=( m_Mat3& m )
     return *this;
 }
 
-m_Vec3	m_Mat3::operator*( m_Vec3& v )
+m_Vec3	m_Mat3::operator*( const m_Vec3& v )
 {
     m_Vec3 r;
     r.x= value[0] * v.x + value[1] * v.y + value[2] * v.z;
@@ -362,7 +362,7 @@ float m_Mat3::operator[]( int i )const
 }
 
 
-void m_Mat3::Scale( m_Vec3& v)
+void m_Mat3::Scale( const m_Vec3& v)
 {
     value[0]*= v.x;
     value[4]*= v.y;
@@ -460,7 +460,7 @@ void m_Mat3::Inverse()
    *this= r;
 }
 
-m_Vec3 operator*( m_Vec3& v, m_Mat3& m )
+m_Vec3 operator*( const m_Vec3& v, const m_Mat3& m )
 {
     m_Vec3 r;
     r.x= v.x * m.value[0] + v.y * m.value[3] + v.z * m.value[6];

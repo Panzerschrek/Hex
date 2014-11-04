@@ -90,6 +90,9 @@ private:
 };
 
 
+void rRGBAMirrorVerticalAndSwapRB( unsigned char* data, int width, int height );
+
+
 int rLoadTextureBMP( r_TextureFile* tf, const char* file_name, bool data_is_temp= true );
 int rLoadTextureJPG( r_TextureFile* tf, const char* file_name, bool data_is_temp= true );
 int rLoadTextureTGA( r_TextureFile* tf, const char* file_name, bool data_is_temp= true );

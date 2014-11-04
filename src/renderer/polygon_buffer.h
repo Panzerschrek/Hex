@@ -24,16 +24,14 @@ public:
     r_PolygonBuffer();
 	~r_PolygonBuffer();
 
-	int VertexData	( void* data, unsigned int d_size, unsigned int v_size  );
-	int VertexSubData	( void* data, unsigned int d_size, unsigned int shift );
+	int VertexData		( const void* data, unsigned int d_size, unsigned int v_size  );
+	int VertexSubData	( const void* data, unsigned int d_size, unsigned int shift );
 
-	int IndexData		( void* data, unsigned int size, GLenum d_type, GLenum p_type );
-	int IndexSubData	( void* data, unsigned int size, int shift );
-	int	VertexAttribPointer( int v_attrib, int components, GLenum type, bool normalize, int stride );
-	int VertexAttribPointerInt( int v_attrib, int components, GLenum type, int stride ) const;
+	int IndexData		( const void* data, unsigned int size, GLenum d_type, GLenum p_type );
+	int IndexSubData	( const void* data, unsigned int size, int shift );
+	int	VertexAttribPointer		( int v_attrib, int components, GLenum type, bool normalize, int stride );
+	int VertexAttribPointerInt  ( int v_attrib, int components, GLenum type, int stride );
 
-	int SetVertexBuffer( r_PolygonBuffer* buf );
-	int SetIndexBuffer( r_PolygonBuffer* buf );
 	int Show() const;
 
 	void Bind() const;
@@ -44,19 +42,17 @@ public:
 	}
 
 private:
-	void GenVAO();
-	unsigned int vertex_data_size;//размер данных в байтах
-	unsigned int vertex_size;//размер в байтах одной вершины
 
-	GLenum index_data_type;//тип данных индексов ( GL_UNSIGNED_INT / GL_UNSIGNED_SHORT )
+	unsigned int vertex_data_size;
+	unsigned int vertex_size;
+
+	GLenum index_data_type;//type of index ( GL_UNSIGNED_INT / GL_UNSIGNED_SHORT )
 	unsigned int index_data_size;
 	GLenum primitive_type;
 
-	bool is_array;//просто массив или индексированый приметив
 	GLuint v_buffer, i_buffer;
 	GLuint v_array_object;
 
-	static r_PolygonBuffer* current_buffer;
 
 };
 

@@ -1,7 +1,11 @@
-#ifndef RENDERER_H
-#define RENDERER_H
+#ifndef WORLD_RENDERER_H
+#define WORLD_RENDERER_H
+
+#include "i_world_renderer.hpp"
 
 #include "texture.h"
+#include "framebuffer_texture.hpp"
+#include "framebuffer.hpp"
 #include "func_declarations.h"
 #include "polygon_buffer.h"
 #include "glsl_program.h"
@@ -46,7 +50,7 @@ class r_ChunkInfo
 
     struct
     {
-        r_WorldVertex* vb_data;//pointer to r_Renderer::world_vb::vb_data
+        r_WorldVertex* vb_data;//pointer to r_WorldRenderer::world_vb::vb_data
         unsigned int allocated_vertex_count, real_vertex_count;
         unsigned int new_vertex_count;
     }chunk_vb;
@@ -73,7 +77,7 @@ class r_WaterQuadChunkInfo
 	void BuildFinalMesh();
 	void GetUpdatedState();// set up water_updated= true, if any of h_ChunkInfo::chunk_water_data_updated= true
 
-	r_WaterVertex* vb_data;// pointer in array in r_Renderer::water_vb::vb_data
+	r_WaterVertex* vb_data;// pointer in array in r_WorldRenderer::water_vb::vb_data
 	unsigned int allocated_vertex_count, real_vertex_count;
 	unsigned int new_vertex_count;
 
@@ -84,13 +88,13 @@ class r_WaterQuadChunkInfo
 
 };
 
-class r_Renderer : public QObject
+class r_WorldRenderer : public QObject, public r_IWorldRenderer
 {
     Q_OBJECT
 	public:
 
-	r_Renderer( h_World* w );
-	~r_Renderer();
+	r_WorldRenderer( h_World* w );
+	~r_WorldRenderer();
 
 
 	void Draw();
@@ -109,6 +113,7 @@ class r_Renderer : public QObject
     void UpdateChunkWater( unsigned short,  unsigned short );
     void FullUpdate();
 
+	void Update() override{UpdateFunc();};//r_IWorldRenderer
     private:
 
 	void LoadShaders();
@@ -149,7 +154,7 @@ class r_Renderer : public QObject
 
 
 	//shaders
-	r_GLSLProgram world_shader, build_prism_shader, water_shader, skybox_shader, sun_shader, console_bg_shader;
+	r_GLSLProgram world_shader, build_prism_shader, water_shader, skybox_shader, sun_shader, console_bg_shader, supersampling_final_shader;
 
 
 	//VBO
@@ -219,12 +224,13 @@ class r_Renderer : public QObject
 
 	//frame buffers
 	unsigned viewport_x, viewport_y;
+	r_Framebuffer supersampling_buffer;
 
 	//textures
 	r_TextureManager texture_manager;
-	r_Texture sun_texture;
-	r_Texture water_texture;
-	r_Texture console_bg_texture;
+	r_FramebufferTexture sun_texture;
+	r_FramebufferTexture water_texture;
+	r_FramebufferTexture console_bg_texture;
 
 
 	//matrices and vectors
@@ -244,7 +250,7 @@ class r_Renderer : public QObject
 	r_Text* text_manager;
 
 
-	h_Thread<r_Renderer> update_thread;
+	//h_Thread<r_WorldRenderer> update_thread;
 	QMutex host_data_mutex, gpu_data_mutex;
 	QTime startup_time;
 
@@ -254,23 +260,23 @@ class r_Renderer : public QObject
 };
 
 
-inline void r_Renderer::SetCamPos( m_Vec3 p )
+inline void r_WorldRenderer::SetCamPos( m_Vec3 p )
 {
 	cam_pos= p;
 }
 
-inline void r_Renderer::SetCamAng( m_Vec3 a )
+inline void r_WorldRenderer::SetCamAng( m_Vec3 a )
 {
 	cam_ang= a;
 }
 
-inline void r_Renderer::SetViewportSize( unsigned int v_x, unsigned int v_y )
+inline void r_WorldRenderer::SetViewportSize( unsigned int v_x, unsigned int v_y )
 {
 	viewport_x= v_x;
 	viewport_y= v_y;
 }
 
-inline void r_Renderer::SetBuildPos( m_Vec3 p )
+inline void r_WorldRenderer::SetBuildPos( m_Vec3 p )
 {
     build_pos= p;
 }

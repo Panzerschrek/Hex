@@ -1,7 +1,7 @@
 #ifndef CHUNK_INFO_CPP
 #define CHUNK_INFO_CPP
 
-#include "renderer.hpp"
+#include "world_renderer.hpp"
 #include "texture_manager.hpp"
 #include "rendering_constants.hpp"
 

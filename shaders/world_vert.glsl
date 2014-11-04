@@ -24,7 +24,7 @@ in vec2 light;
 
 out vec3 f_tex_coord;
 out float f_color;
-out vec3 f_normal;
+flat out vec3 f_normal;
 out vec2 f_light;
 
 void main()

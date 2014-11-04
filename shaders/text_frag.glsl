@@ -1,5 +1,5 @@
 #version 330
-noperspective in vec4 f_color;
+flat in vec4 f_color;
 noperspective in vec2 f_tex_coord;
 out vec4 out_color;
 uniform sampler2D tex;

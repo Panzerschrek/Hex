@@ -27,9 +27,9 @@ class m_Mat4
 public:
     float value[16];
 
-    m_Mat4	operator*( m_Mat4& m );//умножение
-    m_Mat4&	operator*=( m_Mat4& m );//домножение
-    m_Vec3	operator*( m_Vec3& v );
+    m_Mat4	operator*( const m_Mat4& m );//умножение
+    m_Mat4&	operator*=( const m_Mat4& m );//домножение
+    m_Vec3	operator*( const m_Vec3& v );
 
     float&	operator[]( int i );
     float	operator[]( int i )const;//операци€ индексировани€
@@ -39,8 +39,8 @@ public:
     ~m_Mat4() {}
     void	Transpose();
 
-    void Translate( m_Vec3& v);//домножение матрицы на матрицу перемещени€
-    void Scale( m_Vec3& v);//домножение матрицы на матрицу масштабировани€
+    void Translate( const m_Vec3& v);//домножение матрицы на матрицу перемещени€
+    void Scale( const m_Vec3& v);//домножение матрицы на матрицу масштабировани€
     void Scale( float s );//домножение матрицы на матрицу масштабировани€
 
 
@@ -76,21 +76,21 @@ class m_Mat3
 public:
     float value[9];
 
-    m_Mat3	operator*( m_Mat3& m );//умножение
-    m_Mat3&	operator*=( m_Mat3& m );//домножение
-    m_Vec3	operator*( m_Vec3& v );
+    m_Mat3	operator*( const m_Mat3& m );//умножение
+    m_Mat3&	operator*=( const m_Mat3& m );//домножение
+    m_Vec3	operator*( const m_Vec3& v );
 
     float&	operator[]( int i );
     float	operator[]( int i )const;//операци€ индексировани€
 
-	m_Mat3( m_Mat4& m );
+	m_Mat3( const m_Mat4& m );
     m_Mat3() {}
     ~m_Mat3() {}
     void	Transpose();
     void Inverse();
     float Determinant();
 
-    void Scale( m_Vec3& v);//домножение матрицы на матрицу масштабировани€
+    void Scale( const m_Vec3& v);//домножение матрицы на матрицу масштабировани€
     void Scale( float s );//домножение матрицы на матрицу масштабировани€
 
 
@@ -112,6 +112,6 @@ public:
     */
 };
 
-m_Vec3 operator*( m_Vec3& v, m_Mat3& m );
+m_Vec3 operator*( const m_Vec3& v, const m_Mat3& m );
 
 #endif//_MATRIX_H_

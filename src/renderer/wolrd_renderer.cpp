@@ -1,15 +1,18 @@
-#ifndef RENDERER_CPP
-#define RENDERER_CPP
+#ifndef WORLD_RENDERER_CPP
+#define WORLD_RENDERER_CPP
 
-#include "renderer.hpp"
+#include <vector>
+
 #include <QtOpenGL>
 #include <QImage>
+
+#include "world_renderer.hpp"
 #include "glcorearb.h"
 #include "rendering_constants.hpp"
 #include "../console.hpp"
 #include "ogl_state_manager.hpp"
 
-void r_Renderer::UpdateChunk(unsigned short X,  unsigned short Y )
+void r_WorldRenderer::UpdateChunk(unsigned short X,  unsigned short Y )
 {
     if( frame_count == 0 )
         return;
@@ -17,7 +20,7 @@ void r_Renderer::UpdateChunk(unsigned short X,  unsigned short Y )
         chunk_info[ X + Y * world->ChunkNumberX() ].chunk_data_updated= true;
 }
 
-void r_Renderer::UpdateChunkWater(unsigned short X,  unsigned short Y )
+void r_WorldRenderer::UpdateChunkWater(unsigned short X,  unsigned short Y )
 {
     if( frame_count == 0 )
         return;
@@ -25,7 +28,7 @@ void r_Renderer::UpdateChunkWater(unsigned short X,  unsigned short Y )
         chunk_info[ X + Y * world->ChunkNumberX() ].chunk_water_data_updated= true;
 }
 
-void r_Renderer::FullUpdate()
+void r_WorldRenderer::FullUpdate()
 {
     if( frame_count == 0 )
         return;
@@ -69,7 +72,7 @@ void r_Renderer::FullUpdate()
         }
 }
 
-void r_Renderer::UpdateWorld()
+void r_WorldRenderer::UpdateWorld()
 {
     host_data_mutex.lock();
     world->Lock();
@@ -167,7 +170,7 @@ void r_Renderer::UpdateWorld()
     }
 }
 
-void r_Renderer::UpdateWater()
+void r_WorldRenderer::UpdateWater()
 {
     host_data_mutex.lock();
     world->Lock();
@@ -275,10 +278,10 @@ void r_Renderer::UpdateWater()
 
 }
 
-void r_Renderer::UpdateFunc()
+void r_WorldRenderer::UpdateFunc()
 {
-    while(1)
-    {
+    //while(1)
+    //{
         QTime t0= QTime::currentTime();
 
         UpdateWorld();
@@ -293,11 +296,11 @@ void r_Renderer::UpdateFunc()
         update_count++;
         update_ticks_in_last_second++;
 
-    }
+    //}
 }
 
 
-void r_Renderer::UpdateGPUData()
+void r_WorldRenderer::UpdateGPUData()
 {
     gpu_data_mutex.lock();
     if( world_vb.vbo_update_ready )
@@ -417,7 +420,7 @@ void r_Renderer::UpdateGPUData()
     gpu_data_mutex.unlock();
 }
 
-void r_Renderer::CalculateMatrices()
+void r_WorldRenderer::CalculateMatrices()
 {
     m_Mat4 scale, translate, result, perspective, rotate_x, rotate_z, basis_change;
 
@@ -425,7 +428,7 @@ void r_Renderer::CalculateMatrices()
     translate.Identity();
     translate.Translate( tr_vector );
 
-    static m_Vec3 s_vector( H_BLOCK_SCALE_VECTOR_X,
+    static const m_Vec3 s_vector( H_BLOCK_SCALE_VECTOR_X,
                             H_BLOCK_SCALE_VECTOR_Y
                             , H_BLOCK_SCALE_VECTOR_Z );//hexogonal prism scale vector. DO NOT TOUCH!
     scale.Identity();
@@ -452,13 +455,13 @@ void r_Renderer::CalculateMatrices()
     block_final_matrix= block_scale_matrix * view_matrix;
 }
 
-void r_Renderer::CalculateLight()
+void r_WorldRenderer::CalculateLight()
 {
     lighting_data.current_sun_light= R_SUN_LIGHT_COLOR / float ( H_MAX_SUN_LIGHT * 16 );
     lighting_data.current_fire_light= R_FIRE_LIGHT_COLOR / float ( H_MAX_FIRE_LIGHT * 16 );
 }
 
-void r_Renderer::BuildChunkList()
+void r_WorldRenderer::BuildChunkList()
 {
     unsigned int k;
     r_ChunkInfo* ch;
@@ -491,30 +494,43 @@ void r_Renderer::BuildChunkList()
 }
 
 
-void r_Renderer::Draw()
+void r_WorldRenderer::Draw()
 {
-    //usleep( 100 * 1000 );
     if( frame_count == 0 )
     {
-        BuildWorld();
-        InitVertexBuffers();
-        update_thread.start();
+
     }
 
     UpdateGPUData();
     CalculateMatrices();
     CalculateLight();
 
-    //glClearColor( 0.2f, 0.3f, 0.8f, 0.0f );
-    ///glClearColor( 0.0f, 0.0f, 0.0f, 0.0f );
-    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+	supersampling_buffer.Bind(); glViewport( 0,0, viewport_x*2, viewport_y*2 );
+    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT );
+
 
     BuildChunkList();
     DrawWorld();
     DrawSky();
     DrawSun();
     DrawBuildPrism();
+
     DrawWater();
+
+    glBindFramebuffer( GL_FRAMEBUFFER, 0 ); glViewport( 0,0, viewport_x, viewport_y );
+
+
+	r_OGLStateManager::DisableBlend();
+	r_OGLStateManager::DisableDepthTest();
+	r_OGLStateManager::DepthMask(false);
+
+    supersampling_final_shader.Bind();
+    (*supersampling_buffer.GetTextures())[0].Bind(0);
+    supersampling_final_shader.Uniform( "frame_buffer", 0 );
+
+    glDrawArrays( GL_TRIANGLES, 0, 6 );
+
+
 
    	DrawConsole();
 
@@ -535,7 +551,7 @@ void r_Renderer::Draw()
 }
 
 
-void r_Renderer::DrawConsole()
+void r_WorldRenderer::DrawConsole()
 {
 	static const GLenum state_blend_mode[]= { GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA };
 	static const float state_clear_color[]= { 0.0f, 0.0f, 0.0f, 0.0f };
@@ -559,7 +575,7 @@ void r_Renderer::DrawConsole()
 	m_Vec3 scr_size( viewport_x, viewport_y, 0.0f );
 	console_bg_shader.Uniform( "screen_size", scr_size );
 
-	console_bg_texture.BindTexture();
+	console_bg_texture.Bind(0);
 
 
 	glDrawArrays( GL_POINTS, 0, 1 );
@@ -567,7 +583,7 @@ void r_Renderer::DrawConsole()
 	text_manager->Draw();
 }
 
-void r_Renderer::CalculateFPS()
+void r_WorldRenderer::CalculateFPS()
 {
     frames_in_last_second++;
 
@@ -596,7 +612,7 @@ void r_Renderer::CalculateFPS()
     frame_count++;
 }
 
-void r_Renderer::DrawWorld()
+void r_WorldRenderer::DrawWorld()
 {
     static const GLenum state_blend_mode[]= { GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA };
 	static const float state_clear_color[]= { 0.0f, 0.0f, 0.0f, 0.0f };
@@ -625,7 +641,7 @@ void r_Renderer::DrawWorld()
                                    world_vb.base_vertices );
 }
 
-void r_Renderer::DrawSky()
+void r_WorldRenderer::DrawSky()
 {
     static const GLenum state_blend_mode[]= { GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA };
 	static const float state_clear_color[]= { 0.0f, 0.0f, 0.0f, 0.0f };
@@ -645,7 +661,7 @@ void r_Renderer::DrawSky()
     skybox_vbo.Show();
 }
 
-void r_Renderer::DrawSun()
+void r_WorldRenderer::DrawSun()
 {
 	static const GLenum state_blend_mode[]= { GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA };
 	static const float state_clear_color[]= { 0.0f, 0.0f, 0.0f, 0.0f };
@@ -658,7 +674,7 @@ void r_Renderer::DrawSun()
 
 
 
-    sun_texture.BindTexture(0);
+    sun_texture.Bind(0);
 
     sun_shader.Bind();
     sun_shader.Uniform( "view_matrix", view_matrix );
@@ -669,7 +685,7 @@ void r_Renderer::DrawSun()
     glDrawArrays( GL_POINTS, 0, 1 );
 }
 
-void r_Renderer::DrawWater()
+void r_WorldRenderer::DrawWater()
 {
 	static const GLenum state_blend_mode[]= { GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA };
 	static const float state_clear_color[]= { 0.0f, 0.0f, 0.0f, 0.0f };
@@ -681,7 +697,8 @@ void r_Renderer::DrawWater()
 	r_OGLStateManager::UpdateState( state );
 
 
-    water_texture.BindTexture( 0 );
+    //water_texture.BindTexture( 0 );
+    water_texture.Bind(0);
 
     water_shader.Bind();
 
@@ -712,7 +729,7 @@ void r_Renderer::DrawWater()
 	glDisable( GL_POLYGON_OFFSET_FILL );
 }
 
-void r_Renderer::DrawBuildPrism()
+void r_WorldRenderer::DrawBuildPrism()
 {
 	static const GLenum state_blend_mode[]= { GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA };
 	static const float state_clear_color[]= { 0.0f, 0.0f, 0.0f, 0.0f };
@@ -741,7 +758,7 @@ void r_Renderer::DrawBuildPrism()
 }
 
 
-void r_Renderer::BuildWorldWater()
+void r_WorldRenderer::BuildWorldWater()
 {
     /*build quadchunk data structures*/
     quadchunk_num_x= 1 + world->ChunkNumberX()/2;
@@ -859,7 +876,7 @@ void r_Renderer::BuildWorldWater()
     water_vb.multi_indeces= new int*[ quadchunk_num_x * quadchunk_num_y ];
 }
 
-void r_Renderer::BuildWorld()
+void r_WorldRenderer::BuildWorld()
 {
     world->Lock();
 
@@ -956,10 +973,10 @@ void r_Renderer::BuildWorld()
 
 }
 
-r_Renderer::r_Renderer( h_World* w ):
+r_WorldRenderer::r_WorldRenderer( h_World* w ):
     world(w),
     host_data_mutex( QMutex::NonRecursive ), gpu_data_mutex( QMutex::NonRecursive ),
-    update_thread( &r_Renderer::UpdateFunc, (r_Renderer*) this, 1u ),
+    //update_thread( &r_WorldRenderer::UpdateFunc, (r_WorldRenderer*) this, 1u ),
     settings( "config.ini", QSettings::IniFormat ),
     frame_count(0),update_count(0),
     sun_vector( 0.7f, 0.8f, 0.6f )
@@ -992,27 +1009,19 @@ r_Renderer::r_Renderer( h_World* w ):
 }
 
 
-r_Renderer::~r_Renderer()
+r_WorldRenderer::~r_WorldRenderer()
 {
 	//update_thread.killTimer(
 	//update_thread.wait();
 	//update_thread.exit();
 }
 
-void r_Renderer::InitGL()
+void r_WorldRenderer::InitGL()
 {
-    if( QGLContext::currentContext() == NULL )
-        h_Console::Message( "error, null gl context" );
-
-    GetGLFunctions();
-
 	if( settings.value( "antialiasing", 0 ).toInt() != 0 )
 		glEnable( GL_MULTISAMPLE );
     //glEnable( GL_SAMPLE_ALPHA_TO_COVERAGE );
 
-    r_OGLState state;
-    state.InitialState();
-    r_OGLStateManager::SetState( state );
 
     LoadShaders();
     InitFrameBuffers();
@@ -1020,9 +1029,13 @@ void r_Renderer::InitGL()
 
     text_manager= new r_Text();
     text_manager->SetViewport( viewport_x, viewport_y );
+
+
+	BuildWorld();
+	InitVertexBuffers();
 }
 
-void r_Renderer::LoadShaders()
+void r_WorldRenderer::LoadShaders()
 {
     char define_str[128];
 
@@ -1069,11 +1082,20 @@ void r_Renderer::LoadShaders()
     	h_Console::Error( "console bg shader not found" );
 	console_bg_shader.MoveOnGPU();
 
+
+	if( supersampling_final_shader.Load( "shaders/supersampling_frag.glsl", "shaders/fullscreen_quad_vert.glsl", NULL ) )
+		h_Console::Error( "supersampling final shader not found" );
+	supersampling_final_shader.MoveOnGPU();
+
 }
-void r_Renderer::InitFrameBuffers()
+void r_WorldRenderer::InitFrameBuffers()
 {
+	std::vector<r_FramebufferTexture::TextureFormat> formats;
+	formats.push_back( r_FramebufferTexture::FORMAT_RGBA8 );
+	supersampling_buffer.Create( formats, r_FramebufferTexture::FORMAT_DEPTH24_STENCIL8, viewport_x*2, viewport_y*2 );
 }
-void r_Renderer::InitVertexBuffers()
+
+void r_WorldRenderer::InitVertexBuffers()
 {
     world_vb.vbo.VertexData( world_vb.vb_data,
                              sizeof( r_WorldVertex ) * world_vb.allocated_vertex_count,
@@ -1085,14 +1107,14 @@ void r_Renderer::InitVertexBuffers()
 
     r_WorldVertex v;
     unsigned int shift;
-    shift= ((char*)&v.coord[0]) - ((char*)&v );
+    shift= ((char*)v.coord) - ((char*)&v );
     world_vb.vbo.VertexAttribPointer( 0, 3, GL_SHORT, false, shift );
-    shift= ((char*)&v.tex_coord[0]) - ((char*)&v );
+    shift= ((char*)v.tex_coord) - ((char*)&v );
     world_vb.vbo.VertexAttribPointer( 1, 3, GL_SHORT, false, shift );
     shift= ((char*)&v.normal_id) - ((char*)&v );
 
     world_vb.vbo.VertexAttribPointerInt( 2, 1, GL_UNSIGNED_BYTE, shift );
-    shift= ((char*)&v.light[0] ) - ((char*)&v );
+    shift= ((char*)v.light ) - ((char*)&v );
     world_vb.vbo.VertexAttribPointer( 3, 2, GL_UNSIGNED_BYTE, false, shift );
 
 
@@ -1120,15 +1142,15 @@ void r_Renderer::InitVertexBuffers()
         water_side_vb.vbo.VertexAttribPointer( 1, 3, GL_UNSIGNED_BYTE, true, shift );*/
 
 
-    float build_prism[]= { 0.0f, 0.0f, 0.0f,  2.0f, 0.0f, 0.0f,   3.0f, 1.0f, 0.0f,
-                           2.0f, 2.0f, 0.0f,  0.0f, 2.0f, 0.0f,  -1.0f, 1.0f, 0.0f,
-                           0.0f, 0.0f, 1.0f,  2.0f, 0.0f, 1.0f,   3.0f, 1.0f, 1.0f,
-                           2.0f, 2.0f, 1.0f,  0.0f, 2.0f, 1.0f,  -1.0f, 1.0f, 1.0f
-                         };
-    unsigned short build_prism_indeces[]= { 0,1, 1,2, 2,3, 3,4,  4,5,   5,0,
-                                            6,7, 7,8, 8,9, 9,10, 10,11, 11,6,
-                                            0,6, 1,7, 2,8, 3,9,  4,10,  5,11
-                                          };
+    static const float build_prism[]= {
+    	0.0f, 0.0f, 0.0f,  2.0f, 0.0f, 0.0f,   3.0f, 1.0f, 0.0f,
+		2.0f, 2.0f, 0.0f,  0.0f, 2.0f, 0.0f,  -1.0f, 1.0f, 0.0f,
+        0.0f, 0.0f, 1.0f,  2.0f, 0.0f, 1.0f,   3.0f, 1.0f, 1.0f,
+        2.0f, 2.0f, 1.0f,  0.0f, 2.0f, 1.0f,  -1.0f, 1.0f, 1.0f};
+    static const unsigned short build_prism_indeces[]= {
+		0,1, 1,2, 2,3, 3,4,  4,5,   5,0,
+		6,7, 7,8, 8,9, 9,10, 10,11, 11,6,
+		0,6, 1,7, 2,8, 3,9,  4,10,  5,11};
     // 0,7, 1,8, 2,9, 3,10, 4,11, 5,6//additional lines
     // 0,3, 1,4, 2,5, 6,9, 7,10, 8,11  };
 
@@ -1139,43 +1161,56 @@ void r_Renderer::InitVertexBuffers()
 
 
 
-    short sky_vertices[]= { 256, 256, 256, -256, 256, 256,
-                            256, -256, 256, -256, -256, 256,
-                            256, 256, -256, -256, 256, -256,
-                            256, -256, -256, -256, -256, -256
-                          };
-    quint16 sky_indeces[]= { 0, 1, 5,  0, 5, 4,
-                             0, 4, 6,  0, 6, 2,
-                             4, 5, 7,  4, 7, 6,//bottom
-                             0, 3, 1,  0, 2, 3, //top
-                             2, 7, 3,  2, 6, 7,
-                             1, 3, 7,  1, 7, 5
-                           };
+    static const short sky_vertices[]= {
+    	256, 256, 256, -256, 256, 256,
+		256, -256, 256, -256, -256, 256,
+        256, 256, -256, -256, 256, -256,
+        256, -256, -256, -256, -256, -256};
+    static const quint16 sky_indeces[]= {
+    	0, 1, 5,  0, 5, 4,
+        0, 4, 6,  0, 6, 2,
+		4, 5, 7,  4, 7, 6,//bottom
+		0, 3, 1,  0, 2, 3, //top
+		2, 7, 3,  2, 6, 7,
+		1, 3, 7,  1, 7, 5};
     skybox_vbo.VertexData( sky_vertices, sizeof(short) * 8 * 3, sizeof(short) * 3 );
     skybox_vbo.IndexData( sky_indeces, sizeof(quint16) * 36, GL_UNSIGNED_SHORT, GL_TRIANGLES );
     skybox_vbo.VertexAttribPointer( 0, 3, GL_SHORT, false, 0 );
 }
 
 
-void r_Renderer::LoadTextures()
+void r_WorldRenderer::LoadTextures()
 {
     texture_manager.SetTextureSize(
         max( min( settings.value( "texture_size", R_MAX_TEXTURE_RESOLUTION ).toInt(), R_MAX_TEXTURE_RESOLUTION ), R_MIN_TEXTURE_RESOLUTION ) );
 
     texture_manager.SetFiltration( settings.value( "filter_textures", false ).toBool() );
-
     texture_manager.LoadTextures();
-    sun_texture.Load( "textures/sun.tga" );
-    water_texture.Load( "textures/water2.tga" );
 
-    QImage img;
-    if( img.load( "textures/console_bg_normalized.png"  ) )
-    {
-    	console_bg_texture.TextureData( img.width(), img.height(), GL_UNSIGNED_BYTE, GL_RGBA, 32, (void*)img.constBits() );
-    	console_bg_texture.Create();
-    	console_bg_texture.MoveOnGPU();
-    }
-    else
-    	h_Console::Warning( "texture \"textures/console_bg_normalized.png\" not found" );
+
+	auto LoadImg= []( const char* name, r_FramebufferTexture* tex )
+	{
+		QImage img( name );
+		if( img.isNull() )
+		{
+			h_Console::Warning( "texture \"%s\" not found", name );
+
+			//make stub
+			unsigned char img_data[8*8*4]; for( unsigned char& pix : img_data ){ pix= 128; };
+			tex->Create( r_FramebufferTexture::FORMAT_RGBA8, 8, 8, img_data );
+		}
+		else
+		{
+			unsigned char* img_data= (unsigned char*) img.constBits();
+			rRGBAMirrorVerticalAndSwapRB( img_data, img.width(), img.height() );
+			tex->Create( r_FramebufferTexture::FORMAT_RGBA8, img.width(), img.height(), img_data );
+		}
+		tex->SetFiltration( r_FramebufferTexture::FILTRATION_LINEAR_MIPMAP_LINEAR, r_FramebufferTexture::FILTRATION_LINEAR );
+		tex->BuildMips();
+	};
+
+	LoadImg( "textures/water2.tga", &water_texture );
+	LoadImg( "textures/sun.tga", &sun_texture );
+	LoadImg( "textures/console_bg_normalized.png" , &console_bg_texture );
 }
 #endif//RENDERER_CPP

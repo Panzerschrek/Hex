@@ -5,7 +5,6 @@
 #include "world.hpp"
 #include "thread.hpp"
 #include "main_loop.hpp"
-#include "renderer/renderer.hpp"
 #include "console.hpp"
 
 int main( int argc, char* argv[] )

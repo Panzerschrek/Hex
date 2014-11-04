@@ -4,6 +4,7 @@
 #include "world.hpp"
 #include "player.hpp"
 #include "math_lib/m_math.h"
+#include "renderer/i_world_renderer.hpp"
 
 bool h_World::InBorders( short x, short y, short z )
 {
@@ -33,8 +34,9 @@ h_World::h_World():
 	chunk_loader( "world" ),
     phys_tick_count(0),
     phys_thread( &h_World::PhysTick, this, 1u ),
-    world_mutex( QMutex::NonRecursive ),
-    player( NULL ),
+    world_mutex( QMutex::Recursive ),
+    player( nullptr ),
+    renderer( nullptr ),
     settings( "config.ini", QSettings::IniFormat )
 {
     InitNormalBlocks();
@@ -59,7 +61,6 @@ h_World::h_World():
     LightWorld();
 
 	phys_thread.setStackSize( 16 * 1024 * 1024 );//inrease stack for recursive methods( lighting, blasts, etc )
-    phys_thread.start();
 }
 
 
@@ -366,7 +367,13 @@ void h_World::PhysTick()
 
 
     phys_tick_count++;
+
+	if( renderer != nullptr )
+    	renderer->Update();
+
     Unlock();
+
+
     QTime t1= QTime::currentTime();
     unsigned int dt_ms= t0.msecsTo(t1);
     if( dt_ms < 50 )
@@ -779,4 +786,11 @@ void h_World::Save()
         	SaveChunk( GetChunk(x,y) );
 	chunk_loader.ForceSaveAllChunks();
 }
+
+
+void h_World::StartUpdates()
+{
+	phys_thread.start();
+}
+
 #endif//WORLD_CPP

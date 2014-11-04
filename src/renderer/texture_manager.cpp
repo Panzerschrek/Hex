@@ -28,11 +28,9 @@ void r_TextureManager::InitTextureTable()
         texture_mode_table[i]= false;
     for( i= 0; i< NUM_BLOCK_TYPES * 8; i++ )
         texture_scale_table[i]= H_MAX_TEXTURE_SCALE;
-
-
 }
 
-void r_TextureManager::DrawNullTexture( QImage* img )
+void r_TextureManager::DrawNullTexture( QImage* img, const char* text )
 {
     QPainter p( img );
 
@@ -50,6 +48,7 @@ void r_TextureManager::DrawNullTexture( QImage* img )
     p.setFont( f );
     p.setPen( QColor( Qt::white ) );
     p.drawText( 20, 80, "Texture not found" );
+    p.drawText( 20, 130, text );
     p.drawText( 20, 180, "Texture not found" );
 }
 
@@ -112,7 +111,7 @@ void r_TextureManager::LoadTextures()
             if( ! img.load( obj[ "filename" ].toString() ) )
             {
                // printf( "error, texture \"%s\" not fund\n", obj[ "filename" ].toString().toLocal8Bit().data() );
-               h_Console::Warning( "texture \"%s\" not fund", obj[ "filename" ].toString().toLocal8Bit().data() );
+               	h_Console::Warning( "texture \"%s\" not fund", obj[ "filename" ].toString().toLocal8Bit().constData() );
                 continue;
             }
             else
@@ -170,7 +169,7 @@ void r_TextureManager::LoadTextures()
     }//if json array
     else
     {
-        printf( "invalid JSON file: \"%s\"\n", config_file_name );
+        h_Console::Error( "invalid JSON file: \"%s\"\n", config_file_name );
     }
 
     delete[] tf[1].data;

@@ -23,7 +23,7 @@ public:
 private:
     void InitTextureTable();
 
-    void DrawNullTexture( QImage* img );
+    void DrawNullTexture( QImage* img, const char* text="" );
 
     static unsigned char texture_table[ NUM_BLOCK_TYPES * 8 ];
     static bool texture_mode_table [ NUM_BLOCK_TYPES * 8 ]; // if( true ) - mode per block, else mode - projection

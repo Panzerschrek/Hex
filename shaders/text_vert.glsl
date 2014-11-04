@@ -2,7 +2,7 @@
 in vec2 coord;
 in vec2 tex_coord;
 in vec4 color;
-noperspective out vec4 f_color;
+flat out vec4 f_color;
 noperspective out vec2 f_tex_coord;
 void main(void)
 {

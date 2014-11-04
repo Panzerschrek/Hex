@@ -29,18 +29,21 @@ class r_Text
 {
 	public:
 
-	r_Text();
+	r_Text( const char* font_file= "textures/fixedsys8x18.bmp" );
 	~r_Text(){}
-	void AddText( float colomn, float row, unsigned int size, const unsigned char* color, const char* text );
-	void AddMultiText( float colomn, float row, unsigned int size, const unsigned char* color, const char* text, ... );
+	void AddText( float colomn, float row, float, const unsigned char* color, const char* text );
+	void AddMultiText( float colomn, float row, float, const unsigned char* color, const char* text, ... );
 
     void DrawCross();
 
 	void Draw();
     void SetViewport( unsigned int x, unsigned int y );
 
-    inline unsigned int ColomnsInScreen()const;
-    inline unsigned int RowsInScreen()const;
+	unsigned int ColomnsInScreen()const;
+	unsigned int RowsInScreen()const;
+
+    float LetterWidth() const;
+    float LetterHeight() const;
 
 	private:
 
@@ -63,17 +66,17 @@ public:
 
     friend class Texture;
 
-private:
+/*private:
     static r_Text* default_text;
 public:
-    static r_Text* DefaultText();
+    static r_Text* DefaultText();*/
 
 };
 
-inline r_Text* r_Text::DefaultText()
+/*inline r_Text* r_Text::DefaultText()
 {
     return default_text;
-}
+}*/
 
 inline void r_Text::SetViewport( unsigned int x, unsigned int y )
 {
@@ -81,13 +84,22 @@ inline void r_Text::SetViewport( unsigned int x, unsigned int y )
     screen_y= float(y);
 }
 
- inline unsigned int r_Text::ColomnsInScreen()const
- {
- 	return screen_x / letter_width;
- }
+inline unsigned int r_Text::ColomnsInScreen()const
+{
+return screen_x / letter_width;
+}
 inline unsigned int r_Text::RowsInScreen()const
 {
 	return screen_y / letter_height;
+}
+
+inline float r_Text::LetterWidth() const
+{
+	return float(letter_width);
+}
+inline float r_Text::LetterHeight() const
+{
+	return float(letter_height);
 }
 
 #endif//TEXT_H

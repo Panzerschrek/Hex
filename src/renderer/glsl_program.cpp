@@ -85,6 +85,7 @@ int r_GLSLProgram::Define( const char* def )
     return 0;
 }
 
+
 int r_GLSLProgram::UnDefine( const char* def )
 {
 	char str[ MAX_DEFINE_LEN ];
@@ -288,16 +289,6 @@ int	r_GLSLProgram::FindAttrib  ( const char* name )
 
 int r_GLSLProgram::SetAttribLocation( const char* name, unsigned int location )
 {
-    /*unsigned int i;
-    for( i= 0; i< attrib_num; i++ )
-    {
-        if( !strcmp( name, attrib_names[i] ) )
-        {
-            glBindAttribLocation( prog_handle, location, user_attribs[i] );
-            return 0;
-        }
-    }
-    return 1;*/
     if( attrib_num >= MAX_NUMBER_OF_ATTRIBS )
         return 1;
 
@@ -374,7 +365,7 @@ void r_GLSLProgram::FindAllUniforms()
 
 
 
-int	r_GLSLProgram::GetUniform( const char* name ) const
+int	r_GLSLProgram::GetUniform( const char* name )
 {
     int i;
     for( i= 0; i< uniform_num; i++ )
@@ -389,7 +380,7 @@ int	r_GLSLProgram::GetUniform( const char* name ) const
 }
 
 
-int	r_GLSLProgram::Uniform( const char* name, const m_Vec3& v) const
+int	r_GLSLProgram::Uniform( const char* name, const m_Vec3& v)
 {
     int u= GetUniform( name );
     if( u == -1 )
@@ -399,7 +390,7 @@ int	r_GLSLProgram::Uniform( const char* name, const m_Vec3& v) const
     return 0;
 }
 
-int	r_GLSLProgram::Uniform( const char* name, int i ) const
+int	r_GLSLProgram::Uniform( const char* name, int i )
 {
     int u= GetUniform( name );
     if( u == -1 )
@@ -410,7 +401,7 @@ int	r_GLSLProgram::Uniform( const char* name, int i ) const
     return 0;
 }
 
-int	r_GLSLProgram::Uniform( const char* name, const m_Mat4& m ) const
+int	r_GLSLProgram::Uniform( const char* name, const m_Mat4& m )
 {
     int u= GetUniform( name );
     if( u == -1 )
@@ -421,7 +412,7 @@ int	r_GLSLProgram::Uniform( const char* name, const m_Mat4& m ) const
     return 0;
 }
 
-int	r_GLSLProgram::Uniform( const char* name, const m_Mat3& m ) const
+int	r_GLSLProgram::Uniform( const char* name, const m_Mat3& m )
 {
     int u= GetUniform( name );
     if( u == -1 )
@@ -433,13 +424,23 @@ int	r_GLSLProgram::Uniform( const char* name, const m_Mat3& m ) const
 }
 
 
-int	r_GLSLProgram::Uniform( const char* name, float f ) const
+int	r_GLSLProgram::Uniform( const char* name, float f )
 {
     int u= GetUniform( name );
     if( u == -1 )
         return 1;
 
     glUniform1f( u, f );
+    return 0;
+}
+
+int r_GLSLProgram::Uniform( const char* name, float f0, float f1, float f2, float f3 )
+{
+	int u= GetUniform( name );
+    if( u == -1 )
+        return 1;
+
+    glUniform4f( u, f0, f1, f2, f3 );
     return 0;
 }
 

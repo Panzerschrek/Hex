@@ -23,7 +23,10 @@ r_OGLState::r_OGLState( bool blend_in, bool cull_face_in, bool depth_test_in, bo
 
 blend(blend_in), cull_face(cull_face_in), depth_test(depth_test_in), program_point_size(program_point_size_in),
 blend_func{ blend_func_in[0], blend_func_in[1] }, clear_color{ clear_color_in[0], clear_color_in[1], clear_color_in[2], clear_color_in[3] },
-clear_depth(clear_depth_in), cull_face_mode(cull_face_mode_in), depth_mask(depth_mask_in)
+clear_depth(clear_depth_in), cull_face_mode(cull_face_mode_in), depth_mask(depth_mask_in),
+
+depth_func(GL_LEQUAL)
+
 {
 }
 

@@ -14,6 +14,7 @@
 #include "chunk_loader.hpp"
 
 class h_Player;
+class r_IWorldRenderer;
 
 class h_World : public QObject
 {
@@ -40,6 +41,10 @@ public:
     void Blast( short x, short y, short z, short radius );
 
 	void SetPlayer( h_Player* p );
+	void SetRenderer( r_IWorldRenderer* r );
+	void StartUpdates(); // start main phys loop of world
+
+
     short Longitude() const;
     short Latitude() const;
 
@@ -133,6 +138,7 @@ private:
 
 	m_Rand phys_processes_rand;
 
+	r_IWorldRenderer* renderer;
 	h_Player* player;
 	short player_coord[3];//global coordinate of player hexagon
 
@@ -182,6 +188,12 @@ inline void h_World::SetPlayer( h_Player* p )
 {
 	player= p;
 }
+
+inline void h_World::SetRenderer( r_IWorldRenderer* r )
+{
+	renderer= r;
+}
+
 /*inline h_Block* h_World::WaterBlock( unsigned char water_level )
 {
     return &water_blocks[ water_level ];

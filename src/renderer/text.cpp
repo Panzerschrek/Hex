@@ -4,7 +4,7 @@
 
 
 const unsigned char r_Text::default_color[4]= {255, 255, 255, 32 };
-r_Text* r_Text::default_text= NULL;
+//r_Text* r_Text::default_text= NULL;
 
 
 
@@ -18,7 +18,7 @@ void r_Text::DrawCross()
 
 }
 
-void r_Text::AddMultiText( float colomn, float row, unsigned int size, const unsigned char* color, const char* text, ... )
+void r_Text::AddMultiText( float colomn, float row, float size, const unsigned char* color, const char* text, ... )
 {
 	static char str[ H_MAX_TEXT_BUFFER_SIZE ];
     va_list ap;
@@ -29,7 +29,7 @@ void r_Text::AddMultiText( float colomn, float row, unsigned int size, const uns
     AddText( colomn, row, size, color, str );
 }
 
-void r_Text::AddText( float colomn, float row, unsigned int size, const unsigned char* color, const char* text )
+void r_Text::AddText( float colomn, float row, float size, const unsigned char* color, const char* text )
 {
     const char* str= text;
 
@@ -47,8 +47,8 @@ void r_Text::AddText( float colomn, float row, unsigned int size, const unsigned
         y=  -2.0f * (row + 1) * float( letter_height ) / screen_y + 1.0f;
     }
 
-    dx= 2.0f * float( letter_width * size ) / screen_x;
-    dy= 2.0f * float( letter_height * size ) / screen_y;
+    dx= 2.0f * size* float( letter_width ) / screen_x;
+    dy= 2.0f * size* float( letter_height ) / screen_y;
 
 
     r_TextVertex* v= vertices + vertex_buffer_pos;
@@ -114,11 +114,11 @@ void r_Text::Draw()
 }
 
 
-r_Text::r_Text():
+r_Text::r_Text( const char* font_file ):
     vertex_buffer_pos(0),
     draw_crosshair(false)
 {
-    default_text= this;
+//    default_text= this;
 
     vertices= new  r_TextVertex[ H_MAX_TEXT_BUFFER_SIZE * 4 ];
 
@@ -156,7 +156,7 @@ r_Text::r_Text():
     text_shader.SetAttribLocation( "color", 2 );
     text_shader.MoveOnGPU();
 
-    font_texture.Load( "textures/fixedsys8x18.bmp" );
+    font_texture.Load( font_file );
     letter_height= font_texture.GetHeight();
     letter_width= font_texture.GetWidth() / LETTERS_IN_TEXTURE;
 }

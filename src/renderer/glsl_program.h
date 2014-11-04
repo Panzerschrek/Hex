@@ -60,11 +60,12 @@ public:
 	int     SetAttribLocation( const char* name, unsigned int location );
     int		GetUniformId	( const char* name );
 
-	int		Uniform( const char* name, const m_Vec3& v) const;
-	int		Uniform( const char* name, int i ) const;
-	int		Uniform( const char* name, const m_Mat4& m ) const;
-	int		Uniform( const char* name, const m_Mat3& m ) const;
-	int		Uniform( const char* name, float f ) const;
+	int		Uniform( const char* name, const m_Vec3& v);
+	int		Uniform( const char* name, int i );
+	int		Uniform( const char* name, const m_Mat4& m );
+	int		Uniform( const char* name, const m_Mat3& m );
+	int		Uniform( const char* name, float f );
+	int 	Uniform( const char* name, float f0, float f1, float f2, float f3 );
 
 	/*int		Uniform( int id, const m_Vec3& v) const;
 	int		Uniform( int id, int i ) const;
@@ -83,7 +84,7 @@ private:
 	void 	FindAllUniforms();
 	void 	FindAllUniformsInShader( const char* shader_text );
 	int		FindUniform	( const char* name );
-	int		GetUniform( const char* name ) const;
+	int		GetUniform( const char* name );
 
 
 	static 	r_GLSLProgram* current_prog;
