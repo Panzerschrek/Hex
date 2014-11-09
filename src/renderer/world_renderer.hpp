@@ -2,6 +2,7 @@
 #define WORLD_RENDERER_H
 
 #include "i_world_renderer.hpp"
+#include "chunk_data_cache.hpp"
 
 #include "texture.h"
 #include "framebuffer_texture.hpp"
@@ -13,9 +14,14 @@
 #include "texture_manager.hpp"
 
 #include "../math_lib/matrix.h"
+#include "../math_lib/collection.hpp"
 
-#include "../world.hpp"
 #include "../thread.hpp"
+
+
+class h_World;
+class h_Player;
+class h_Chunk;
 
 #pragma pack( push, 1 )
 struct r_WorldVertex
@@ -90,8 +96,7 @@ class r_WaterQuadChunkInfo
 
 class r_WorldRenderer : public QObject, public r_IWorldRenderer
 {
-    Q_OBJECT
-	public:
+public:
 
 	r_WorldRenderer( h_World* w );
 	~r_WorldRenderer();
@@ -106,15 +111,15 @@ class r_WorldRenderer : public QObject, public r_IWorldRenderer
 	void SetCamAng( m_Vec3 a );
 	void SetBuildPos( m_Vec3 p );
 	void SetViewportSize( unsigned int v_x, unsigned int v_y );
-	private:
 
-	private slots:
-    void UpdateChunk( unsigned short,  unsigned short );
-    void UpdateChunkWater( unsigned short,  unsigned short );
-    void FullUpdate();
 
-	void Update() override{UpdateFunc();};//r_IWorldRenderer
-    private:
+public: // r_IWorldRenderer
+    virtual void UpdateChunk( unsigned short,  unsigned short ) override;
+    virtual void UpdateChunkWater( unsigned short,  unsigned short ) override;
+    virtual void FullUpdate() override;
+
+	void Update() override{UpdateFunc();};
+private:
 
 	void LoadShaders();
 	void LoadTextures();

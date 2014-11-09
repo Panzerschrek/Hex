@@ -58,6 +58,9 @@ void r_Framebuffer::Destroy()
 
 	if( depth_texture.Created() )
 		depth_texture.Destroy();
+
+
+//	glDeleteFramebuffers( 1, &framebuffer_id );
 }
 
 

@@ -7,10 +7,13 @@
 #include <QImage>
 
 #include "world_renderer.hpp"
+#include "world_vertex_buffer.hpp"
 #include "glcorearb.h"
 #include "rendering_constants.hpp"
 #include "../console.hpp"
 #include "ogl_state_manager.hpp"
+
+#include "../world.hpp"
 
 void r_WorldRenderer::UpdateChunk(unsigned short X,  unsigned short Y )
 {
@@ -983,14 +986,14 @@ r_WorldRenderer::r_WorldRenderer( h_World* w ):
 {
     world_vb.need_update_vbo= false;
 
-    connect( world, SIGNAL(ChunkUpdated( unsigned short, unsigned short )),
+    /*connect( world, SIGNAL(ChunkUpdated( unsigned short, unsigned short )),
              this, SLOT( UpdateChunk( unsigned short, unsigned short ) ), Qt::DirectConnection );
 
     connect( world, SIGNAL(ChunkWaterUpdated( unsigned short, unsigned short )),
              this, SLOT( UpdateChunkWater( unsigned short, unsigned short ) ), Qt::DirectConnection );
 
     connect( world, SIGNAL(FullUpdate( void )),
-             this, SLOT( FullUpdate( void ) ), Qt::DirectConnection );
+             this, SLOT( FullUpdate( void ) ), Qt::DirectConnection );*/
 
 
     startup_time= QTime::currentTime();

@@ -309,15 +309,18 @@ void h_World::WaterPhysTick()
             }//for all water blocks in chunk
             if( chunk_modifed )
             {
-                emit ChunkWaterUpdated( i, j );
-                if( i > 0 )
-                    emit ChunkWaterUpdated( i-1, j );
-                if( i < ChunkNumberX() - 1 );
-                emit ChunkWaterUpdated( i+1, j );
-                if( j > 0 )
-                    emit ChunkWaterUpdated( i, j-1 );
-                if( j < ChunkNumberY() - 1 );
-                emit ChunkWaterUpdated( i, j+1 );
+                if( renderer != nullptr )
+                {
+					renderer->UpdateChunk( i, j );
+					if( i > 0 )
+						renderer->UpdateChunkWater( i-1, j );
+					if( i < ChunkNumberX() - 1 );
+						renderer->UpdateChunkWater( i+1, j );
+					if( j > 0 )
+						renderer->UpdateChunkWater( i, j-1 );
+					if( j < ChunkNumberY() - 1 );
+						renderer->UpdateChunkWater( i, j+1 );
+                }
 
                 ch->need_update_light= true;
             }
@@ -383,6 +386,9 @@ void h_World::PhysTick()
 
 void h_World::UpdateInRadius( short x, short y, short r )
 {
+	if( renderer == nullptr )
+		return;
+
 	short x_min, x_max, y_min, y_max;
 	x_min= ClampX( x - r );
 	x_max= ClampX( x + r );
@@ -395,11 +401,14 @@ void h_World::UpdateInRadius( short x, short y, short r )
 	y_max>>= H_CHUNK_WIDTH_LOG2;
 	for( short i= x_min; i<= x_max; i++ )
 		for( short j= y_min; j<= y_max; j++ )
-			 emit ChunkUpdated( i, j );
+			 renderer->UpdateChunk( i, j );
+
 
 }
 void h_World::UpdateWaterInRadius( short x, short y, short r )
 {
+	if( renderer == nullptr )
+		return;
 	short x_min, x_max, y_min, y_max;
 	x_min= ClampX( x - r );
 	x_max= ClampX( x + r );
@@ -412,7 +421,7 @@ void h_World::UpdateWaterInRadius( short x, short y, short r )
 	y_max>>= H_CHUNK_WIDTH_LOG2;
 	for( short i= x_min; i<= x_max; i++ )
 		for( short j= y_min; j<= y_max; j++ )
-			 emit ChunkWaterUpdated( i, j );
+			 renderer->UpdateChunkWater( i, j );
 }
 
 void h_World::Destroy( short x, short y, short z )
@@ -559,7 +568,7 @@ void h_World::AddBuildEvent( short x, short y, short z, h_BlockType block_type )
 	act.coord[1]= y;
 	act.coord[2]= z;
 
-	action_queue[0].enqueue( act );
+	action_queue[0].push( act );
 
 	action_queue_mutex.unlock();
 }
@@ -573,7 +582,7 @@ void h_World::AddDestroyEvent( short x, short y, short z )
 	act.coord[1]= y;
 	act.coord[2]= z;
 
-	action_queue[0].enqueue( act );
+	action_queue[0].push( act );
 
 	action_queue_mutex.unlock();
 }
@@ -586,7 +595,9 @@ void h_World::FlushActionQueue()
 
 	while( action_queue[1].size() != 0 )
 	{
-		h_WorldAction act= action_queue[1].dequeue();
+		h_WorldAction act= action_queue[1].front();
+		action_queue[1].pop();
+
 		if( act.type == ACTION_BUILD )
 			Build( act.coord[0], act.coord[1], act.coord[2], act.block_type );
 		else if( act.type == ACTION_DESTROY )
@@ -686,7 +697,8 @@ void h_World::MoveWorld( h_WorldMoveDirection dir )
 		break;
 	};
 
-	emit FullUpdate();
+	if( renderer != nullptr )
+		renderer->FullUpdate();
 }
 
 

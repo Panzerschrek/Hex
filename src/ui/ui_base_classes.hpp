@@ -5,10 +5,12 @@
 
 #define H_UI_MAX_ELEMENTS 128
 #define H_UI_MAX_INSCRIPTION_LEN 64
+#define H_UI_MAX_MENUS 32
 
 class ui_Painter;
 class ui_Base;
 struct ui_Vertex;
+class ui_MenuBase;
 
 class ui_CursorHandler
 {
@@ -25,6 +27,8 @@ private:
 
     static int ui_elements_count;
     static ui_Base* ui_elements[ H_UI_MAX_ELEMENTS ];
+    static int ui_menu_count;
+    static ui_MenuBase* ui_menus[ H_UI_MAX_MENUS ];
 };
 
 class ui_Base
@@ -74,6 +78,14 @@ public:
     {
         return is_active;
     }
+    void SetVisible( bool visible )
+    {
+        is_visible= visible;
+    }
+    bool IsVisible() const
+    {
+        return is_visible;
+    }
 
     static void SetCellSize( int size )
     {
@@ -101,7 +113,7 @@ protected:
     unsigned char cursor_over_color[4];
     unsigned char current_color[4];
 
-    bool is_active;
+    bool is_active, is_visible;
 
 
     static int ui_cell_size;
@@ -177,12 +189,12 @@ class ui_Text : public ui_Base
 {
 public:
 
-	enum ui_TextAlignment
-	{
-		ALIGNMENT_LEFT,
-		ALIGNMENT_CENTER,
-		ALIGNMENT_RIGHT
-	};
+    enum ui_TextAlignment
+    {
+        ALIGNMENT_LEFT,
+        ALIGNMENT_CENTER,
+        ALIGNMENT_RIGHT
+    };
 
     ui_Text( const char* text, ui_TextAlignment alignent_, int cell_x, int cell_y );
     ui_Text( const char* text, ui_TextAlignment alignent_, int cell_x, int cell_y, const unsigned char* color );
@@ -233,7 +245,7 @@ class ui_Slider : public ui_Base
 {
 public:
 
-	class ui_SliderCallback
+    class ui_SliderCallback
     {
     public:
         virtual void SliderCallback( ui_Slider* slider )= 0;
@@ -244,13 +256,16 @@ public:
     ui_Slider( int cell_x, int cell_y, int cell_size_x, float slider_pos_, const unsigned char* normal_color, const unsigned char* cursor_over_color_ );
     ~ui_Slider();
 
-	void SetCallback( ui_SliderCallback* call )
+    void SetCallback( ui_SliderCallback* call )
     {
         callback= call;
     }
 
     void SetSliderPos( float pos );
-    float SliderPos()const { return slider_pos; };
+    float SliderPos() const
+    {
+        return slider_pos;
+    };
 
     void Draw( ui_Painter* painter )const override;
     void CursorPress( int x, int y, bool pressed ) override;
@@ -287,8 +302,15 @@ class ui_MenuBase
 public:
 
     ui_MenuBase( ui_MenuBase* parent, int x, int y, int sx , int sy );
+    virtual ~ui_MenuBase(){};
     void Draw( ui_Painter* painter );
     void SetActive( bool active );
+	void SetVisible( bool visible );
+
+	void Kill(){ marked_for_killing= true; };
+	bool IsMarkedForKilling() const { return marked_for_killing; };
+
+	virtual void Tick()= 0;
 
 protected:
 
@@ -297,6 +319,8 @@ protected:
     ui_MenuBase* child_menu;
 
     int pos_x, pos_y, size_x, size_y;//size of menu viewport
+
+    bool marked_for_killing;// true, if menu need kill in
 
 };
 

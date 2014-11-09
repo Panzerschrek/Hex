@@ -1,8 +1,10 @@
 #ifndef WORLD_HPP
 #define WORLD_HPP
 
+#include <queue>
+
 #include <QMutex>
-#include <QQueue>
+
 
 #include "hex.hpp"
 #include "block.hpp"
@@ -18,8 +20,6 @@ class r_IWorldRenderer;
 
 class h_World : public QObject
 {
-    Q_OBJECT
-
     friend class h_Chunk;
 
 public:
@@ -151,8 +151,8 @@ private:
 	void PhysTick();
 	QMutex world_mutex;
 
-	//queue 0 - for enqueue, queue 1 - fro dequeue
-	QQueue< h_WorldAction > action_queue[2];
+	//queue 0 - for enqueue, queue 1 - for dequeue
+	std::queue< h_WorldAction > action_queue[2];
 	QMutex action_queue_mutex;
 
 	QSettings settings;

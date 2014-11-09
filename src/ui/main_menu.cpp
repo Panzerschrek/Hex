@@ -24,6 +24,15 @@ ui_SettingsMenu::ui_SettingsMenu( ui_MenuBase* parent, int x, int y, int sx, int
 
 	ui_MenuBase::elements.push_back( button_back );
 
+
+	slider_textures_size= new ui_Slider( 1, 14, 8, 1.0f, normal_color, active_color );
+	slider_textures_size->SetInvStep( 3 );
+	slider_textures_size->SetCallback(this);
+	ui_MenuBase::elements.push_back( slider_textures_size );
+
+	text_textures_size= new ui_Text( "Textures size: 1", ui_Text::ALIGNMENT_CENTER, 5, 4, text_color );
+	ui_MenuBase::elements.push_back( text_textures_size );
+
 }
 
 ui_SettingsMenu::~ui_SettingsMenu()
@@ -37,9 +46,23 @@ void ui_SettingsMenu::ButtonCallback( ui_Button* button )
 	{
 		parent_menu->SetActive( true );
 		printf( "active" );
+		this->Kill();
 		//parent_menu->KillChild();
 	}
 }
+void ui_SettingsMenu::SliderCallback( ui_Slider* slider )
+{
+	int i_pos= int(roundf(slider->SliderPos() * 3));
+	slider_textures_size->SetSliderPos( float(i_pos) / 3.0f );
+
+	i_pos= 3-i_pos;
+	int size= 1<<i_pos;
+
+	char text[48];
+	sprintf( text, "Textures size: 1/%d", size );
+	text_textures_size->SetText( size == 1 ? "Textures size: 1" : text );
+}
+
 /*
 ---------ui_MainMenu---------------
 */
@@ -65,9 +88,6 @@ ui_MainMenu::ui_MainMenu( h_MainLoop* main_loop_, int sx, int sy ):
 	checkbox->SetCallback( this );
 	game_title= new ui_Text( "Hex", ui_Text::ALIGNMENT_CENTER, 5, 4, text_color );
 	progress_bar= new ui_ProgressBar( 3, 20, 20, 2, 0.0f, normal_color, active_color );
-	slider= new ui_Slider( 1, 14, 8, 0.3f, normal_color, active_color );
-	slider->SetInvStep(8);
-	slider->SetCallback(this);
 
 	ui_MenuBase::elements.push_back( button_play );
 	ui_MenuBase::elements.push_back( button_settings );
@@ -76,7 +96,6 @@ ui_MainMenu::ui_MainMenu( h_MainLoop* main_loop_, int sx, int sy ):
 	ui_MenuBase::elements.push_back( checkbox );
 	ui_MenuBase::elements.push_back( game_title );
 	ui_MenuBase::elements.push_back( progress_bar );
-	ui_MenuBase::elements.push_back( slider );
 }
 
 ui_MainMenu::~ui_MainMenu()
@@ -88,7 +107,6 @@ ui_MainMenu::~ui_MainMenu()
 	delete checkbox;
 	delete game_title;
 	delete progress_bar;
-	delete slider;
 }
 
 void ui_MainMenu::ButtonCallback( ui_Button* button )
@@ -97,6 +115,7 @@ void ui_MainMenu::ButtonCallback( ui_Button* button )
 	{
 		child_menu= new ui_SettingsMenu( this, 0,0, size_x, size_y );
 		this->SetActive( false );
+		this->SetVisible( false );
 	}
 	else if( button == button_play )
 	{
@@ -120,6 +139,17 @@ void ui_MainMenu::CheckboxCallback( ui_Checkbox* checkbox )
 	}*/
 }
 
+void ui_MainMenu::Tick()
+{
+	if( child_menu != nullptr )
+		if( child_menu->IsMarkedForKilling() )
+		{
+			delete child_menu;
+			child_menu= nullptr;
+			this->SetActive( true );
+			this->SetVisible( true );
+		}
+}
 
 void ui_MainMenu::SliderCallback( ui_Slider* slider )
 {

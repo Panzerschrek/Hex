@@ -8,16 +8,21 @@ class h_MainLoop;
 
 class ui_SettingsMenu:
 	public ui_MenuBase,
-	public ui_Button::ui_ButtonCallback
+	public ui_Button::ui_ButtonCallback,
+	public ui_Slider::ui_SliderCallback
 {
 	public:
 	ui_SettingsMenu( ui_MenuBase* parent, int x, int y, int sx, int sy );
 	~ui_SettingsMenu();
 
 	void ButtonCallback( ui_Button* button ) override;
+	void SliderCallback( ui_Slider* slider ) override;
+	void Tick() override {};
 
 private:
 	ui_Button* button_back;
+	ui_Slider* slider_textures_size;
+	ui_Text*   text_textures_size;
 };
 
 class ui_MainMenu :
@@ -29,13 +34,14 @@ class ui_MainMenu :
 	public:
 
 	ui_MainMenu( h_MainLoop* main_loop_, int sx, int sy );
-	~ui_MainMenu();
+	virtual ~ui_MainMenu();
 
 	//void Draw( ui_Painter* painter );
 
 	void ButtonCallback( ui_Button* button ) override;
 	void CheckboxCallback( ui_Checkbox* checkbox ) override;
 	void SliderCallback( ui_Slider* slider ) override;
+	void Tick() override;
 
 
 	private:
@@ -46,8 +52,6 @@ class ui_MainMenu :
 	ui_Checkbox* checkbox;
 	ui_Text* game_title;
 	ui_ProgressBar* progress_bar;
-	ui_Slider* slider;
-
 
 	h_MainLoop * const main_loop;
 

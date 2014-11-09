@@ -21,8 +21,6 @@ void main()
 	vec4 c= texture( tex, f_tex_coord );
 	if( c.a < 0.5 )
 		discard;
-	//float a= min( (c.a-0.6) * 10.0, 1.0 );//alpha for alpha_to_coverage
-
 	vec3 l= f_light.x * sun_light_color + f_light.y * fire_light_color + ambient_light_color;	
 	color= vec4( c.xyz * l, 1.0 );
 }

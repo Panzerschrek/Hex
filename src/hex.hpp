@@ -13,7 +13,10 @@
 
 #ifdef Q_OS_WIN
 #include <windows.h>
-inline void usleep(int n){ Sleep(n/1000);}
+inline void usleep(int n)
+{
+    Sleep(n/1000);
+}
 #endif
 
 
@@ -27,6 +30,14 @@ inline void usleep(int n){ Sleep(n/1000);}
 #define H_MIN_CHUNKS_LOG2 2
 #define H_MAX_CHUNKS 64
 #define H_MAX_CHUNKS_LOG2 6
+#define H_MIN_CHUNKS_IN_CLUSTER 2
+#define H_MAX_CHUNKS_IN_CLUSTER 12
+
+#define H_MIN_LONGITUDE (-512)
+#define H_MAX_LONGITUDE ( 511)
+#define H_MIN_LATITUDE  (-512)
+#define H_MAX_LATITUDE  ( 511)
+
 
 
 #define H_WORLD_REGION_SIZE_X 24
@@ -159,10 +170,10 @@ unsigned char
 enum h_WorldMoveDirection:
 unsigned char
 {
-	NORTH,
-	SOUTH,
-	EAST,
-	WEST
+    NORTH,
+    SOUTH,
+    EAST,
+    WEST
 };
 
 #endif//HEX_HPP

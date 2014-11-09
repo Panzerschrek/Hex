@@ -1,5 +1,5 @@
+#include "renderer/i_world_renderer.hpp"
 #include "world.hpp"
-
 
 unsigned char h_World::SunLightLevel( short x, short y, short z ) const
 {
@@ -731,12 +731,21 @@ void h_World::RelightWaterModifedChunksLight()
                         }
                     ch->need_update_light= false;
 
-                    emit ChunkUpdated( i, j );
+					if( renderer != nullptr )
+					{
+                    /*emit ChunkUpdated( i, j );
                     emit ChunkUpdated( i+1, j+1 );
                     emit ChunkUpdated( i+1, j-1 );
                     emit ChunkUpdated( i-1, j+1 );
                     emit ChunkUpdated( i-1, j-1 );
-                    emit ChunkWaterUpdated( i, j );
+                    emit ChunkWaterUpdated( i, j );*/
+						renderer->UpdateChunk( i, j );
+						renderer->UpdateChunk( i+1, j+1 );
+						renderer->UpdateChunk( i+1, j-1 );
+						renderer->UpdateChunk( i-1, j+1 );
+						renderer->UpdateChunk( i-1, j-1 );
+						renderer->UpdateChunkWater( i, j );
+					}
                 }//if rand
             }//if need update light
         }

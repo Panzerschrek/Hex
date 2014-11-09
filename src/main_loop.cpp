@@ -3,6 +3,9 @@
 
 #include "main_loop.hpp"
 #include "renderer/world_renderer.hpp"
+#include "world.hpp"
+#include "player.hpp"
+
 //#include "glcorearb.h"
 #include "block_collision.hpp"
 #include "console.hpp"
@@ -204,6 +207,8 @@ void h_MainLoop::paintGL()
 		ui_painter= new ui_Painter();
 		main_menu= new ui_MainMenu( this, screen_width, screen_height );
 	}
+
+	main_menu->Tick();
 
 	m_Mat4 mat;
 	mat.Identity();
