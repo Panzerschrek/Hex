@@ -1,6 +1,8 @@
+#include <QImage>
+
 #include "text.hpp"
 #include "ogl_state_manager.hpp"
-
+#include "texture.h"
 
 
 const unsigned char r_Text::default_color[4]= {255, 255, 255, 32 };
@@ -36,19 +38,13 @@ void r_Text::AddText( float colomn, float row, float size, const unsigned char* 
     float x, x0, y;
     float dx, dy;
 
-    if( draw_crosshair )//HACK for crosshair
-    {
-        x= -float( 2*letter_width ) / screen_x;
-        y= -float( 2*letter_height ) / screen_y;
-    }
-    else
-    {
-        x0= x=  2.0f * colomn * float( letter_width ) / screen_x - 1.0f;
-        y=  -2.0f * (row + 1) * float( letter_height ) / screen_y + 1.0f;
-    }
+	float d_size= 2.0f * size;
 
-    dx= 2.0f * size* float( letter_width ) / screen_x;
-    dy= 2.0f * size* float( letter_height ) / screen_y;
+	x0= x= d_size * colomn * float( letter_width ) / screen_x - 1.0f;
+	y=  -d_size * (row + 1) * float( letter_height ) / screen_y + 1.0f;
+
+    dx= (d_size * float(letter_width) ) / screen_x;
+    dy= (d_size * float(letter_height) ) / screen_y;
 
 
     r_TextVertex* v= vertices + vertex_buffer_pos;
@@ -94,7 +90,7 @@ void r_Text::AddText( float colomn, float row, float size, const unsigned char* 
 
 void r_Text::Draw()
 {
-    font_texture.BindTexture(0);
+    font_texture.Bind(0);
 
     text_vbo.Bind();
     text_vbo.VertexSubData( vertices, vertex_buffer_pos * sizeof(r_TextVertex), 0 );
@@ -156,7 +152,17 @@ r_Text::r_Text( const char* font_file ):
     text_shader.SetAttribLocation( "color", 2 );
     text_shader.MoveOnGPU();
 
-    font_texture.Load( font_file );
-    letter_height= font_texture.GetHeight();
-    letter_width= font_texture.GetWidth() / LETTERS_IN_TEXTURE;
+	{
+		QImage img( font_file );
+		if( img.format() != img.Format_ARGB32 )
+			img= img.convertToFormat( QImage::Format_ARGB32 );
+
+		unsigned char* tex_data= (unsigned char*) img.constBits();
+		rRGBAMirrorVerticalAndSwapRB( tex_data, img.width(), img.height() );
+		font_texture.Create( r_FramebufferTexture::FORMAT_RGBA8, img.width(), img.height(), tex_data );
+		font_texture.BuildMips();
+		font_texture.SetFiltration( r_FramebufferTexture::FILTRATION_LINEAR_MIPMAP_LINEAR, r_FramebufferTexture::FILTRATION_LINEAR );
+	}
+    letter_height= font_texture.Height();
+    letter_width= font_texture.Width() / LETTERS_IN_TEXTURE;
 }

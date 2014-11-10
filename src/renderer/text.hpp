@@ -3,7 +3,7 @@
 
 #include "glsl_program.h"
 #include "polygon_buffer.h"
-#include "texture.h"
+#include "framebuffer_texture.hpp"
 
 class Texture;
 
@@ -29,7 +29,7 @@ class r_Text
 {
 	public:
 
-	r_Text( const char* font_file= "textures/fixedsys8x18.bmp" );
+	r_Text( const char* font_file );
 	~r_Text(){}
 	void AddText( float colomn, float row, float, const unsigned char* color, const char* text );
 	void AddMultiText( float colomn, float row, float, const unsigned char* color, const char* text, ... );
@@ -58,7 +58,8 @@ class r_Text
     unsigned int letter_width, letter_height;
 
 	//GLuint font_texture_id;
-	r_Texture font_texture;
+	//r_Texture font_texture;
+	r_FramebufferTexture font_texture;
     bool draw_crosshair;
 
 public:

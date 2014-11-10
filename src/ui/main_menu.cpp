@@ -96,6 +96,14 @@ ui_MainMenu::ui_MainMenu( h_MainLoop* main_loop_, int sx, int sy ):
 	ui_MenuBase::elements.push_back( checkbox );
 	ui_MenuBase::elements.push_back( game_title );
 	ui_MenuBase::elements.push_back( progress_bar );
+
+
+	ui_Button * b;
+	for( int i= 0; i< 4; i++ )
+	{
+		b= new ui_Button( "button", 5, i+1, 8, 1, normal_color, active_color );
+		ui_MenuBase::elements.push_back( b );
+	}
 }
 
 ui_MainMenu::~ui_MainMenu()

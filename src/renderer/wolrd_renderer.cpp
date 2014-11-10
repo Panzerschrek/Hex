@@ -539,15 +539,14 @@ void r_WorldRenderer::Draw()
 
     if( settings.value( "show_debug_info", false ).toBool() && h_Console::GetPosition() == 0.0f )
     {
-        text_manager->AddMultiText( 0, 0, 1, r_Text::default_color, "fps: %d", last_fps );
-        text_manager->AddMultiText( 0, 1, 1, r_Text::default_color, "chunks: %dx%d", chunk_num_x, chunk_num_y );
-        text_manager->AddMultiText( 0, 2, 1, r_Text::default_color, "chunks updated per second: %d", chunk_updates_per_second );
-        //text_manager->AddMultiText( 0, 2, 1, r_Text::default_color, "chunks rebuilded per second: %d",chunks_rebuild_per_second );
-        text_manager->AddMultiText( 0, 3, 1, r_Text::default_color, "water quadchunks updated per second: %d", water_quadchunks_updates_per_second );
-        //text_manager->AddMultiText( 0, 4, 1, r_Text::default_color, "water quadchunks rebuilded per second: %d", water_quadchunks_rebuild_per_second );
-        text_manager->AddMultiText( 0, 4, 1, r_Text::default_color, "update ticks per second: %d",updade_ticks_per_second );
-        text_manager->AddMultiText( 0, 5, 1, r_Text::default_color, "cam pos: %4.1f %4.1f %4.1f",
+        text_manager->AddMultiText( 0, 0, 1.0f, r_Text::default_color, "fps: %d", last_fps );
+        text_manager->AddMultiText( 0, 1, 1.0f, r_Text::default_color, "chunks: %dx%d", chunk_num_x, chunk_num_y );
+        text_manager->AddMultiText( 0, 2, 1.0f, r_Text::default_color, "chunks updated per second: %d", chunk_updates_per_second );
+        text_manager->AddMultiText( 0, 3, 1.0f, r_Text::default_color, "water quadchunks updated per second: %d", water_quadchunks_updates_per_second );
+        text_manager->AddMultiText( 0, 4, 1.0f, r_Text::default_color, "update ticks per second: %d",updade_ticks_per_second );
+        text_manager->AddMultiText( 0, 5, 1.0f, r_Text::default_color, "cam pos: %4.1f %4.1f %4.1f",
                                     cam_pos.x, cam_pos.y, cam_pos.z );
+
         text_manager->Draw();
     }
     CalculateFPS();
@@ -1030,7 +1029,7 @@ void r_WorldRenderer::InitGL()
     InitFrameBuffers();
     LoadTextures();
 
-    text_manager= new r_Text();
+    text_manager= new r_Text( /*"textures/fixedsys8x18.bmp"*//*"textures/DejaVuSansMono12.bmp"*/"textures/mono_font_sdf.tga" );
     text_manager->SetViewport( viewport_x, viewport_y );
 
 

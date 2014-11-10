@@ -21,8 +21,9 @@ ui_Painter::ui_Painter()
 	ui_shader.SetAttribLocation( "color", 1 );
 	ui_shader.MoveOnGPU();
 
-	static const char*const font_files[]= { "textures/courier_new_18.bmp", "textures/courier_new_24.bmp", "textures/courier_new_32.bmp" };
-	text_manager= new r_Text( font_files[1] );
+	//static const char*const font_files[]= { "textures/courier_new_18.bmp", "textures/courier_new_24.bmp", "textures/courier_new_32.bmp" };
+	//text_manager= new r_Text( font_files[1] );
+	text_manager= new r_Text( "textures/mono_font_sdf.tga" );
 
 }
 ui_Painter::~ui_Painter()

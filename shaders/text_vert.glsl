@@ -1,4 +1,4 @@
-#version 330
+#version 400
 in vec2 coord;
 in vec2 tex_coord;
 in vec4 color;
