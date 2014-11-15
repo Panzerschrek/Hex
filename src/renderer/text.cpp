@@ -2,7 +2,7 @@
 
 #include "text.hpp"
 #include "ogl_state_manager.hpp"
-#include "texture.h"
+#include "img_utils.hpp"
 
 
 const unsigned char r_Text::default_color[4]= {255, 255, 255, 32 };
@@ -158,7 +158,7 @@ r_Text::r_Text( const char* font_file ):
 			img= img.convertToFormat( QImage::Format_ARGB32 );
 
 		unsigned char* tex_data= (unsigned char*) img.constBits();
-		rRGBAMirrorVerticalAndSwapRB( tex_data, img.width(), img.height() );
+		r_ImgUtils::RGBA8_MirrorVerticalAndSwapRB( tex_data, img.width(), img.height() );
 		font_texture.Create( r_FramebufferTexture::FORMAT_RGBA8, img.width(), img.height(), tex_data );
 		font_texture.BuildMips();
 		font_texture.SetFiltration( r_FramebufferTexture::FILTRATION_LINEAR_MIPMAP_LINEAR, r_FramebufferTexture::FILTRATION_LINEAR );

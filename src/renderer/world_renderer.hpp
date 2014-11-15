@@ -4,7 +4,6 @@
 #include "i_world_renderer.hpp"
 #include "chunk_data_cache.hpp"
 
-#include "texture.h"
 #include "framebuffer_texture.hpp"
 #include "framebuffer.hpp"
 #include "func_declarations.h"

@@ -1,8 +1,7 @@
 #ifndef TEXTURE_MANAGER_HPP
 #define TEXTURE_MANAGER_HPP
 #include "../hex.hpp"
-#include "texture.h"
-#include "texture_array.h"
+#include "ph.h"
 
 
 class r_TextureManager
@@ -29,7 +28,8 @@ private:
     static bool texture_mode_table [ NUM_BLOCK_TYPES * 8 ]; // if( true ) - mode per block, else mode - projection
     static unsigned char texture_scale_table[ NUM_BLOCK_TYPES * 8 ];
 
-    r_TextureArray texture_array;
+ 	// OpenGL id for array texture
+    GLuint texture_array;
 
 	unsigned int texture_size;
 	bool filter_textures;
@@ -54,7 +54,9 @@ inline unsigned char r_TextureManager::GetTextureScale( unsigned char tex_id )
 }
 inline void r_TextureManager::BindTextureArray( unsigned int unit )
 {
-    texture_array.Bind( unit );
+    //texture_array.Bind( unit );
+    glActiveTexture( GL_TEXTURE0 + unit );
+    glBindTexture( GL_TEXTURE_2D_ARRAY, texture_array );
 }
 
 

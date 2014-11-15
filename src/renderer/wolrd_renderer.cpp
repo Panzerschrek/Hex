@@ -12,6 +12,7 @@
 #include "rendering_constants.hpp"
 #include "../console.hpp"
 #include "ogl_state_manager.hpp"
+#include "img_utils.hpp"
 
 #include "../world.hpp"
 
@@ -546,6 +547,8 @@ void r_WorldRenderer::Draw()
         text_manager->AddMultiText( 0, 4, 1.0f, r_Text::default_color, "update ticks per second: %d",updade_ticks_per_second );
         text_manager->AddMultiText( 0, 5, 1.0f, r_Text::default_color, "cam pos: %4.1f %4.1f %4.1f",
                                     cam_pos.x, cam_pos.y, cam_pos.z );
+
+		text_manager->AddMultiText( 0, 0, 6.0f, r_Text::default_color, "#A@KliO01-" );
 
         text_manager->Draw();
     }
@@ -1189,30 +1192,9 @@ void r_WorldRenderer::LoadTextures()
     texture_manager.SetFiltration( settings.value( "filter_textures", false ).toBool() );
     texture_manager.LoadTextures();
 
+	r_ImgUtils::LoadTexture( &water_texture, "textures/water2.tga" );
+	r_ImgUtils::LoadTexture( &sun_texture, "textures/sun.tga" );
+	r_ImgUtils::LoadTexture( &console_bg_texture, "textures/console_bg_normalized.png" );
 
-	auto LoadImg= []( const char* name, r_FramebufferTexture* tex )
-	{
-		QImage img( name );
-		if( img.isNull() )
-		{
-			h_Console::Warning( "texture \"%s\" not found", name );
-
-			//make stub
-			unsigned char img_data[8*8*4]; for( unsigned char& pix : img_data ){ pix= 128; };
-			tex->Create( r_FramebufferTexture::FORMAT_RGBA8, 8, 8, img_data );
-		}
-		else
-		{
-			unsigned char* img_data= (unsigned char*) img.constBits();
-			rRGBAMirrorVerticalAndSwapRB( img_data, img.width(), img.height() );
-			tex->Create( r_FramebufferTexture::FORMAT_RGBA8, img.width(), img.height(), img_data );
-		}
-		tex->SetFiltration( r_FramebufferTexture::FILTRATION_LINEAR_MIPMAP_LINEAR, r_FramebufferTexture::FILTRATION_LINEAR );
-		tex->BuildMips();
-	};
-
-	LoadImg( "textures/water2.tga", &water_texture );
-	LoadImg( "textures/sun.tga", &sun_texture );
-	LoadImg( "textures/console_bg_normalized.png" , &console_bg_texture );
 }
 #endif//RENDERER_CPP

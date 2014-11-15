@@ -1,6 +1,7 @@
 #ifndef TEXTURE_MANAGER_CPP
 #define TEXTURE_MANAGER_CPP
 #include "texture_manager.hpp"
+#include "img_utils.hpp"
 #include "rendering_constants.hpp"
 #include "../block.hpp"
 #include "../console.hpp"
@@ -59,40 +60,39 @@ r_TextureManager::r_TextureManager()
 
 void r_TextureManager::LoadTextures()
 {
+	unsigned int texture_layers= 32;
     unsigned int tex_id= 0;
-    r_TextureFile tf[2];
     char str[256];
 
-    tf[1].data= new unsigned char[ R_MAX_TEXTURE_RESOLUTION * R_MAX_TEXTURE_RESOLUTION * 4 ];
 
-    texture_array.TextureData( texture_size, texture_size, 32, GL_UNSIGNED_BYTE, GL_RGBA, 32, NULL );
-    texture_array.MoveOnGPU();
+ 	glGenTextures( 1, &texture_array );
+	glBindTexture( GL_TEXTURE_2D_ARRAY, texture_array );
+    glTexImage3D( GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, texture_size, texture_size, texture_layers, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
     QImage img( QSize( 256, 256 ), QImage::Format_RGBA8888 );
 
     //"load" null texture
     DrawNullTexture( &img );
-    tf[0].data= (unsigned char*)img.constBits();//using inner QImage memory to increase perfomanse
-    tf[0].width= img.width();
-    tf[0].height= img.height();
-    tf[0].data_size= tf[0].width * tf[0].height * 4;
 
-    int s= 0, d=1;
+    unsigned char* tmp_data= new unsigned char[ R_MAX_TEXTURE_RESOLUTION * R_MAX_TEXTURE_RESOLUTION * 4 ];
+    unsigned char* tex_data_pointers[2];
+    tex_data_pointers[0]= (unsigned char*) img.constBits();
+    tex_data_pointers[1]= tmp_data;
+    int s= 0, d= 1;
     for( int i= R_MAX_TEXTURE_RESOLUTION; i > texture_size; i>>=1, s^=1, d^=1 )
-        rRGBAGetMip( &tf[s], &tf[d] );
+    	r_ImgUtils::RGBA8_GetMip( tex_data_pointers[s], tex_data_pointers[d], i, i );
+	r_ImgUtils::RGBA8_MirrorVerticalAndSwapRB( tex_data_pointers[s], texture_size, texture_size );
+	glTexSubImage3D( GL_TEXTURE_2D_ARRAY, 0, 0, 0, tex_id, texture_size, texture_size,
+                     1, GL_RGBA, GL_UNSIGNED_BYTE, tex_data_pointers[s] );
 
-    rRGBAMirrorVerticalAndSwapRB( &tf[s] );//convert image from inner QImage format to OpenGL RGBA8 format
-    texture_array.TextureLayer( tex_id, tf[s].data );
 
     const char* config_file_name=  "textures/textures.json";
     QString fn( config_file_name );
     QFile f( fn );
     if( !f.open( QIODevice::ReadOnly ) )
-    {
-        //printf( "fatal error, file \"%s\" not found\n", config_file_name );
         h_Console::Error( "fatal error, file \"%s\" not found", config_file_name );
-    }
     QByteArray ba= f.readAll();
+    f.close();
 
     QJsonParseError err;
     QJsonDocument doc= QJsonDocument::fromJson( ba, &err );
@@ -110,23 +110,21 @@ void r_TextureManager::LoadTextures()
 
             if( ! img.load( obj[ "filename" ].toString() ) )
             {
-               // printf( "error, texture \"%s\" not fund\n", obj[ "filename" ].toString().toLocal8Bit().data() );
                	h_Console::Warning( "texture \"%s\" not fund", obj[ "filename" ].toString().toLocal8Bit().constData() );
                 continue;
             }
             else
             {
-                tf[0].data= (unsigned char*)img.constBits();//using inner QImage memory to increase perfomanse
-                tf[0].width= img.width();
-                tf[0].height= img.height();
-                tf[0].data_size= tf[0].width * tf[0].height * 4;
-                tex_id++;
-                int s= 0, d=1;
-                for( int i= R_MAX_TEXTURE_RESOLUTION; i > texture_size; i>>=1, s^=1, d^=1 )
-                    rRGBAGetMip( &tf[s], &tf[d] );
+            	tex_id++;
 
-                rRGBAMirrorVerticalAndSwapRB( &tf[s] );//convert image from inner QImage format to OpenGL RGBA8 format
-                texture_array.TextureLayer( tex_id, tf[s].data );
+                tex_data_pointers[0]= (unsigned char*) img.constBits();
+				tex_data_pointers[1]= tmp_data;
+				s= 0, d= 1;
+				for( int i= R_MAX_TEXTURE_RESOLUTION; i > texture_size; i>>=1, s^=1, d^=1 )
+					r_ImgUtils::RGBA8_GetMip( tex_data_pointers[s], tex_data_pointers[d], i, i );
+				r_ImgUtils::RGBA8_MirrorVerticalAndSwapRB( tex_data_pointers[s], texture_size, texture_size );
+				glTexSubImage3D( GL_TEXTURE_2D_ARRAY, 0, 0, 0, tex_id, texture_size, texture_size,
+								 1, GL_RGBA, GL_UNSIGNED_BYTE, tex_data_pointers[s] );
             }
 
             val= obj[ "scale" ];
@@ -168,16 +166,21 @@ void r_TextureManager::LoadTextures()
         }//for textures
     }//if json array
     else
-    {
         h_Console::Error( "invalid JSON file: \"%s\"\n", config_file_name );
-    }
 
-    delete[] tf[1].data;
-    if( filter_textures )
-        texture_array.SetFiltration( GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR );
-    else
-        texture_array.SetFiltration( GL_NEAREST_MIPMAP_LINEAR, GL_NEAREST );
-    texture_array.GenerateMipmap();
+	delete[] tmp_data;
+
+	if( filter_textures )
+	{
+		glTexParameteri( GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+		glTexParameteri( GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR );
+	}
+	else
+	{
+		glTexParameteri( GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+    	glTexParameteri( GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR );
+	}
+	glGenerateMipmap( GL_TEXTURE_2D_ARRAY );
 }
 
 #endif//TEXTURE_MANAGER_CPP
