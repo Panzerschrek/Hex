@@ -24,7 +24,7 @@ public:
     r_PolygonBuffer();
 	~r_PolygonBuffer();
 
-	int VertexData		( const void* data, unsigned int d_size, unsigned int v_size  );
+	int VertexData		( const void* data, unsigned int d_size, unsigned int v_size );
 	int VertexSubData	( const void* data, unsigned int d_size, unsigned int shift );
 
 	int IndexData		( const void* data, unsigned int size, GLenum d_type, GLenum p_type );

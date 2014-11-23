@@ -13,7 +13,7 @@ public:
 
 	unsigned int operator()();
 
-	const static unsigned int max_rand;
+	const static constexpr unsigned int max_rand= 0x7FFF;
 private:
 	unsigned int x;
 };

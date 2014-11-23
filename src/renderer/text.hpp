@@ -11,8 +11,9 @@ class Texture;
 struct r_TextVertex
 {
 	float pos[2];
-	unsigned short tex_coord[2];
 	unsigned char color[4];
+	unsigned char tex_coord[2];
+	unsigned char texles_per_pixel[2]; // in 4.4 format
 };
 #pragma pack (pop)
 
@@ -33,6 +34,8 @@ class r_Text
 	~r_Text(){}
 	void AddText( float colomn, float row, float, const unsigned char* color, const char* text );
 	void AddMultiText( float colomn, float row, float, const unsigned char* color, const char* text, ... );
+
+	void AddTextPixelCoords( float x, float y, float size/*in pixels*/, const unsigned char* color, const char* text );
 
     void DrawCross();
 

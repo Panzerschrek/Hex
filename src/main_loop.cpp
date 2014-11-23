@@ -12,6 +12,7 @@
 #include "ui/ui_base_classes.hpp"
 #include "ui/ui_painter.hpp"
 #include "renderer/ogl_state_manager.hpp"
+#include "renderer/framebuffer.hpp"
 
 #include "ui/main_menu.hpp"
 
@@ -239,6 +240,8 @@ void h_MainLoop::initializeGL()
     r_OGLState state;
     state.InitialState();
     r_OGLStateManager::SetState( state );
+
+    r_Framebuffer::SetScreenFramebufferSize( screen_width, screen_height );
 }
 
 void h_MainLoop::mouseReleaseEvent(QMouseEvent* e)

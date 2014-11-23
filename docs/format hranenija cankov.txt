@@ -1,0 +1,65 @@
+﻿Opisanije formata canka versii "1":
+
+struct FileLump
+{
+	int offset;//offset from effective file data ( discards header )
+	int size;
+};
+Zagolovok:
+struct HEXCHUNK_header
+{
+	char format_key[8];//dolžen bytj "hexchunk"
+	int version;//versija formata. tekuscaja - 1
+	//koordinaty dannogo canka v mire:
+	short longitude;
+	short latitude;
+
+	int datalen;//razmer dannyh canka, iduscih posle etoj struktury. 
+
+	FileLump block_data;//dannyje blokov canka
+};
+
+Format Hranenija blokov:
+
+Snacala citajetsä\pišetsä Id bloka (unsigned short ).
+Jesli blok prostoj ( ne soderžit nekakih dopolniteljnyh dannyh ) to sozdajotsä nužnyj blok.
+Jesli že blok imejet dopolniteljnyje dannyje, to vyzyvajetsä sootvetstvujuschij zagruzcik\sohranatelj bloka, vozvrascajuscij kolicestvo dopolniteljnyh procitannyh bajt.
+
+#define WORLD_REGION_SIZE_X 16
+#define WORLD_REGION_SIZE_Y 16
+
+Hranenije Cankov:
+Canki fiziceski ( v fajlovoj sisteme ) hranätsä po neskoljku cankov na fajl. Nabor etih cankov i ih fajl nazyvajutsü "Region".
+Každyj nabor cankov mira, razmerom WORLD_REGION_SIZE_X * WORLD_REGION_SIZE_Y hranitsä v otdeljnom fajle.
+Canki v regione hranätsä v sžatom vide, každyj cank žmötsä individualjno.
+Pri neobhodimosti zagruzitj cank, v pamätj gruzitsä vesj fajl Regiona i sohranüjetsä v pamäti. Sam že loskut rasžimajetsä ( v serializovannuju formu ) i otdajotsä miru i canku, kotoryj sam sebä gruzit.
+
+
+Zagolovok Regiona:
+
+struct HEXREGION_header
+{
+	char format_key[8];//dolžen bytj "hexregio"
+	int version;//versija formata. tekuscaja - 1
+
+	int datalen;
+	//matriça cankov. Jesli FileLump::size raven nulü, eto znacit cto dannyh canka ne suscestvujet.
+	FileLump chunk_lumps[ WORLD_REGION_SIZE_X * WORLD_REGION_SIZE_Y ];
+};
+
+
+
+
+
+Mir:
+
+globaljnyje dannyje mira( vsego, cto ne vhodit v cank ) hranätsä v fajle
+
+Zagolovok fajla mira:
+
+struct WORLD_header
+{
+	char format_key[8];//dolžen bytj "hexworld"
+	int version;//versija formata. tekuscaja - 1
+	//TODO - add more world options
+};

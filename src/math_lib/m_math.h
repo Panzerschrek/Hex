@@ -33,6 +33,9 @@ class m_Math
 {
 public:
 
+	static int DivNonNegativeRemainder( int x, int y );
+	static int ModNonNegativeRemainder( int x, int y );
+
     static float F16_to_f32( unsigned short x );
     /*float functions*/
     static float Abs ( float x );
@@ -101,6 +104,19 @@ public:
 };
 
 
+MATH_FUNC_INLINE int m_Math::DivNonNegativeRemainder( int x, int y )
+{
+	int div= x/y;
+	if( div * y > x ) div--;
+	return div;
+}
+
+MATH_FUNC_INLINE int m_Math::ModNonNegativeRemainder( int x, int y )
+{
+	int div= x/y;
+	if( div * y >x ) div--;
+	return x - div * y;
+}
 
 MATH_FUNC_INLINE float m_Math::Abs(float x)
 {

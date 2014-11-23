@@ -11,6 +11,9 @@
 #include "glsl_program.h"
 #include "text.hpp"
 #include "texture_manager.hpp"
+#include "weather_effects_particle_manager.hpp"
+
+#include "world_vertex_buffer.hpp"
 
 #include "../math_lib/matrix.h"
 #include "../math_lib/collection.hpp"
@@ -187,6 +190,9 @@ private:
 
 	}world_vb;
 
+	r_WorldVBO world_vertex_buffer_, world_vertex_buffer_to_draw_;
+	r_WorldVBO* draw_vertex_buffer_, *gen_vertex_buffer;
+
 
 	struct
 	{
@@ -245,14 +251,15 @@ private:
 
 	unsigned int quadchunk_num_x, quadchunk_num_y;
 	unsigned int chunk_num_x, chunk_num_y;
-	r_ChunkInfo* chunk_info;
-	r_ChunkInfo* chunk_info_to_draw;
+	r_ChunkInfo chunk_info[ H_MAX_CHUNKS*H_MAX_CHUNKS ];
+	r_ChunkInfo chunk_info_to_draw[ H_MAX_CHUNKS* H_MAX_CHUNKS];
 	r_WaterQuadChunkInfo* water_quadchunk_info;
 	r_WaterQuadChunkInfo* water_quadchunk_info_to_draw;
 
 	//text out
 	r_Text* text_manager;
 
+	r_WeatherEffectsParticleManager weather_effects_particle_manager;
 
 	//h_Thread<r_WorldRenderer> update_thread;
 	QMutex host_data_mutex, gpu_data_mutex;

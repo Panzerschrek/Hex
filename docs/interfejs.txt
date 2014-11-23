@@ -1,0 +1,25 @@
+﻿Elementy interfejsa:
+
+Knopka:
+knopka s tekstom. Jestj callback na nažatije. Razmery - lübyje, no nadpisj dolžna vlezatj.
+
+Spisok:
+Spisok elementov ( verticaljnyj ), inogda s polzunkom prokrutki.
+Razmery - lübyje, no soderžimoje dolžno vlezatj.
+
+
+Nadpisj:
+prosto nadpisj. 
+
+Polzunok:
+Peretaskivajemyj polzunok. Jestj callback na izmenenije. Po gorizontali razmer možno menätj, po vertikali razmer postojanen.
+Samo znacenije polzunka izmenäjetsä v diapazone  0.0f-1.0f, a uže tot, komu nužno, perevodit jego v svoi ediniçy.
+
+CheckBox:
+Tupo flažok. Jestj callback na izmenenije. Nadpisi rädom delajutsä otdeljno.
+
+Pole teksta:
+pole dlä vvoda teksta. Jestj perenos teksta i ogranicenije po razmeru.
+
+ProgressBar:
+poloska, so znacenjami 0.0f - 1.0f

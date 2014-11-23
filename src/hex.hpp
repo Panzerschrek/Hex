@@ -1,6 +1,10 @@
 #ifndef HEX_HPP
 #define HEX_HPP
 
+#include <stdlib.h>
+#include <stdio.h>
+#include <math.h>
+
 
 #include <QtGlobal>
 #include <QObject>
@@ -8,8 +12,7 @@
 #include <QMutex>
 #include <QTime>
 #include <QSettings>
-#include <math.h>
-#include <stdio.h>
+
 
 #ifdef Q_OS_WIN
 #include <windows.h>

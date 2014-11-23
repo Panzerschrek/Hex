@@ -1,0 +1,10 @@
+﻿Dlä šriftov ispoljzujetsä Signed Distance Field.
+
+Vo fragmentnom šejdere opredeläjetsä, skoljko tekselej tekstury šrifta sootvetstvujet
+pixelü ekrana, i ishodä iz etogo opredeläjetsä stepenj razmyvanija teksta.
+
+sglaživajetsä primerno po takoj formule:
+
+final_color= smoothstep( 0.5 - s, 0.5 + s, value_from_texture );
+
+s = 0.25 / SDF_RADIUS

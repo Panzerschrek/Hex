@@ -1,25 +1,12 @@
 #include "chunk_loader.hpp"
 
+#include "math_lib/m_math.h"
 
 h_RegionData::h_RegionData()
 {
 	for( int i= 0; i< sizeof(chunks_used_flags); i++ )
 		chunks_used_flags[i]= false;
 	chunks_used= 0;
-}
-
-
-int h_ChunkLoader::Div( int x, int y )
-{
-	int div= x/y;
-	if( div * y >x ) div--;
-	return div;
-}
-int h_ChunkLoader::Mod( int x, int y )
-{
-	int div= x/y;
-	if( div * y >x ) div--;
-	return x - div * y;
 }
 
 h_ChunkLoader::h_ChunkLoader( QString world_directory ):
@@ -38,7 +25,8 @@ QByteArray& h_ChunkLoader::GetChunkData( int longitude, int latitude )
 {
 	h_RegionData* reg= GetRegionForCoordinates( longitude, latitude );
 
-	int rel_lon= Mod( longitude, H_WORLD_REGION_SIZE_X ), rel_lat= Mod( latitude, H_WORLD_REGION_SIZE_Y );
+	int rel_lon= m_Math::ModNonNegativeRemainder( longitude, H_WORLD_REGION_SIZE_X ),
+		rel_lat= m_Math::ModNonNegativeRemainder( latitude, H_WORLD_REGION_SIZE_Y );
 	int ind= rel_lon + rel_lat * H_WORLD_REGION_SIZE_X;
 
 	if( !reg->chunks_used_flags[ind] )
@@ -52,7 +40,8 @@ void h_ChunkLoader::FreeChunkData( int longitude, int latitude )
 {
 	h_RegionData* reg= GetRegionForCoordinates( longitude, latitude );
 
-	int rel_lon= Mod( longitude, H_WORLD_REGION_SIZE_X ), rel_lat= Mod( latitude, H_WORLD_REGION_SIZE_Y );
+	int rel_lon= m_Math::ModNonNegativeRemainder( longitude, H_WORLD_REGION_SIZE_X ),
+	 	rel_lat= m_Math::ModNonNegativeRemainder( latitude, H_WORLD_REGION_SIZE_Y );
 	int ind= rel_lon + rel_lat * H_WORLD_REGION_SIZE_X;
 
 	if( reg->chunks_used_flags[ind] )
@@ -81,8 +70,8 @@ void h_ChunkLoader::FreeChunkData( int longitude, int latitude )
 
 h_RegionData* h_ChunkLoader::GetRegionForCoordinates( int longitude, int latitude )
 {
-	int region_longitude= Div( longitude, H_WORLD_REGION_SIZE_X ) * H_WORLD_REGION_SIZE_X;
-	int region_latitude= Div( latitude, H_WORLD_REGION_SIZE_Y ) * H_WORLD_REGION_SIZE_Y;
+	int region_longitude= m_Math::DivNonNegativeRemainder( longitude, H_WORLD_REGION_SIZE_X ) * H_WORLD_REGION_SIZE_X;
+	int region_latitude= m_Math::DivNonNegativeRemainder( latitude, H_WORLD_REGION_SIZE_Y ) * H_WORLD_REGION_SIZE_Y;
 
 	for( auto region : regions )
 	{

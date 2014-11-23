@@ -35,9 +35,6 @@ class h_ChunkLoader
 
 	private:
 
-	static int Div( int x, int y );
-	static int Mod( int x, int y );
-
 	//find loaded region or loads it
 	h_RegionData* GetRegionForCoordinates( int longitude, int latitude );
 	void LoadRegion( int longitude, int latitude, h_RegionData* region );

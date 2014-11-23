@@ -1,30 +1,72 @@
-/*
-*This file is part of FREG.
-*
-*FREG is free software: you can redistribute it and/or modify
-*it under the terms of the GNU General Public License as published by
-*the Free Software Foundation, either version 3 of the License, or
-*(at your option) any later version.
-*
-*FREG is distributed in the hope that it will be useful,
-*but WITHOUT ANY WARRANTY; without even the implied warranty of
-*MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-*GNU General Public License for more details.
-*
-*You should have received a copy of the GNU General Public License
-*along with FREG. If not, see <http://www.gnu.org/licenses/>.*/
-#ifndef WEATHER_EFFECTS_PARTICLE_MANAGER_CPP
-#define WEATHER_EFFECTS_PARTICLE_MANAGER_CPP
+#include "weather_effects_particle_manager.hpp"
 
-#include "weather_effects_particle_manager.h"
+#include "../math_lib/rand.h"
+#include "../console.hpp"
 
-#ifdef OGL21
-#define OGL21_BOOL 1
-#else
-#define OGL21_BOOL 0
-#endif
+r_WeatherEffectsParticleManager::r_WeatherEffectsParticleManager()
+	: particles_count_(0)
+{
 
-r_WeatherEffectsParticleManager::r_WeatherEffectsParticleManager( unsigned int particle_num ):
+}
+
+r_WeatherEffectsParticleManager::~r_WeatherEffectsParticleManager()
+{
+
+}
+
+
+void r_WeatherEffectsParticleManager::Create( unsigned int particles_count, float rain_zone_size )
+{
+	particles_count_= particles_count;
+	rain_zone_size_= rain_zone_size;
+
+	{
+		float* particle_coords= new float[ particles_count_ * 4 ];
+
+		m_Rand randomizer;
+		float inv_max_rand_f= 1.0f / float(randomizer.max_rand);
+		for( unsigned int i= 0; i< particles_count_; i++ )
+		{
+			particle_coords[ i * 4     ]= float( randomizer() ) * ( rain_zone_size_ * inv_max_rand_f );
+			particle_coords[ i * 4 + 1 ]= float( randomizer() ) * ( rain_zone_size_ * inv_max_rand_f );
+			particle_coords[ i * 4 + 2 ]= float( randomizer() ) * ( rain_zone_size_ * inv_max_rand_f );
+			particle_coords[ i * 4 + 3 ]= 1.0f;
+		}
+
+		vbo_.VertexData( particle_coords, sizeof(float)* 4 * particles_count_, sizeof(float) * 4 );
+		vbo_.VertexAttribPointer( 0, 4, GL_FLOAT, false, 0 );
+
+		delete[] particle_coords;
+	}
+
+	if( shader_.Load( "shaders/rain_frag.glsl", "shaders/rain_vert.glsl" ) )
+		 h_Console::Error( "particles shader not found" );
+	shader_.SetAttribLocation( "coord", 0 );
+
+	shader_.MoveOnGPU();
+}
+
+void r_WeatherEffectsParticleManager::Draw( const m_Mat4& view_matrix, const m_Vec3& cam_pos )
+{
+	vbo_.Bind();
+
+	shader_.Bind();
+	shader_.Uniform( "time", float(clock())/1000.0f );
+	{
+		m_Vec3 particle_zone_coord= cam_pos - m_Vec3( rain_zone_size_ * 0.5f, rain_zone_size_ * 0.5f, rain_zone_size_ * 0.5f );
+		shader_.Uniform( "particle_zone_coord", particle_zone_coord );
+	}
+	{
+		m_Vec3 particle_zone_size( rain_zone_size_, rain_zone_size_, rain_zone_size_ );
+		shader_.Uniform( "particle_zone_size", particle_zone_size );
+	}
+	shader_.Uniform( "mat", view_matrix );
+
+
+	glDrawArrays( GL_POINTS, 0, particles_count_ );
+}
+
+/*r_WeatherEffectsParticleManager::r_WeatherEffectsParticleManager( unsigned int particle_num ):
     rain_zone_size(48.0f),
     use_geometry_shader( true )
 {
@@ -161,10 +203,5 @@ void r_WeatherEffectsParticleManager::ShowWeatherParticles( r_WeatherEffects eff
 
         glDrawElementsInstanced( GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, NULL, particle_num );
     }
-}
-#ifdef OGL21_BOOL
-#undef OGL21_BOOL
-#endif
-
-#endif//WEATHER_EFFECTS_PARTICLE_MANAGER_CPP
+}*/
 

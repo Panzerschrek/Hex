@@ -173,10 +173,8 @@ void r_ImgUtils::RGBA8_GetMip2( const unsigned char* in, unsigned char* out, int
  		unsigned char* tmp_data= new unsigned char[ img.width() * img.height() ];
  		R1_To_R8( img.constBits(), tmp_data, img.width(), img.height() );
  		texture->Create( r_FramebufferTexture::FORMAT_R8, img.width(), img.height(), tmp_data );
-
  		delete[] tmp_data;
-		return;
- 	}
+	}
  	else if( img.depth() == 8 )
  		texture->Create( r_FramebufferTexture::FORMAT_R8, img.width(), img.height(), img.constBits() );
  	else if( img.depth() == 32 )

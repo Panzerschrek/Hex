@@ -16,11 +16,9 @@
 #ifndef PH_H
 #define PH_H
 
-//contains main gl.h hrader
+//contains main gl.h header
 #include <QtOpenGL/QGLWidget>
 
-
-#include "win_bitmap.h"
 #ifndef _WIN32
 #include <unistd.h>
 #include "win_bitmap.h"

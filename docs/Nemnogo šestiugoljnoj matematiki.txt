@@ -1,0 +1,4 @@
+﻿Ploscadj boljšogo šestiugoljnika, polucennogo narascivanijem vokrug
+šestiugoljnika rädov:
+S(n)= 3*n*n + 3*n + 1
+

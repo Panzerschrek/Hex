@@ -1,18 +1,18 @@
-	/*
-	*This file is part of FREG.
-	*
-	*FREG is free software: you can redistribute it and/or modify
-	*it under the terms of the GNU General Public License as published by
-	*the Free Software Foundation, either version 3 of the License, or
-	*(at your option) any later version.
-	*
-	*FREG is distributed in the hope that it will be useful,
-	*but WITHOUT ANY WARRANTY; without even the implied warranty of
-	*MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	*GNU General Public License for more details.
-	*
-	*You should have received a copy of the GNU General Public License
-	*along with FREG. If not, see <http://www.gnu.org/licenses/>.*/
+/*
+*This file is part of FREG.
+*
+*FREG is free software: you can redistribute it and/or modify
+*it under the terms of the GNU General Public License as published by
+*the Free Software Foundation, either version 3 of the License, or
+*(at your option) any later version.
+*
+*FREG is distributed in the hope that it will be useful,
+*but WITHOUT ANY WARRANTY; without even the implied warranty of
+*MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+*GNU General Public License for more details.
+*
+*You should have received a copy of the GNU General Public License
+*along with FREG. If not, see <http://www.gnu.org/licenses/>.*/
 #ifndef GLSL_PROGRAM_H
 #define GLSL_PROGRAM_H
 #include "ph.h"
@@ -52,58 +52,58 @@
 class r_GLSLProgram
 {
 public:
-	int		Load( const char* frag_file, const char* vert_file, const char* geom_file = NULL );
-	void	ShaderSource( const char* frag_src, const char* vert_src, const char* geom_src );
+    int		Load( const char* frag_file, const char* vert_file, const char* geom_file = NULL );
+    void	ShaderSource( const char* frag_src, const char* vert_src, const char* geom_src );
 
-	int		MoveOnGPU();
-	int		FindAttrib	( const char* name );
-	int     SetAttribLocation( const char* name, unsigned int location );
+    int		MoveOnGPU();
+    int		FindAttrib	( const char* name );
+    int     SetAttribLocation( const char* name, unsigned int location );
     int		GetUniformId	( const char* name );
 
-	int		Uniform( const char* name, const m_Vec3& v);
-	int		Uniform( const char* name, int i );
-	int		Uniform( const char* name, const m_Mat4& m );
-	int		Uniform( const char* name, const m_Mat3& m );
-	int		Uniform( const char* name, float f );
-	int 	Uniform( const char* name, float f0, float f1, float f2, float f3 );
+    int		Uniform( const char* name, const m_Vec3& v);
+    int		Uniform( const char* name, int i );
+    int		Uniform( const char* name, const m_Mat4& m );
+    int		Uniform( const char* name, const m_Mat3& m );
+    int		Uniform( const char* name, float f );
+    int 	Uniform( const char* name, float f0, float f1, float f2, float f3 );
 
-	/*int		Uniform( int id, const m_Vec3& v) const;
-	int		Uniform( int id, int i ) const;
-	int		Uniform( int id, const m_Mat4& m ) const;
-	int		Uniform( int id, const m_Mat3& m ) const;
+    /*int		Uniform( int id, const m_Vec3& v) const;
+    int		Uniform( int id, int i ) const;
+    int		Uniform( int id, const m_Mat4& m ) const;
+    int		Uniform( int id, const m_Mat3& m ) const;
     int		Uniform( int id, float f ) const;*/
 
     int Define( const char* def );
     int UnDefine( const char* def );
 
-	void	Bind() const;
-	 r_GLSLProgram();
-	~r_GLSLProgram();
+    void	Bind() const;
+    r_GLSLProgram();
+    ~r_GLSLProgram();
 
 private:
-	void 	FindAllUniforms();
-	void 	FindAllUniformsInShader( const char* shader_text );
-	int		FindUniform	( const char* name );
-	int		GetUniform( const char* name );
+    void 	FindAllUniforms();
+    void 	FindAllUniformsInShader( const char* shader_text );
+    int		FindUniform	( const char* name );
+    int		GetUniform( const char* name );
 
 
-	static 	r_GLSLProgram* current_prog;
+    static 	r_GLSLProgram* current_prog;
 
-	const static char* attrib_names[ MAX_NUMBER_OF_ATTRIBS ];//имена аттрибутов
+    const static char* attrib_names[ MAX_NUMBER_OF_ATTRIBS ];//имена аттрибутов
 
-	GLuint prog_handle;
-	GLuint frag_handle, vert_handle, geom_handle;
-	char frag_text[ MAX_SHADER_SRC_LEN ];
-	char vert_text[ MAX_SHADER_SRC_LEN ];
-	char geom_text[ MAX_SHADER_SRC_LEN ];
+    GLuint prog_handle;
+    GLuint frag_handle, vert_handle, geom_handle;
+    char frag_text[ MAX_SHADER_SRC_LEN ];
+    char vert_text[ MAX_SHADER_SRC_LEN ];
+    char geom_text[ MAX_SHADER_SRC_LEN ];
 
-	char defines[ MAX_SHADER_DEFINES ][ MAX_DEFINE_LEN ];
+    char defines[ MAX_SHADER_DEFINES ][ MAX_DEFINE_LEN ];
     char user_attribs[ MAX_ATTRIB_NUMBER ][ MAX_ATTRIB_NAME_LEN ];
-	int attribs[ MAX_ATTRIB_NUMBER ];
-	char uniforms_name [ MAX_UNIFORM_NUMBER ][ MAX_UNIFORM_NAME_LEN ];
-	int uniforms[ MAX_UNIFORM_NUMBER ];
+    int attribs[ MAX_ATTRIB_NUMBER ];
+    char uniforms_name [ MAX_UNIFORM_NUMBER ][ MAX_UNIFORM_NAME_LEN ];
+    int uniforms[ MAX_UNIFORM_NUMBER ];
 
-	int attrib_num, uniform_num, define_num;
+    int attrib_num, uniform_num, define_num;
 
 };
 
