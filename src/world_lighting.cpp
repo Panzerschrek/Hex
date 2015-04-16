@@ -324,8 +324,8 @@ void h_World::GetBackVertexLight( short x, short y, short z, unsigned char* out_
 void h_World::LightWorld()
 {
 	//main chunks. used fast lighting functions ( without coordinate clamping )
-	for( unsigned int i= 1; i< chunk_number_x - 1; i++ )
-		for( unsigned int j= 1; j< chunk_number_y - 1; j++ )
+	for( unsigned int i= 1; i< chunk_number_x_ - 1; i++ )
+		for( unsigned int j= 1; j< chunk_number_y_ - 1; j++ )
 		{
 			h_Chunk* ch= GetChunk( i, j );
 			short X= i * H_CHUNK_WIDTH, Y= j * H_CHUNK_WIDTH;
@@ -343,10 +343,10 @@ void h_World::LightWorld()
 	//north and south chunks
 	for( unsigned int k= 0; k< 2; k++ )
 	{
-		for( unsigned int i= 0; i< chunk_number_x; i++ )
+		for( unsigned int i= 0; i< chunk_number_x_; i++ )
 		{
-			h_Chunk* ch= GetChunk( i, k * (chunk_number_y-1) );
-			short X= i * H_CHUNK_WIDTH, Y=  H_CHUNK_WIDTH * k * (chunk_number_y-1) ;
+			h_Chunk* ch= GetChunk( i, k * (chunk_number_y_-1) );
+			short X= i * H_CHUNK_WIDTH, Y=  H_CHUNK_WIDTH * k * (chunk_number_y_-1) ;
 			for( short x= 0; x< H_CHUNK_WIDTH; x++ )
 				for( short y= 0; y< H_CHUNK_WIDTH; y++ )
 					for( short z= 1; z< H_CHUNK_HEIGHT-1; z++ )
@@ -361,10 +361,10 @@ void h_World::LightWorld()
 	//east and west chunks
 	for( unsigned int k= 0; k< 2; k++ )
 	{
-		for( unsigned int j= 0; j< chunk_number_y; j++ )
+		for( unsigned int j= 0; j< chunk_number_y_; j++ )
 		{
-			h_Chunk* ch= GetChunk( k*( chunk_number_x - 1), j );
-			short X= k*( chunk_number_x - 1) * H_CHUNK_WIDTH, Y=  j * H_CHUNK_WIDTH;
+			h_Chunk* ch= GetChunk( k*( chunk_number_x_ - 1), j );
+			short X= k*( chunk_number_x_ - 1) * H_CHUNK_WIDTH, Y=  j * H_CHUNK_WIDTH;
 			for( short x= 0; x< H_CHUNK_WIDTH; x++ )
 				for( short y= 0; y< H_CHUNK_WIDTH; y++ )
 					for( short z= 1; z< H_CHUNK_HEIGHT-1; z++ )
@@ -706,7 +706,7 @@ void h_World::RelightWaterModifedChunksLight()
 			ch= GetChunk( i, j );
 			if( ch->need_update_light )
 			{
-				if(  phys_processes_rand.Rand()  <= phys_processes_rand.max_rand/ chunk_count )//chance of one chunk water updating per one phys tick
+				if(  phys_processes_rand_.Rand()  <= phys_processes_rand_.max_rand/ chunk_count )//chance of one chunk water updating per one phys tick
 				{
 					X= i<<H_CHUNK_WIDTH_LOG2;
 					Y= j<<H_CHUNK_WIDTH_LOG2;
@@ -731,7 +731,7 @@ void h_World::RelightWaterModifedChunksLight()
 						}
 					ch->need_update_light= false;
 
-					if( renderer != nullptr )
+					if( renderer_ != nullptr )
 					{
 						/*emit ChunkUpdated( i, j );
 						emit ChunkUpdated( i+1, j+1 );
@@ -739,12 +739,12 @@ void h_World::RelightWaterModifedChunksLight()
 						emit ChunkUpdated( i-1, j+1 );
 						emit ChunkUpdated( i-1, j-1 );
 						emit ChunkWaterUpdated( i, j );*/
-						renderer->UpdateChunk( i, j );
-						renderer->UpdateChunk( i+1, j+1 );
-						renderer->UpdateChunk( i+1, j-1 );
-						renderer->UpdateChunk( i-1, j+1 );
-						renderer->UpdateChunk( i-1, j-1 );
-						renderer->UpdateChunkWater( i, j );
+						renderer_->UpdateChunk( i, j );
+						renderer_->UpdateChunk( i+1, j+1 );
+						renderer_->UpdateChunk( i+1, j-1 );
+						renderer_->UpdateChunk( i-1, j+1 );
+						renderer_->UpdateChunk( i-1, j-1 );
+						renderer_->UpdateChunkWater( i, j );
 					}
 				}//if rand
 			}//if need update light

@@ -23,52 +23,52 @@ void h_World::InitNormalBlocks()
 {
 	int i;
 	for( i= 0; i< NUM_BLOCK_TYPES; i++ )
-		new ( normal_blocks + i ) h_Block( h_BlockType(i) );
+		new ( normal_blocks_ + i ) h_Block( h_BlockType(i) );
 }
 
 
 h_World::h_World():
-	chunk_loader( "world" ),
-	phys_tick_count(0),
-	phys_thread( &h_World::PhysTick, this, 1u ),
-	world_mutex( QMutex::Recursive ),
-	player( nullptr ),
-	renderer( nullptr ),
-	settings( "config.ini", QSettings::IniFormat )
+	chunk_loader_( "world" ),
+	phys_tick_count_(0),
+	phys_thread_( &h_World::PhysTick, this, 1u ),
+	world_mutex_( QMutex::Recursive ),
+	player_( nullptr ),
+	renderer_( nullptr ),
+	settings_( "config.ini", QSettings::IniFormat )
 {
 	InitNormalBlocks();
 
-	chunk_number_x= max( min( settings.value( QString( "chunk_number_x" ), 14 ).toInt(), H_MAX_CHUNKS ), H_MIN_CHUNKS );
-	chunk_number_y= max( min( settings.value( QString( "chunk_number_y" ), 12 ).toInt(), H_MAX_CHUNKS ), H_MIN_CHUNKS ); ;
-	longitude= -(chunk_number_x/2);
-	latitude= -(chunk_number_y/2);
+	chunk_number_x_= max( min( settings_.value( QString( "chunk_number_x" ), 14 ).toInt(), H_MAX_CHUNKS ), H_MIN_CHUNKS );
+	chunk_number_y_= max( min( settings_.value( QString( "chunk_number_y" ), 12 ).toInt(), H_MAX_CHUNKS ), H_MIN_CHUNKS ); ;
+	longitude_= -(chunk_number_x_/2);
+	latitude_= -(chunk_number_y_/2);
 	//chunk_matrix_size_x_log2= m_Math::NearestPOTLog2( chunk_number_x );
 	//chunk_matrix_size_x= 1 << chunk_matrix_size_x_log2;
 
 	// chunks= new h_Chunk*[ chunk_matrix_size_x * chunk_number_y ];
 	// for( int i=0; i< chunk_number_x * chunk_number_y; i++ )
 	//    chunks[i]= new h_Chunk( this, (i%chunk_number_x) + longitude, (i/chunk_number_x) + latitude );
-	for( unsigned int i= 0; i< chunk_number_x; i++ )
-		for( unsigned int j= 0; j< chunk_number_y; j++ )
+	for( unsigned int i= 0; i< chunk_number_x_; i++ )
+		for( unsigned int j= 0; j< chunk_number_y_; j++ )
 		{
-			chunks[ i + j * H_MAX_CHUNKS ]= LoadChunk( i+longitude, j+latitude);
+			chunks_[ i + j * H_MAX_CHUNKS ]= LoadChunk( i+longitude_, j+latitude_);
 			//new h_Chunk( this, i + longitude, j + latitude );
 		}
 
 	LightWorld();
 
-	phys_thread.setStackSize( 16 * 1024 * 1024 );//inrease stack for recursive methods( lighting, blasts, etc )
+	phys_thread_.setStackSize( 16 * 1024 * 1024 );//inrease stack for recursive methods( lighting, blasts, etc )
 }
 
 
 void h_World::Lock()
 {
-	world_mutex.lock();
+	world_mutex_.lock();
 }
 
 void h_World::Unlock()
 {
-	world_mutex.unlock();
+	world_mutex_.unlock();
 }
 
 
@@ -85,8 +85,8 @@ void h_World::BuildPhysMesh( h_ChunkPhysMesh* phys_mesh, short x_min, short x_ma
 	x_min= max( short(2), x_min );
 	y_min= max( short(2), y_min );
 	z_min= max( short(0), z_min );
-	x_max= min( x_max, short( chunk_number_x * H_CHUNK_WIDTH - 2 ) );
-	y_max= min( y_max, short( chunk_number_y * H_CHUNK_WIDTH - 2 ) );
+	x_max= min( x_max, short( chunk_number_x_ * H_CHUNK_WIDTH - 2 ) );
+	y_max= min( y_max, short( chunk_number_y_ * H_CHUNK_WIDTH - 2 ) );
 	z_max= min( z_max, short( H_CHUNK_HEIGHT - 1 ) );
 
 	p_UpperBlockFace* block_face;
@@ -205,7 +205,7 @@ void h_World::WaterPhysTick()
 			ch= GetChunk( i, j );
 
 			//skip some quadchunks for updating ( in chessboard order )
-			if( ( ( ChunkCoordToQuadchunkX( ch->Longitude() ) ^ ChunkCoordToQuadchunkY( ch->Latitude() ) ) & 1 ) == (phys_tick_count&1) )
+			if( ( ( ChunkCoordToQuadchunkX( ch->Longitude() ) ^ ChunkCoordToQuadchunkY( ch->Latitude() ) ) & 1 ) == (phys_tick_count_&1) )
 				continue;
 
 			auto l= & ch->water_blocks_data.water_block_list;
@@ -306,17 +306,17 @@ void h_World::WaterPhysTick()
 			}//for all water blocks in chunk
 			if( chunk_modifed )
 			{
-				if( renderer != nullptr )
+				if( renderer_ != nullptr )
 				{
-					renderer->UpdateChunk( i, j );
+					renderer_->UpdateChunk( i, j );
 					if( i > 0 )
-						renderer->UpdateChunkWater( i-1, j );
+						renderer_->UpdateChunkWater( i-1, j );
 					if( i < ChunkNumberX() - 1 );
-					renderer->UpdateChunkWater( i+1, j );
+					renderer_->UpdateChunkWater( i+1, j );
 					if( j > 0 )
-						renderer->UpdateChunkWater( i, j-1 );
+						renderer_->UpdateChunkWater( i, j-1 );
 					if( j < ChunkNumberY() - 1 );
-					renderer->UpdateChunkWater( i, j+1 );
+					renderer_->UpdateChunkWater( i, j+1 );
 				}
 
 				ch->need_update_light= true;
@@ -327,7 +327,7 @@ void h_World::WaterPhysTick()
 
 void h_World::PhysTick()
 {
-	while( player == NULL )
+	while( player_ == NULL )
 		usleep( 1000000 );
 	QTime t0= QTime::currentTime();
 
@@ -338,38 +338,38 @@ void h_World::PhysTick()
 	RelightWaterModifedChunksLight();
 
 
-	player->Lock();
-	player_coord[2]= short( player->Pos().z );
-	GetHexogonCoord( player->Pos().xy(), &player_coord[0], &player_coord[1] );
-	player->Unlock();
+	player_->Lock();
+	player_coord_[2]= short( player_->Pos().z );
+	GetHexogonCoord( player_->Pos().xy(), &player_coord_[0], &player_coord_[1] );
+	player_->Unlock();
 
-	player_coord[0]-= Longitude() * H_CHUNK_WIDTH;
-	player_coord[1]-= Latitude() * H_CHUNK_WIDTH;
-	BuildPhysMesh( &player_phys_mesh,
-				   player_coord[0] - 4, player_coord[0] + 4,
-				   player_coord[1] - 5, player_coord[1] + 5,
-				   player_coord[2] - 5, player_coord[2] + 5 );
+	player_coord_[0]-= Longitude() * H_CHUNK_WIDTH;
+	player_coord_[1]-= Latitude() * H_CHUNK_WIDTH;
+	BuildPhysMesh( &player_phys_mesh_,
+				   player_coord_[0] - 4, player_coord_[0] + 4,
+				   player_coord_[1] - 5, player_coord_[1] + 5,
+				   player_coord_[2] - 5, player_coord_[2] + 5 );
 
 
 
-	if( player_coord[1]/H_CHUNK_WIDTH > chunk_number_y/2+2 )
+	if( player_coord_[1]/H_CHUNK_WIDTH > chunk_number_y_/2+2 )
 		MoveWorld( NORTH );
-	else if( player_coord[1]/H_CHUNK_WIDTH < chunk_number_y/2-2 )
+	else if( player_coord_[1]/H_CHUNK_WIDTH < chunk_number_y_/2-2 )
 		MoveWorld( SOUTH );
-	if( player_coord[0]/H_CHUNK_WIDTH > chunk_number_x/2+2 )
+	if( player_coord_[0]/H_CHUNK_WIDTH > chunk_number_x_/2+2 )
 		MoveWorld( EAST );
-	else if( player_coord[0]/H_CHUNK_WIDTH < chunk_number_x/2-2 )
+	else if( player_coord_[0]/H_CHUNK_WIDTH < chunk_number_x_/2-2 )
 		MoveWorld( WEST );
 
-	player->Lock();
-	player->SetCollisionMesh( &player_phys_mesh );
-	player->Unlock();
+	player_->Lock();
+	player_->SetCollisionMesh( &player_phys_mesh_ );
+	player_->Unlock();
 
 
-	phys_tick_count++;
+	phys_tick_count_++;
 
-	if( renderer != nullptr )
-		renderer->Update();
+	if( renderer_ != nullptr )
+		renderer_->Update();
 
 	Unlock();
 
@@ -383,7 +383,7 @@ void h_World::PhysTick()
 
 void h_World::UpdateInRadius( short x, short y, short r )
 {
-	if( renderer == nullptr )
+	if( renderer_ == nullptr )
 		return;
 
 	short x_min, x_max, y_min, y_max;
@@ -398,13 +398,13 @@ void h_World::UpdateInRadius( short x, short y, short r )
 	y_max>>= H_CHUNK_WIDTH_LOG2;
 	for( short i= x_min; i<= x_max; i++ )
 		for( short j= y_min; j<= y_max; j++ )
-			renderer->UpdateChunk( i, j );
+			renderer_->UpdateChunk( i, j );
 
 
 }
 void h_World::UpdateWaterInRadius( short x, short y, short r )
 {
-	if( renderer == nullptr )
+	if( renderer_ == nullptr )
 		return;
 	short x_min, x_max, y_min, y_max;
 	x_min= ClampX( x - r );
@@ -418,7 +418,7 @@ void h_World::UpdateWaterInRadius( short x, short y, short r )
 	y_max>>= H_CHUNK_WIDTH_LOG2;
 	for( short i= x_min; i<= x_max; i++ )
 		for( short j= y_min; j<= y_max; j++ )
-			renderer->UpdateChunkWater( i, j );
+			renderer_->UpdateChunkWater( i, j );
 }
 
 void h_World::Destroy( short x, short y, short z )
@@ -556,7 +556,7 @@ void h_World::Build( short x, short y, short z, h_BlockType block_type )
 
 void h_World::AddBuildEvent( short x, short y, short z, h_BlockType block_type )
 {
-	action_queue_mutex.lock();
+	action_queue_mutex_.lock();
 
 	h_WorldAction act;
 	act.type= ACTION_BUILD;
@@ -565,13 +565,13 @@ void h_World::AddBuildEvent( short x, short y, short z, h_BlockType block_type )
 	act.coord[1]= y;
 	act.coord[2]= z;
 
-	action_queue[0].push( act );
+	action_queue_[0].push( act );
 
-	action_queue_mutex.unlock();
+	action_queue_mutex_.unlock();
 }
 void h_World::AddDestroyEvent( short x, short y, short z )
 {
-	action_queue_mutex.lock();
+	action_queue_mutex_.lock();
 
 	h_WorldAction act;
 	act.type= ACTION_DESTROY;
@@ -579,21 +579,21 @@ void h_World::AddDestroyEvent( short x, short y, short z )
 	act.coord[1]= y;
 	act.coord[2]= z;
 
-	action_queue[0].push( act );
+	action_queue_[0].push( act );
 
-	action_queue_mutex.unlock();
+	action_queue_mutex_.unlock();
 }
 
 void h_World::FlushActionQueue()
 {
-	action_queue_mutex.lock();
-	action_queue[0].swap( action_queue[1] );
-	action_queue_mutex.unlock();
+	action_queue_mutex_.lock();
+	action_queue_[0].swap( action_queue_[1] );
+	action_queue_mutex_.unlock();
 
-	while( action_queue[1].size() != 0 )
+	while( action_queue_[1].size() != 0 )
 	{
-		h_WorldAction act= action_queue[1].front();
-		action_queue[1].pop();
+		h_WorldAction act= action_queue_[1].front();
+		action_queue_[1].pop();
 
 		if( act.type == ACTION_BUILD )
 			Build( act.coord[0], act.coord[1], act.coord[2], act.block_type );
@@ -608,94 +608,94 @@ void h_World::MoveWorld( h_WorldMoveDirection dir )
 	switch ( dir )
 	{
 	case NORTH:
-		for( i= 0; i< chunk_number_x; i++ )
+		for( i= 0; i< chunk_number_x_; i++ )
 		{
-			h_Chunk* deleted_chunk= chunks[ i | ( 0 << H_MAX_CHUNKS_LOG2 ) ];
+			h_Chunk* deleted_chunk= chunks_[ i | ( 0 << H_MAX_CHUNKS_LOG2 ) ];
 			SaveChunk( deleted_chunk );
-			chunk_loader.FreeChunkData( deleted_chunk->Longitude(), deleted_chunk->Latitude() );
+			chunk_loader_.FreeChunkData( deleted_chunk->Longitude(), deleted_chunk->Latitude() );
 			delete deleted_chunk;
-			for( j= 1; j< chunk_number_y; j++ )
+			for( j= 1; j< chunk_number_y_; j++ )
 			{
-				chunks[ i | ( (j-1) << H_MAX_CHUNKS_LOG2 ) ]=
-					chunks[ i | ( j << H_MAX_CHUNKS_LOG2 ) ];
+				chunks_[ i | ( (j-1) << H_MAX_CHUNKS_LOG2 ) ]=
+					chunks_[ i | ( j << H_MAX_CHUNKS_LOG2 ) ];
 			}
 
-			chunks[ i | ( (chunk_number_y-1) << H_MAX_CHUNKS_LOG2 ) ]=
-				LoadChunk( i + longitude, chunk_number_y + latitude );
+			chunks_[ i | ( (chunk_number_y_-1) << H_MAX_CHUNKS_LOG2 ) ]=
+				LoadChunk( i + longitude_, chunk_number_y_ + latitude_ );
 		}
-		for( i= 0; i< chunk_number_x; i++ )
-			AddLightToBorderChunk( i, chunk_number_y - 1 );
-		latitude++;
+		for( i= 0; i< chunk_number_x_; i++ )
+			AddLightToBorderChunk( i, chunk_number_y_ - 1 );
+		latitude_++;
 
 		break;
 
 	case SOUTH:
-		for( i= 0; i< chunk_number_x; i++ )
+		for( i= 0; i< chunk_number_x_; i++ )
 		{
-			h_Chunk* deleted_chunk= chunks[ i | ( (chunk_number_y-1) << H_MAX_CHUNKS_LOG2 ) ];
+			h_Chunk* deleted_chunk= chunks_[ i | ( (chunk_number_y_-1) << H_MAX_CHUNKS_LOG2 ) ];
 			SaveChunk( deleted_chunk );
-			chunk_loader.FreeChunkData( deleted_chunk->Longitude(), deleted_chunk->Latitude() );
+			chunk_loader_.FreeChunkData( deleted_chunk->Longitude(), deleted_chunk->Latitude() );
 			delete deleted_chunk;
-			for( j= chunk_number_y-1; j> 0; j-- )
+			for( j= chunk_number_y_-1; j> 0; j-- )
 			{
-				chunks[ i | ( j << H_MAX_CHUNKS_LOG2 ) ]=
-					chunks[ i | ( (j-1) << H_MAX_CHUNKS_LOG2 ) ];
+				chunks_[ i | ( j << H_MAX_CHUNKS_LOG2 ) ]=
+					chunks_[ i | ( (j-1) << H_MAX_CHUNKS_LOG2 ) ];
 			}
 
-			chunks[ i | ( 0 << H_MAX_CHUNKS_LOG2 ) ]=
-				LoadChunk( i + longitude,  latitude-1 );
+			chunks_[ i | ( 0 << H_MAX_CHUNKS_LOG2 ) ]=
+				LoadChunk( i + longitude_,  latitude_-1 );
 		}
-		for( i= 0; i< chunk_number_x; i++ )
+		for( i= 0; i< chunk_number_x_; i++ )
 			AddLightToBorderChunk( i, 0 );
-		latitude--;
+		latitude_--;
 
 		break;
 
 	case EAST:
-		for( j= 0; j< chunk_number_y; j++ )
+		for( j= 0; j< chunk_number_y_; j++ )
 		{
-			h_Chunk* deleted_chunk= chunks[ 0 | ( j << H_MAX_CHUNKS_LOG2 ) ];
+			h_Chunk* deleted_chunk= chunks_[ 0 | ( j << H_MAX_CHUNKS_LOG2 ) ];
 			SaveChunk( deleted_chunk );
-			chunk_loader.FreeChunkData( deleted_chunk->Longitude(), deleted_chunk->Latitude() );
+			chunk_loader_.FreeChunkData( deleted_chunk->Longitude(), deleted_chunk->Latitude() );
 			delete deleted_chunk;
-			for( i= 1; i< chunk_number_x; i++ )
+			for( i= 1; i< chunk_number_x_; i++ )
 			{
-				chunks[ (i-1) | ( j << H_MAX_CHUNKS_LOG2 ) ]=
-					chunks[ i | ( j << H_MAX_CHUNKS_LOG2 ) ];
+				chunks_[ (i-1) | ( j << H_MAX_CHUNKS_LOG2 ) ]=
+					chunks_[ i | ( j << H_MAX_CHUNKS_LOG2 ) ];
 			}
-			chunks[ ( chunk_number_x-1) | ( j << H_MAX_CHUNKS_LOG2 ) ]=
-				LoadChunk( longitude+chunk_number_x, latitude + j );
+			chunks_[ ( chunk_number_x_-1) | ( j << H_MAX_CHUNKS_LOG2 ) ]=
+				LoadChunk( longitude_+chunk_number_x_, latitude_ + j );
 		}
-		for( j= 0; j< chunk_number_y; j++ )
-			AddLightToBorderChunk( chunk_number_x-1, j );
-		longitude++;
+		for( j= 0; j< chunk_number_y_; j++ )
+			AddLightToBorderChunk( chunk_number_x_-1, j );
+		longitude_++;
 
 		break;
 
 	case WEST:
-		for( j= 0; j< chunk_number_y; j++ )
+		for( j= 0; j< chunk_number_y_; j++ )
 		{
-			h_Chunk* deleted_chunk= chunks[ ( chunk_number_x-1) | ( j << H_MAX_CHUNKS_LOG2 ) ];
+			h_Chunk* deleted_chunk= chunks_[ ( chunk_number_x_-1) | ( j << H_MAX_CHUNKS_LOG2 ) ];
 			SaveChunk( deleted_chunk );
-			chunk_loader.FreeChunkData( deleted_chunk->Longitude(), deleted_chunk->Latitude() );
+			chunk_loader_.FreeChunkData( deleted_chunk->Longitude(), deleted_chunk->Latitude() );
 			delete deleted_chunk;
-			for( i= chunk_number_x-1; i> 0; i-- )
+			for( i= chunk_number_x_-1; i> 0; i-- )
 			{
-				chunks[ i | ( j << H_MAX_CHUNKS_LOG2 ) ]=
-					chunks[ (i-1) | ( j << H_MAX_CHUNKS_LOG2 ) ];
+				chunks_[ i | ( j << H_MAX_CHUNKS_LOG2 ) ]=
+					chunks_[ (i-1) | ( j << H_MAX_CHUNKS_LOG2 ) ];
 			}
-			chunks[ 0 | ( j << H_MAX_CHUNKS_LOG2 ) ]=
-				LoadChunk( longitude-1, latitude + j );
+			chunks_[ 0 | ( j << H_MAX_CHUNKS_LOG2 ) ]=
+				LoadChunk( longitude_-1, latitude_ + j );
 		}
-		for( j= 0; j< chunk_number_y; j++ )
+		for( j= 0; j< chunk_number_y_; j++ )
 			AddLightToBorderChunk( 0, j );
-		longitude--;
+		longitude_--;
 
 		break;
 	};
 
-	if( renderer != nullptr )
-		renderer->FullUpdate();
+	if( renderer_ != nullptr )
+		renderer_->FullUpdate();
 }
 
 
@@ -734,7 +734,7 @@ void h_World::SaveChunk( h_Chunk* ch )
 	header.Write( stream );
 	ch->SaveChunkToFile( stream );
 
-	chunk_loader.GetChunkData( ch->Longitude(), ch->Latitude() )= qCompress( array );
+	chunk_loader_.GetChunkData( ch->Longitude(), ch->Latitude() )= qCompress( array );
 }
 h_Chunk* h_World::LoadChunk( int lon, int lat )
 {
@@ -762,7 +762,7 @@ h_Chunk* h_World::LoadChunk( int lon, int lat )
 
 	return new h_Chunk( this, &header, stream );*/
 
-	QByteArray& ba= chunk_loader.GetChunkData( lon, lat );
+	QByteArray& ba= chunk_loader_.GetChunkData( lon, lat );
 	if( ba.size() == 0 )
 		return new h_Chunk( this, lon, lat );
 
@@ -779,8 +779,8 @@ h_Chunk* h_World::LoadChunk( int lon, int lat )
 
 h_World::~h_World()
 {
-	for( unsigned int x= 0; x< chunk_number_x; x++ )
-		for( unsigned int y= 0; y< chunk_number_y; y++ )
+	for( unsigned int x= 0; x< chunk_number_x_; x++ )
+		for( unsigned int y= 0; y< chunk_number_y_; y++ )
 		{
 			SaveChunk( GetChunk(x,y) );
 			delete GetChunk(x,y);
@@ -790,14 +790,14 @@ h_World::~h_World()
 
 void h_World::Save()
 {
-	for( unsigned int x= 0; x< chunk_number_x; x++ )
-		for( unsigned int y= 0; y< chunk_number_y; y++ )
+	for( unsigned int x= 0; x< chunk_number_x_; x++ )
+		for( unsigned int y= 0; y< chunk_number_y_; y++ )
 			SaveChunk( GetChunk(x,y) );
-	chunk_loader.ForceSaveAllChunks();
+	chunk_loader_.ForceSaveAllChunks();
 }
 
 
 void h_World::StartUpdates()
 {
-	phys_thread.start();
+	phys_thread_.start();
 }

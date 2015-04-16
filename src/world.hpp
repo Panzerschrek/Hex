@@ -127,69 +127,69 @@ private:
 	void InitNormalBlocks();
 
 
-	h_ChunkLoader chunk_loader;
+	h_ChunkLoader chunk_loader_;
 
-	unsigned int chunk_number_x, chunk_number_y;
-	unsigned int chunk_matrix_size_x, chunk_matrix_size_x_log2;
-	h_Chunk* chunks[ H_MAX_CHUNKS * H_MAX_CHUNKS ];//matrix of pointers
-	int longitude, latitude;//loaded zone beginning longitude and latitude
+	unsigned int chunk_number_x_, chunk_number_y_;
+	unsigned int chunk_matrix_size_x_, chunk_matrix_size_x_log2_;
+	h_Chunk* chunks_[ H_MAX_CHUNKS * H_MAX_CHUNKS ];//matrix of pointers
+	int longitude_, latitude_;//loaded zone beginning longitude and latitude
 
-	m_Rand phys_processes_rand;
+	m_Rand phys_processes_rand_;
 
-	r_IWorldRenderer* renderer;
-	h_Player* player;
-	short player_coord[3];//global coordinate of player hexagon
+	r_IWorldRenderer* renderer_;
+	h_Player* player_;
+	short player_coord_[3];//global coordinate of player hexagon
 
-	h_ChunkPhysMesh player_phys_mesh;
+	h_ChunkPhysMesh player_phys_mesh_;
 
-	h_Block normal_blocks[ NUM_BLOCK_TYPES ];
+	h_Block normal_blocks_[ NUM_BLOCK_TYPES ];
 
-	unsigned int phys_tick_count;
-	h_Thread< h_World > phys_thread;
+	unsigned int phys_tick_count_;
+	h_Thread< h_World > phys_thread_;
 	void PhysTick();
-	QMutex world_mutex;
+	QMutex world_mutex_;
 
 	//queue 0 - for enqueue, queue 1 - for dequeue
-	std::queue< h_WorldAction > action_queue[2];
-	QMutex action_queue_mutex;
+	std::queue< h_WorldAction > action_queue_[2];
+	QMutex action_queue_mutex_;
 
-	QSettings settings;
+	QSettings settings_;
 
 };
 
 
 inline  int h_World::ChunkNumberX() const
 {
-	return chunk_number_x;
+	return chunk_number_x_;
 }
 
 inline  int h_World::ChunkNumberY() const
 {
-	return chunk_number_y;
+	return chunk_number_y_;
 }
 
 inline h_Chunk* h_World::GetChunk( short X, short Y )
 {
-	return chunks[ X | ( Y << H_MAX_CHUNKS_LOG2 ) ];
+	return chunks_[ X | ( Y << H_MAX_CHUNKS_LOG2 ) ];
 }
 inline const h_Chunk* h_World::GetChunk( short X, short Y ) const
 {
-	return chunks[ X | ( Y << H_MAX_CHUNKS_LOG2 ) ];
+	return chunks_[ X | ( Y << H_MAX_CHUNKS_LOG2 ) ];
 }
 
 inline h_Block* h_World::NormalBlock( h_BlockType block_type )
 {
-	return &normal_blocks[ (int)block_type ];
+	return &normal_blocks_[ (int)block_type ];
 }
 
 inline void h_World::SetPlayer( h_Player* p )
 {
-	player= p;
+	player_= p;
 }
 
 inline void h_World::SetRenderer( r_IWorldRenderer* r )
 {
-	renderer= r;
+	renderer_= r;
 }
 
 /*inline h_Block* h_World::WaterBlock( unsigned char water_level )
@@ -199,12 +199,12 @@ inline void h_World::SetRenderer( r_IWorldRenderer* r )
 
 inline short h_World::Longitude() const
 {
-	return longitude;
+	return longitude_;
 }
 
 inline short h_World::Latitude() const
 {
-	return latitude;
+	return latitude_;
 }
 
 
@@ -212,7 +212,7 @@ inline short h_World::ClampX( short x ) const
 {
 	if( x < 0 )
 		return 0;
-	short max_x= chunk_number_x * H_CHUNK_WIDTH - 1;
+	short max_x= chunk_number_x_ * H_CHUNK_WIDTH - 1;
 	if ( x > max_x )
 		return max_x;
 	return x;
@@ -222,7 +222,7 @@ inline short h_World::ClampY( short y ) const
 {
 	if( y < 0 )
 		return 0;
-	short max_y= chunk_number_y * H_CHUNK_WIDTH - 1;
+	short max_y= chunk_number_y_ * H_CHUNK_WIDTH - 1;
 	if ( y > max_y )
 		return max_y;
 	return y;
@@ -239,9 +239,9 @@ inline short h_World::ClampZ( short z ) const
 
 inline int h_World::ChunkCoordToQuadchunkX( int longitude )
 {
-	return longitude>>1;
+	return longitude_>>1;
 }
 inline int h_World::ChunkCoordToQuadchunkY( int latitude )
 {
-	return latitude>>1;
+	return latitude_>>1;
 }
