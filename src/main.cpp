@@ -21,9 +21,9 @@ int main( int argc, char* argv[] )
 	printf( "value is %s\n", ss.GetString("two" ) );
 
 
-    QApplication hex(argc, argv);
+	QApplication hex(argc, argv);
 	h_Console::Message( "hex not first version" );
 	h_MainLoop::Start();
 
-    return hex.exec();
+	return hex.exec();
 }

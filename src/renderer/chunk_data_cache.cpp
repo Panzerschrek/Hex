@@ -1,6 +1,5 @@
 #include "chunk_data_cache.hpp"
 
-
 r_ChunkDataCache::r_ChunkDataCache()
 {
 	memset( chunk_quad_count_matrix_, 0, sizeof(chunk_quad_count_matrix_) );

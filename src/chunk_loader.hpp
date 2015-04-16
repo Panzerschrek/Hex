@@ -1,6 +1,4 @@
-#ifndef CHUNK_LOADER_HPP
-#define CHUNK_LOADER_HPP
-
+#pragma once
 #include "world_loading.hpp"
 #include <vector>
 
@@ -16,12 +14,12 @@ struct h_RegionData
 	int chunks_used;
 
 	h_RegionData();
-	~h_RegionData(){}
+	~h_RegionData() {}
 };
 
 class h_ChunkLoader
 {
-	public:
+public:
 	h_ChunkLoader( QString world_directory );
 	~h_ChunkLoader();
 
@@ -33,7 +31,7 @@ class h_ChunkLoader
 	//save all data of all regions, but not delete it
 	void ForceSaveAllChunks();
 
-	private:
+private:
 
 	//find loaded region or loads it
 	h_RegionData* GetRegionForCoordinates( int longitude, int latitude );
@@ -47,6 +45,3 @@ class h_ChunkLoader
 	QString regions_path;
 
 };
-
-
-#endif//CHUNK_LOADER_HPP

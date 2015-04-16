@@ -1,6 +1,4 @@
-#ifndef SETTINGS_HPP
-#define SETTINGS_HPP
-
+#pragma once
 #include <map>
 #include <string>
 
@@ -66,5 +64,3 @@ private:
 	MapType map_;
 
 };
-
-#endif//SETTINGS_HPP

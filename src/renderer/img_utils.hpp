@@ -1,5 +1,4 @@
-#ifndef IMG_UTILS_HPP
-#define IMG_UTILS_HPP
+#pragma once
 
 class r_FramebufferTexture;
 
@@ -18,11 +17,9 @@ public:
 
 	static void RGBA8_MirrorVerticalAndSwapRB( unsigned char* in_out, int width, int height );
 
-
 	// loads texture, converts to supported format, build mips, setup trilinear filtration
 	// input - empty not created texture. Output - texture with some data and binded to current texture unit
 	// if cannot load texture or invalid format of input image stub texture generated
 	static void LoadTexture( r_FramebufferTexture* texture, const char* filename );
 };
 
-#endif

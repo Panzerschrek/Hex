@@ -1,6 +1,5 @@
 #include "world_loading.hpp"
 
-
 void FileLump::Read( QDataStream& stream )
 {
 	stream>> offset;

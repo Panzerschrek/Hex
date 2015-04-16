@@ -1,5 +1,4 @@
-#ifndef WORLD_RENDERER_H
-#define WORLD_RENDERER_H
+#pragma once
 
 #include "i_world_renderer.hpp"
 #include "chunk_data_cache.hpp"
@@ -27,11 +26,11 @@ class h_Chunk;
 #pragma pack( push, 1 )
 struct r_WorldVertex
 {
-    qint16 coord[3];
-    qint16 tex_coord[3];
-    quint8 light[2];
-    quint8 normal_id;
-    qint8 reserved[1];
+	qint16 coord[3];
+	qint16 tex_coord[3];
+	quint8 light[2];
+	quint8 normal_id;
+	qint8 reserved[1];
 };//16b struct
 
 
@@ -47,7 +46,7 @@ struct r_WaterVertex
 
 class r_ChunkInfo
 {
-	public:
+public:
 
 	r_ChunkInfo();
 	void GetQuadCount();
@@ -55,31 +54,31 @@ class r_ChunkInfo
 	void BuildWaterSideMesh();
 	void BuildChunkMesh();
 
-    struct
-    {
-        r_WorldVertex* vb_data;//pointer to r_WorldRenderer::world_vb::vb_data
-        unsigned int allocated_vertex_count, real_vertex_count;
-        unsigned int new_vertex_count;
-    }chunk_vb;
+	struct
+	{
+		r_WorldVertex* vb_data;//pointer to r_WorldRenderer::world_vb::vb_data
+		unsigned int allocated_vertex_count, real_vertex_count;
+		unsigned int new_vertex_count;
+	} chunk_vb;
 
 
 	//geomentry up and down range borders. Used only for generation of center chunk blocks( not for border blocks )
-    int max_geometry_height, min_geometry_height;
+	int max_geometry_height, min_geometry_height;
 
-    m_Collection< r_WaterVertex > water_surface_mesh_vertices;
-    m_Collection< r_WaterVertex > water_side_mesh_vertices;
+	m_Collection< r_WaterVertex > water_surface_mesh_vertices;
+	m_Collection< r_WaterVertex > water_side_mesh_vertices;
 
-    bool chunk_data_updated, chunk_water_data_updated;
-    bool chunk_mesh_rebuilded;
+	bool chunk_data_updated, chunk_water_data_updated;
+	bool chunk_mesh_rebuilded;
 
-    h_Chunk* chunk;
+	h_Chunk* chunk;
 	h_Chunk* chunk_front, *chunk_right, *chunk_back_right, *chunk_back;
 };
 
 
 class r_WaterQuadChunkInfo
 {
-	public:
+public:
 	void GetVertexCount();
 	void BuildFinalMesh();
 	void GetUpdatedState();// set up water_updated= true, if any of h_ChunkInfo::chunk_water_data_updated= true
@@ -115,11 +114,12 @@ public:
 
 
 public: // r_IWorldRenderer
-    virtual void UpdateChunk( unsigned short,  unsigned short ) override;
-    virtual void UpdateChunkWater( unsigned short,  unsigned short ) override;
-    virtual void FullUpdate() override;
+	virtual void UpdateChunk( unsigned short,  unsigned short ) override;
+	virtual void UpdateChunkWater( unsigned short,  unsigned short ) override;
+	virtual void FullUpdate() override;
 
-	void Update() override{UpdateFunc();};
+	void Update() override {UpdateFunc();
+						   };
 private:
 
 	void LoadShaders();
@@ -169,25 +169,25 @@ private:
 
 	struct
 	{
-	    r_PolygonBuffer vbo;
-        unsigned int allocated_vertex_count;
-        r_WorldVertex* vb_data;//world vertex buffer in RAM
-        r_WorldVertex* new_vb_data;
-        quint16* vb_index_data;
-        unsigned int index_buffer_size;//number of indeces
+		r_PolygonBuffer vbo;
+		unsigned int allocated_vertex_count;
+		r_WorldVertex* vb_data;//world vertex buffer in RAM
+		r_WorldVertex* new_vb_data;
+		quint16* vb_index_data;
+		unsigned int index_buffer_size;//number of indeces
 
-        bool need_update_vbo;
-        bool vbo_update_ready;
+		bool need_update_vbo;
+		bool vbo_update_ready;
 
-        //chunk list to rendering:
-        int* chunk_meshes_index_count, *base_vertices;
-        int**  multi_indeces;//array of nulls
-        unsigned int chunks_to_draw;
+		//chunk list to rendering:
+		int* chunk_meshes_index_count, *base_vertices;
+		int**  multi_indeces;//array of nulls
+		unsigned int chunks_to_draw;
 
-        //water chunks to rendering
-        int* chunk_meshes_water_index_count, *base_water_vertices;
+		//water chunks to rendering
+		int* chunk_meshes_water_index_count, *base_water_vertices;
 
-	}world_vb;
+	} world_vb;
 
 	r_WorldVBO world_vertex_buffer_, world_vertex_buffer_to_draw_;
 	r_WorldVBO* draw_vertex_buffer_, *gen_vertex_buffer;
@@ -204,15 +204,15 @@ private:
 		unsigned int index_buffer_size;
 
 		bool need_update_vbo;
-        bool vbo_update_ready;
+		bool vbo_update_ready;
 
-        //quadchunk list to rendering:
-        int* chunk_meshes_index_count, *base_vertices;
-        int**  multi_indeces;//array of nulls
-        unsigned int quadchunks_to_draw;
+		//quadchunk list to rendering:
+		int* chunk_meshes_index_count, *base_vertices;
+		int**  multi_indeces;//array of nulls
+		unsigned int quadchunks_to_draw;
 
 
-	}water_vb;
+	} water_vb;
 
 	struct
 	{
@@ -221,7 +221,7 @@ private:
 		unsigned short* index_data;
 		r_PolygonBuffer vbo;
 
-	}water_side_vb;
+	} water_side_vb;
 
 
 	struct
@@ -288,7 +288,5 @@ inline void r_WorldRenderer::SetViewportSize( unsigned int v_x, unsigned int v_y
 
 inline void r_WorldRenderer::SetBuildPos( m_Vec3 p )
 {
-    build_pos= p;
+	build_pos= p;
 }
-
-#endif//RENDERER_H

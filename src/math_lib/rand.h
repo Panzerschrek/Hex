@@ -1,5 +1,4 @@
-#ifndef RAND_HP
-#define RAND_HP
+#pragma once
 
 class m_Rand
 {
@@ -46,5 +45,3 @@ inline float m_Rand::RandIdentity()
 {
 	return float( Rand() ) / float( max_rand );
 }
-
-#endif//RAND_H

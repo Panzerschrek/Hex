@@ -1,11 +1,9 @@
-#ifndef WEATHER_EFFECTS_PARTICLE_MANAGER_HPP
-#define WEATHER_EFFECTS_PARTICLE_MANAGER_HPP
+#pragma once
 
 #include "ph.h"
 #include "framebuffer_texture.hpp"
 #include "glsl_program.hpp"
 #include "polygon_buffer.hpp"
-
 
 class r_WeatherEffectsParticleManager
 {
@@ -27,6 +25,3 @@ private:
 	r_GLSLProgram shader_;
 	r_FramebufferTexture particle_texture_;
 };
-
-
-#endif//WEATHER_EFFECTS_PARTICLE_MANAGER_HPP

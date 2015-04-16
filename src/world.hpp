@@ -1,6 +1,4 @@
-#ifndef WORLD_HPP
-#define WORLD_HPP
-
+#pragma once
 #include <queue>
 
 #include <QMutex>
@@ -20,13 +18,13 @@ class r_IWorldRenderer;
 
 class h_World : public QObject
 {
-    friend class h_Chunk;
+	friend class h_Chunk;
 
 public:
-    h_Chunk* GetChunk( short X, short Y );//relative chunk coordinates
-    const h_Chunk* GetChunk( short X, short Y ) const;//relative chunk coordinates
+	h_Chunk* GetChunk( short X, short Y );//relative chunk coordinates
+	const h_Chunk* GetChunk( short X, short Y ) const;//relative chunk coordinates
 
-    //really, returns longitude/2 and latitude/2
+	//really, returns longitude/2 and latitude/2
 	int ChunkCoordToQuadchunkX( int longitude );
 	int ChunkCoordToQuadchunkY( int latitude );
 
@@ -34,24 +32,24 @@ public:
 	int ChunkNumberY() const;
 
 	void AddBuildEvent( short x, short y, short z, h_BlockType block_type );//coordinates - relative
-    void AddDestroyEvent( short x, short y, short z );
+	void AddDestroyEvent( short x, short y, short z );
 
 	//replace all blocks in radius in this layer( z=const )
 	//ACHTUNG! This function unfinished. It ignores destruction of light sources. also, danger of stack owerflow. time ~ 6^radius
-    void Blast( short x, short y, short z, short radius );
+	void Blast( short x, short y, short z, short radius );
 
 	void SetPlayer( h_Player* p );
 	void SetRenderer( r_IWorldRenderer* r );
 	void StartUpdates(); // start main phys loop of world
 
 
-    short Longitude() const;
-    short Latitude() const;
+	short Longitude() const;
+	short Latitude() const;
 
-    void Save();//save world data to disk
+	void Save();//save world data to disk
 
-    h_World();
-    ~h_World();
+	h_World();
+	~h_World();
 
 	void Lock();
 	void Unlock();
@@ -66,15 +64,15 @@ public:
 	unsigned char FireLightLevel( short x, short y, short z ) const;
 
 
-    signals:
-    void ChunkUpdated( unsigned short, unsigned short );
-    void ChunkWaterUpdated( unsigned short, unsigned short );
-    void FullUpdate();
+signals:
+	void ChunkUpdated( unsigned short, unsigned short );
+	void ChunkWaterUpdated( unsigned short, unsigned short );
+	void FullUpdate();
 private:
 
-	 void Build( short x, short y, short z, h_BlockType block_type );//coordinates - relative
-    void Destroy( short x, short y, short z );
-    void FlushActionQueue();
+	void Build( short x, short y, short z, h_BlockType block_type );//coordinates - relative
+	void Destroy( short x, short y, short z );
+	void FlushActionQueue();
 
 	void UpdateInRadius( short x, short y, short r );//update chunks in square [x-r;x+r] [y-r;x+r]
 	void UpdateWaterInRadius( short x, short y, short r );//update chunks water in square [x-r;x+r] [y-r;x+r]
@@ -124,17 +122,17 @@ private:
 	bool WaterFlowUp( h_LiquidBlock* from, short to_x, short to_y, short to_z );
 
 
-    h_Block* NormalBlock( h_BlockType block_type );
-   // h_Block* WaterBlock( unsigned char water_level= MAX_WATER_LEVEL );
-    void InitNormalBlocks();
+	h_Block* NormalBlock( h_BlockType block_type );
+	// h_Block* WaterBlock( unsigned char water_level= MAX_WATER_LEVEL );
+	void InitNormalBlocks();
 
 
-    h_ChunkLoader chunk_loader;
+	h_ChunkLoader chunk_loader;
 
-    unsigned int chunk_number_x, chunk_number_y;
-    unsigned int chunk_matrix_size_x, chunk_matrix_size_x_log2;
-    h_Chunk* chunks[ H_MAX_CHUNKS * H_MAX_CHUNKS ];//matrix of pointers
-    int longitude, latitude;//loaded zone beginning longitude and latitude
+	unsigned int chunk_number_x, chunk_number_y;
+	unsigned int chunk_matrix_size_x, chunk_matrix_size_x_log2;
+	h_Chunk* chunks[ H_MAX_CHUNKS * H_MAX_CHUNKS ];//matrix of pointers
+	int longitude, latitude;//loaded zone beginning longitude and latitude
 
 	m_Rand phys_processes_rand;
 
@@ -144,7 +142,7 @@ private:
 
 	h_ChunkPhysMesh player_phys_mesh;
 
-    h_Block normal_blocks[ NUM_BLOCK_TYPES ];
+	h_Block normal_blocks[ NUM_BLOCK_TYPES ];
 
 	unsigned int phys_tick_count;
 	h_Thread< h_World > phys_thread;
@@ -162,26 +160,26 @@ private:
 
 inline  int h_World::ChunkNumberX() const
 {
-    return chunk_number_x;
+	return chunk_number_x;
 }
 
 inline  int h_World::ChunkNumberY() const
 {
-    return chunk_number_y;
+	return chunk_number_y;
 }
 
 inline h_Chunk* h_World::GetChunk( short X, short Y )
 {
-    return chunks[ X | ( Y << H_MAX_CHUNKS_LOG2 ) ];
+	return chunks[ X | ( Y << H_MAX_CHUNKS_LOG2 ) ];
 }
 inline const h_Chunk* h_World::GetChunk( short X, short Y ) const
 {
-    return chunks[ X | ( Y << H_MAX_CHUNKS_LOG2 ) ];
+	return chunks[ X | ( Y << H_MAX_CHUNKS_LOG2 ) ];
 }
 
 inline h_Block* h_World::NormalBlock( h_BlockType block_type )
 {
-    return &normal_blocks[ (int)block_type ];
+	return &normal_blocks[ (int)block_type ];
 }
 
 inline void h_World::SetPlayer( h_Player* p )
@@ -201,12 +199,12 @@ inline void h_World::SetRenderer( r_IWorldRenderer* r )
 
 inline short h_World::Longitude() const
 {
-    return longitude;
+	return longitude;
 }
 
 inline short h_World::Latitude() const
 {
-    return latitude;
+	return latitude;
 }
 
 
@@ -247,5 +245,3 @@ inline int h_World::ChunkCoordToQuadchunkY( int latitude )
 {
 	return latitude>>1;
 }
-
-#endif//WORLD_HPP

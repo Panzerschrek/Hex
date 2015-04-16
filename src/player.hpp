@@ -1,6 +1,4 @@
-#ifndef PLAYER_HPP
-#define PLAYER_HPP
-
+#pragma once
 #include "hex.hpp"
 #include "vec.hpp"
 #include "math_lib/m_math.h"
@@ -10,7 +8,7 @@ class h_World;
 
 class h_Player
 {
-	public:
+public:
 
 	h_Player( h_World* w );
 	~h_Player();
@@ -26,7 +24,7 @@ class h_Player
 
 	void Lock();
 	void Unlock();
-	private:
+private:
 
 	const h_World* world;
 	m_Vec3 pos;
@@ -52,10 +50,10 @@ inline void h_Player::Rotate( m_Vec3 delta )
 	view_angle+= delta;
 
 	if( view_angle.z < 0.0f ) view_angle.z+= m_Math::FM_2PI;
-    else if( view_angle.z > m_Math::FM_2PI ) view_angle.z-= m_Math::FM_2PI;
+	else if( view_angle.z > m_Math::FM_2PI ) view_angle.z-= m_Math::FM_2PI;
 
-    if( view_angle.x > m_Math::FM_PI2 ) view_angle.x= m_Math::FM_PI2;
-    else if( view_angle.x < -m_Math::FM_PI2 ) view_angle.x= -m_Math::FM_PI2;
+	if( view_angle.x > m_Math::FM_PI2 ) view_angle.x= m_Math::FM_PI2;
+	else if( view_angle.x < -m_Math::FM_PI2 ) view_angle.x= -m_Math::FM_PI2;
 }
 
 
@@ -68,5 +66,3 @@ inline void h_Player::Unlock()
 {
 	player_data_mutex.unlock();
 }
-
-#endif//PLAYER_HPP
