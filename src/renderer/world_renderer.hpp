@@ -6,16 +6,15 @@
 
 #include "framebuffer_texture.hpp"
 #include "framebuffer.hpp"
-#include "func_declarations.h"
-#include "polygon_buffer.h"
-#include "glsl_program.h"
+#include "polygon_buffer.hpp"
+#include "glsl_program.hpp"
 #include "text.hpp"
 #include "texture_manager.hpp"
 #include "weather_effects_particle_manager.hpp"
 
 #include "world_vertex_buffer.hpp"
 
-#include "../math_lib/matrix.h"
+#include "matrix.hpp"
 #include "../math_lib/collection.hpp"
 
 #include "../thread.hpp"

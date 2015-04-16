@@ -16,27 +16,27 @@ inline void ColorCopy( unsigned char* dst, const unsigned char* src )
 */
 
 
-int ui_CursorHandler::ui_elements_count= 0;
-ui_Base* ui_CursorHandler::ui_elements[ H_UI_MAX_ELEMENTS ];
-int ui_CursorHandler::ui_menu_count= 0;
-ui_MenuBase* ui_CursorHandler::ui_menus[ H_UI_MAX_MENUS ];
+int ui_CursorHandler::ui_elements_count_= 0;
+ui_Base* ui_CursorHandler::ui_elements_[ H_UI_MAX_ELEMENTS ];
+int ui_CursorHandler::ui_menu_count_= 0;
+ui_MenuBase* ui_CursorHandler::ui_menus_[ H_UI_MAX_MENUS ];
 
 
 
 void ui_CursorHandler::AddUIElement( ui_Base* element )
 {
-    ui_elements[ ui_elements_count ]= element;
-    ui_elements_count++;
+    ui_elements_[ ui_elements_count_ ]= element;
+    ui_elements_count_++;
 }
 void ui_CursorHandler::RemoveUIElement( ui_Base* element )
 {
-    for( int i= 0; i< ui_elements_count; i++ )
+    for( int i= 0; i< ui_elements_count_; i++ )
     {
-        if( ui_elements[i] == element )
+        if( ui_elements_[i] == element )
         {
-            if( i != ui_elements_count-1 )
-                ui_elements[i]= ui_elements[ui_elements_count-1];
-            ui_elements_count--;
+            if( i != ui_elements_count_-1 )
+                ui_elements_[i]= ui_elements_[ui_elements_count_-1];
+            ui_elements_count_--;
             break;
         }
     }
@@ -44,9 +44,9 @@ void ui_CursorHandler::RemoveUIElement( ui_Base* element )
 
 void ui_CursorHandler::CursorPress( int x, int y, bool pressed )
 {
-    for( int i= 0; i< ui_elements_count; i++ )
+    for( int i= 0; i< ui_elements_count_; i++ )
     {
-        ui_Base* el= ui_elements[i];
+        ui_Base* el= ui_elements_[i];
         if( !el->IsActive() )
             continue;
         //if inside element
@@ -57,9 +57,9 @@ void ui_CursorHandler::CursorPress( int x, int y, bool pressed )
 }
 void ui_CursorHandler::UpdateCursorPos( int x, int y )
 {
-    for( int i= 0; i< ui_elements_count; i++ )
+    for( int i= 0; i< ui_elements_count_; i++ )
     {
-        ui_Base* el= ui_elements[i];
+        ui_Base* el= ui_elements_[i];
         if( !el->IsActive() )
             continue;
         //if inside element
@@ -77,29 +77,29 @@ void ui_CursorHandler::UpdateCursorPos( int x, int y )
 -------------ui_Base------------------
 */
 
-int ui_Base::ui_cell_size= 32;
+int ui_Base::ui_cell_size_= 32;
 
-ui_Base::ui_Base():
-    is_active(true), is_visible(true),
-    color { 200, 200, 200, 128 }, cursor_over_color { 255, 255, 255, 64 }
+ui_Base::ui_Base()
+    : is_active_(true), is_visible_(true)
+    , color_ { 200, 200, 200, 128 }, cursor_over_color_ { 255, 255, 255, 64 }
 {
     ui_CursorHandler::AddUIElement(this);
 }
 
 ui_Base::ui_Base( int x, int y, int in_size_x, int in_size_y,
-                  const unsigned char* normal_color, const unsigned char* in_cursor_over_color ):
-    pos_x(x), pos_y(y), size_x(in_size_x), size_y(in_size_y),
-    color { normal_color[0], normal_color[1], normal_color[2], normal_color[3] },
-cursor_over_color { in_cursor_over_color[0], in_cursor_over_color[1], in_cursor_over_color[2], in_cursor_over_color[3] },
-is_active(true), is_visible(true)
+                  const unsigned char* normal_color, const unsigned char* in_cursor_over_color )
+    : pos_x_(x), pos_y_(y), size_x_(in_size_x), size_y_(in_size_y)
+    , color_ { normal_color[0], normal_color[1], normal_color[2], normal_color[3] }
+	, cursor_over_color_ { in_cursor_over_color[0], in_cursor_over_color[1], in_cursor_over_color[2], in_cursor_over_color[3] }
+	, is_active_(true), is_visible_(true)
 {
     ui_CursorHandler::AddUIElement(this);
 }
 
-ui_Base::ui_Base( int x, int y, int in_size_x, int in_size_y ):
-    pos_x(x), pos_y(y), size_x(in_size_x), size_y(in_size_y),
-    color { 200, 200, 200, 128 }, cursor_over_color { 255, 255, 255, 64 },
-is_active(true),  is_visible(true)
+ui_Base::ui_Base( int x, int y, int in_size_x, int in_size_y )
+    : pos_x_(x), pos_y_(y), size_x_(in_size_x), size_y_(in_size_y)
+    , color_ { 200, 200, 200, 128 }, cursor_over_color_ { 255, 255, 255, 64 }
+	, is_active_(true),  is_visible_(true)
 {
     ui_CursorHandler::AddUIElement(this);
 }
@@ -112,9 +112,9 @@ ui_Base::~ui_Base()
 void ui_Base::CursorOver( bool is_over )
 {
     if( !is_over )
-        ColorCopy( current_color, color );
+        ColorCopy( current_color_, color_ );
     else
-        ColorCopy( current_color, cursor_over_color );
+        ColorCopy( current_color_, cursor_over_color_ );
 }
 
 void ui_Base::CursorPress( int x, int y, bool pressed )
@@ -126,7 +126,7 @@ void ui_Base::Draw( ui_Painter* painter )const
 {
 }
 
-int ui_Base::GenElementFraming( ui_Vertex* triangles, int trim_size  ) const
+int ui_Base::GenElementFraming( ui_Vertex* triangles, int trim_size ) const
 {
     int co= trim_size;
 
@@ -208,31 +208,31 @@ int ui_Base::GenRectangle( ui_Vertex* triangles, int x, int y, int sx, int sy ) 
 */
 
 ui_MenuBase::ui_MenuBase( ui_MenuBase* parent, int x, int y, int sx, int sy ):
-    pos_x(x), pos_y(y), size_x(sx), size_y(sy), parent_menu(parent), child_menu(nullptr), marked_for_killing(false)
+    pos_x_(x), pos_y_(y), size_x_(sx), size_y_(sy), parent_menu_(parent), child_menu_(nullptr), marked_for_killing_(false)
 {
 }
 
 void ui_MenuBase::Draw( ui_Painter* painter )
 {
-for( auto el : elements )
+for( auto el : elements_ )
     {
         if( el->IsVisible() )
             el->Draw( painter );
     }
-    if( child_menu != nullptr )
-        child_menu->Draw( painter );
+    if( child_menu_ != nullptr )
+        child_menu_->Draw( painter );
 
 }
 
 void ui_MenuBase::SetActive( bool active )
 {
-	for( ui_Base* el : elements )
+for( ui_Base* el : elements_ )
         el->SetActive( active );
 }
 
 void ui_MenuBase::SetVisible( bool visible )
 {
-	for( ui_Base* el : elements )
+for( ui_Base* el : elements_ )
         el->SetVisible( visible );
 }
 
@@ -246,12 +246,12 @@ ui_Button::ui_Button( const char* text, int cell_x, int cell_y, int cell_size_x,
              cell_y * ui_Base::CellSize() + ui_Base::CellOffset(),
              cell_size_x * ui_Base::CellSize() - ui_Base::CellOffset()*2,
              cell_size_y * ui_Base::CellSize() - ui_Base::CellOffset()*2 ),
-    callback(nullptr)
+    callback_(nullptr)
 {
     if( text != nullptr )
-        strcpy( button_text, text );
+        strcpy( button_text_, text );
     else
-        button_text[0]= 0;
+        button_text_[0]= 0;
 }
 
 ui_Button::ui_Button( const char* text, int cell_x, int cell_y, int cell_size_x, int cell_size_y,
@@ -261,13 +261,13 @@ ui_Button::ui_Button( const char* text, int cell_x, int cell_y, int cell_size_x,
              cell_size_x * ui_Base::CellSize() - ui_Base::CellOffset()*2,
              cell_size_y * ui_Base::CellSize() - ui_Base::CellOffset()*2,
              normal_color, in_cursor_over_color ),
-    callback(nullptr)
+    callback_(nullptr)
 
 {
     if( text != nullptr )
-        strcpy( button_text, text );
+        strcpy( button_text_, text );
     else
-        button_text[0]= 0;
+        button_text_[0]= 0;
 }
 ui_Button::~ui_Button()
 {
@@ -278,8 +278,8 @@ void ui_Button::CursorPress( int x, int y, bool pressed)
 {
     if( !pressed )
     {
-        if( callback != nullptr )
-            callback->ButtonCallback(this);
+        if( callback_ != nullptr )
+            callback_->ButtonCallback(this);
     }
 }
 
@@ -289,25 +289,24 @@ void ui_Button::Draw( ui_Painter* painter )const
 
     ui_Base::GenRectangle( triangles, X(), Y(), SizeX(), SizeY() );
 
-    painter->DrawUITriangles( triangles, 6, current_color );
+    painter->DrawUITriangles( triangles, 6, current_color_ );
 
     unsigned char font_color[4];
-    font_color[0]= current_color[0]/2;
-    font_color[1]= current_color[1]/2;
-    font_color[2]= current_color[2]/2;
-    font_color[3]= 0;
+    font_color[0]= current_color_[0]/2;
+    font_color[1]= current_color_[1]/2;
+    font_color[2]= current_color_[2]/2;
+    font_color[3]= current_color_[3];
 
-    painter->DrawUIText( button_text, float(X() + SizeX()/2), float(Y()+ SizeY()/2), 1.0f, font_color );
-
+    painter->DrawUITextPixelCoordsCenter( button_text_, float(X()+ SizeX()/2), float(Y()), float(SizeY()), font_color );
 }
 
 void ui_Checkbox::CursorPress( int x, int y, bool pressed )
 {
     if( pressed )
     {
-        flag= !flag;
-        if( callback != nullptr )
-            callback->CheckboxCallback( this );
+        flag_= !flag_;
+        if( callback_ != nullptr )
+            callback_->CheckboxCallback( this );
     }
 }
 
@@ -319,8 +318,8 @@ void ui_Checkbox::CursorPress( int x, int y, bool pressed )
 ui_Checkbox::ui_Checkbox( int cell_x, int cell_y, bool state ):
     ui_Base( cell_x * ui_Base::CellSize() + ui_Base::CellOffset(), cell_y * ui_Base::CellSize() + ui_Base::CellOffset(),
              (cell_x+1) * ui_Base::CellSize() + ui_Base::CellOffset(), (cell_y+1) * ui_Base::CellSize() + ui_Base::CellOffset() ),
-    flag(state),
-    callback(nullptr)
+    flag_(state),
+    callback_(nullptr)
 {
 }
 
@@ -328,8 +327,8 @@ ui_Checkbox::ui_Checkbox( int cell_x, int cell_y, bool state, const unsigned cha
     ui_Base( cell_x * ui_Base::CellSize() + ui_Base::CellOffset(), cell_y * ui_Base::CellSize() + ui_Base::CellOffset(),
              ui_Base::CellSize() + ui_Base::CellOffset(), ui_Base::CellSize() + ui_Base::CellOffset(),
              normal_color, over_cursor_color ),
-    flag(state),
-    callback(nullptr)
+    flag_(state),
+    callback_(nullptr)
 {
 }
 ui_Checkbox::~ui_Checkbox()
@@ -342,13 +341,13 @@ void ui_Checkbox::Draw( ui_Painter* painter )const
 
     int co= ui_Base::CellOffset() * 3 / 2;
     int vertex_count= GenElementFraming( triangles, co );
-    if( flag )
+    if( flag_ )
     {
         ui_Base::GenRectangle( triangles + vertex_count, X() + SizeX()/2 - co, Y() + SizeY()/2 - co, co*2, co*2 );
         vertex_count+= 6;
     }
 
-    painter->DrawUITriangles( triangles, vertex_count, current_color );
+    painter->DrawUITriangles( triangles, vertex_count, current_color_ );
 }
 
 
@@ -356,19 +355,21 @@ void ui_Checkbox::Draw( ui_Painter* painter )const
 -------------ui_Text---------------
 */
 
-ui_Text::ui_Text( const char* text, ui_TextAlignment alignment_, int cell_x, int cell_y ) :
-    ui_Base( cell_x * ui_Base::CellSize(), cell_y * ui_Base::CellSize(), 0, 0 ),
-    alignment(alignment_)
+ui_Text::ui_Text( const char* text, ui_TextAlignment alignment, int cell_x, int cell_y , int cell_width, int cell_height) :
+    ui_Base( cell_x * ui_Base::CellSize() + ui_Base::CellOffset(), cell_y * ui_Base::CellSize() + ui_Base::CellOffset(),
+             ui_Base::CellSize() * cell_width - 2*ui_Base::CellOffset(), ui_Base::CellSize() * cell_height - 2*ui_Base::CellOffset() ),
+    alignment_(alignment)
 {
     if( text != nullptr )
-        strcpy( this->text, text );
+        strcpy( text_, text );
 }
-ui_Text::ui_Text( const char* text, ui_TextAlignment alignment_, int cell_x, int cell_y, const unsigned char* color ) :
-    ui_Base( cell_x * ui_Base::CellSize(), cell_y * ui_Base::CellSize(), 0, 0, color, color ),
-    alignment(alignment_)
+ui_Text::ui_Text( const char* text, ui_TextAlignment alignment, int cell_x, int cell_y, int cell_width, int cell_height, const unsigned char* color ) :
+    ui_Base( cell_x * ui_Base::CellSize() + ui_Base::CellOffset(), cell_y * ui_Base::CellSize() + ui_Base::CellOffset(),
+             ui_Base::CellSize() * cell_width - 2*ui_Base::CellOffset(), ui_Base::CellSize() * cell_height - 2*ui_Base::CellOffset(), color, color ),
+    alignment_(alignment)
 {
     if( text != nullptr )
-        strcpy( this->text, text );
+        strcpy( text_, text );
 }
 
 ui_Text::~ui_Text()
@@ -378,13 +379,24 @@ ui_Text::~ui_Text()
 void ui_Text::SetText( const char* text )
 {
     if( text != nullptr )
-        strcpy( this->text, text );
+        strcpy( text_, text );
 }
 
 void ui_Text::Draw( ui_Painter* painter )const
 {
-    painter->DrawUiTextLeft( text, X(), Y(), 1.0f, ui_Base::color );
-    //painter->DrawUIText( text, float(X() + ui_Base::CellSize()/2 ), float(Y() + ui_Base::CellSize()/2), 1.0f, ui_Base::color );
+    switch(alignment_)
+    {
+    case ALIGNMENT_RIGHT:
+        painter->DrawUITextPixelCoordsRight( text_, float(X()+SizeX()), float(Y()), float(SizeY()), ui_Base::color_ );
+        break;
+    case ALIGNMENT_CENTER:
+        painter->DrawUITextPixelCoordsCenter( text_, float(X()+SizeX()/2), float(Y()), float(SizeY()), ui_Base::color_ );
+        break;
+    case ALIGNMENT_LEFT:
+    default:
+        painter->DrawUITextPixelCoordsLeft( text_, float(X()), float(Y()), float(SizeY()), ui_Base::color_ );
+        break;
+    }
 }
 
 /*
@@ -401,12 +413,12 @@ ui_ProgressBar::ui_ProgressBar( int cell_x, int cell_y, int cell_size_x, int cel
 }
 
 ui_ProgressBar::ui_ProgressBar( int cell_x, int cell_y, int cell_size_x, int cell_size_y, float progress,
-                                const unsigned char* normal_color, const unsigned char* cursor_over_color_ ):
+                                const unsigned char* normal_color, const unsigned char* cursor_over_color ):
     ui_Base( cell_x * ui_Base::CellSize() + ui_Base::CellOffset(),
              cell_y * ui_Base::CellSize() + ui_Base::CellOffset(),
              cell_size_x * ui_Base::CellSize() - ui_Base::CellOffset()*2,
              cell_size_y * ui_Base::CellSize() - ui_Base::CellOffset()*2,
-             normal_color, cursor_over_color_ )
+             normal_color, cursor_over_color )
 {
     SetProgress(progress);
 }
@@ -417,9 +429,9 @@ ui_ProgressBar::~ui_ProgressBar()
 
 void ui_ProgressBar::SetProgress( float p )
 {
-    progress= p;
-    if( progress < 0.0f ) progress= 0.0f;
-    else if( progress > 1.0f ) progress= 1.0f;
+    progress_= p;
+    if( progress_< 0.0f ) progress_= 0.0f;
+    else if( progress_ > 1.0f ) progress_= 1.0f;
 }
 
 void ui_ProgressBar::Draw( ui_Painter* painter )const
@@ -430,7 +442,7 @@ void ui_ProgressBar::Draw( ui_Painter* painter )const
 
     int progress_bar_len= SizeX() - co * 2;
     {
-        int fixed12_progress= int(progress * 4096.0f );
+        int fixed12_progress= int(progress_ * 4096.0f );
         progress_bar_len= (progress_bar_len * fixed12_progress) >>12;
     }
     int progress_bar_begin= X() + co;
@@ -438,16 +450,16 @@ void ui_ProgressBar::Draw( ui_Painter* painter )const
     ui_Base::GenRectangle( triangles, progress_bar_begin, Y()+co, progress_bar_len, SizeY()-co*2 );
     int vertex_count= GenElementFraming( triangles + 6, ui_Base::CellOffset() );
 
-    painter->DrawUITriangles( triangles, vertex_count + 6, current_color );
+    painter->DrawUITriangles( triangles, vertex_count + 6, color_ );
 
     unsigned char font_color[4];
-    font_color[0]= current_color[0]/2;
-    font_color[1]= current_color[1]/2;
-    font_color[2]= current_color[2]/2;
-    font_color[3]= 0;
+    font_color[0]= current_color_[0]/2;
+    font_color[1]= current_color_[1]/2;
+    font_color[2]= current_color_[2]/2;
+    font_color[3]= current_color_[3];
 
     char text[64];
-    sprintf( text, "%d%%", int(100.0f * progress) );
+    sprintf( text, "%d%%", int(100.0f * progress_) );
 
     painter->DrawUIText( text, float(X() + SizeX()/2), float(Y()+ SizeY()/2), 1.0f, font_color );
 }
@@ -457,22 +469,22 @@ void ui_ProgressBar::Draw( ui_Painter* painter )const
 ---------ui_Slider------------
 */
 
-ui_Slider::ui_Slider( int cell_x, int cell_y, int cell_size_x, float slider_pos_ ) :
+ui_Slider::ui_Slider( int cell_x, int cell_y, int cell_size_x, float slider_pos ) :
     ui_Base( cell_x * ui_Base::CellSize() + ui_Base::CellOffset(),
              cell_y * ui_Base::CellSize() + ui_Base::CellOffset(),
              cell_size_x * ui_Base::CellSize() - ui_Base::CellOffset()*2,
              1 * ui_Base::CellSize() - ui_Base::CellOffset()*2 ),
-    slider_pos(slider_pos_), slider_inv_step(16), callback(nullptr)
+    slider_pos_(slider_pos), slider_inv_step_(16), callback_(nullptr)
 {
 }
 
-ui_Slider::ui_Slider( int cell_x, int cell_y, int cell_size_x, float slider_pos_, const unsigned char* normal_color, const unsigned char* cursor_over_color_ ) :
+ui_Slider::ui_Slider( int cell_x, int cell_y, int cell_size_x, float slider_pos, const unsigned char* normal_color, const unsigned char* cursor_over_color ) :
     ui_Base( cell_x * ui_Base::CellSize() + ui_Base::CellOffset(),
              cell_y * ui_Base::CellSize() + ui_Base::CellOffset(),
              cell_size_x * ui_Base::CellSize() - ui_Base::CellOffset()*2,
              1 * ui_Base::CellSize() - ui_Base::CellOffset()*2,
-             normal_color, cursor_over_color_ ),
-    slider_pos(slider_pos_), slider_inv_step(16), callback(nullptr)
+             normal_color, cursor_over_color ),
+    slider_pos_(slider_pos), slider_inv_step_(16), callback_(nullptr)
 {
 }
 ui_Slider::~ui_Slider()
@@ -482,9 +494,9 @@ ui_Slider::~ui_Slider()
 
 void ui_Slider::SetSliderPos( float pos )
 {
-    if( pos < 0.0f ) slider_pos= 0.0f;
-    else if( pos > 1.0f ) slider_pos= 1.0f;
-    else slider_pos= pos;
+    if( pos < 0.0f ) slider_pos_= 0.0f;
+    else if( pos > 1.0f ) slider_pos_= 1.0f;
+    else slider_pos_= pos;
 }
 
 
@@ -516,15 +528,13 @@ void ui_Slider::Draw( ui_Painter* painter )const
     int slider_rel_pos= SizeX()/2;
     {
         int bar_length= SizeX() - 2 * ( ArrowSize() + bar_arrow_offset );
-        slider_rel_pos= (int)( float(bar_length) * slider_pos );
+        slider_rel_pos= (int)( float(bar_length) * slider_pos_ );
         slider_rel_pos+= ArrowSize() + bar_arrow_offset;
     }
     //slider
     ui_Base::GenRectangle( triangles + 12, X() + slider_rel_pos - SliderHalfSize(), Y(), SliderHalfSize() * 2 , SizeY() );
 
-    painter->DrawUITriangles( triangles, 18, current_color );
-
-    //painter->DrawUIText( "Slider", float(X() + SizeX()/2), float(Y()+ SizeY()/2), 1.0f, ui_Base::color );
+    painter->DrawUITriangles( triangles, 18, current_color_ );
 }
 
 void ui_Slider::CursorPress( int x, int y, bool pressed )
@@ -532,26 +542,26 @@ void ui_Slider::CursorPress( int x, int y, bool pressed )
     if( !pressed )
         return;
 
-    float slider_step= 1.0f / float(slider_inv_step);
+    float slider_step= 1.0f / float(slider_inv_step_);
     if( x < X()+ArrowSize() )
     {
-        slider_pos-= slider_step;
-        if( slider_pos < 0.0f ) slider_pos= 0.0f;
+        slider_pos_-= slider_step;
+        if( slider_pos_ < 0.0f ) slider_pos_= 0.0f;
     }
     else if( x > X() + SizeX() - ArrowSize() )
     {
-        slider_pos+= slider_step;
-        if( slider_pos > 1.0f ) slider_pos= 1.0f;
+        slider_pos_+= slider_step;
+        if( slider_pos_ > 1.0f ) slider_pos_= 1.0f;
     }
     else if( x > X() + ArrowSize() + ArrowOffset() && x < X() + SizeX() - ArrowSize() - ArrowOffset() )
     {
         int rel_pos= x - ( X() + ArrowOffset() + ArrowSize() );
         int real_bar_size= SizeX() - 2 * ( ArrowSize() + ArrowOffset() );
 
-        slider_pos= float(rel_pos) / float(real_bar_size);
+        slider_pos_= float(rel_pos) / float(real_bar_size);
     }
 
-    if( callback != nullptr )
-        callback->SliderCallback(this);
+    if( callback_ != nullptr )
+        callback_->SliderCallback(this);
 }
 

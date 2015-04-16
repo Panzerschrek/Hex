@@ -3,7 +3,8 @@
 
 
 #include "hex.hpp"
-#include "math_lib/vec.h"
+#include "vec.hpp"
+
 class p_UpperBlockFace
 {
 public:

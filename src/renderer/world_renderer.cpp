@@ -3,8 +3,6 @@
 
 #include <vector>
 
-#include <QtOpenGL>
-
 #include "world_renderer.hpp"
 #include "world_vertex_buffer.hpp"
 #include "glcorearb.h"
@@ -12,6 +10,7 @@
 #include "../console.hpp"
 #include "ogl_state_manager.hpp"
 #include "img_utils.hpp"
+#include "../math_lib/m_math.h"
 
 #include "../world.hpp"
 
@@ -552,15 +551,12 @@ void r_WorldRenderer::CalculateMatrices()
     static const m_Vec3 s_vector( H_BLOCK_SCALE_VECTOR_X,
                                   H_BLOCK_SCALE_VECTOR_Y
                                   , H_BLOCK_SCALE_VECTOR_Z );//hexogonal prism scale vector. DO NOT TOUCH!
-    scale.Identity();
     scale.Scale( s_vector );
 
-    perspective.Identity();
-    perspective.MakePerspective( float(viewport_x)/float(viewport_y), 1.57f,
+    perspective.PerspectiveProjection( float(viewport_x)/float(viewport_y), 1.57f,
                                  0.5f*(H_PLAYER_HEIGHT - H_PLAYER_EYE_LEVEL),//znear
                                  1024.0f );
 
-    rotate_x.Identity();
     rotate_x.RotateX( -cam_ang.x );
     rotate_z.Identity();
     rotate_z.RotateZ( -cam_ang.z );
@@ -634,7 +630,7 @@ void r_WorldRenderer::Draw()
     DrawWorld();
     DrawSky();
     DrawSun();
-    //weather_effects_particle_manager.Draw( view_matrix, cam_pos );
+    weather_effects_particle_manager.Draw( view_matrix, cam_pos );
 
     DrawBuildPrism();
 
@@ -664,7 +660,7 @@ void r_WorldRenderer::Draw()
         text_manager->AddMultiText( 0, 5, text_scale, r_Text::default_color, "cam pos: %4.1f %4.1f %4.1f",
                                     cam_pos.x, cam_pos.y, cam_pos.z );
 
-        text_manager->AddMultiText( 0, 11, text_scale, r_Text::default_color, "quick brown fox jumps over the lazy dog\nQUICK BROWN FOX JUMPS OVER THE LAZY DOG\n9876543210-+/\\" );
+        //text_manager->AddMultiText( 0, 11, text_scale, r_Text::default_color, "quick brown fox jumps over the lazy dog\nQUICK BROWN FOX JUMPS OVER THE LAZY DOG\n9876543210-+/\\" );
         //text_manager->AddMultiText( 0, 0, 8.0f, r_Text::default_color, "#A@Kli\nO01-eN" );
 
         //text_manager->AddMultiText( 0, 1, 4.0f, r_Text::default_color, "QUICK BROWN\nFOX JUMPS OVER\nTHE LAZY DOG" );
@@ -1230,7 +1226,7 @@ void r_WorldRenderer::LoadShaders()
 {
     char define_str[128];
 
-    if( world_shader.Load( "shaders/world_frag.glsl", "shaders/world_vert.glsl", NULL ) )
+    if( !world_shader.Load( "shaders/world_frag.glsl", "shaders/world_vert.glsl", NULL ) )
         h_Console::Error( "wold shader not found" );
 
     world_shader.SetAttribLocation( "coord", 0 );
@@ -1242,41 +1238,41 @@ void r_WorldRenderer::LoadShaders()
              0.25f * sqrt(3.0f) / float( H_MAX_TEXTURE_SCALE ),
              1.0f );
     world_shader.Define( define_str );
-    world_shader.MoveOnGPU();
+    world_shader.Create();
 
-    if( water_shader.Load( "shaders/water_frag.glsl", "shaders/water_vert.glsl", NULL ) )
+    if( !water_shader.Load( "shaders/water_frag.glsl", "shaders/water_vert.glsl", NULL ) )
         h_Console::Error( "water shader not found" );
 
     water_shader.SetAttribLocation( "coord", 0 );
     water_shader.SetAttribLocation( "light", 1 );
-    water_shader.MoveOnGPU();
+    water_shader.Create();
 
-    if( build_prism_shader.Load( "shaders/build_prism_frag.glsl", "shaders/build_prism_vert.glsl", "shaders/build_prism_geom.glsl" ) )
+    if( !build_prism_shader.Load( "shaders/build_prism_frag.glsl", "shaders/build_prism_vert.glsl", "shaders/build_prism_geom.glsl" ) )
         h_Console::Error( "build prism shader not found" );
     build_prism_shader.SetAttribLocation( "coord", 0 );
-    build_prism_shader.MoveOnGPU();
+    build_prism_shader.Create();
 
-    if( skybox_shader.Load( "shaders/sky_frag.glsl", "shaders/sky_vert.glsl", NULL ) )
+    if( !skybox_shader.Load( "shaders/sky_frag.glsl", "shaders/sky_vert.glsl", NULL ) )
         h_Console::Error( "skybox shader not found" );
     skybox_shader.SetAttribLocation( "coord", 0 );
-    skybox_shader.MoveOnGPU();
+    skybox_shader.Create();
 
 
-    if( sun_shader.Load( "shaders/sun_frag.glsl",  "shaders/sun_vert.glsl", NULL ) )
+    if( !sun_shader.Load( "shaders/sun_frag.glsl",  "shaders/sun_vert.glsl", NULL ) )
         h_Console::Error( "sun shader not found" );
 
     sprintf( define_str, "SUN_SIZE %3.0f", float( viewport_x ) * 0.1f );
     sun_shader.Define( define_str );
-    sun_shader.MoveOnGPU();
+    sun_shader.Create();
 
-    if( console_bg_shader.Load( "shaders/console_bg_frag.glsl", "shaders/console_bg_vert.glsl", "shaders/console_bg_geom.glsl" ) )
+    if( !console_bg_shader.Load( "shaders/console_bg_frag.glsl", "shaders/console_bg_vert.glsl", "shaders/console_bg_geom.glsl" ) )
         h_Console::Error( "console bg shader not found" );
-    console_bg_shader.MoveOnGPU();
+    console_bg_shader.Create();
 
 
-    if( supersampling_final_shader.Load( "shaders/supersampling_2x2_frag.glsl", "shaders/fullscreen_quad_vert.glsl", NULL ) )
+    if( !supersampling_final_shader.Load( "shaders/supersampling_2x2_frag.glsl", "shaders/fullscreen_quad_vert.glsl", NULL ) )
         h_Console::Error( "supersampling final shader not found" );
-    supersampling_final_shader.MoveOnGPU();
+    supersampling_final_shader.Create();
 
 }
 void r_WorldRenderer::InitFrameBuffers()
@@ -1387,7 +1383,7 @@ void r_WorldRenderer::InitVertexBuffers()
         }
 
 
-	//weather_effects_particle_manager.Create( 65536, 48.0f );
+	weather_effects_particle_manager.Create( 65536*2, m_Vec3(72.0f, 72.0f, 96.0f) );
 }
 
 

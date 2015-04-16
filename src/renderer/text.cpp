@@ -5,19 +5,12 @@
 #include "img_utils.hpp"
 
 
-const unsigned char r_Text::default_color[4]= {255, 255, 255, 32 };
-//r_Text* r_Text::default_text= NULL;
+const unsigned char r_Text::default_color[4]= {255, 255, 255, 255 };
 
 
-
-void r_Text::DrawCross()
+static inline void hColorCopy( unsigned char* dst, unsigned const char* src )
 {
-    draw_crosshair= true;
-    static const char t[]= { 127, 0 };
-    static const unsigned char color[]= { 255, 255, 255, 0 };
-    AddText( 0, 0, 2, color, t );
-    draw_crosshair= false;
-
+	*((int*)dst)= *((const int*)src);
 }
 
 void r_Text::AddMultiText( float colomn, float row, float size, const unsigned char* color, const char* text, ... )
@@ -33,7 +26,7 @@ void r_Text::AddMultiText( float colomn, float row, float size, const unsigned c
 
 void r_Text::AddText( float colomn, float row, float size, const unsigned char* color, const char* text )
 {
-    const char* str= text;
+	const char* str= text;
 
     float x, x0, y;
     float dx, dy;
@@ -81,8 +74,10 @@ void r_Text::AddText( float colomn, float row, float size, const unsigned char* 
         v[3].tex_coord[0]= 1;
         v[3].tex_coord[1]= symb_pos;
 
-        for( unsigned int i= 0; i< 4; i++ )
-            *((int*)v[i].color)= *((int*)color);//copy 4 bytes per one asm command
+		hColorCopy( v[0].color, color );
+		hColorCopy( v[1].color, color );
+		hColorCopy( v[2].color, color );
+        hColorCopy( v[3].color, color );
 
 		v[0].texles_per_pixel[0]= v[0].texles_per_pixel[1]=
 		v[1].texles_per_pixel[0]= v[1].texles_per_pixel[1]=
@@ -104,14 +99,17 @@ void r_Text::AddTextPixelCoords( float x, float y, float size, const unsigned ch
     float x0;
     float dx, dy;
 
-	float d_size= 2.0f * size;
+	x= 2.0f * x / screen_x - 1.0f;
+	y= -2.0f * y / screen_y + 1.0f;
 
 	x0= x;
 
-    dx= (d_size * float(letter_width) ) / screen_x;
-    dy= (d_size * float(letter_height) ) / screen_y;
+    dx= 2.0f * size * float(letter_width) / ( screen_x * float(letter_height) );
+    dy= 2.0f * size / screen_y ;
 
-	unsigned char texels_per_pixel= (unsigned char)( 16.0f / size );
+    y-= dy;
+
+	unsigned char texels_per_pixel= (unsigned char)( 16.0f * letter_height / size );
 
     r_TextVertex* v= vertices + vertex_buffer_pos;
     while( *str != 0 )
@@ -146,8 +144,10 @@ void r_Text::AddTextPixelCoords( float x, float y, float size, const unsigned ch
         v[3].tex_coord[0]= 1;
         v[3].tex_coord[1]= symb_pos;
 
-        for( unsigned int i= 0; i< 4; i++ )
-            *((int*)v[i].color)= *((int*)color);//copy 4 bytes per one asm command
+		hColorCopy( v[0].color, color );
+		hColorCopy( v[1].color, color );
+		hColorCopy( v[2].color, color );
+        hColorCopy( v[3].color, color );
 
 		v[0].texles_per_pixel[0]= v[0].texles_per_pixel[1]=
 		v[1].texles_per_pixel[0]= v[1].texles_per_pixel[1]=
@@ -177,8 +177,6 @@ void r_Text::Draw()
     }
 
     r_OGLStateManager::BlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
-    //glEnable( GL_BLEND );
-	//glDisable( GL_DEPTH_TEST );
 	r_OGLStateManager::EnableBlend();
 	r_OGLStateManager::DisableDepthTest();
 
@@ -189,11 +187,8 @@ void r_Text::Draw()
 
 
 r_Text::r_Text( const char* font_file ):
-    vertex_buffer_pos(0),
-    draw_crosshair(false)
+    vertex_buffer_pos(0)
 {
-//    default_text= this;
-
     vertices= new  r_TextVertex[ H_MAX_TEXT_BUFFER_SIZE * 4 ];
 
     int v[4];
@@ -228,17 +223,17 @@ r_Text::r_Text( const char* font_file ):
 		offset= ((char*)v.color) - ((char*)&v);
 		text_vbo.VertexAttribPointer( 2, 4, GL_UNSIGNED_BYTE, true, offset );//color
 		offset= ((char*)v.texles_per_pixel) - ((char*)&v);
-		text_vbo.VertexAttribPointer( 3, 2, GL_UNSIGNED_BYTE, false, offset );//color
+		text_vbo.VertexAttribPointer( 3, 2, GL_UNSIGNED_BYTE, false, offset );// texels per pixel
 	}
 
 
-	if( text_shader.Load( "shaders/text_frag.glsl", "shaders/text_vert.glsl", NULL ) )
+	if( !text_shader.Load( "shaders/text_frag.glsl", "shaders/text_vert.glsl", NULL ) )
 		printf( "error, text shader not found\n" );
     text_shader.SetAttribLocation( "coord", 0 );
     text_shader.SetAttribLocation( "tex_coord", 1 );
     text_shader.SetAttribLocation( "color", 2 );
-    text_shader.SetAttribLocation( "texles_per_pixel", 3 );
-    text_shader.MoveOnGPU();
+    text_shader.SetAttribLocation( "texels_per_pixel", 3 );
+    text_shader.Create();
 
 	{
 		QImage img( font_file );

@@ -2,7 +2,8 @@
 #define PLAYER_HPP
 
 #include "hex.hpp"
-#include "math_lib/vec.h"
+#include "vec.hpp"
+#include "math_lib/m_math.h"
 #include "QMutex"
 #include "chunk_phys_mesh.hpp"
 class h_World;

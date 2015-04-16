@@ -1,7 +1,7 @@
 #include "../hex.hpp"
 
 #include "ui_painter.hpp"
-#include "../math_lib/matrix.h"
+#include "matrix.hpp"
 #include "../renderer/text.hpp"
 
 ui_Painter::ui_Painter()
@@ -19,7 +19,7 @@ ui_Painter::ui_Painter()
 	ui_shader.Load( "shaders/ui_frag.glsl", "shaders/ui_vert.glsl", NULL );
 	ui_shader.SetAttribLocation( "coord", 0 );
 	ui_shader.SetAttribLocation( "color", 1 );
-	ui_shader.MoveOnGPU();
+	ui_shader.Create();
 
 	//static const char*const font_files[]= { "textures/courier_new_18.bmp", "textures/courier_new_24.bmp", "textures/courier_new_32.bmp" };
 	//text_manager= new r_Text( font_files[1] );
@@ -64,8 +64,29 @@ void ui_Painter::DrawUIText( const char* text, float center_x, float center_y, f
 	text_manager->Draw();
 }
 
-void ui_Painter::DrawUiTextLeft( const char* text, float x, float y, float font_size, const unsigned char* font_color )
+void ui_Painter::DrawUITextLeft( const char* text, float x, float y, float font_size, const unsigned char* font_color )
 {
 	text_manager->AddText( x / text_manager->LetterWidth(), y/text_manager->LetterHeight(), font_size, font_color, text );
+	text_manager->Draw();
+}
+
+
+void ui_Painter::DrawUITextPixelCoordsLeft( const char* text, float x, float y, float font_size, const unsigned char* font_color )
+{
+	text_manager->AddTextPixelCoords( x, y, font_size, font_color, text );
+	text_manager->Draw();
+}
+
+void ui_Painter::DrawUITextPixelCoordsCenter( const char* text, float center_x, float y, float font_size, const unsigned char* font_color )
+{
+	float x= center_x - 0.5f * ( float(strlen(text)) * font_size * float(text_manager->LetterWidth()) / float(text_manager->LetterHeight()) );
+	text_manager->AddTextPixelCoords( x, y, font_size, font_color, text );
+	text_manager->Draw();
+}
+
+void ui_Painter::DrawUITextPixelCoordsRight( const char* text, float x, float y, float font_size, const unsigned char* font_color )
+{
+	x-= ( float(strlen(text)) * font_size * float(text_manager->LetterWidth()) / float(text_manager->LetterHeight()) );
+	text_manager->AddTextPixelCoords( x, y, font_size, font_color, text );
 	text_manager->Draw();
 }

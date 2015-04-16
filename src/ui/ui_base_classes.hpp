@@ -25,10 +25,10 @@ private:
     static void AddUIElement( ui_Base* element );
     static void RemoveUIElement( ui_Base* element );
 
-    static int ui_elements_count;
-    static ui_Base* ui_elements[ H_UI_MAX_ELEMENTS ];
-    static int ui_menu_count;
-    static ui_MenuBase* ui_menus[ H_UI_MAX_MENUS ];
+    static int ui_elements_count_;
+    static ui_Base* ui_elements_[ H_UI_MAX_ELEMENTS ];
+    static int ui_menu_count_;
+    static ui_MenuBase* ui_menus_[ H_UI_MAX_MENUS ];
 };
 
 class ui_Base
@@ -42,24 +42,24 @@ public:
 
     int X()const
     {
-        return pos_x;
+        return pos_x_;
     };
     int Y()const
     {
-        return pos_y;
+        return pos_y_;
     };
     int SizeX()const
     {
-        return size_x;
+        return size_x_;
     };
     int SizeY()const
     {
-        return size_y;
+        return size_y_;
     };
     int SetPos( int x, int y )
     {
-        pos_x= x;
-        pos_y= y;
+        pos_x_= x;
+        pos_y_= y;
     };
 
     //cursor reaction methods. Coirdinates - absolute
@@ -72,32 +72,32 @@ public:
 
     void SetActive( bool active )
     {
-        is_active= active;
+        is_active_= active;
     }
     bool IsActive()const
     {
-        return is_active;
+        return is_active_;
     }
     void SetVisible( bool visible )
     {
-        is_visible= visible;
+        is_visible_= visible;
     }
     bool IsVisible() const
     {
-        return is_visible;
+        return is_visible_;
     }
 
     static void SetCellSize( int size )
     {
-        ui_cell_size= size;
+        ui_cell_size_= size;
     };
     static int CellSize()
     {
-        return ui_cell_size;
+        return ui_cell_size_;
     };
     static int CellOffset()
     {
-        return ui_cell_size/8;
+        return ui_cell_size_/8;
     };
 
 protected:
@@ -107,16 +107,16 @@ protected:
 
 protected:
 
-    int pos_x, pos_y, size_x, size_y;
+    int pos_x_, pos_y_, size_x_, size_y_;
 
-    unsigned char color[4];
-    unsigned char cursor_over_color[4];
-    unsigned char current_color[4];
+    unsigned char color_[4];
+    unsigned char cursor_over_color_[4];
+    unsigned char current_color_[4];
 
-    bool is_active, is_visible;
+    bool is_active_, is_visible_;
 
 
-    static int ui_cell_size;
+    static int ui_cell_size_;
 };
 
 
@@ -138,7 +138,7 @@ public:
 
     void SetCallback( ui_ButtonCallback* call )
     {
-        callback= call;
+        callback_= call;
     }
     void CursorPress( int x, int y, bool pressed) override;
     void Draw( ui_Painter* painter )const override;
@@ -146,8 +146,8 @@ public:
 
 
 private:
-    ui_ButtonCallback* callback;
-    char button_text[ H_UI_MAX_INSCRIPTION_LEN ];
+    ui_ButtonCallback* callback_;
+    char button_text_[ H_UI_MAX_INSCRIPTION_LEN ];
 };
 
 class ui_Checkbox : public ui_Base
@@ -166,23 +166,23 @@ public:
 
     void SetCallback( ui_CheckboxCallback* call )
     {
-        callback= call;
+        callback_= call;
     }
     bool GetState() const
     {
-        return flag;
+        return flag_;
     };
     void SetState( bool state )
     {
-        flag= state;
+        flag_= state;
     }
     void Draw( ui_Painter* painter )const override;
     void CursorPress( int x, int y, bool pressed ) override;
 
 private:
-    bool flag;
+    bool flag_;
 
-    ui_CheckboxCallback* callback;
+    ui_CheckboxCallback* callback_;
 };
 
 class ui_Text : public ui_Base
@@ -196,16 +196,16 @@ public:
         ALIGNMENT_RIGHT
     };
 
-    ui_Text( const char* text, ui_TextAlignment alignent_, int cell_x, int cell_y );
-    ui_Text( const char* text, ui_TextAlignment alignent_, int cell_x, int cell_y, const unsigned char* color );
+    ui_Text( const char* text, ui_TextAlignment alignent_, int cell_x, int cell_y, int cell_width, int cell_height );
+    ui_Text( const char* text, ui_TextAlignment alignent_, int cell_x, int cell_y, int cell_width, int cell_height, const unsigned char* color );
     ~ui_Text();
 
     void SetText( const char* text );
     void Draw( ui_Painter* painter )const override;
 
 private:
-    char text[ H_UI_MAX_INSCRIPTION_LEN ];
-    ui_TextAlignment alignment;
+    char text_[ H_UI_MAX_INSCRIPTION_LEN ];
+    ui_TextAlignment alignment_;
 };
 
 class ui_ProgressBar : public ui_Base
@@ -219,7 +219,7 @@ public:
     void Draw( ui_Painter* painter )const override;
 
 private:
-    float progress;//in range 0.0f-1.0f
+    float progress_;//in range 0.0f-1.0f
 };
 
 class ui_TextBox : public ui_Base
@@ -258,13 +258,13 @@ public:
 
     void SetCallback( ui_SliderCallback* call )
     {
-        callback= call;
+        callback_= call;
     }
 
     void SetSliderPos( float pos );
     float SliderPos() const
     {
-        return slider_pos;
+        return slider_pos_;
     };
 
     void Draw( ui_Painter* painter )const override;
@@ -273,7 +273,7 @@ public:
     //step must be positive
     void SetInvStep( int inv_step )
     {
-        slider_inv_step= inv_step;
+        slider_inv_step_= inv_step;
     };
 
 private:
@@ -291,9 +291,9 @@ private:
         return ui_Base::CellOffset()*3/2;
     };
 
-    float slider_pos;// in range 0.0f-1.0f;
-    int slider_inv_step;
-    ui_SliderCallback* callback;
+    float slider_pos_;// in range 0.0f-1.0f;
+    int slider_inv_step_;
+    ui_SliderCallback* callback_;
 };
 
 
@@ -307,20 +307,20 @@ public:
     void SetActive( bool active );
 	void SetVisible( bool visible );
 
-	void Kill(){ marked_for_killing= true; };
-	bool IsMarkedForKilling() const { return marked_for_killing; };
+	void Kill(){ marked_for_killing_= true; };
+	bool IsMarkedForKilling() const { return marked_for_killing_; };
 
 	virtual void Tick()= 0;
 
 protected:
 
-    std::vector<ui_Base*> elements;//container for all elements. All elements of menu must be here
-    ui_MenuBase * const parent_menu;
-    ui_MenuBase* child_menu;
+    std::vector<ui_Base*> elements_;//container for all elements. All elements of menu must be here
+    ui_MenuBase * const parent_menu_;
+    ui_MenuBase* child_menu_;
 
-    int pos_x, pos_y, size_x, size_y;//size of menu viewport
+    int pos_x_, pos_y_, size_x_, size_y_;//size of menu viewport
 
-    bool marked_for_killing;// true, if menu need kill in
+    bool marked_for_killing_;// true, if menu need kill in
 
 };
 

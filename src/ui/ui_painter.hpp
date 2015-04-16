@@ -1,8 +1,8 @@
 #ifndef UI_PAINTER_HPP
 #define UI_PAINTER_HPP
 
-#include "../renderer/polygon_buffer.h"
-#include "../renderer/glsl_program.h"
+#include "polygon_buffer.hpp"
+#include "glsl_program.hpp"
 
 class m_Mat4;
 class r_Text;
@@ -29,7 +29,11 @@ class ui_Painter
 	void DrawUIText( const char* text, float center_x, float center_y, float font_size, const unsigned char* font_color );
 
 	//coordinates - upper left corner of first letter
-	void DrawUiTextLeft( const char* text, float x, float y, float font_size, const unsigned char* font_color );
+	void DrawUITextLeft( const char* text, float x, float y, float font_size, const unsigned char* font_color );
+
+	void DrawUITextPixelCoordsLeft( const char* text, float x, float y, float font_size, const unsigned char* font_color );
+	void DrawUITextPixelCoordsCenter( const char* text, float center_x, float y, float font_size, const unsigned char* font_color );
+	void DrawUITextPixelCoordsRight( const char* text, float x, float y, float font_size, const unsigned char* font_color );
 
 	private:
 

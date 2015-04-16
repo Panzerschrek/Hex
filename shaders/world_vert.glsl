@@ -1,4 +1,4 @@
-#version 330
+#version 400
 
 #ifndef TEX_SCALE_VECTOR
 #define TEX_SCALE_VECTOR vec3( 0.0625, 0.125 * 0.86602540, 1.0 )

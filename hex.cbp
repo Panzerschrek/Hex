@@ -12,8 +12,9 @@
 				<Option type="1" />
 				<Option compiler="mingw_qt_53" />
 				<Compiler>
-					<Add option="-march=pentium4" />
+					<Add option="-march=prescott" />
 					<Add option="-O3" />
+					<Add option="-save-temps=obj" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
@@ -30,13 +31,16 @@
 			</Target>
 		</Build>
 		<Compiler>
-			<Add option="-march=pentium4" />
+			<Add option="-march=prescott" />
 			<Add option="-std=c++0x" />
+			<Add option="-std=c++98" />
+			<Add option="-std=c++11" />
 			<Add directory="C:\Qt5.3.0\5.3\mingw482_32\include" />
 			<Add directory="C:\Qt5.3.0\5.3\mingw482_32\include\QtCore" />
 			<Add directory="C:\Qt5.3.0\5.3\mingw482_32\include\QtGui" />
 			<Add directory="C:\Qt5.3.0\5.3\mingw482_32\include\QtOpenGL" />
 			<Add directory="C:\Qt5.3.0\5.3\mingw482_32\include\QtWidgets" />
+			<Add directory="..\panzer_ogl_lib" />
 		</Compiler>
 		<Linker>
 			<Add library="C:\Program Files\CodeBlocks10\MinGW\lib\libopengl32.a" />
@@ -52,8 +56,12 @@
 		<Unit filename="src\block_collision.hpp" />
 		<Unit filename="src\chunk.cpp" />
 		<Unit filename="src\chunk.hpp" />
+		<Unit filename="src\chunk_loader.cpp" />
+		<Unit filename="src\chunk_loader.hpp" />
 		<Unit filename="src\chunk_phys_mesh.cpp" />
 		<Unit filename="src\chunk_phys_mesh.hpp" />
+		<Unit filename="src\console.cpp" />
+		<Unit filename="src\console.hpp" />
 		<Unit filename="src\hex-logo.ico" />
 		<Unit filename="src\hex.hpp" />
 		<Unit filename="src\main.cpp" />
@@ -62,51 +70,65 @@
 		<Unit filename="src\math_lib\collection.hpp" />
 		<Unit filename="src\math_lib\m_math.cpp" />
 		<Unit filename="src\math_lib\m_math.h" />
-		<Unit filename="src\math_lib\matrix.cpp" />
-		<Unit filename="src\math_lib\matrix.h" />
 		<Unit filename="src\math_lib\minmax.hpp" />
 		<Unit filename="src\math_lib\rand.cpp" />
 		<Unit filename="src\math_lib\rand.h" />
-		<Unit filename="src\math_lib\vec.cpp" />
-		<Unit filename="src\math_lib\vec.h" />
 		<Unit filename="src\moc\moc_main_loop.cpp" />
-		<Unit filename="src\moc\moc_renderer.cpp" />
-		<Unit filename="src\moc\moc_world.cpp" />
 		<Unit filename="src\player.cpp" />
 		<Unit filename="src\player.hpp" />
+		<Unit filename="src\renderer\chunk_data_cache.cpp" />
+		<Unit filename="src\renderer\chunk_data_cache.hpp" />
 		<Unit filename="src\renderer\chunk_info.cpp" />
-		<Unit filename="src\renderer\frame_buffer.cpp" />
-		<Unit filename="src\renderer\frame_buffer.h" />
-		<Unit filename="src\renderer\func_addresses.cpp" />
-		<Unit filename="src\renderer\func_declarations.h" />
-		<Unit filename="src\renderer\glsl_program.cpp" />
-		<Unit filename="src\renderer\glsl_program.h" />
-		<Unit filename="src\renderer\ogl_state_manager.cpp" />
-		<Unit filename="src\renderer\ogl_state_manager.hpp" />
+		<Unit filename="src\renderer\i_world_renderer.hpp" />
+		<Unit filename="src\renderer\img_utils.cpp" />
+		<Unit filename="src\renderer\img_utils.hpp" />
 		<Unit filename="src\renderer\ph.h" />
-		<Unit filename="src\renderer\polygon_buffer.cpp" />
-		<Unit filename="src\renderer\polygon_buffer.h" />
-		<Unit filename="src\renderer\renderer.cpp" />
-		<Unit filename="src\renderer\renderer.hpp" />
 		<Unit filename="src\renderer\rendering_constants.hpp" />
 		<Unit filename="src\renderer\text.cpp" />
 		<Unit filename="src\renderer\text.hpp" />
-		<Unit filename="src\renderer\texture.cpp" />
-		<Unit filename="src\renderer\texture.h" />
-		<Unit filename="src\renderer\texture_array.cpp" />
-		<Unit filename="src\renderer\texture_array.h" />
 		<Unit filename="src\renderer\texture_manager.cpp" />
 		<Unit filename="src\renderer\texture_manager.hpp" />
-		<Unit filename="src\renderer\win_bitmap.h" />
+		<Unit filename="src\renderer\weather_effects_particle_manager.cpp" />
+		<Unit filename="src\renderer\weather_effects_particle_manager.hpp" />
+		<Unit filename="src\renderer\world_renderer.cpp" />
+		<Unit filename="src\renderer\world_renderer.hpp" />
+		<Unit filename="src\renderer\world_vertex_buffer.cpp" />
+		<Unit filename="src\renderer\world_vertex_buffer.hpp" />
 		<Unit filename="src\res.rc">
 			<Option compilerVar="WINDRES" />
 			<Option target="Release" />
 		</Unit>
+		<Unit filename="src\settings.cpp" />
+		<Unit filename="src\settings.hpp" />
 		<Unit filename="src\thread.hpp" />
+		<Unit filename="src\ui\main_menu.cpp" />
+		<Unit filename="src\ui\main_menu.hpp" />
+		<Unit filename="src\ui\ui_base_classes.cpp" />
+		<Unit filename="src\ui\ui_base_classes.hpp" />
+		<Unit filename="src\ui\ui_painter.cpp" />
+		<Unit filename="src\ui\ui_painter.hpp" />
 		<Unit filename="src\world.cpp" />
 		<Unit filename="src\world.hpp" />
 		<Unit filename="src\world_action.hpp" />
 		<Unit filename="src\world_lighting.cpp" />
+		<Unit filename="src\world_loading.cpp" />
+		<Unit filename="src\world_loading.hpp" />
+		<Unit filename="..\panzer_ogl_lib\framebuffer.cpp" />
+		<Unit filename="..\panzer_ogl_lib\framebuffer.hpp" />
+		<Unit filename="..\panzer_ogl_lib\framebuffer_texture.cpp" />
+		<Unit filename="..\panzer_ogl_lib\framebuffer_texture.hpp" />
+		<Unit filename="..\panzer_ogl_lib\func_addresses.cpp" />
+		<Unit filename="..\panzer_ogl_lib\func_declarations.hpp" />
+		<Unit filename="..\panzer_ogl_lib\glsl_program.cpp" />
+		<Unit filename="..\panzer_ogl_lib\glsl_program.hpp" />
+		<Unit filename="..\panzer_ogl_lib\matrix.cpp" />
+		<Unit filename="..\panzer_ogl_lib\matrix.hpp" />
+		<Unit filename="..\panzer_ogl_lib\ogl_state_manager.cpp" />
+		<Unit filename="..\panzer_ogl_lib\ogl_state_manager.hpp" />
+		<Unit filename="..\panzer_ogl_lib\panzer_ogl_lib.hpp" />
+		<Unit filename="..\panzer_ogl_lib\polygon_buffer.cpp" />
+		<Unit filename="..\panzer_ogl_lib\polygon_buffer.hpp" />
+		<Unit filename="..\panzer_ogl_lib\vec.hpp" />
 		<Extensions>
 			<code_completion />
 			<debugger />

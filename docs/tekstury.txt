@@ -1,0 +1,3 @@
+﻿V igre ispoljzujutsä kvadratnuje tekstury.
+Šestiugoljnik rastänut v teksture k kvadratu.
+Po osi Y risunok na teksture dolžen bytj rastänut na 2/sqrt(3)

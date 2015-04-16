@@ -21,8 +21,12 @@ class ui_SettingsMenu:
 
 private:
 	ui_Button* button_back;
+
+	ui_Text* text_textures_size;
 	ui_Slider* slider_textures_size;
-	ui_Text*   text_textures_size;
+
+	ui_Text* text_textures_filtration;
+	ui_Button* button_textures_fitration;
 };
 
 class ui_MainMenu :
@@ -51,6 +55,7 @@ class ui_MainMenu :
 	ui_Button* button_quit;
 	ui_Checkbox* checkbox;
 	ui_Text* game_title;
+	ui_Text* game_subtitle;
 	ui_ProgressBar* progress_bar;
 
 	h_MainLoop * const main_loop;

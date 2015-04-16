@@ -11,8 +11,8 @@
 #include "console.hpp"
 #include "ui/ui_base_classes.hpp"
 #include "ui/ui_painter.hpp"
-#include "renderer/ogl_state_manager.hpp"
-#include "renderer/framebuffer.hpp"
+#include "ogl_state_manager.hpp"
+#include "framebuffer.hpp"
 
 #include "ui/main_menu.hpp"
 
@@ -233,9 +233,15 @@ void h_MainLoop::paintGL()
 
     frame_count++;
 }
+
+static void* GetGLProcessAddress(const char* name)
+{
+	return (void*)QOpenGLContext::currentContext()->getProcAddress(name);
+}
+
 void h_MainLoop::initializeGL()
 {
-	GetGLFunctions();
+	GetGLFunctions( GetGLProcessAddress );
 
     r_OGLState state;
     state.InitialState();

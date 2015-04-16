@@ -13,6 +13,7 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QFile>
+#include <QPainter>
 
 
 

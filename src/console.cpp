@@ -88,7 +88,7 @@ void h_Console::Draw( r_Text* text )
 	if( position == 0.0f )
 		return;
 
-	float init_row= ( 0.5f * position * float( text->RowsInScreen() ) ) - 1.0f;
+	float init_row= 4.0f * ( 0.5f * position * float( text->RowsInScreen() ) );
 	float i; int j;
 	for( i= init_row, j= lines_buffer_pos - 1; i>= 0.0f && j>=0 ; i-=1.0f, j-- )
 	{
@@ -104,7 +104,7 @@ void h_Console::Draw( r_Text* text )
 			c= msg_colors + 8;
 		else
 			c= msg_colors;
-		text->AddText( 0.5f, i, 1, c, lines_beginning[ l ] );
+		text->AddText( 0.5f, i, 0.25f, c, lines_beginning[ l ] );
 	}
 }
 
