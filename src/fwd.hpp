@@ -10,6 +10,7 @@ class h_ChunkLoader;
 class r_WorldRenderer;
 class r_IWorldRenderer;
 class r_ChunkInfo;
+class r_Text;
 
 class ui_Painter;
 class ui_MainMenu;

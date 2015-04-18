@@ -129,7 +129,6 @@ void r_ImgUtils::RGBA8_MirrorVerticalAndSwapRB( unsigned char* in_out, int width
 		}
 }
 
-
 void r_ImgUtils::LoadTexture( r_FramebufferTexture* texture, const char* filename )
 {
 	auto make_stub = [] ( r_FramebufferTexture* texture )
@@ -167,7 +166,6 @@ void r_ImgUtils::LoadTexture( r_FramebufferTexture* texture, const char* filenam
 		make_stub(texture);
 		goto after_creating;
 	}
-
 
 	if( img.depth() == 1 )
 	{

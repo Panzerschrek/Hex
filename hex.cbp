@@ -62,6 +62,7 @@
 		<Unit filename="src\chunk_phys_mesh.hpp" />
 		<Unit filename="src\console.cpp" />
 		<Unit filename="src\console.hpp" />
+		<Unit filename="src\fwd.hpp" />
 		<Unit filename="src\hex-logo.ico" />
 		<Unit filename="src\hex.hpp" />
 		<Unit filename="src\main.cpp" />
