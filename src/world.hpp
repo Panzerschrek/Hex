@@ -18,6 +18,9 @@ class h_World : public QObject
 	friend class h_Chunk;
 
 public:
+	h_World();
+	~h_World();
+
 	h_Chunk* GetChunk( short X, short Y );//relative chunk coordinates
 	const h_Chunk* GetChunk( short X, short Y ) const;//relative chunk coordinates
 
@@ -27,6 +30,9 @@ public:
 
 	int ChunkNumberX() const;
 	int ChunkNumberY() const;
+
+	short Longitude() const;
+	short Latitude() const;
 
 	void AddBuildEvent( short x, short y, short z, h_BlockType block_type );//coordinates - relative
 	void AddDestroyEvent( short x, short y, short z );
@@ -39,28 +45,17 @@ public:
 	void SetRenderer( r_IWorldRenderer* r );
 	void StartUpdates(); // start main phys loop of world
 
-
-	short Longitude() const;
-	short Latitude() const;
-
 	void Save();//save world data to disk
 
-	h_World();
-	~h_World();
-
-	void Lock() const;
-	void Unlock() const;
-
+	unsigned char SunLightLevel( short x, short y, short z ) const;
+	unsigned char FireLightLevel( short x, short y, short z ) const;
 	//returns light level of forward-forwardright upper vertex of prism X16. coordinates - relative
 	void GetForwardVertexLight( short x, short y, short z, unsigned char* out_light ) const;
 	//returns light level of back-backleft upper vertex of prism X16. coordinates - relative
 	void GetBackVertexLight( short x, short y, short z, unsigned char* out_light ) const;
 	//returns nominal value of lightmaps
-	unsigned char SunLightLevel( short x, short y, short z ) const;
-	unsigned char FireLightLevel( short x, short y, short z ) const;
 
 private:
-
 	void Build( short x, short y, short z, h_BlockType block_type );//coordinates - relative
 	void Destroy( short x, short y, short z );
 	void FlushActionQueue();
@@ -78,33 +73,35 @@ private:
 	//function uses local coordinates of loaded zone
 	void BuildPhysMesh( h_ChunkPhysMesh* phys_mesh, short x_min, short x_max, short y_min, short y_max, short z_min, short z_max );
 
-	//lighting. relative coordinates
-	void LightWorld();
-
-	void AddSunLight_r( short x, short y, short z, unsigned char l );
-	void AddFireLight_r( short x, short y, short z, unsigned char l );
 	//clamp coordinates to [ 0; H_CHUNK_WIDTH * chunk_number - 1 ) for x and y
 	//and to [ 0; H_CHUNK_HEIGHT - 1 ] for z
 	short ClampX( short x ) const;
 	short ClampY( short y ) const;
 	short ClampZ( short z ) const;
 	//safe versions of lighting methods.
-	void AddSunLightSafe_r( short x, short y, short z, unsigned char l );
-	void AddFireLightSafe_r( short x, short y, short z, unsigned char l );
-	void RelightBlockRemove( short x, short y, short z );
-	//return update radius
-	short RelightBlockAdd( short x, short y, short z );
 
+	//lighting. relative coordinates
 	void SetSunLightLevel( short x, short y, short z, unsigned char l );
 	void SetFireLightLevel( short x, short y, short z, unsigned char l );
+
+	void LightWorld();
+	//return update radius
+	short RelightBlockAdd( short x, short y, short z );
+	void RelightBlockRemove( short x, short y, short z );
+
+	void AddSunLight_r( short x, short y, short z, unsigned char l );
+	void AddFireLight_r( short x, short y, short z, unsigned char l );
+	void AddSunLightSafe_r( short x, short y, short z, unsigned char l );
+	void AddFireLightSafe_r( short x, short y, short z, unsigned char l );
 
 	//add light from light sources in cube
 	void ShineFireLight( short x_min, short y_min, short z_min, short x_max, short y_max, short z_max );
 
-
 	void BlastBlock_r( short x, short y, short z, short blast_power );
 	bool InBorders( short x, short y, short z ) const;
 	bool CanBuild( short x, short y, short z ) const;
+
+	void PhysTick();
 
 	void RelightWaterModifedChunksLight();//relight chunks, where water was modifed in last ticks
 	void WaterPhysTick();
@@ -112,12 +109,11 @@ private:
 	bool WaterFlowDown( h_LiquidBlock* from, short to_x, short to_y, short to_z );
 	bool WaterFlowUp( h_LiquidBlock* from, short to_x, short to_y, short to_z );
 
-
 	h_Block* NormalBlock( h_BlockType block_type );
 	// h_Block* WaterBlock( unsigned char water_level= MAX_WATER_LEVEL );
 	void InitNormalBlocks();
 
-
+private:
 	h_ChunkLoader chunk_loader_;
 
 	unsigned int chunk_number_x_, chunk_number_y_;
@@ -137,7 +133,6 @@ private:
 
 	unsigned int phys_tick_count_;
 	h_Thread< h_World > phys_thread_;
-	void PhysTick();
 	mutable QMutex world_mutex_;
 
 	//queue 0 - for enqueue, queue 1 - for dequeue
@@ -148,15 +143,24 @@ private:
 
 };
 
-
-inline  int h_World::ChunkNumberX() const
+inline int h_World::ChunkNumberX() const
 {
 	return chunk_number_x_;
 }
 
-inline  int h_World::ChunkNumberY() const
+inline int h_World::ChunkNumberY() const
 {
 	return chunk_number_y_;
+}
+
+inline short h_World::Longitude() const
+{
+	return longitude_;
+}
+
+inline short h_World::Latitude() const
+{
+	return latitude_;
 }
 
 inline h_Chunk* h_World::GetChunk( short X, short Y )
@@ -185,19 +189,8 @@ inline void h_World::SetRenderer( r_IWorldRenderer* r )
 
 /*inline h_Block* h_World::WaterBlock( unsigned char water_level )
 {
-    return &water_blocks[ water_level ];
+	return &water_blocks[ water_level ];
 }*/
-
-inline short h_World::Longitude() const
-{
-	return longitude_;
-}
-
-inline short h_World::Latitude() const
-{
-	return latitude_;
-}
-
 
 inline short h_World::ClampX( short x ) const
 {
@@ -227,11 +220,11 @@ inline short h_World::ClampZ( short z ) const
 	return z;
 }
 
-
 inline int h_World::ChunkCoordToQuadchunkX( int longitude ) const
 {
 	return longitude_>>1;
 }
+
 inline int h_World::ChunkCoordToQuadchunkY( int latitude ) const
 {
 	return latitude_>>1;

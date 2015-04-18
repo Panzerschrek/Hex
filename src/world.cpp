@@ -3,38 +3,14 @@
 #include "math_lib/m_math.h"
 #include "renderer/i_world_renderer.hpp"
 
-bool h_World::InBorders( short x, short y, short z ) const
-{
-	bool outside= x < 0 || y < 0 ||
-				  x > H_CHUNK_WIDTH * ChunkNumberX() || y > H_CHUNK_WIDTH * ChunkNumberY() ||
-				  z < 0 || z >= H_CHUNK_HEIGHT;
-	return !outside;
-}
-
-bool h_World::CanBuild( short x, short y, short z ) const
-{
-	return GetChunk( x>> H_CHUNK_WIDTH_LOG2, y>> H_CHUNK_WIDTH_LOG2 )->
-		   GetBlock( x% H_CHUNK_WIDTH, y% H_CHUNK_WIDTH, z )->Type() == AIR;
-}
-
-
-
-void h_World::InitNormalBlocks()
-{
-	int i;
-	for( i= 0; i< NUM_BLOCK_TYPES; i++ )
-		new ( normal_blocks_ + i ) h_Block( h_BlockType(i) );
-}
-
-
-h_World::h_World():
-	chunk_loader_( "world" ),
-	phys_tick_count_(0),
-	phys_thread_( &h_World::PhysTick, this, 1u ),
-	world_mutex_( QMutex::Recursive ),
-	player_( nullptr ),
-	renderer_( nullptr ),
-	settings_( "config.ini", QSettings::IniFormat )
+h_World::h_World()
+	: chunk_loader_( "world" )
+	, phys_tick_count_(0)
+	, phys_thread_( &h_World::PhysTick, this, 1u )
+	, world_mutex_( QMutex::Recursive )
+	, player_( nullptr )
+	, renderer_( nullptr )
+	, settings_( "config.ini", QSettings::IniFormat )
 {
 	InitNormalBlocks();
 
@@ -60,17 +36,389 @@ h_World::h_World():
 	phys_thread_.setStackSize( 16 * 1024 * 1024 );//inrease stack for recursive methods( lighting, blasts, etc )
 }
 
-
-void h_World::Lock() const
+h_World::~h_World()
 {
-	world_mutex_.lock();
+	for( unsigned int x= 0; x< chunk_number_x_; x++ )
+		for( unsigned int y= 0; y< chunk_number_y_; y++ )
+		{
+			SaveChunk( GetChunk(x,y) );
+			delete GetChunk(x,y);
+		}
 }
 
-void h_World::Unlock() const
+void h_World::AddBuildEvent( short x, short y, short z, h_BlockType block_type )
 {
-	world_mutex_.unlock();
+	action_queue_mutex_.lock();
+
+	h_WorldAction act;
+	act.type= ACTION_BUILD;
+	act.block_type= block_type;
+	act.coord[0]= x;
+	act.coord[1]= y;
+	act.coord[2]= z;
+
+	action_queue_[0].push( act );
+
+	action_queue_mutex_.unlock();
 }
 
+void h_World::AddDestroyEvent( short x, short y, short z )
+{
+	action_queue_mutex_.lock();
+
+	h_WorldAction act;
+	act.type= ACTION_DESTROY;
+	act.coord[0]= x;
+	act.coord[1]= y;
+	act.coord[2]= z;
+
+	action_queue_[0].push( act );
+
+	action_queue_mutex_.unlock();
+}
+
+void h_World::Blast( short x, short y, short z, short radius )
+{
+	if( !InBorders( x, y, z ) )
+		return;
+
+	for( short k= z, r=radius; k< z+radius; k++, r-- )
+		BlastBlock_r( x, y, k, r );
+	for( short k= z-1, r=radius-1; k> z-radius; k--, r-- )
+		BlastBlock_r( x, y, k, r );
+
+	for( short i= x - radius; i< x+radius; i++ )
+		for( short j= y - radius; j< y+radius; j++ )
+			for( short k= z - radius; k< z+radius; k++ )
+				RelightBlockRemove( i, j, k );
+
+	UpdateInRadius( x, y, radius );
+}
+
+void h_World::StartUpdates()
+{
+	phys_thread_.start();
+}
+
+void h_World::Save()
+{
+	for( unsigned int x= 0; x< chunk_number_x_; x++ )
+		for( unsigned int y= 0; y< chunk_number_y_; y++ )
+			SaveChunk( GetChunk(x,y) );
+	chunk_loader_.ForceSaveAllChunks();
+}
+
+void h_World::Build( short x, short y, short z, h_BlockType block_type )
+{
+	if( !InBorders( x, y, z ) )
+		return;
+	if( !CanBuild( x, y, z ) )
+		return;
+
+	short X= x>> H_CHUNK_WIDTH_LOG2, Y = y>> H_CHUNK_WIDTH_LOG2;
+
+	x&= H_CHUNK_WIDTH - 1;
+	y&= H_CHUNK_WIDTH - 1;
+	if( block_type == WATER )
+	{
+		h_LiquidBlock* b;
+		h_Chunk* ch=GetChunk( X, Y );
+		ch-> SetBlockAndTransparency( x, y, z, b= ch->NewWaterBlock(),
+									  TRANSPARENCY_LIQUID );
+
+		b->x_= x;
+		b->y_= y;
+		b->z_= z;
+	}
+	else if( block_type == FIRE_STONE )
+	{
+		h_Chunk* ch=GetChunk( X, Y );
+		h_LightSource* s= ch->NewLightSource( x, y, z, FIRE_STONE );
+		s->SetLightLevel( H_MAX_FIRE_LIGHT );
+		ch->SetBlockAndTransparency( x, y, z, s, TRANSPARENCY_SOLID );
+		AddFireLight_r( x + X* H_CHUNK_WIDTH, y + Y* H_CHUNK_WIDTH, z, H_MAX_FIRE_LIGHT );
+	}
+	else
+		GetChunk( X, Y )->
+		SetBlockAndTransparency( x, y, z, NormalBlock( block_type ),
+								 NormalBlock( block_type )->Transparency() );
+
+	short r= 1;
+	if( block_type == WATER )
+	{
+	}
+	else
+		r= RelightBlockAdd( X * H_CHUNK_WIDTH + x,Y * H_CHUNK_WIDTH + y, z ) + 1;
+
+	UpdateInRadius( X * H_CHUNK_WIDTH + x,Y * H_CHUNK_WIDTH + y, r );
+	UpdateWaterInRadius( X * H_CHUNK_WIDTH + x,Y * H_CHUNK_WIDTH + y, r );
+}
+
+void h_World::Destroy( short x, short y, short z )
+{
+	if( !InBorders( x, y, z ) )
+		return;
+
+	short X= x>> H_CHUNK_WIDTH_LOG2, Y = y>> H_CHUNK_WIDTH_LOG2;
+	x&= H_CHUNK_WIDTH - 1;
+	y&= H_CHUNK_WIDTH - 1;
+
+	h_Chunk* ch=GetChunk( X, Y );
+	if( ch->GetBlock( x, y, z )->Type() == WATER )
+	{
+
+	}
+	else if( ch->GetBlock( x, y, z )->Type() == FIRE_STONE )
+	{
+		ch->DeleteLightSource( x, y, z );
+		ch->SetBlockAndTransparency( x, y, z, NormalBlock( AIR ),
+									 TRANSPARENCY_AIR );
+		RelightBlockAdd( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), z );
+		RelightBlockRemove( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), z );
+		UpdateInRadius( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), H_MAX_FIRE_LIGHT );
+		UpdateWaterInRadius( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), H_MAX_FIRE_LIGHT );
+	}
+	else
+	{
+		ch->SetBlockAndTransparency( x, y, z, NormalBlock( AIR ),
+									 TRANSPARENCY_AIR );
+		RelightBlockRemove( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), z );
+		//AddFireLight_r( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), z, 10 );
+		UpdateInRadius( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), H_MAX_SUN_LIGHT );
+		UpdateWaterInRadius( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), H_MAX_SUN_LIGHT );
+	}
+}
+
+void h_World::FlushActionQueue()
+{
+	action_queue_mutex_.lock();
+	action_queue_[0].swap( action_queue_[1] );
+	action_queue_mutex_.unlock();
+
+	while( action_queue_[1].size() != 0 )
+	{
+		h_WorldAction act= action_queue_[1].front();
+		action_queue_[1].pop();
+
+		if( act.type == ACTION_BUILD )
+			Build( act.coord[0], act.coord[1], act.coord[2], act.block_type );
+		else if( act.type == ACTION_DESTROY )
+			Destroy( act.coord[0], act.coord[1], act.coord[2] );
+	}
+}
+
+void h_World::UpdateInRadius( short x, short y, short r )
+{
+	if( renderer_ == nullptr )
+		return;
+
+	short x_min, x_max, y_min, y_max;
+	x_min= ClampX( x - r );
+	x_max= ClampX( x + r );
+	y_min= ClampY( y - r );
+	y_max= ClampY( y + r );
+
+	x_min>>= H_CHUNK_WIDTH_LOG2;
+	x_max>>= H_CHUNK_WIDTH_LOG2;
+	y_min>>= H_CHUNK_WIDTH_LOG2;
+	y_max>>= H_CHUNK_WIDTH_LOG2;
+	for( short i= x_min; i<= x_max; i++ )
+		for( short j= y_min; j<= y_max; j++ )
+			renderer_->UpdateChunk( i, j );
+}
+
+void h_World::UpdateWaterInRadius( short x, short y, short r )
+{
+	if( renderer_ == nullptr )
+		return;
+	short x_min, x_max, y_min, y_max;
+	x_min= ClampX( x - r );
+	x_max= ClampX( x + r );
+	y_min= ClampY( y - r );
+	y_max= ClampY( y + r );
+
+	x_min>>= H_CHUNK_WIDTH_LOG2;
+	x_max>>= H_CHUNK_WIDTH_LOG2;
+	y_min>>= H_CHUNK_WIDTH_LOG2;
+	y_max>>= H_CHUNK_WIDTH_LOG2;
+	for( short i= x_min; i<= x_max; i++ )
+		for( short j= y_min; j<= y_max; j++ )
+			renderer_->UpdateChunkWater( i, j );
+}
+
+void h_World::MoveWorld( h_WorldMoveDirection dir )
+{
+	int i, j;
+	switch ( dir )
+	{
+	case NORTH:
+		for( i= 0; i< chunk_number_x_; i++ )
+		{
+			h_Chunk* deleted_chunk= chunks_[ i | ( 0 << H_MAX_CHUNKS_LOG2 ) ];
+			SaveChunk( deleted_chunk );
+			chunk_loader_.FreeChunkData( deleted_chunk->Longitude(), deleted_chunk->Latitude() );
+			delete deleted_chunk;
+			for( j= 1; j< chunk_number_y_; j++ )
+			{
+				chunks_[ i | ( (j-1) << H_MAX_CHUNKS_LOG2 ) ]=
+					chunks_[ i | ( j << H_MAX_CHUNKS_LOG2 ) ];
+			}
+
+			chunks_[ i | ( (chunk_number_y_-1) << H_MAX_CHUNKS_LOG2 ) ]=
+				LoadChunk( i + longitude_, chunk_number_y_ + latitude_ );
+		}
+		for( i= 0; i< chunk_number_x_; i++ )
+			AddLightToBorderChunk( i, chunk_number_y_ - 1 );
+		latitude_++;
+
+		break;
+
+	case SOUTH:
+		for( i= 0; i< chunk_number_x_; i++ )
+		{
+			h_Chunk* deleted_chunk= chunks_[ i | ( (chunk_number_y_-1) << H_MAX_CHUNKS_LOG2 ) ];
+			SaveChunk( deleted_chunk );
+			chunk_loader_.FreeChunkData( deleted_chunk->Longitude(), deleted_chunk->Latitude() );
+			delete deleted_chunk;
+			for( j= chunk_number_y_-1; j> 0; j-- )
+			{
+				chunks_[ i | ( j << H_MAX_CHUNKS_LOG2 ) ]=
+					chunks_[ i | ( (j-1) << H_MAX_CHUNKS_LOG2 ) ];
+			}
+
+			chunks_[ i | ( 0 << H_MAX_CHUNKS_LOG2 ) ]=
+				LoadChunk( i + longitude_,  latitude_-1 );
+		}
+		for( i= 0; i< chunk_number_x_; i++ )
+			AddLightToBorderChunk( i, 0 );
+		latitude_--;
+
+		break;
+
+	case EAST:
+		for( j= 0; j< chunk_number_y_; j++ )
+		{
+			h_Chunk* deleted_chunk= chunks_[ 0 | ( j << H_MAX_CHUNKS_LOG2 ) ];
+			SaveChunk( deleted_chunk );
+			chunk_loader_.FreeChunkData( deleted_chunk->Longitude(), deleted_chunk->Latitude() );
+			delete deleted_chunk;
+			for( i= 1; i< chunk_number_x_; i++ )
+			{
+				chunks_[ (i-1) | ( j << H_MAX_CHUNKS_LOG2 ) ]=
+					chunks_[ i | ( j << H_MAX_CHUNKS_LOG2 ) ];
+			}
+			chunks_[ ( chunk_number_x_-1) | ( j << H_MAX_CHUNKS_LOG2 ) ]=
+				LoadChunk( longitude_+chunk_number_x_, latitude_ + j );
+		}
+		for( j= 0; j< chunk_number_y_; j++ )
+			AddLightToBorderChunk( chunk_number_x_-1, j );
+		longitude_++;
+
+		break;
+
+	case WEST:
+		for( j= 0; j< chunk_number_y_; j++ )
+		{
+			h_Chunk* deleted_chunk= chunks_[ ( chunk_number_x_-1) | ( j << H_MAX_CHUNKS_LOG2 ) ];
+			SaveChunk( deleted_chunk );
+			chunk_loader_.FreeChunkData( deleted_chunk->Longitude(), deleted_chunk->Latitude() );
+			delete deleted_chunk;
+			for( i= chunk_number_x_-1; i> 0; i-- )
+			{
+				chunks_[ i | ( j << H_MAX_CHUNKS_LOG2 ) ]=
+					chunks_[ (i-1) | ( j << H_MAX_CHUNKS_LOG2 ) ];
+			}
+			chunks_[ 0 | ( j << H_MAX_CHUNKS_LOG2 ) ]=
+				LoadChunk( longitude_-1, latitude_ + j );
+		}
+		for( j= 0; j< chunk_number_y_; j++ )
+			AddLightToBorderChunk( 0, j );
+		longitude_--;
+
+		break;
+	};
+
+	if( renderer_ != nullptr )
+		renderer_->FullUpdate();
+}
+
+void h_World::SaveChunk( h_Chunk* ch )
+{
+	/*QByteArray array;
+	QDataStream stream( &array, QIODevice::WriteOnly );
+
+	HEXCHUNK_header header;
+	//strcpy( header.format_key, "HEXchunk" );
+	header.water_block_count= ch->GetWaterList()->Size();
+	header.longitude= ch->Longitude();
+	header.latitude= ch->Latitude();
+
+	header.Write( stream );
+
+	ch->SaveChunkToFile( stream );
+
+	QByteArray compressed_chunk= qCompress( array );
+
+	char file_name[128];
+	sprintf( file_name, "world/ch_%d_%d", ch->Longitude(), ch->Latitude() );
+	FILE* f= fopen( file_name, "wb" );
+	fwrite( compressed_chunk.constData(), 1, compressed_chunk.size(), f );
+	fclose(f);*/
+
+	QByteArray array;
+	QDataStream stream( &array, QIODevice::WriteOnly );
+
+	HEXCHUNK_header header;
+	//strcpy( header.format_key, "HEXchunk" );
+	header.water_block_count= ch->GetWaterList()->Size();
+	header.longitude= ch->Longitude();
+	header.latitude= ch->Latitude();
+
+	header.Write( stream );
+	ch->SaveChunkToFile( stream );
+
+	chunk_loader_.GetChunkData( ch->Longitude(), ch->Latitude() )= qCompress( array );
+}
+
+h_Chunk* h_World::LoadChunk( int lon, int lat )
+{
+	/*char file_name[128];
+	sprintf( file_name, "world/ch_%d_%d", lon, lat );
+	FILE* f= fopen( file_name, "rb" );
+	if( f == NULL )
+		return  new h_Chunk( this, lon, lat );
+
+	int file_len;
+	fseek( f, 0, SEEK_END );
+	file_len= ftell( f );
+	fseek( f, 0, SEEK_SET );
+
+	unsigned char* file_data= new unsigned char[ file_len ];
+	fread( file_data, 1, file_len, f );
+	fclose(f);
+
+	QByteArray uncompressed_chunk= qUncompress( file_data, file_len );
+	delete[] file_data;
+	QDataStream stream( &uncompressed_chunk, QIODevice::ReadOnly );
+
+	HEXCHUNK_header header;
+	header.Read( stream );
+
+	return new h_Chunk( this, &header, stream );*/
+
+	QByteArray& ba= chunk_loader_.GetChunkData( lon, lat );
+	if( ba.size() == 0 )
+		return new h_Chunk( this, lon, lat );
+
+
+	QByteArray uncompressed_chunk= qUncompress( ba );
+	QDataStream stream( &uncompressed_chunk, QIODevice::ReadOnly );
+
+	HEXCHUNK_header header;
+	header.Read( stream );
+
+	return new h_Chunk( this, &header, stream );
+}
 
 void h_World::BuildPhysMesh( h_ChunkPhysMesh* phys_mesh, short x_min, short x_max, short y_min, short y_max, short z_min, short z_max )
 {
@@ -160,39 +508,90 @@ void h_World::BuildPhysMesh( h_ChunkPhysMesh* phys_mesh, short x_min, short x_ma
 		}
 }
 
-bool h_World::WaterFlow( h_LiquidBlock* from, short to_x, short to_y, short to_z )
+void h_World::BlastBlock_r( short x, short y, short z, short blast_power )
 {
-	h_Chunk* ch= GetChunk( to_x >> H_CHUNK_WIDTH_LOG2, to_y >> H_CHUNK_WIDTH_LOG2 );
-	h_LiquidBlock* b2= (h_LiquidBlock*)ch->GetBlock( to_x & ( H_CHUNK_WIDTH-1 ), to_y & ( H_CHUNK_WIDTH-1 ), to_z );
-	unsigned char type= b2->Type();
-	if( type == AIR )
-	{
-		if( from->LiquidLevel() > 1 )
-		{
-			short level_delta= from->LiquidLevel() / 2;
-			from->DecreaseLiquidLevel( level_delta );
+	if( blast_power == 0 )
+		return;
 
-			h_LiquidBlock* new_block= ch->NewWaterBlock();
-			new_block->x_= to_x & ( H_CHUNK_WIDTH-1 );
-			new_block->y_= to_y & ( H_CHUNK_WIDTH-1 );
-			new_block->z_= to_z;
-			new_block->SetLiquidLevel( level_delta );
-			ch->SetBlockAndTransparency( new_block->x_, new_block->y_, new_block->z_, new_block, TRANSPARENCY_LIQUID );
-			return true;
-		}
-	}
-	else if( type == WATER )
+	h_Chunk* ch= GetChunk( x>>H_CHUNK_WIDTH_LOG2, y>>H_CHUNK_WIDTH_LOG2 );
+	unsigned int addr;
+
+	addr= BlockAddr( x&(H_CHUNK_WIDTH-1), y&(H_CHUNK_WIDTH-1), z );
+	if( ch->blocks[addr]->Type() != WATER )
 	{
-		short water_level_delta= from->LiquidLevel() - b2->LiquidLevel();
-		if( water_level_delta  > 1 )
-		{
-			water_level_delta/= 2;
-			from->DecreaseLiquidLevel( water_level_delta );
-			b2->IncreaseLiquidLevel( water_level_delta );
-			return true;
-		}
+		//ch->SetBlockAndTransparency( local_x, local_y, z, NormalBlock(AIR), TRANSPARENCY_AIR );
+		ch->blocks[ addr ]= NormalBlock(AIR);
+		ch->transparency[ addr ]= TRANSPARENCY_AIR;
 	}
-	return false;
+
+	//BlastBlock_r( x, y, z + 1, blast_power-1 );
+	//BlastBlock_r( x, y, z - 1, blast_power-1 );
+	BlastBlock_r( x, y+1, z, blast_power-1 );
+	BlastBlock_r( x, y-1, z, blast_power-1 );
+	BlastBlock_r( x+1, y+((x+1)&1), z, blast_power-1 );
+	BlastBlock_r( x+1, y-(x&1), z, blast_power-1 );
+	BlastBlock_r( x-1, y+((x+1)&1), z, blast_power-1 );
+	BlastBlock_r( x-1, y-(x&1), z, blast_power-1 );
+}
+
+bool h_World::InBorders( short x, short y, short z ) const
+{
+	bool outside= x < 0 || y < 0 ||
+				  x > H_CHUNK_WIDTH * ChunkNumberX() || y > H_CHUNK_WIDTH * ChunkNumberY() ||
+				  z < 0 || z >= H_CHUNK_HEIGHT;
+	return !outside;
+}
+
+bool h_World::CanBuild( short x, short y, short z ) const
+{
+	return GetChunk( x>> H_CHUNK_WIDTH_LOG2, y>> H_CHUNK_WIDTH_LOG2 )->
+		   GetBlock( x% H_CHUNK_WIDTH, y% H_CHUNK_WIDTH, z )->Type() == AIR;
+}
+
+void h_World::PhysTick()
+{
+	while( player_ == NULL )
+		usleep( 1000000 );
+	QTime t0= QTime::currentTime();
+
+	FlushActionQueue();
+	WaterPhysTick();
+	RelightWaterModifedChunksLight();
+
+	player_->Lock();
+	player_coord_[2]= short( player_->Pos().z );
+	GetHexogonCoord( player_->Pos().xy(), &player_coord_[0], &player_coord_[1] );
+	player_->Unlock();
+
+	player_coord_[0]-= Longitude() * H_CHUNK_WIDTH;
+	player_coord_[1]-= Latitude() * H_CHUNK_WIDTH;
+	BuildPhysMesh( &player_phys_mesh_,
+				   player_coord_[0] - 4, player_coord_[0] + 4,
+				   player_coord_[1] - 5, player_coord_[1] + 5,
+				   player_coord_[2] - 5, player_coord_[2] + 5 );
+
+	if( player_coord_[1]/H_CHUNK_WIDTH > chunk_number_y_/2+2 )
+		MoveWorld( NORTH );
+	else if( player_coord_[1]/H_CHUNK_WIDTH < chunk_number_y_/2-2 )
+		MoveWorld( SOUTH );
+	if( player_coord_[0]/H_CHUNK_WIDTH > chunk_number_x_/2+2 )
+		MoveWorld( EAST );
+	else if( player_coord_[0]/H_CHUNK_WIDTH < chunk_number_x_/2-2 )
+		MoveWorld( WEST );
+
+	player_->Lock();
+	player_->SetCollisionMesh( &player_phys_mesh_ );
+	player_->Unlock();
+
+	phys_tick_count_++;
+
+	if( renderer_ != nullptr )
+		renderer_->Update();
+
+	QTime t1= QTime::currentTime();
+	unsigned int dt_ms= t0.msecsTo(t1);
+	if( dt_ms < 50 )
+		usleep( (50 - dt_ms ) * 1000 );
 }
 
 void h_World::WaterPhysTick()
@@ -324,480 +723,44 @@ void h_World::WaterPhysTick()
 		}//for chunks
 }
 
-
-void h_World::PhysTick()
+bool h_World::WaterFlow( h_LiquidBlock* from, short to_x, short to_y, short to_z )
 {
-	while( player_ == NULL )
-		usleep( 1000000 );
-	QTime t0= QTime::currentTime();
-
-	Lock();
-
-	FlushActionQueue();
-	WaterPhysTick();
-	RelightWaterModifedChunksLight();
-
-
-	player_->Lock();
-	player_coord_[2]= short( player_->Pos().z );
-	GetHexogonCoord( player_->Pos().xy(), &player_coord_[0], &player_coord_[1] );
-	player_->Unlock();
-
-	player_coord_[0]-= Longitude() * H_CHUNK_WIDTH;
-	player_coord_[1]-= Latitude() * H_CHUNK_WIDTH;
-	BuildPhysMesh( &player_phys_mesh_,
-				   player_coord_[0] - 4, player_coord_[0] + 4,
-				   player_coord_[1] - 5, player_coord_[1] + 5,
-				   player_coord_[2] - 5, player_coord_[2] + 5 );
-
-
-
-	if( player_coord_[1]/H_CHUNK_WIDTH > chunk_number_y_/2+2 )
-		MoveWorld( NORTH );
-	else if( player_coord_[1]/H_CHUNK_WIDTH < chunk_number_y_/2-2 )
-		MoveWorld( SOUTH );
-	if( player_coord_[0]/H_CHUNK_WIDTH > chunk_number_x_/2+2 )
-		MoveWorld( EAST );
-	else if( player_coord_[0]/H_CHUNK_WIDTH < chunk_number_x_/2-2 )
-		MoveWorld( WEST );
-
-	player_->Lock();
-	player_->SetCollisionMesh( &player_phys_mesh_ );
-	player_->Unlock();
-
-
-	phys_tick_count_++;
-
-	if( renderer_ != nullptr )
-		renderer_->Update();
-
-	Unlock();
-
-
-	QTime t1= QTime::currentTime();
-	unsigned int dt_ms= t0.msecsTo(t1);
-	if( dt_ms < 50 )
-		usleep( (50 - dt_ms ) * 1000 );
-}
-
-
-void h_World::UpdateInRadius( short x, short y, short r )
-{
-	if( renderer_ == nullptr )
-		return;
-
-	short x_min, x_max, y_min, y_max;
-	x_min= ClampX( x - r );
-	x_max= ClampX( x + r );
-	y_min= ClampY( y - r );
-	y_max= ClampY( y + r );
-
-	x_min>>= H_CHUNK_WIDTH_LOG2;
-	x_max>>= H_CHUNK_WIDTH_LOG2;
-	y_min>>= H_CHUNK_WIDTH_LOG2;
-	y_max>>= H_CHUNK_WIDTH_LOG2;
-	for( short i= x_min; i<= x_max; i++ )
-		for( short j= y_min; j<= y_max; j++ )
-			renderer_->UpdateChunk( i, j );
-
-
-}
-void h_World::UpdateWaterInRadius( short x, short y, short r )
-{
-	if( renderer_ == nullptr )
-		return;
-	short x_min, x_max, y_min, y_max;
-	x_min= ClampX( x - r );
-	x_max= ClampX( x + r );
-	y_min= ClampY( y - r );
-	y_max= ClampY( y + r );
-
-	x_min>>= H_CHUNK_WIDTH_LOG2;
-	x_max>>= H_CHUNK_WIDTH_LOG2;
-	y_min>>= H_CHUNK_WIDTH_LOG2;
-	y_max>>= H_CHUNK_WIDTH_LOG2;
-	for( short i= x_min; i<= x_max; i++ )
-		for( short j= y_min; j<= y_max; j++ )
-			renderer_->UpdateChunkWater( i, j );
-}
-
-void h_World::Destroy( short x, short y, short z )
-{
-	if( !InBorders( x, y, z ) )
-		return;
-
-	short X= x>> H_CHUNK_WIDTH_LOG2, Y = y>> H_CHUNK_WIDTH_LOG2;
-	x&= H_CHUNK_WIDTH - 1;
-	y&= H_CHUNK_WIDTH - 1;
-
-	h_Chunk* ch=GetChunk( X, Y );
-	if( ch->GetBlock( x, y, z )->Type() == WATER )
+	h_Chunk* ch= GetChunk( to_x >> H_CHUNK_WIDTH_LOG2, to_y >> H_CHUNK_WIDTH_LOG2 );
+	h_LiquidBlock* b2= (h_LiquidBlock*)ch->GetBlock( to_x & ( H_CHUNK_WIDTH-1 ), to_y & ( H_CHUNK_WIDTH-1 ), to_z );
+	unsigned char type= b2->Type();
+	if( type == AIR )
 	{
-
-	}
-	else if( ch->GetBlock( x, y, z )->Type() == FIRE_STONE )
-	{
-		ch->DeleteLightSource( x, y, z );
-		ch->SetBlockAndTransparency( x, y, z, NormalBlock( AIR ),
-									 TRANSPARENCY_AIR );
-		RelightBlockAdd( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), z );
-		RelightBlockRemove( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), z );
-		UpdateInRadius( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), H_MAX_FIRE_LIGHT );
-		UpdateWaterInRadius( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), H_MAX_FIRE_LIGHT );
-	}
-	else
-	{
-		ch->SetBlockAndTransparency( x, y, z, NormalBlock( AIR ),
-									 TRANSPARENCY_AIR );
-		RelightBlockRemove( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), z );
-		//AddFireLight_r( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), z, 10 );
-		UpdateInRadius( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), H_MAX_SUN_LIGHT );
-		UpdateWaterInRadius( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), H_MAX_SUN_LIGHT );
-	}
-}
-
-void h_World::Blast( short x, short y, short z, short radius )
-{
-	Lock();
-
-	if( !InBorders( x, y, z ) )
-	{
-		Unlock();
-		return;
-	}
-
-	for( short k= z, r=radius; k< z+radius; k++, r-- )
-		BlastBlock_r( x, y, k, r );
-	for( short k= z-1, r=radius-1; k> z-radius; k--, r-- )
-		BlastBlock_r( x, y, k, r );
-
-	for( short i= x - radius; i< x+radius; i++ )
-		for( short j= y - radius; j< y+radius; j++ )
-			for( short k= z - radius; k< z+radius; k++ )
-				RelightBlockRemove( i, j, k );
-
-	UpdateInRadius( x, y, radius );
-
-	Unlock();
-}
-
-void h_World::BlastBlock_r( short x, short y, short z, short blast_power )
-{
-	if( blast_power == 0 )
-		return;
-
-	h_Chunk* ch= GetChunk( x>>H_CHUNK_WIDTH_LOG2, y>>H_CHUNK_WIDTH_LOG2 );
-	unsigned int addr;
-
-	addr= BlockAddr( x&(H_CHUNK_WIDTH-1), y&(H_CHUNK_WIDTH-1), z );
-	if( ch->blocks[addr]->Type() != WATER )
-	{
-		//ch->SetBlockAndTransparency( local_x, local_y, z, NormalBlock(AIR), TRANSPARENCY_AIR );
-		ch->blocks[ addr ]= NormalBlock(AIR);
-		ch->transparency[ addr ]= TRANSPARENCY_AIR;
-	}
-
-	//BlastBlock_r( x, y, z + 1, blast_power-1 );
-	//BlastBlock_r( x, y, z - 1, blast_power-1 );
-	BlastBlock_r( x, y+1, z, blast_power-1 );
-	BlastBlock_r( x, y-1, z, blast_power-1 );
-	BlastBlock_r( x+1, y+((x+1)&1), z, blast_power-1 );
-	BlastBlock_r( x+1, y-(x&1), z, blast_power-1 );
-	BlastBlock_r( x-1, y+((x+1)&1), z, blast_power-1 );
-	BlastBlock_r( x-1, y-(x&1), z, blast_power-1 );
-}
-
-void h_World::Build( short x, short y, short z, h_BlockType block_type )
-{
-	if( !InBorders( x, y, z ) )
-		return;
-	if( !CanBuild( x, y, z ) )
-		return;
-
-	short X= x>> H_CHUNK_WIDTH_LOG2, Y = y>> H_CHUNK_WIDTH_LOG2;
-
-	x&= H_CHUNK_WIDTH - 1;
-	y&= H_CHUNK_WIDTH - 1;
-	if( block_type == WATER )
-	{
-		h_LiquidBlock* b;
-		h_Chunk* ch=GetChunk( X, Y );
-		ch-> SetBlockAndTransparency( x, y, z, b= ch->NewWaterBlock(),
-									  TRANSPARENCY_LIQUID );
-
-		b->x_= x;
-		b->y_= y;
-		b->z_= z;
-	}
-	else if( block_type == FIRE_STONE )
-	{
-		h_Chunk* ch=GetChunk( X, Y );
-		h_LightSource* s= ch->NewLightSource( x, y, z, FIRE_STONE );
-		s->SetLightLevel( H_MAX_FIRE_LIGHT );
-		ch->SetBlockAndTransparency( x, y, z, s, TRANSPARENCY_SOLID );
-		AddFireLight_r( x + X* H_CHUNK_WIDTH, y + Y* H_CHUNK_WIDTH, z, H_MAX_FIRE_LIGHT );
-	}
-	else
-		GetChunk( X, Y )->
-		SetBlockAndTransparency( x, y, z, NormalBlock( block_type ),
-								 NormalBlock( block_type )->Transparency() );
-
-	short r= 1;
-	if( block_type == WATER )
-	{
-	}
-	else
-		r= RelightBlockAdd( X * H_CHUNK_WIDTH + x,Y * H_CHUNK_WIDTH + y, z ) + 1;
-
-	UpdateInRadius( X * H_CHUNK_WIDTH + x,Y * H_CHUNK_WIDTH + y, r );
-	UpdateWaterInRadius( X * H_CHUNK_WIDTH + x,Y * H_CHUNK_WIDTH + y, r );
-
-}
-
-void h_World::AddBuildEvent( short x, short y, short z, h_BlockType block_type )
-{
-	action_queue_mutex_.lock();
-
-	h_WorldAction act;
-	act.type= ACTION_BUILD;
-	act.block_type= block_type;
-	act.coord[0]= x;
-	act.coord[1]= y;
-	act.coord[2]= z;
-
-	action_queue_[0].push( act );
-
-	action_queue_mutex_.unlock();
-}
-void h_World::AddDestroyEvent( short x, short y, short z )
-{
-	action_queue_mutex_.lock();
-
-	h_WorldAction act;
-	act.type= ACTION_DESTROY;
-	act.coord[0]= x;
-	act.coord[1]= y;
-	act.coord[2]= z;
-
-	action_queue_[0].push( act );
-
-	action_queue_mutex_.unlock();
-}
-
-void h_World::FlushActionQueue()
-{
-	action_queue_mutex_.lock();
-	action_queue_[0].swap( action_queue_[1] );
-	action_queue_mutex_.unlock();
-
-	while( action_queue_[1].size() != 0 )
-	{
-		h_WorldAction act= action_queue_[1].front();
-		action_queue_[1].pop();
-
-		if( act.type == ACTION_BUILD )
-			Build( act.coord[0], act.coord[1], act.coord[2], act.block_type );
-		else if( act.type == ACTION_DESTROY )
-			Destroy( act.coord[0], act.coord[1], act.coord[2] );
-	}
-}
-
-void h_World::MoveWorld( h_WorldMoveDirection dir )
-{
-	int i, j;
-	switch ( dir )
-	{
-	case NORTH:
-		for( i= 0; i< chunk_number_x_; i++ )
+		if( from->LiquidLevel() > 1 )
 		{
-			h_Chunk* deleted_chunk= chunks_[ i | ( 0 << H_MAX_CHUNKS_LOG2 ) ];
-			SaveChunk( deleted_chunk );
-			chunk_loader_.FreeChunkData( deleted_chunk->Longitude(), deleted_chunk->Latitude() );
-			delete deleted_chunk;
-			for( j= 1; j< chunk_number_y_; j++ )
-			{
-				chunks_[ i | ( (j-1) << H_MAX_CHUNKS_LOG2 ) ]=
-					chunks_[ i | ( j << H_MAX_CHUNKS_LOG2 ) ];
-			}
+			short level_delta= from->LiquidLevel() / 2;
+			from->DecreaseLiquidLevel( level_delta );
 
-			chunks_[ i | ( (chunk_number_y_-1) << H_MAX_CHUNKS_LOG2 ) ]=
-				LoadChunk( i + longitude_, chunk_number_y_ + latitude_ );
+			h_LiquidBlock* new_block= ch->NewWaterBlock();
+			new_block->x_= to_x & ( H_CHUNK_WIDTH-1 );
+			new_block->y_= to_y & ( H_CHUNK_WIDTH-1 );
+			new_block->z_= to_z;
+			new_block->SetLiquidLevel( level_delta );
+			ch->SetBlockAndTransparency( new_block->x_, new_block->y_, new_block->z_, new_block, TRANSPARENCY_LIQUID );
+			return true;
 		}
-		for( i= 0; i< chunk_number_x_; i++ )
-			AddLightToBorderChunk( i, chunk_number_y_ - 1 );
-		latitude_++;
-
-		break;
-
-	case SOUTH:
-		for( i= 0; i< chunk_number_x_; i++ )
+	}
+	else if( type == WATER )
+	{
+		short water_level_delta= from->LiquidLevel() - b2->LiquidLevel();
+		if( water_level_delta  > 1 )
 		{
-			h_Chunk* deleted_chunk= chunks_[ i | ( (chunk_number_y_-1) << H_MAX_CHUNKS_LOG2 ) ];
-			SaveChunk( deleted_chunk );
-			chunk_loader_.FreeChunkData( deleted_chunk->Longitude(), deleted_chunk->Latitude() );
-			delete deleted_chunk;
-			for( j= chunk_number_y_-1; j> 0; j-- )
-			{
-				chunks_[ i | ( j << H_MAX_CHUNKS_LOG2 ) ]=
-					chunks_[ i | ( (j-1) << H_MAX_CHUNKS_LOG2 ) ];
-			}
-
-			chunks_[ i | ( 0 << H_MAX_CHUNKS_LOG2 ) ]=
-				LoadChunk( i + longitude_,  latitude_-1 );
+			water_level_delta/= 2;
+			from->DecreaseLiquidLevel( water_level_delta );
+			b2->IncreaseLiquidLevel( water_level_delta );
+			return true;
 		}
-		for( i= 0; i< chunk_number_x_; i++ )
-			AddLightToBorderChunk( i, 0 );
-		latitude_--;
-
-		break;
-
-	case EAST:
-		for( j= 0; j< chunk_number_y_; j++ )
-		{
-			h_Chunk* deleted_chunk= chunks_[ 0 | ( j << H_MAX_CHUNKS_LOG2 ) ];
-			SaveChunk( deleted_chunk );
-			chunk_loader_.FreeChunkData( deleted_chunk->Longitude(), deleted_chunk->Latitude() );
-			delete deleted_chunk;
-			for( i= 1; i< chunk_number_x_; i++ )
-			{
-				chunks_[ (i-1) | ( j << H_MAX_CHUNKS_LOG2 ) ]=
-					chunks_[ i | ( j << H_MAX_CHUNKS_LOG2 ) ];
-			}
-			chunks_[ ( chunk_number_x_-1) | ( j << H_MAX_CHUNKS_LOG2 ) ]=
-				LoadChunk( longitude_+chunk_number_x_, latitude_ + j );
-		}
-		for( j= 0; j< chunk_number_y_; j++ )
-			AddLightToBorderChunk( chunk_number_x_-1, j );
-		longitude_++;
-
-		break;
-
-	case WEST:
-		for( j= 0; j< chunk_number_y_; j++ )
-		{
-			h_Chunk* deleted_chunk= chunks_[ ( chunk_number_x_-1) | ( j << H_MAX_CHUNKS_LOG2 ) ];
-			SaveChunk( deleted_chunk );
-			chunk_loader_.FreeChunkData( deleted_chunk->Longitude(), deleted_chunk->Latitude() );
-			delete deleted_chunk;
-			for( i= chunk_number_x_-1; i> 0; i-- )
-			{
-				chunks_[ i | ( j << H_MAX_CHUNKS_LOG2 ) ]=
-					chunks_[ (i-1) | ( j << H_MAX_CHUNKS_LOG2 ) ];
-			}
-			chunks_[ 0 | ( j << H_MAX_CHUNKS_LOG2 ) ]=
-				LoadChunk( longitude_-1, latitude_ + j );
-		}
-		for( j= 0; j< chunk_number_y_; j++ )
-			AddLightToBorderChunk( 0, j );
-		longitude_--;
-
-		break;
-	};
-
-	if( renderer_ != nullptr )
-		renderer_->FullUpdate();
+	}
+	return false;
 }
 
-
-void h_World::SaveChunk( h_Chunk* ch )
+void h_World::InitNormalBlocks()
 {
-	/*QByteArray array;
-	QDataStream stream( &array, QIODevice::WriteOnly );
-
-	HEXCHUNK_header header;
-	//strcpy( header.format_key, "HEXchunk" );
-	header.water_block_count= ch->GetWaterList()->Size();
-	header.longitude= ch->Longitude();
-	header.latitude= ch->Latitude();
-
-	header.Write( stream );
-
-	ch->SaveChunkToFile( stream );
-
-	QByteArray compressed_chunk= qCompress( array );
-
-	char file_name[128];
-	sprintf( file_name, "world/ch_%d_%d", ch->Longitude(), ch->Latitude() );
-	FILE* f= fopen( file_name, "wb" );
-	fwrite( compressed_chunk.constData(), 1, compressed_chunk.size(), f );
-	fclose(f);*/
-
-	QByteArray array;
-	QDataStream stream( &array, QIODevice::WriteOnly );
-
-	HEXCHUNK_header header;
-	//strcpy( header.format_key, "HEXchunk" );
-	header.water_block_count= ch->GetWaterList()->Size();
-	header.longitude= ch->Longitude();
-	header.latitude= ch->Latitude();
-
-	header.Write( stream );
-	ch->SaveChunkToFile( stream );
-
-	chunk_loader_.GetChunkData( ch->Longitude(), ch->Latitude() )= qCompress( array );
-}
-h_Chunk* h_World::LoadChunk( int lon, int lat )
-{
-	/*char file_name[128];
-	sprintf( file_name, "world/ch_%d_%d", lon, lat );
-	FILE* f= fopen( file_name, "rb" );
-	if( f == NULL )
-		return  new h_Chunk( this, lon, lat );
-
-	int file_len;
-	fseek( f, 0, SEEK_END );
-	file_len= ftell( f );
-	fseek( f, 0, SEEK_SET );
-
-	unsigned char* file_data= new unsigned char[ file_len ];
-	fread( file_data, 1, file_len, f );
-	fclose(f);
-
-	QByteArray uncompressed_chunk= qUncompress( file_data, file_len );
-	delete[] file_data;
-	QDataStream stream( &uncompressed_chunk, QIODevice::ReadOnly );
-
-	HEXCHUNK_header header;
-	header.Read( stream );
-
-	return new h_Chunk( this, &header, stream );*/
-
-	QByteArray& ba= chunk_loader_.GetChunkData( lon, lat );
-	if( ba.size() == 0 )
-		return new h_Chunk( this, lon, lat );
-
-
-	QByteArray uncompressed_chunk= qUncompress( ba );
-	QDataStream stream( &uncompressed_chunk, QIODevice::ReadOnly );
-
-	HEXCHUNK_header header;
-	header.Read( stream );
-
-	return new h_Chunk( this, &header, stream );
-}
-
-
-h_World::~h_World()
-{
-	for( unsigned int x= 0; x< chunk_number_x_; x++ )
-		for( unsigned int y= 0; y< chunk_number_y_; y++ )
-		{
-			SaveChunk( GetChunk(x,y) );
-			delete GetChunk(x,y);
-		}
-}
-
-
-void h_World::Save()
-{
-	for( unsigned int x= 0; x< chunk_number_x_; x++ )
-		for( unsigned int y= 0; y< chunk_number_y_; y++ )
-			SaveChunk( GetChunk(x,y) );
-	chunk_loader_.ForceSaveAllChunks();
-}
-
-
-void h_World::StartUpdates()
-{
-	phys_thread_.start();
+	int i;
+	for( i= 0; i< NUM_BLOCK_TYPES; i++ )
+		new ( normal_blocks_ + i ) h_Block( h_BlockType(i) );
 }

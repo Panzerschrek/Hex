@@ -276,7 +276,6 @@ void r_WorldRenderer::UpdateWorld()
 void r_WorldRenderer::UpdateWater()
 {
 	host_data_mutex.lock();
-	world->Lock();
 
 	unsigned int i, j;
 	bool any_vbo_updated= false;
@@ -362,7 +361,6 @@ void r_WorldRenderer::UpdateWater()
 			}
 		}
 
-	world->Unlock();
 	host_data_mutex.unlock();
 
 	if( any_vbo_updated )
@@ -1030,8 +1028,6 @@ void r_WorldRenderer::BuildWorldWater()
 
 void r_WorldRenderer::BuildWorld()
 {
-	world->Lock();
-
 	chunk_num_x= world->ChunkNumberX();
 	chunk_num_y= world->ChunkNumberY();
 
@@ -1152,9 +1148,6 @@ void r_WorldRenderer::BuildWorld()
 
 
 	BuildWorldWater();
-
-	world->Unlock();
-
 }
 
 r_WorldRenderer::r_WorldRenderer( const h_World* w ):
