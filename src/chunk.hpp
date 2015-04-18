@@ -1,10 +1,9 @@
 #pragma once
 #include "hex.hpp"
+#include "fwd.hpp"
 #include "block.hpp"
 #include "math_lib/collection.hpp"
 #include "world_loading.hpp"
-
-class h_World;
 
 #define BlockAddr( x, y, z ) ( (z) |\
 	( (y) << H_CHUNK_HEIGHT_LOG2 ) |\

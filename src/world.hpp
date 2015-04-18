@@ -1,10 +1,9 @@
 #pragma once
 #include <queue>
-
 #include <QMutex>
 
-
 #include "hex.hpp"
+#include "fwd.hpp"
 #include "block.hpp"
 #include "chunk.hpp"
 #include "thread.hpp"
@@ -13,8 +12,6 @@
 #include "world_action.hpp"
 #include "chunk_loader.hpp"
 
-class h_Player;
-class r_IWorldRenderer;
 
 class h_World : public QObject
 {

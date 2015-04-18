@@ -1,12 +1,9 @@
 #pragma once
+#include "hex.hpp"
+#include "fwd.hpp"
 #include <QtOpenGL>
 
 #include "player.hpp"
-
-class ui_Painter;
-class ui_MainMenu;
-
-class r_WorldRenderer;
 
 class h_MainLoop : public QGLWidget
 {

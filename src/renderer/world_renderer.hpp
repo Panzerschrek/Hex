@@ -1,5 +1,6 @@
 #pragma once
-
+#include "../hex.hpp"
+#include "../fwd.hpp"
 #include "i_world_renderer.hpp"
 #include "chunk_data_cache.hpp"
 
@@ -16,12 +17,6 @@
 #include "matrix.hpp"
 #include "../math_lib/collection.hpp"
 
-#include "../thread.hpp"
-
-
-class h_World;
-class h_Player;
-class h_Chunk;
 
 #pragma pack( push, 1 )
 struct r_WorldVertex
