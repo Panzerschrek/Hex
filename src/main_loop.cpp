@@ -3,7 +3,6 @@
 #include "world.hpp"
 #include "player.hpp"
 
-//#include "glcorearb.h"
 #include "block_collision.hpp"
 #include "console.hpp"
 #include "ui/ui_base_classes.hpp"
@@ -29,48 +28,55 @@ void h_MainLoop::Start()
 	new h_MainLoop( format );
 }
 
-h_MainLoop::h_MainLoop(QGLFormat format ):
-	QGLWidget(format, NULL ),
-	settings( "config.ini", QSettings::IniFormat ),
-	cam_pos( 0.0f, 0.0f, 67.0f ),
-	cam_ang( 0.0f, 0.0f, 0.0f ),
-	startup_time(0,0,0,0),
-	world_renderer(nullptr),
-	world(nullptr),
-	player(nullptr),
-	game_started(false),
-	use_mouse( false )
+QSize h_MainLoop::minimumSizeHint() const
 {
-	window= new QMainWindow( NULL, 0 );
+	return QSize( screen_width_, screen_height_ );
+}
 
-	window->move( 0, 0 );
-	window->setWindowTitle( "Hex" );
-	window->setWindowIcon( QIcon( QString( "src/hex-logo.ico" ) ) );
+QSize h_MainLoop::sizeHint() const
+{
+	return QSize( screen_width_, screen_height_ );
+}
 
-	window->setCentralWidget( this );
-	window->setContentsMargins( 0, 0, 0, 0 );
+h_MainLoop::h_MainLoop(QGLFormat format )
+	: QGLWidget(format, NULL )
+	, settings_( "config.ini", QSettings::IniFormat )
+	, cam_pos_( 0.0f, 0.0f, 67.0f )
+	, cam_ang_( 0.0f, 0.0f, 0.0f )
+	, startup_time_(0,0,0,0)
+	, world_renderer_(nullptr)
+	, world_(nullptr)
+	, player_(nullptr)
+	, game_started_(false)
+	, use_mouse_(false)
+{
+	window_= new QMainWindow( NULL, 0 );
 
-	screen_height= min( max( settings.value( "screen_height", 640 ).toInt(), H_MIN_SCREEN_HEIGHT ), H_MAX_SCREEN_WIDTH  );
-	screen_width=  min( max( settings.value( "screen_width" , 480 ).toInt(), H_MIN_SCREEN_WIDTH  ), H_MAX_SCREEN_HEIGHT );
+	window_->move( 0, 0 );
+	window_->setWindowTitle( "Hex" );
+	window_->setWindowIcon( QIcon( QString( "src/hex-logo.ico" ) ) );
 
-	this->setFixedSize( screen_width, screen_height );
-	//world_renderer->SetViewportSize( screen_width, screen_height );
+	window_->setCentralWidget( this );
+	window_->setContentsMargins( 0, 0, 0, 0 );
 
-	window->setFocusPolicy( Qt::ClickFocus );
+	screen_height_= min( max( settings_.value( "screen_height", 640 ).toInt(), H_MIN_SCREEN_HEIGHT ), H_MAX_SCREEN_WIDTH  );
+	screen_width_=  min( max( settings_.value( "screen_width" , 480 ).toInt(), H_MIN_SCREEN_WIDTH  ), H_MAX_SCREEN_HEIGHT );
+
+	this->setFixedSize( screen_width_, screen_height_ );
+	window_->setFocusPolicy( Qt::ClickFocus );
 	this->setFocusPolicy( Qt::ClickFocus );
 	this->setFocus();
 
-	window->show();
-	window->setFixedSize( window->size() );
+	window_->show();
+	window_->setFixedSize( window_->size() );
 
 	this->setAutoFillBackground( false );
 
 	for( int i= 0; i< 512; i++ )
-		keys[i]= false;
+		keys_[i]= false;
 	//window->setWindowState( Qt::WindowFullScreen );
 
-	frame_count= 0;
-
+	frame_count_= 0;
 }
 
 h_MainLoop::~h_MainLoop()
@@ -81,88 +87,19 @@ h_MainLoop::~h_MainLoop()
 //	delete player;
 }
 
-void h_MainLoop::GetBuildPos()
+void h_MainLoop::initializeGL()
 {
-	build_dir= player->GetBuildPos( &build_pos_x, &build_pos_y, &build_pos_z );
+	GetGLFunctions(
+		[](const char* name)
+		{
+			return (void*)QOpenGLContext::currentContext()->getProcAddress(name);
+		});
 
-	m_Vec3 discret_build_pos( ( float( build_pos_x + 0.3333333333f ) ) * H_SPACE_SCALE_VECTOR_X,
-							  float( build_pos_y ) - 0.5f * float(build_pos_x&1) + 0.5f,
-							  float( build_pos_z ) - 1.0f );
-	if( build_dir == DIRECTION_UNKNOWN )
-		discret_build_pos.z= -1.0f;
+	r_OGLState state;
+	state.InitialState();
+	r_OGLStateManager::SetState( state );
 
-	world_renderer->SetBuildPos( discret_build_pos );
-}
-
-void h_MainLoop::Input()
-{
-	QPoint cur_local_pos= this->mapFromGlobal( cursor.pos() );
-	ui_CursorHandler::UpdateCursorPos( cur_local_pos.x(), cur_local_pos.y() );
-
-	if( !game_started )
-		return;
-
-	if( use_mouse )
-	{
-		m_Vec3 ang_delta;
-		ang_delta.z= float( screen_width/2 - cur_local_pos.x() ) * 0.005f;
-		ang_delta.x= float( screen_height/2 - cur_local_pos.y() ) * 0.005f;
-		ang_delta.y= 0.0f;
-		player->Rotate( ang_delta );
-		cam_ang= player->Angle();
-
-		cur_local_pos= this->mapFromGlobal( QPoint( 0, 0 ) );
-		cursor.setPos( screen_width/2 - cur_local_pos.x(), screen_height/2 - cur_local_pos.y() );
-	}
-
-	static  int prev_time= 0;
-	int time;
-	float dt;
-	time=  -QTime::currentTime().msecsTo( startup_time );
-	dt= float( time - prev_time ) / 1000.0f;
-	prev_time= time;
-
-	const float speed= 5.0f;
-
-
-	m_Vec3 move_vec( 0.0f, 0.0f, 0.0f );
-	if( keys[ Qt::Key_W ] )
-	{
-		move_vec.y+= dt * speed * m_Math::Cos( cam_ang.z );
-		move_vec.x-= dt * speed * m_Math::Sin( cam_ang.z );
-	}
-	if( keys[ Qt::Key_S ] )
-	{
-		move_vec.y-= dt * speed * m_Math::Cos( cam_ang.z );
-		move_vec.x+= dt * speed * m_Math::Sin( cam_ang.z );
-	}
-	if( keys[ Qt::Key_A ] )
-	{
-		move_vec.y-= dt * speed * m_Math::Cos( cam_ang.z - m_Math::FM_PI2);
-		move_vec.x+= dt * speed * m_Math::Sin( cam_ang.z - m_Math::FM_PI2);
-	}
-	if( keys[ Qt::Key_D ] )
-	{
-		move_vec.y-= dt * speed * m_Math::Cos( cam_ang.z + m_Math::FM_PI2);
-		move_vec.x+= dt * speed * m_Math::Sin( cam_ang.z + m_Math::FM_PI2);
-	}
-
-	if( keys[ Qt::Key_Space ] )
-	{
-		move_vec.z+= dt * speed;
-	}
-	if( keys[ Qt::Key_C ] )
-	{
-		move_vec.z-= dt * speed;
-	}
-
-	//if( dt < 0.25f )
-	//    move_vec.z+= -3.0f * dt;
-
-	player->Move( move_vec );
-	cam_pos= player->Pos();
-	cam_pos.z+= H_PLAYER_EYE_LEVEL;
-
+	r_Framebuffer::SetScreenFramebufferSize( screen_width_, screen_height_ );
 }
 
 void h_MainLoop::resizeGL(int w , int h)
@@ -170,52 +107,41 @@ void h_MainLoop::resizeGL(int w , int h)
 	glViewport(0,0,w,h);
 }
 
-QSize h_MainLoop::minimumSizeHint() const
-{
-	return QSize( screen_width, screen_height );
-}
-
-QSize h_MainLoop::sizeHint() const
-{
-	return QSize( screen_width, screen_height );
-}
-
-
 //Main rendering loop here
 void h_MainLoop::paintGL()
 {
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
-	if( game_started )
+	if( game_started_ )
 	{
-		player->Lock();
+		player_->Lock();
 		Input();
-		world_renderer->SetCamAng( cam_ang );
-		world_renderer->SetCamPos( cam_pos );
+		world_renderer_->SetCamAng( cam_ang_ );
+		world_renderer_->SetCamPos( cam_pos_ );
 		GetBuildPos();
-		player->Unlock();
-		world_renderer->Draw();
+		player_->Unlock();
+		world_renderer_->Draw();
 
 	}
 	else
 		Input();
 
-	if( frame_count == 0 )
+	if( frame_count_ == 0 )
 	{
-		ui_painter= new ui_Painter();
-		main_menu= new ui_MainMenu( this, screen_width, screen_height );
+		ui_painter_= new ui_Painter();
+		main_menu_= new ui_MainMenu( this, screen_width_, screen_height_ );
 	}
 
-	main_menu->Tick();
+	main_menu_->Tick();
 
 	m_Mat4 mat;
 	mat.Identity();
 
-	mat[0]= 2.0f / float( screen_width );
+	mat[0]= 2.0f / float( screen_width_ );
 	mat[12]= -1.0f;
-	mat[5]= -2.0f / float( screen_height );
+	mat[5]= -2.0f / float( screen_height_ );
 	mat[13]= 1.0f;
-	ui_painter->SetMatrix( mat );
+	ui_painter_->SetMatrix( mat );
 
 	r_OGLStateManager::EnableBlend();
 	r_OGLStateManager::DisableFaceCulling();
@@ -223,28 +149,101 @@ void h_MainLoop::paintGL()
 	r_OGLStateManager::DepthMask(true);
 	r_OGLStateManager::BlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
 
-	main_menu->Draw( ui_painter );
+	main_menu_->Draw( ui_painter_ );
 
 	glFlush();
 	update();
 
-	frame_count++;
+	frame_count_++;
+}
+
+void h_MainLoop::GetBuildPos()
+{
+	build_dir_= player_->GetBuildPos( &build_pos_x_, &build_pos_y_, &build_pos_z_ );
+
+	m_Vec3 discret_build_pos( ( float( build_pos_x_ + 0.3333333333f ) ) * H_SPACE_SCALE_VECTOR_X,
+							  float( build_pos_y_ ) - 0.5f * float(build_pos_x_&1) + 0.5f,
+							  float( build_pos_z_ ) - 1.0f );
+	if( build_dir_ == DIRECTION_UNKNOWN )
+		discret_build_pos.z= -1.0f;
+
+	world_renderer_->SetBuildPos( discret_build_pos );
+}
+
+void h_MainLoop::Input()
+{
+	QPoint cur_local_pos= this->mapFromGlobal( cursor_.pos() );
+	ui_CursorHandler::UpdateCursorPos( cur_local_pos.x(), cur_local_pos.y() );
+
+	if( !game_started_ )
+		return;
+
+	if( use_mouse_ )
+	{
+		m_Vec3 ang_delta;
+		ang_delta.z= float( screen_width_/2 - cur_local_pos.x() ) * 0.005f;
+		ang_delta.x= float( screen_height_/2 - cur_local_pos.y() ) * 0.005f;
+		ang_delta.y= 0.0f;
+		player_->Rotate( ang_delta );
+		cam_ang_= player_->Angle();
+
+		cur_local_pos= this->mapFromGlobal( QPoint( 0, 0 ) );
+		cursor_.setPos( screen_width_/2 - cur_local_pos.x(), screen_height_/2 - cur_local_pos.y() );
+	}
+
+	static  int prev_time= 0;
+	int time;
+	float dt;
+	time=  -QTime::currentTime().msecsTo( startup_time_ );
+	dt= float( time - prev_time ) / 1000.0f;
+	prev_time= time;
+
+	const float speed= 5.0f;
+
+
+	m_Vec3 move_vec( 0.0f, 0.0f, 0.0f );
+	if( keys_[ Qt::Key_W ] )
+	{
+		move_vec.y+= dt * speed * m_Math::Cos( cam_ang_.z );
+		move_vec.x-= dt * speed * m_Math::Sin( cam_ang_.z );
+	}
+	if( keys_[ Qt::Key_S ] )
+	{
+		move_vec.y-= dt * speed * m_Math::Cos( cam_ang_.z );
+		move_vec.x+= dt * speed * m_Math::Sin( cam_ang_.z );
+	}
+	if( keys_[ Qt::Key_A ] )
+	{
+		move_vec.y-= dt * speed * m_Math::Cos( cam_ang_.z - m_Math::FM_PI2);
+		move_vec.x+= dt * speed * m_Math::Sin( cam_ang_.z - m_Math::FM_PI2);
+	}
+	if( keys_[ Qt::Key_D ] )
+	{
+		move_vec.y-= dt * speed * m_Math::Cos( cam_ang_.z + m_Math::FM_PI2);
+		move_vec.x+= dt * speed * m_Math::Sin( cam_ang_.z + m_Math::FM_PI2);
+	}
+
+	if( keys_[ Qt::Key_Space ] )
+	{
+		move_vec.z+= dt * speed;
+	}
+	if( keys_[ Qt::Key_C ] )
+	{
+		move_vec.z-= dt * speed;
+	}
+
+	//if( dt < 0.25f )
+	//    move_vec.z+= -3.0f * dt;
+
+	player_->Move( move_vec );
+	cam_pos_= player_->Pos();
+	cam_pos_.z+= H_PLAYER_EYE_LEVEL;
+
 }
 
 static void* GetGLProcessAddress(const char* name)
 {
 	return (void*)QOpenGLContext::currentContext()->getProcAddress(name);
-}
-
-void h_MainLoop::initializeGL()
-{
-	GetGLFunctions( GetGLProcessAddress );
-
-	r_OGLState state;
-	state.InitialState();
-	r_OGLStateManager::SetState( state );
-
-	r_Framebuffer::SetScreenFramebufferSize( screen_width, screen_height );
 }
 
 void h_MainLoop::mouseReleaseEvent(QMouseEvent* e)
@@ -255,17 +254,17 @@ void h_MainLoop::mousePressEvent(QMouseEvent* e)
 {
 	ui_CursorHandler::CursorPress( e->x(), e->y(), false );
 
-	if( !game_started )
+	if( !game_started_ )
 		return;
 
 	if( e->button() == Qt::RightButton )
-		world->AddBuildEvent( build_pos_x - world->Longitude() * H_CHUNK_WIDTH,
-							  build_pos_y - world->Latitude() * H_CHUNK_WIDTH,
-							  build_pos_z, FIRE_STONE );
+		world_->AddBuildEvent( build_pos_x_ - world_->Longitude() * H_CHUNK_WIDTH,
+							  build_pos_y_ - world_->Latitude() * H_CHUNK_WIDTH,
+							  build_pos_z_, FIRE_STONE );
 	else if( e->button() == Qt::LeftButton )
 	{
-		short new_build_pos[]= { build_pos_x, build_pos_y, build_pos_z };
-		switch ( build_dir )
+		short new_build_pos[]= { build_pos_x_, build_pos_y_, build_pos_z_ };
+		switch ( build_dir_ )
 		{
 		case UP:
 			new_build_pos[2]--;
@@ -303,20 +302,20 @@ void h_MainLoop::mousePressEvent(QMouseEvent* e)
 		default:
 			new_build_pos[2]= 1024;// make build position not in bounds
 		};
-		if( keys[ Qt::Key_X ] )
-			world->Blast( new_build_pos[0] - world->Longitude() * H_CHUNK_WIDTH,
-						  new_build_pos[1] - world->Latitude() * H_CHUNK_WIDTH,
+		if( keys_[ Qt::Key_X ] )
+			world_->Blast( new_build_pos[0] - world_->Longitude() * H_CHUNK_WIDTH,
+						  new_build_pos[1] - world_->Latitude() * H_CHUNK_WIDTH,
 						  new_build_pos[2], 4 );
 		else
-			world->AddDestroyEvent( new_build_pos[0] - world->Longitude() * H_CHUNK_WIDTH,
-									new_build_pos[1] - world->Latitude() * H_CHUNK_WIDTH,
+			world_->AddDestroyEvent( new_build_pos[0] - world_->Longitude() * H_CHUNK_WIDTH,
+									new_build_pos[1] - world_->Latitude() * H_CHUNK_WIDTH,
 									new_build_pos[2] );
 	}
 	else if( e->button() == Qt::MiddleButton )
 	{
-		world->AddBuildEvent( build_pos_x - world->Longitude() * H_CHUNK_WIDTH,
-							  build_pos_y - world->Latitude() * H_CHUNK_WIDTH,
-							  build_pos_z, SPHERICAL_BLOCK );
+		world_->AddBuildEvent( build_pos_x_ - world_->Longitude() * H_CHUNK_WIDTH,
+							  build_pos_y_ - world_->Latitude() * H_CHUNK_WIDTH,
+							  build_pos_z_, SPHERICAL_BLOCK );
 	}
 }
 void h_MainLoop::mouseMoveEvent(QMouseEvent* e)
@@ -325,44 +324,44 @@ void h_MainLoop::mouseMoveEvent(QMouseEvent* e)
 void h_MainLoop::keyPressEvent(QKeyEvent* e)
 {
 	if( e->key() < 512 )
-		keys[ e->key() ]= true;
+		keys_[ e->key() ]= true;
 
 	if( e->key() == Qt::Key_M )
 	{
-		use_mouse= !use_mouse;
-		printf( "cam_ang.z= %f\n", cam_ang.z / M_PI * 180.0f );
-		printf( "cam_ang.x= %f\n", cam_ang.x/ M_PI * 180.0f );
+		use_mouse_= !use_mouse_;
+		printf( "cam_ang.z= %f\n", cam_ang_.z / M_PI * 180.0f );
+		printf( "cam_ang.x= %f\n", cam_ang_.x/ M_PI * 180.0f );
 	}
 	else if( e->key() == Qt::Key_B )
-		printf( "build: %d %d %d\n", build_pos_x, build_pos_y, build_pos_z );
+		printf( "build: %d %d %d\n", build_pos_x_, build_pos_y_, build_pos_z_ );
 	else if( e->key() == Qt::Key_QuoteLeft )
 		h_Console::OpenClose();
 	else if( e->key() == Qt::Key_Q )
 	{
-		if( game_started )
-			world->Save();
+		if( game_started_ )
+			world_->Save();
 	}
 	return;
 }
-void h_MainLoop::focusOutEvent( QFocusEvent *)
-{
-	use_mouse= false;
-}
-void h_MainLoop::focusInEvent(QFocusEvent *)
-{
-}
+
 void h_MainLoop::keyReleaseEvent(QKeyEvent* e)
 {
 	if( e->key() < 512 )
-		keys[ e->key() ]= false;
+		keys_[ e->key() ]= false;
 }
-void h_MainLoop::closeEvent(QCloseEvent* e)
+
+void h_MainLoop::focusInEvent(QFocusEvent *)
 {
 }
 
+void h_MainLoop::focusOutEvent( QFocusEvent *)
+{
+	use_mouse_= false;
+}
 
-
-
+void h_MainLoop::closeEvent(QCloseEvent* e)
+{
+}
 
 void h_MainLoop::Quit()
 {
@@ -371,20 +370,20 @@ void h_MainLoop::Quit()
 
 void h_MainLoop::StartGame()
 {
-	if( !game_started )
+	if( !game_started_ )
 	{
-		world= new h_World();
-		world_renderer= new r_WorldRenderer( world );
-		player= new h_Player( world );
-		world->SetPlayer( player );
-		world->SetRenderer( world_renderer );
-		world_renderer->SetViewportSize( screen_width, screen_height );
+		world_= new h_World();
+		world_renderer_= new r_WorldRenderer( world_ );
+		player_= new h_Player( world_ );
+		world_->SetPlayer( player_ );
+		world_->SetRenderer( world_renderer_ );
+		world_renderer_->SetViewportSize( screen_width_, screen_height_ );
 
-		world_renderer->InitGL();
+		world_renderer_->InitGL();
 
-		world->StartUpdates();
+		world_->StartUpdates();
 
-		game_started= true;
+		game_started_= true;
 	}
 
 }

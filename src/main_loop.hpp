@@ -11,32 +11,30 @@ class h_MainLoop : public QGLWidget
 
 public:
 	static void Start();
-	//h_MainLoop(){}
-	virtual ~h_MainLoop();
 
 	virtual QSize minimumSizeHint() const;
 	virtual QSize sizeHint() const;
 
 protected:
 	h_MainLoop( QGLFormat format );
-	virtual void initializeGL();
-	virtual void resizeGL(int w , int h);
-	virtual void paintGL();
-	void mousePressEvent(QMouseEvent* e);
-	void mouseReleaseEvent(QMouseEvent* e);
-	void mouseMoveEvent(QMouseEvent* e);
-	void keyPressEvent(QKeyEvent* e);
-	void focusOutEvent( QFocusEvent *);
-	void focusInEvent(QFocusEvent *);
-	void keyReleaseEvent(QKeyEvent* e);
-	void closeEvent(QCloseEvent* e);
+	virtual ~h_MainLoop() override;
 
+	virtual void initializeGL() override;
+	virtual void resizeGL(int w , int h) override;
+	virtual void paintGL()  override;
 
-	virtual void initializeOverlayGL() {}
-	virtual void resizeOverlayGL(int w, int h) {}
-	virtual void paintOverlayGL() {}
-	//virtual void glInit() {}
-	// virtual void glDraw() {}
+	void mousePressEvent(QMouseEvent* e) override;
+	void mouseReleaseEvent(QMouseEvent* e) override;
+	void mouseMoveEvent(QMouseEvent* e) override;
+	void keyPressEvent(QKeyEvent* e) override;
+	void keyReleaseEvent(QKeyEvent* e) override;
+	void focusInEvent(QFocusEvent *) override;
+	void focusOutEvent( QFocusEvent *) override;
+	void closeEvent(QCloseEvent* e) override;
+
+	virtual void initializeOverlayGL() override {}
+	virtual void resizeOverlayGL(int w, int h) override {}
+	virtual void paintOverlayGL() override {}
 
 public slots:
 	void setXRotation(int) {}
@@ -48,34 +46,32 @@ public://main menu interface logic
 	void StartGame();
 
 private:
-
 	void Input();
 	void GetBuildPos();
 
-	QMainWindow* window;
-	QCursor cursor;
-	QTime startup_time;
-	QSettings settings;
-	bool keys[ 512 ];
-	bool use_mouse;
+private:
+	QMainWindow* window_;
+	QCursor cursor_;
+	QTime startup_time_;
+	QSettings settings_;
+	bool keys_[ 512 ];
+	bool use_mouse_;
 
-	int screen_width, screen_height;
+	int screen_width_, screen_height_;
 
+	r_WorldRenderer* world_renderer_;
+	h_World* world_;
+	h_Player* player_;
 
-	r_WorldRenderer* world_renderer;
-	h_World* world;
-	h_Player* player;
+	bool game_started_;
 
-	bool game_started;
+	m_Vec3 cam_ang_, cam_pos_;
 
-	m_Vec3 cam_ang, cam_pos;
+	short build_pos_x_, build_pos_y_, build_pos_z_;
+	h_Direction build_dir_;
 
-	short build_pos_x, build_pos_y, build_pos_z;
-	h_Direction build_dir;
+	ui_Painter* ui_painter_;
+	ui_MainMenu* main_menu_;
 
-	ui_Painter* ui_painter;
-	ui_MainMenu* main_menu;
-
-	int frame_count;
-
+	int frame_count_;
 };
