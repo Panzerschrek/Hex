@@ -18,7 +18,7 @@ int main( int argc, char* argv[] )
 	ss.SetSetting( "two", "two value" );
 
 	ss.IsValue( "huj" );
-	printf( "value is %s\n", ss.GetString("two" ) );
+	printf( "value is %s\n", ss.GetString("one" ) );
 
 
 	QApplication hex(argc, argv);
