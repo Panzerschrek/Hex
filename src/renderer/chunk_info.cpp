@@ -56,7 +56,7 @@ void r_ChunkInfo::BuildWaterSurfaceMesh()
 	const h_LiquidBlock* b;
 	r_WaterVertex* v, *sv;
 	short h;
-	h_Chunk* ch;
+	const h_Chunk* ch;
 
 	water_surface_mesh_vertices.Resize(0);
 	water_side_mesh_vertices.Resize(0);
@@ -69,7 +69,7 @@ void r_ChunkInfo::BuildWaterSurfaceMesh()
 
 	unsigned int vertex_water_level[6];
 	unsigned short vertex_water_block_count[6];
-	h_World* world= chunk->GetWorld();
+	const h_World* world= chunk->GetWorld();
 	short global_x, global_y;
 	short nearby_block_x, nearby_block_y;
 
@@ -99,7 +99,7 @@ void r_ChunkInfo::BuildWaterSurfaceMesh()
 
 
 				//calculate height of vertices
-				h_Block* b2, *b3;
+				const h_Block* b2, *b3;
 				bool upper_block_is_water[6]= { false, false, false, false, false, false };
 				bool nearby_block_is_air[6]= { false, false, false, false, false, false };
 				vertex_water_level[0]= vertex_water_level[1]= vertex_water_level[2]=
@@ -422,10 +422,10 @@ void r_ChunkInfo::GetQuadCount()
 		{
 			t_up= chunk->Transparency( x, y, 0 );
 
-			unsigned char* t_up_p= chunk->GetTransparencyData() + BlockAddr(x,y,1);
-			unsigned char* t_fr_p= chunk->GetTransparencyData() + BlockAddr(x + 1, y + (1&(x+1)),0);
-			unsigned char* t_br_p= chunk->GetTransparencyData() + BlockAddr(x + 1, y - ( 1&x )  ,0);
-			unsigned char* t_f_p=  chunk->GetTransparencyData() + BlockAddr(x,y+1,0);
+			const unsigned char* t_up_p= chunk->GetTransparencyData() + BlockAddr(x,y,1);
+			const unsigned char* t_fr_p= chunk->GetTransparencyData() + BlockAddr(x + 1, y + (1&(x+1)),0);
+			const unsigned char* t_br_p= chunk->GetTransparencyData() + BlockAddr(x + 1, y - ( 1&x )  ,0);
+			const unsigned char* t_f_p=  chunk->GetTransparencyData() + BlockAddr(x,y+1,0);
 
 			//front chunk border
 			if( y == H_CHUNK_WIDTH - 1 && x < H_CHUNK_WIDTH - 1 )
@@ -723,11 +723,11 @@ void r_ChunkInfo::BuildChunkMesh()
 	r_WorldVertex* v= chunk_vb.vb_data;
 	r_WorldVertex tmp_vertex;
 
-	h_Block* b;
+	const h_Block* b;
 
 	int X= chunk->Longitude() * H_CHUNK_WIDTH, Y= chunk->Latitude() * H_CHUNK_WIDTH;
 	int relative_X, relative_Y;
-	h_World* w= chunk->GetWorld();
+	const h_World* w= chunk->GetWorld();
 	relative_X= ( chunk->Longitude() - w->Longitude() ) * H_CHUNK_WIDTH;
 	relative_Y= ( chunk->Latitude() - w->Latitude() ) * H_CHUNK_WIDTH;
 
@@ -740,10 +740,10 @@ void r_ChunkInfo::BuildChunkMesh()
 		{
 			t_up= chunk->Transparency( x, y, min_geometry_height );
 
-			unsigned char* t_up_p= chunk->GetTransparencyData() + BlockAddr(x,y,min_geometry_height+1);
-			unsigned char* t_fr_p= chunk->GetTransparencyData() + BlockAddr(x + 1, y + (1&(x+1)),min_geometry_height);
-			unsigned char* t_br_p= chunk->GetTransparencyData() + BlockAddr(x + 1, y - ( 1&x )  ,min_geometry_height);
-			unsigned char* t_f_p=  chunk->GetTransparencyData() + BlockAddr(x,y+1,min_geometry_height);
+			const unsigned char* t_up_p= chunk->GetTransparencyData() + BlockAddr(x,y,min_geometry_height+1);
+			const unsigned char* t_fr_p= chunk->GetTransparencyData() + BlockAddr(x + 1, y + (1&(x+1)),min_geometry_height);
+			const unsigned char* t_br_p= chunk->GetTransparencyData() + BlockAddr(x + 1, y - ( 1&x )  ,min_geometry_height);
+			const unsigned char* t_f_p=  chunk->GetTransparencyData() + BlockAddr(x,y+1,min_geometry_height);
 
 			for( z= min_geometry_height; z<= max_geometry_height; z++ )
 			{

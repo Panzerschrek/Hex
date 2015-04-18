@@ -139,7 +139,7 @@ void p_UpperBlockFace::Gen( short x, short y, short z, h_Direction dir )
 	edge[4].y= edge[5].y= edge[0].y - 0.5f;
 }
 
-bool p_UpperBlockFace::HasCollisionWithCircle( m_Vec2 pos, float radius )
+bool p_UpperBlockFace::HasCollisionWithCircle( m_Vec2 pos, float radius ) const
 {
 	m_Vec2 center
 	(
@@ -226,7 +226,7 @@ void p_BlockSide::Gen( short x, short y, short z, h_Direction dir )
 }
 
 
-bool p_BlockSide::HasCollisionWithCircle( m_Vec2 pos,  float radius )
+bool p_BlockSide::HasCollisionWithCircle( m_Vec2 pos,  float radius ) const
 {
 	m_Vec2 edge_vec= edge[0]- edge[1];
 	edge_vec.Normalize();
@@ -252,7 +252,7 @@ bool p_BlockSide::HasCollisionWithCircle( m_Vec2 pos,  float radius )
 	else return false;
 }
 
-m_Vec2 p_BlockSide::CollideWithCirlce( m_Vec2 pos, float radius )
+m_Vec2 p_BlockSide::CollideWithCirlce( m_Vec2 pos, float radius ) const
 {
 	m_Vec2 edge_vec= edge[0]- edge[1];
 	edge_vec.Normalize();

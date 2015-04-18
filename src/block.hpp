@@ -11,21 +11,21 @@ public:
 	h_Block( h_BlockType type= AIR, unsigned short additional_data= 0 );
 	~h_Block() {}
 
-	h_BlockType Type();
-	h_TransparencyType Transparency();
-	unsigned short AdditionalData();
+	h_BlockType Type() const;
+	h_TransparencyType Transparency() const;
+	unsigned short AdditionalData() const;
 
 protected:
 	h_BlockType type_;
 	unsigned short additional_data_;//for water level\etc.
 };
 
-inline h_BlockType h_Block::Type()
+inline h_BlockType h_Block::Type() const
 {
 	return type_;
 }
 
-inline unsigned short h_Block::AdditionalData()
+inline unsigned short h_Block::AdditionalData() const
 {
 	return additional_data_;
 }

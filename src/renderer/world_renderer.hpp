@@ -71,8 +71,8 @@ public:
 	bool chunk_data_updated, chunk_water_data_updated;
 	bool chunk_mesh_rebuilded;
 
-	h_Chunk* chunk;
-	h_Chunk* chunk_front, *chunk_right, *chunk_back_right, *chunk_back;
+	const h_Chunk* chunk;
+	const h_Chunk* chunk_front, *chunk_right, *chunk_back_right, *chunk_back;
 };
 
 
@@ -98,9 +98,8 @@ class r_WorldRenderer : public QObject, public r_IWorldRenderer
 {
 public:
 
-	r_WorldRenderer( h_World* w );
+	r_WorldRenderer( const h_World* w );
 	~r_WorldRenderer();
-
 
 	void Draw();
 
@@ -118,8 +117,7 @@ public: // r_IWorldRenderer
 	virtual void UpdateChunkWater( unsigned short,  unsigned short ) override;
 	virtual void FullUpdate() override;
 
-	void Update() override {UpdateFunc();
-						   };
+	void Update() override {UpdateFunc();}
 private:
 
 	void LoadShaders();
@@ -246,7 +244,7 @@ private:
 	m_Mat4 view_matrix, block_scale_matrix, block_final_matrix, water_final_matrix;
 	m_Vec3 cam_ang, cam_pos, build_pos, sun_vector;
 
-	h_World* world;
+	const h_World* world;
 
 	unsigned int quadchunk_num_x, quadchunk_num_y;
 	unsigned int chunk_num_x, chunk_num_y;

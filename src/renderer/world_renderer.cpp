@@ -1157,7 +1157,7 @@ void r_WorldRenderer::BuildWorld()
 
 }
 
-r_WorldRenderer::r_WorldRenderer( h_World* w ):
+r_WorldRenderer::r_WorldRenderer( const h_World* w ):
 	world(w),
 	host_data_mutex( QMutex::NonRecursive ), gpu_data_mutex( QMutex::NonRecursive ),
 	//update_thread( &r_WorldRenderer::UpdateFunc, (r_WorldRenderer*) this, 1u ),

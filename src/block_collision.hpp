@@ -8,7 +8,7 @@ public:
 	p_UpperBlockFace() {}
 	~p_UpperBlockFace() {}
 	void Gen( short x, short y, short z, h_Direction dir );
-	bool HasCollisionWithCircle( m_Vec2 pos,  float radius );
+	bool HasCollisionWithCircle( m_Vec2 pos,  float radius ) const;
 	template< unsigned char (*func)(short, short, short ) >
 	void BuildSubMesh();
 
@@ -23,8 +23,8 @@ public:
 	p_BlockSide() {}
 	~p_BlockSide() {}
 	void Gen( short x, short y, short z, h_Direction dir );
-	bool HasCollisionWithCircle( m_Vec2 pos,  float radius );
-	m_Vec2 CollideWithCirlce( m_Vec2 pos, float radius );// returns new position of circle
+	bool HasCollisionWithCircle( m_Vec2 pos,  float radius ) const;
+	m_Vec2 CollideWithCirlce( m_Vec2 pos, float radius ) const;// returns new position of circle
 
 	m_Vec2 edge[2];//xy coordinates of edge vertices
 	float z;//coordinate of lower edge

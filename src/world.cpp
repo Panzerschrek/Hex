@@ -3,7 +3,7 @@
 #include "math_lib/m_math.h"
 #include "renderer/i_world_renderer.hpp"
 
-bool h_World::InBorders( short x, short y, short z )
+bool h_World::InBorders( short x, short y, short z ) const
 {
 	bool outside= x < 0 || y < 0 ||
 				  x > H_CHUNK_WIDTH * ChunkNumberX() || y > H_CHUNK_WIDTH * ChunkNumberY() ||
@@ -11,7 +11,7 @@ bool h_World::InBorders( short x, short y, short z )
 	return !outside;
 }
 
-bool h_World::CanBuild( short x, short y, short z )
+bool h_World::CanBuild( short x, short y, short z ) const
 {
 	return GetChunk( x>> H_CHUNK_WIDTH_LOG2, y>> H_CHUNK_WIDTH_LOG2 )->
 		   GetBlock( x% H_CHUNK_WIDTH, y% H_CHUNK_WIDTH, z )->Type() == AIR;
@@ -61,12 +61,12 @@ h_World::h_World():
 }
 
 
-void h_World::Lock()
+void h_World::Lock() const
 {
 	world_mutex_.lock();
 }
 
-void h_World::Unlock()
+void h_World::Unlock() const
 {
 	world_mutex_.unlock();
 }

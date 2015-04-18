@@ -1,7 +1,7 @@
 #include "hex.hpp"
 #include "block.hpp"
 
-h_TransparencyType h_Block::Transparency()
+h_TransparencyType h_Block::Transparency() const
 {
 	h_TransparencyType t;
 	switch(type_)

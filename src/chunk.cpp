@@ -48,7 +48,7 @@ fixed16_t FinalNoise( int x, int y )
 }
 
 
-bool h_Chunk::IsEdgeChunk()
+bool h_Chunk::IsEdgeChunk() const
 {
 	//return true;
 	return longitude == world->Longitude() || latitude == world->Latitude() ||

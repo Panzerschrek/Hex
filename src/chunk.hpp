@@ -24,17 +24,19 @@ public:
 	~h_Chunk();
 
 	//get functions - local coordinates
-	unsigned char Transparency( short x, short y, short z );
-	unsigned char* GetTransparencyData();
-	h_Block* 	GetBlock ( short x, short y, short z );
+	unsigned char Transparency( short x, short y, short z ) const;
+	const unsigned char* GetTransparencyData() const;
+	h_Block* GetBlock( short x, short y, short z );
+	const h_Block* GetBlock( short x, short y, short z ) const;
 	const m_Collection< h_LiquidBlock* >* GetWaterList() const;
 	const m_Collection< h_LightSource* >* GetLightSourceList() const;
 	h_World* GetWorld();
+	const h_World* GetWorld() const;
 
 
-	short Longitude();
-	short Latitude();
-	bool IsEdgeChunk();
+	short Longitude() const;
+	short Latitude() const;
+	bool IsEdgeChunk() const;
 
 	unsigned int GetWaterColumnHeight( short x, short y, short z );
 	unsigned char SunLightLevel( short x, short y, short z ) const;
@@ -43,7 +45,6 @@ public:
 
 
 private:
-
 	h_World* world;
 
 	void GenChunk();
@@ -116,7 +117,7 @@ inline const m_Collection< h_LightSource* >* h_Chunk::GetLightSourceList() const
 	return & light_source_list;
 }
 
-inline unsigned char h_Chunk::Transparency( short x, short y, short z )
+inline unsigned char h_Chunk::Transparency( short x, short y, short z ) const
 {
 	return transparency[	 z |
 							 ( y << H_CHUNK_HEIGHT_LOG2 ) |
@@ -125,6 +126,14 @@ inline unsigned char h_Chunk::Transparency( short x, short y, short z )
 }
 
 inline h_Block* h_Chunk::GetBlock( short x, short y, short z )
+{
+	return blocks[	 z |
+					 ( y << H_CHUNK_HEIGHT_LOG2 ) |
+					 ( x << ( H_CHUNK_HEIGHT_LOG2 + H_CHUNK_WIDTH_LOG2 ) )
+				 ];
+}
+
+inline const h_Block* h_Chunk::GetBlock( short x, short y, short z ) const
 {
 	return blocks[	 z |
 					 ( y << H_CHUNK_HEIGHT_LOG2 ) |
@@ -184,18 +193,23 @@ inline void h_Chunk::SetFireLightLevel( short x, short y, short z, unsigned char
 					 ( x << ( H_CHUNK_HEIGHT_LOG2 + H_CHUNK_WIDTH_LOG2 ) ) ]= l;
 }
 
-inline unsigned char* h_Chunk::GetTransparencyData()
+inline const unsigned char* h_Chunk::GetTransparencyData() const
 {
 	return transparency;
 }
 
-inline short h_Chunk::Longitude()
+inline short h_Chunk::Longitude() const
 {
 	return longitude;
 }
-inline short h_Chunk::Latitude()
+inline short h_Chunk::Latitude() const
 {
 	return latitude;
+}
+
+inline const h_World* h_Chunk::GetWorld() const
+{
+	return world;
 }
 
 inline h_World* h_Chunk::GetWorld()

@@ -25,8 +25,8 @@ public:
 	const h_Chunk* GetChunk( short X, short Y ) const;//relative chunk coordinates
 
 	//really, returns longitude/2 and latitude/2
-	int ChunkCoordToQuadchunkX( int longitude );
-	int ChunkCoordToQuadchunkY( int latitude );
+	int ChunkCoordToQuadchunkX( int longitude ) const;
+	int ChunkCoordToQuadchunkY( int latitude ) const;
 
 	int ChunkNumberX() const;
 	int ChunkNumberY() const;
@@ -51,9 +51,8 @@ public:
 	h_World();
 	~h_World();
 
-	void Lock();
-	void Unlock();
-
+	void Lock() const;
+	void Unlock() const;
 
 	//returns light level of forward-forwardright upper vertex of prism X16. coordinates - relative
 	void GetForwardVertexLight( short x, short y, short z, unsigned char* out_light ) const;
@@ -63,11 +62,6 @@ public:
 	unsigned char SunLightLevel( short x, short y, short z ) const;
 	unsigned char FireLightLevel( short x, short y, short z ) const;
 
-
-signals:
-	void ChunkUpdated( unsigned short, unsigned short );
-	void ChunkWaterUpdated( unsigned short, unsigned short );
-	void FullUpdate();
 private:
 
 	void Build( short x, short y, short z, h_BlockType block_type );//coordinates - relative
@@ -112,8 +106,8 @@ private:
 
 
 	void BlastBlock_r( short x, short y, short z, short blast_power );
-	bool InBorders( short x, short y, short z );
-	bool CanBuild( short x, short y, short z );
+	bool InBorders( short x, short y, short z ) const;
+	bool CanBuild( short x, short y, short z ) const;
 
 	void RelightWaterModifedChunksLight();//relight chunks, where water was modifed in last ticks
 	void WaterPhysTick();
@@ -147,7 +141,7 @@ private:
 	unsigned int phys_tick_count_;
 	h_Thread< h_World > phys_thread_;
 	void PhysTick();
-	QMutex world_mutex_;
+	mutable QMutex world_mutex_;
 
 	//queue 0 - for enqueue, queue 1 - for dequeue
 	std::queue< h_WorldAction > action_queue_[2];
@@ -237,11 +231,11 @@ inline short h_World::ClampZ( short z ) const
 }
 
 
-inline int h_World::ChunkCoordToQuadchunkX( int longitude )
+inline int h_World::ChunkCoordToQuadchunkX( int longitude ) const
 {
 	return longitude_>>1;
 }
-inline int h_World::ChunkCoordToQuadchunkY( int latitude )
+inline int h_World::ChunkCoordToQuadchunkY( int latitude ) const
 {
 	return latitude_>>1;
 }
