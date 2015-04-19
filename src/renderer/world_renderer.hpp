@@ -17,8 +17,8 @@
 #include "matrix.hpp"
 #include "../math_lib/collection.hpp"
 
-
 #pragma pack( push, 1 )
+
 struct r_WorldVertex
 {
 	short coord[3];
@@ -35,7 +35,6 @@ struct r_WaterVertex
 };//8b struct
 
 #pragma pack( pop )
-
 
 
 class r_ChunkInfo
@@ -83,35 +82,32 @@ public:
 	bool water_mesh_rebuilded_;
 
 	r_ChunkInfo* chunks_[2][2];
-
 };
 
-class r_WorldRenderer : public QObject, public r_IWorldRenderer
+class r_WorldRenderer : public r_IWorldRenderer
 {
 public:
-
-	r_WorldRenderer( const h_World* w );
-	~r_WorldRenderer();
-
-	void Draw();
-
-	void Init();
-	void InitGL();
-
-	void SetCamPos( m_Vec3 p );
-	void SetCamAng( m_Vec3 a );
-	void SetBuildPos( m_Vec3 p );
-	void SetViewportSize( unsigned int v_x, unsigned int v_y );
-
+	r_WorldRenderer( const h_World* world );
+	virtual ~r_WorldRenderer() override;
 
 public: // r_IWorldRenderer
 	virtual void UpdateChunk( unsigned short,  unsigned short ) override;
 	virtual void UpdateChunkWater( unsigned short,  unsigned short ) override;
 	virtual void FullUpdate() override;
 
+public:
 	void Update() override {UpdateFunc();}
-private:
+	void Draw();
 
+	void Init();
+	void InitGL();
+
+	void SetCamPos( const m_Vec3& p );
+	void SetCamAng( const m_Vec3& a );
+	void SetBuildPos( const m_Vec3& p );
+	void SetViewportSize( unsigned int viewport_width, unsigned int viewport_height );
+
+private:
 	void LoadShaders();
 	void LoadTextures();
 	void InitFrameBuffers();
@@ -136,6 +132,9 @@ private:
 
 	void CalculateFPS();
 
+private:
+	const h_World* world_;
+
 	//perfomance metrics
 	unsigned int update_count;
 	unsigned int frame_count;
@@ -148,10 +147,8 @@ private:
 	unsigned int water_quadchunks_updates_per_second, water_quadchunks_updates_in_last_second;
 	unsigned int water_quadchunks_rebuild_per_second, water_quadchunks_rebuild_in_last_second;
 
-
-	//shaders
+	// Shaders
 	r_GLSLProgram world_shader, build_prism_shader, water_shader, skybox_shader, sun_shader, console_bg_shader, supersampling_final_shader;
-
 
 	//VBO
 	r_PolygonBuffer build_prism_vbo;
@@ -182,7 +179,6 @@ private:
 	r_WorldVBO world_vertex_buffer_, world_vertex_buffer_to_draw_;
 	r_WorldVBO* draw_vertex_buffer_, *gen_vertex_buffer;
 
-
 	struct
 	{
 		r_PolygonBuffer vbo;
@@ -200,8 +196,6 @@ private:
 		int* chunk_meshes_index_count, *base_vertices;
 		int**  multi_indeces;//array of nulls
 		unsigned int quadchunks_to_draw;
-
-
 	} water_vb;
 
 	struct
@@ -221,8 +215,8 @@ private:
 		m_Vec3 sun_direction;
 	} lighting_data;
 
-	//frame buffers
-	unsigned viewport_x, viewport_y;
+	//framebuffers
+	unsigned viewport_width_, viewport_height_;
 	r_Framebuffer supersampling_buffer;
 
 	//textures
@@ -231,12 +225,9 @@ private:
 	r_FramebufferTexture water_texture;
 	r_FramebufferTexture console_bg_texture;
 
-
 	//matrices and vectors
 	m_Mat4 view_matrix, block_scale_matrix, block_final_matrix, water_final_matrix;
 	m_Vec3 cam_ang, cam_pos, build_pos, sun_vector;
-
-	const h_World* world;
 
 	unsigned int quadchunk_num_x, quadchunk_num_y;
 	unsigned int chunk_num_x, chunk_num_y;
@@ -259,24 +250,23 @@ private:
 
 };
 
-
-inline void r_WorldRenderer::SetCamPos( m_Vec3 p )
+inline void r_WorldRenderer::SetCamPos( const m_Vec3& p )
 {
 	cam_pos= p;
 }
 
-inline void r_WorldRenderer::SetCamAng( m_Vec3 a )
+inline void r_WorldRenderer::SetCamAng( const m_Vec3& a )
 {
 	cam_ang= a;
 }
 
-inline void r_WorldRenderer::SetViewportSize( unsigned int v_x, unsigned int v_y )
-{
-	viewport_x= v_x;
-	viewport_y= v_y;
-}
-
-inline void r_WorldRenderer::SetBuildPos( m_Vec3 p )
+inline void r_WorldRenderer::SetBuildPos( const m_Vec3& p )
 {
 	build_pos= p;
+}
+
+inline void r_WorldRenderer::SetViewportSize( unsigned int viewport_width, unsigned int viewport_height )
+{
+	viewport_width_= viewport_width;
+	viewport_height_= viewport_height;
 }

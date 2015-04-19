@@ -11,12 +11,42 @@
 
 #include "../world.hpp"
 
+r_WorldRenderer::r_WorldRenderer( const h_World* world )
+	: world_(world)
+	, host_data_mutex( QMutex::NonRecursive ), gpu_data_mutex( QMutex::NonRecursive )
+	, settings( "config.ini", QSettings::IniFormat )
+	, frame_count(0), update_count(0)
+	, sun_vector( 0.7f, 0.8f, 0.6f )
+{
+	world_vb.need_update_vbo= false;
+
+	startup_time= QTime::currentTime();
+
+	last_fps= 0;
+	last_fps_time= QTime::currentTime();
+	frames_in_last_second= 0;
+	chunk_updates_in_last_second = chunk_updates_per_second= 0;
+	chunks_rebuild_per_second= chunk_rebuild_in_last_second= 0;
+
+	water_quadchunks_updates_per_second= water_quadchunks_updates_in_last_second= 0;
+	water_quadchunks_rebuild_per_second= water_quadchunks_rebuild_in_last_second= 0;
+
+	updade_ticks_per_second= update_ticks_in_last_second= 0;
+}
+
+r_WorldRenderer::~r_WorldRenderer()
+{
+	//update_thread.killTimer(
+	//update_thread.wait();
+	//update_thread.exit();
+}
+
 void r_WorldRenderer::UpdateChunk(unsigned short X,  unsigned short Y )
 {
 	if( frame_count == 0 )
 		return;
 	else
-		chunk_info[ X + Y * world->ChunkNumberX() ].chunk_data_updated_= true;
+		chunk_info[ X + Y * world_->ChunkNumberX() ].chunk_data_updated_= true;
 }
 
 void r_WorldRenderer::UpdateChunkWater(unsigned short X,  unsigned short Y )
@@ -24,53 +54,51 @@ void r_WorldRenderer::UpdateChunkWater(unsigned short X,  unsigned short Y )
 	if( frame_count == 0 )
 		return;
 	else
-		chunk_info[ X + Y * world->ChunkNumberX() ].chunk_water_data_updated_= true;
+		chunk_info[ X + Y * world_->ChunkNumberX() ].chunk_water_data_updated_= true;
 }
 
 void r_WorldRenderer::FullUpdate()
 {
 	return;
 
-
 	if( frame_count == 0 )
 		return;
-	for( unsigned int i= 0; i< world->ChunkNumberX(); i++ )
-		for( unsigned int j= 0; j< world->ChunkNumberY(); j++ )
+	for( unsigned int i= 0; i< world_->ChunkNumberX(); i++ )
+		for( unsigned int j= 0; j< world_->ChunkNumberY(); j++ )
 		{
-			r_ChunkInfo* ch= &chunk_info[ i + j * world->ChunkNumberX() ];
+			r_ChunkInfo* ch= &chunk_info[ i + j * world_->ChunkNumberX() ];
 			ch->chunk_data_updated_= true;
 			ch->chunk_water_data_updated_= true;
-			ch->chunk_= world->GetChunk( i, j );
+			ch->chunk_= world_->GetChunk( i, j );
 			if( j!= 0 )
 			{
-				ch->chunk_back_= world->GetChunk( i, j-1 );
-				if( i!= world->ChunkNumberX() - 1 )
-					ch->chunk_back_right_= world->GetChunk( i + 1, j - 1 );
+				ch->chunk_back_= world_->GetChunk( i, j-1 );
+				if( i!= world_->ChunkNumberX() - 1 )
+					ch->chunk_back_right_= world_->GetChunk( i + 1, j - 1 );
 				else
 					ch->chunk_back_right_= nullptr;
 			}
 			else
 				ch->chunk_back_right_= ch->chunk_back_= nullptr;
 
-			if( j!= world->ChunkNumberY() - 1 )
-				ch->chunk_front_= world->GetChunk( i, j+1 );
+			if( j!= world_->ChunkNumberY() - 1 )
+				ch->chunk_front_= world_->GetChunk( i, j+1 );
 			else
 				ch->chunk_front_= nullptr;
 
-			if( i!= world->ChunkNumberX() - 1 )
-				ch->chunk_right_= world->GetChunk( i+1, j );
+			if( i!= world_->ChunkNumberX() - 1 )
+				ch->chunk_right_= world_->GetChunk( i+1, j );
 			else
 				ch->chunk_right_= nullptr;
 
-
-			/*if( i < world->ChunkNumberX() - 1 )
-			    chunk_info[k].chunk_right= world->GetChunk( i + 1, j );
-			if( j< world->ChunkNumberY() - 1 )
-			    chunk_info[k].chunk_front= world->GetChunk( i, j + 1 );
+			/*if( i < world_->ChunkNumberX() - 1 )
+			    chunk_info[k].chunk_right= world_->GetChunk( i + 1, j );
+			if( j< world_->ChunkNumberY() - 1 )
+			    chunk_info[k].chunk_front= world_->GetChunk( i, j + 1 );
 			if( j > 0 )
-			    chunk_info[k].chunk_back= world->GetChunk( i, j - 1 );
-			if( j > 0 && i < world->ChunkNumberX() - 1 )
-			    chunk_info[k].chunk_back_right= world->GetChunk( i + 1, j - 1 );*/
+			    chunk_info[k].chunk_back= world_->GetChunk( i, j - 1 );
+			if( j > 0 && i < world_->ChunkNumberX() - 1 )
+			    chunk_info[k].chunk_back_right= world_->GetChunk( i + 1, j - 1 );*/
 		}
 }
 
@@ -156,7 +184,6 @@ void r_WorldRenderer::UpdateWorld()
 			}// if need rebuild all cluster
 		}
 
-
 	for( int y= 0; y< chunk_num_y; y++ )
 		for( int x= 0; x< chunk_num_x; x++ )
 		{
@@ -178,7 +205,7 @@ void r_WorldRenderer::UpdateWorld()
 	host_data_mutex.unlock();
 
 	/*host_data_mutex.lock();
-	world->Lock();
+	world_->Lock();
 
 	unsigned int i, j, n;
 	bool full_update= false;
@@ -187,10 +214,10 @@ void r_WorldRenderer::UpdateWorld()
 	unsigned int vb_shift;
 	unsigned int new_allocated_vertex_count= 0;
 
-	for( i= 0; i< world->ChunkNumberX(); i++ )
-	    for( j= 0; j< world->ChunkNumberY(); j++ )
+	for( i= 0; i< world_->ChunkNumberX(); i++ )
+	    for( j= 0; j< world_->ChunkNumberY(); j++ )
 	    {
-	        n=  i + j * world->ChunkNumberX();
+	        n=  i + j * world_->ChunkNumberX();
 	        if( chunk_info[n].chunk_data_updated )
 	        {
 	            chunk_info[n].GetQuadCount();
@@ -202,10 +229,10 @@ void r_WorldRenderer::UpdateWorld()
 	if( full_update )
 	{
 	    h_Console::Message( "full update" );
-	    for( i= 0; i< world->ChunkNumberX(); i++ )
-	        for( j= 0; j< world->ChunkNumberY(); j++ )
+	    for( i= 0; i< world_->ChunkNumberX(); i++ )
+	        for( j= 0; j< world_->ChunkNumberY(); j++ )
 	        {
-	            n=  i + j * world->ChunkNumberX();
+	            n=  i + j * world_->ChunkNumberX();
 	            if( chunk_info[n].chunk_data_updated )
 	                new_allocated_vertex_count+=
 	                    chunk_info[n].chunk_vb.allocated_vertex_count= chunk_info[n].chunk_vb.new_vertex_count +
@@ -219,10 +246,10 @@ void r_WorldRenderer::UpdateWorld()
 	    world_vb.new_vb_data= new r_WorldVertex[ new_allocated_vertex_count ];
 
 	    vb_shift= 0;
-	    for( i= 0; i< world->ChunkNumberX(); i++ )
-	        for( j= 0; j< world->ChunkNumberY(); j++ )
+	    for( i= 0; i< world_->ChunkNumberX(); i++ )
+	        for( j= 0; j< world_->ChunkNumberY(); j++ )
 	        {
-	            n=  i + j * world->ChunkNumberX();
+	            n=  i + j * world_->ChunkNumberX();
 	            old_chunk_vb_data= chunk_info[n].chunk_vb.vb_data;
 	            chunk_info[n].chunk_vb.vb_data= world_vb.new_vb_data + vb_shift;
 
@@ -240,10 +267,10 @@ void r_WorldRenderer::UpdateWorld()
 	}//if full update
 
 
-	for( i= 0; i< world->ChunkNumberX(); i++ )
-	    for( j= 0; j< world->ChunkNumberY(); j++ )
+	for( i= 0; i< world_->ChunkNumberX(); i++ )
+	    for( j= 0; j< world_->ChunkNumberY(); j++ )
 	    {
-	        n=  i + j * world->ChunkNumberX();
+	        n=  i + j * world_->ChunkNumberX();
 	        if( chunk_info[n].chunk_data_updated )
 	        {
 	            chunk_info[n].BuildChunkMesh();
@@ -254,8 +281,7 @@ void r_WorldRenderer::UpdateWorld()
 	        }
 	    }
 
-
-	world->Unlock();
+	world_->Unlock();
 	host_data_mutex.unlock();
 
 	if( any_vbo_updated )
@@ -376,13 +402,11 @@ void r_WorldRenderer::UpdateWater()
 		}
 		gpu_data_mutex.unlock();
 	}
-
 }
 
 void r_WorldRenderer::UpdateFunc()
 {
 	return;
-
 
 	//while(1)
 	//{
@@ -403,7 +427,6 @@ void r_WorldRenderer::UpdateFunc()
 	//}
 }
 
-
 void r_WorldRenderer::UpdateGPUData()
 {	return;
 	/*gpu_data_mutex.lock();
@@ -418,10 +441,10 @@ void r_WorldRenderer::UpdateGPUData()
 	        world_vb.vb_data= world_vb.new_vb_data;
 	        world_vb.vbo.VertexData( (float*) world_vb.vb_data, world_vb.allocated_vertex_count * sizeof( r_WorldVertex ),
 	                                 sizeof( r_WorldVertex ) );
-	        for( i= 0; i< world->ChunkNumberX(); i++ )
-	            for( j= 0; j< world->ChunkNumberY(); j++ )
+	        for( i= 0; i< world_->ChunkNumberX(); i++ )
+	            for( j= 0; j< world_->ChunkNumberY(); j++ )
 	            {
-	                n=  i + j * world->ChunkNumberX();
+	                n=  i + j * world_->ChunkNumberX();
 	                if( chunk_info[n].chunk_mesh_rebuilded )
 	                {
 	                    chunk_info[n].chunk_mesh_rebuilded= false;
@@ -430,17 +453,17 @@ void r_WorldRenderer::UpdateGPUData()
 	            }
 
 	        memcpy( chunk_info_to_draw, chunk_info,
-	                sizeof( r_ChunkInfo ) * world->ChunkNumberX() * world->ChunkNumberY() );
+	                sizeof( r_ChunkInfo ) * world_->ChunkNumberX() * world_->ChunkNumberY() );
 
 	        world_vb.need_update_vbo= false;
-	        chunk_updates_in_last_second+= world->ChunkNumberX() * world->ChunkNumberY();
+	        chunk_updates_in_last_second+= world_->ChunkNumberX() * world_->ChunkNumberY();
 	        h_Console::Message( "GPU full update" );
 	    }
 	    else
-	        for( i= 0; i< world->ChunkNumberX(); i++ )
-	            for( j= 0; j< world->ChunkNumberY(); j++ )
+	        for( i= 0; i< world_->ChunkNumberX(); i++ )
+	            for( j= 0; j< world_->ChunkNumberY(); j++ )
 	            {
-	                n=  i + j * world->ChunkNumberX();
+	                n=  i + j * world_->ChunkNumberX();
 	                if( chunk_info[n].chunk_mesh_rebuilded )
 	                {
 	                    world_vb.vbo.VertexSubData( chunk_info[n].chunk_vb.vb_data,
@@ -528,7 +551,6 @@ void r_WorldRenderer::UpdateGPUData()
 				}
 		}
 
-
 		water_vb.vbo_update_ready= false;
 		host_data_mutex.unlock();
 	}
@@ -548,9 +570,10 @@ void r_WorldRenderer::CalculateMatrices()
 								  , H_BLOCK_SCALE_VECTOR_Z );//hexogonal prism scale vector. DO NOT TOUCH!
 	scale.Scale( s_vector );
 
-	perspective.PerspectiveProjection( float(viewport_x)/float(viewport_y), 1.57f,
-									   0.5f*(H_PLAYER_HEIGHT - H_PLAYER_EYE_LEVEL),//znear
-									   1024.0f );
+	perspective.PerspectiveProjection(
+		float(viewport_width_)/float(viewport_height_), 1.57f,
+		0.5f*(H_PLAYER_HEIGHT - H_PLAYER_EYE_LEVEL),//znear
+		1024.0f );
 
 	rotate_x.RotateX( -cam_ang.x );
 	rotate_z.Identity();
@@ -577,17 +600,17 @@ void r_WorldRenderer::BuildChunkList()
 {
 	unsigned int k;
 	r_ChunkInfo* ch;
-	for( unsigned int i=0; i< world->ChunkNumberX(); i++ )
-		for( unsigned int j= 0; j< world->ChunkNumberY(); j++ )
+	for( unsigned int i=0; i< world_->ChunkNumberX(); i++ )
+		for( unsigned int j= 0; j< world_->ChunkNumberY(); j++ )
 		{
-			k= i + j * world->ChunkNumberX();
+			k= i + j * world_->ChunkNumberX();
 			ch= &chunk_info_to_draw[ k ];
 			world_vb.chunk_meshes_index_count[k]= ch->chunk_vb_.real_vertex_count * 6 / 4;
 			world_vb.base_vertices[k]= ch->chunk_vb_.vb_data - world_vb.vb_data;
 			world_vb.multi_indeces[k]= nullptr;
 		}
 
-	world_vb.chunks_to_draw= world->ChunkNumberX() * world->ChunkNumberY();
+	world_vb.chunks_to_draw= world_->ChunkNumberX() * world_->ChunkNumberY();
 
 	k= 0;
 	for( unsigned int j= 0; j< quadchunk_num_y; j++ )
@@ -605,7 +628,6 @@ void r_WorldRenderer::BuildChunkList()
 	water_vb.quadchunks_to_draw= k;
 }
 
-
 void r_WorldRenderer::Draw()
 {
 	if( frame_count == 0 )
@@ -620,7 +642,6 @@ void r_WorldRenderer::Draw()
 	//supersampling_buffer.Bind();
 	//glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT );
 
-
 	BuildChunkList();
 	DrawWorld();
 	DrawSky();
@@ -628,7 +649,6 @@ void r_WorldRenderer::Draw()
 	weather_effects_particle_manager.Draw( view_matrix, cam_pos );
 
 	DrawBuildPrism();
-
 	DrawWater();
 
 	/*r_Framebuffer::BindScreenFramebuffer();
@@ -639,8 +659,6 @@ void r_WorldRenderer::Draw()
 	(*supersampling_buffer.GetTextures())[0].Bind(0);
 	supersampling_final_shader.Uniform( "frame_buffer", 0 );
 	glDrawArrays( GL_TRIANGLES, 0, 6 );*/
-
-
 
 	DrawConsole();
 
@@ -665,7 +683,6 @@ void r_WorldRenderer::Draw()
 	CalculateFPS();
 }
 
-
 void r_WorldRenderer::DrawConsole()
 {
 	static const GLenum state_blend_mode[]= { GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA };
@@ -683,15 +700,13 @@ void r_WorldRenderer::DrawConsole()
 
 	r_OGLStateManager::UpdateState( state );
 
-
 	console_bg_shader.Bind();
 	console_bg_shader.Uniform( "tex", 0 );
 	console_bg_shader.Uniform( "pos", 1.0f - h_Console::GetPosition() );
-	m_Vec3 scr_size( viewport_x, viewport_y, 0.0f );
+	m_Vec3 scr_size( viewport_width_, viewport_height_, 0.0f );
 	console_bg_shader.Uniform( "screen_size", scr_size );
 
 	console_bg_texture.Bind(0);
-
 
 	glDrawArrays( GL_POINTS, 0, 1 );
 	h_Console::Draw( text_manager );
@@ -802,7 +817,6 @@ void r_WorldRenderer::DrawSky()
 		1.0f, GL_FRONT, GL_TRUE );
 	r_OGLStateManager::UpdateState( state );
 
-
 	skybox_shader.Bind();
 	skybox_shader.Uniform( "cam_pos", cam_pos );
 	skybox_shader.Uniform( "view_matrix", view_matrix );
@@ -821,8 +835,6 @@ void r_WorldRenderer::DrawSun()
 		state_clear_color,
 		1.0f, GL_FRONT, GL_TRUE );
 	r_OGLStateManager::UpdateState( state );
-
-
 
 	sun_texture.Bind(0);
 
@@ -845,7 +857,6 @@ void r_WorldRenderer::DrawWater()
 		state_clear_color,
 		1.0f, GL_FRONT, GL_TRUE );
 	r_OGLStateManager::UpdateState( state );
-
 
 	//water_texture.BindTexture( 0 );
 	water_texture.Bind(0);
@@ -903,19 +914,17 @@ void r_WorldRenderer::DrawBuildPrism()
 	build_prism_shader.Uniform( "cam_pos", cam_pos );
 
 	build_prism_vbo.Bind();
-
 	build_prism_vbo.Show();
 }
-
 
 void r_WorldRenderer::BuildWorldWater()
 {
 	/*build quadchunk data structures*/
-	quadchunk_num_x= 1 + world->ChunkNumberX()/2;
-	//if( quadchunk_num_x * 2 != world->ChunkNumberX() )
+	quadchunk_num_x= 1 + world_->ChunkNumberX()/2;
+	//if( quadchunk_num_x * 2 != world_->ChunkNumberX() )
 	//	quadchunk_num_x++;
-	quadchunk_num_y= 1 + world->ChunkNumberY()/2;
-	//if( quadchunk_num_y * 2 != world->ChunkNumberY() )
+	quadchunk_num_y= 1 + world_->ChunkNumberY()/2;
+	//if( quadchunk_num_y * 2 != world_->ChunkNumberY() )
 	//	quadchunk_num_y++;
 	water_quadchunk_info= new r_WaterQuadChunkInfo[ quadchunk_num_x * quadchunk_num_y ];
 	water_quadchunk_info_to_draw= new r_WaterQuadChunkInfo[ quadchunk_num_x * quadchunk_num_y ];
@@ -944,8 +953,8 @@ void r_WorldRenderer::BuildWorldWater()
 			ch->chunks_[1][0]= nullptr;
 			ch->chunks_[1][1]= nullptr;
 		}
-	int first_quadchunk_longitude= world->ChunkCoordToQuadchunkX( chunk_info[0].chunk_->Longitude() );
-	int first_quadchunk_latitude= world->ChunkCoordToQuadchunkY( chunk_info[0].chunk_->Latitude() );
+	int first_quadchunk_longitude= world_->ChunkCoordToQuadchunkX( chunk_info[0].chunk_->Longitude() );
+	int first_quadchunk_latitude= world_->ChunkCoordToQuadchunkY( chunk_info[0].chunk_->Latitude() );
 	for( unsigned int i= 0; i< chunk_num_x; i++ )
 		for( unsigned int j= 0; j< chunk_num_y; j++ )
 		{
@@ -990,7 +999,6 @@ void r_WorldRenderer::BuildWorldWater()
 		}
 	//allocate memory for vertices and build water quadchunk meshes
 
-
 	//generate index buffer for hexagons
 	water_vb.index_buffer_size= 65520;
 	water_vb.vb_index_data= new unsigned short[ water_vb.index_buffer_size ];
@@ -1013,13 +1021,10 @@ void r_WorldRenderer::BuildWorldWater()
 		water_vb.vb_index_data[i+11]= j+4;
 	}
 
-
 	water_vb.vbo_update_ready= false;
 	water_vb.need_update_vbo= false;
 	memcpy( water_quadchunk_info_to_draw, water_quadchunk_info,
 			sizeof( r_WaterQuadChunkInfo ) * quadchunk_num_x * quadchunk_num_y );
-
-
 
 	water_vb.chunk_meshes_index_count= new int[ quadchunk_num_x * quadchunk_num_y ];
 	water_vb.base_vertices= new int[ quadchunk_num_x * quadchunk_num_y ];
@@ -1028,19 +1033,19 @@ void r_WorldRenderer::BuildWorldWater()
 
 void r_WorldRenderer::BuildWorld()
 {
-	chunk_num_x= world->ChunkNumberX();
-	chunk_num_y= world->ChunkNumberY();
+	chunk_num_x= world_->ChunkNumberX();
+	chunk_num_y= world_->ChunkNumberY();
 
 	// srcete structures of world vertex buffer
 	{
 		world_vertex_buffer_.chunks_per_cluster_x_= 8;
 		world_vertex_buffer_.chunks_per_cluster_y_= 8;
 
-		int min_longitude= m_Math::DivNonNegativeRemainder( world->Longitude(), world_vertex_buffer_.chunks_per_cluster_x_ );
-		int min_latitude=  m_Math::DivNonNegativeRemainder( world->Latitude() , world_vertex_buffer_.chunks_per_cluster_y_ );
+		int min_longitude= m_Math::DivNonNegativeRemainder( world_->Longitude(), world_vertex_buffer_.chunks_per_cluster_x_ );
+		int min_latitude=  m_Math::DivNonNegativeRemainder( world_->Latitude() , world_vertex_buffer_.chunks_per_cluster_y_ );
 
-		int max_longitude= m_Math::DivNonNegativeRemainder( world->Longitude()+chunk_num_x-1, world_vertex_buffer_.chunks_per_cluster_x_ );
-		int max_latitude=  m_Math::DivNonNegativeRemainder( world->Latitude() +chunk_num_y-1, world_vertex_buffer_.chunks_per_cluster_y_ );
+		int max_longitude= m_Math::DivNonNegativeRemainder( world_->Longitude()+chunk_num_x-1, world_vertex_buffer_.chunks_per_cluster_x_ );
+		int max_latitude=  m_Math::DivNonNegativeRemainder( world_->Latitude() +chunk_num_y-1, world_vertex_buffer_.chunks_per_cluster_y_ );
 
 		world_vertex_buffer_.longitude_= min_longitude * world_vertex_buffer_.chunks_per_cluster_x_;
 		world_vertex_buffer_.latitude_ = min_latitude  * world_vertex_buffer_.chunks_per_cluster_y_;
@@ -1069,19 +1074,19 @@ void r_WorldRenderer::BuildWorld()
 	for( unsigned int i=0; i< chunk_num_x; i++ )
 		for( unsigned int j=0; j< chunk_num_y; j++ )
 		{
-			k= j * world->ChunkNumberX() + i;
-			chunk_info[k].chunk_= world->GetChunk( i, j );
-			if( i < world->ChunkNumberX() - 1 )
-				chunk_info[k].chunk_right_= world->GetChunk( i + 1, j );
+			k= j * world_->ChunkNumberX() + i;
+			chunk_info[k].chunk_= world_->GetChunk( i, j );
+			if( i < world_->ChunkNumberX() - 1 )
+				chunk_info[k].chunk_right_= world_->GetChunk( i + 1, j );
 			else chunk_info[k].chunk_right_= nullptr;
-			if( j< world->ChunkNumberY() - 1 )
-				chunk_info[k].chunk_front_= world->GetChunk( i, j + 1 );
+			if( j< world_->ChunkNumberY() - 1 )
+				chunk_info[k].chunk_front_= world_->GetChunk( i, j + 1 );
 			else chunk_info[k].chunk_front_= nullptr;
 			if( j > 0 )
-				chunk_info[k].chunk_back_= world->GetChunk( i, j - 1 );
+				chunk_info[k].chunk_back_= world_->GetChunk( i, j - 1 );
 			else chunk_info[k].chunk_back_= nullptr;
-			if( j > 0 && i < world->ChunkNumberX() - 1 )
-				chunk_info[k].chunk_back_right_= world->GetChunk( i + 1, j - 1 );
+			if( j > 0 && i < world_->ChunkNumberX() - 1 )
+				chunk_info[k].chunk_back_right_= world_->GetChunk( i + 1, j - 1 );
 			else chunk_info[k].chunk_back_right_= nullptr;
 		}
 
@@ -1090,19 +1095,18 @@ void r_WorldRenderer::BuildWorld()
 	{
 		for( unsigned int j=0; j< chunk_num_y; j++ )
 		{
-			k= j * world->ChunkNumberX() + i;
+			k= j * world_->ChunkNumberX() + i;
 			chunk_info[k].GetQuadCount();
 
 			chunk_info[k].chunk_vb_.allocated_vertex_count=
 				chunk_info[k].chunk_vb_.new_vertex_count +
 				((chunk_info[k].chunk_vb_.new_vertex_count>>2) & 0xFFFFFFFC);
 
-			auto chunk_vb_data= world_vertex_buffer_.GetChunkDataForGlobalCoordinates( i + world->Longitude(), j + world->Latitude() );
+			auto chunk_vb_data= world_vertex_buffer_.GetChunkDataForGlobalCoordinates( i + world_->Longitude(), j + world_->Latitude() );
 			chunk_vb_data->vertex_count_= chunk_info[k].chunk_vb_.new_vertex_count;
 			chunk_vb_data->reserved_vertex_count_= chunk_info[k].chunk_vb_.allocated_vertex_count;
 		}
 	}
-
 
 	// calculate vbo size for clusters and allocate memory
 	for( int j= 0; j< world_vertex_buffer_.cluster_matrix_size_y_; j++ )
@@ -1121,10 +1125,10 @@ void r_WorldRenderer::BuildWorld()
 	{
 		for( unsigned int j=0; j< chunk_num_y; j++ )
 		{
-			k= j * world->ChunkNumberX() + i;
+			k= j * world_->ChunkNumberX() + i;
 
-			auto chunk_vb_data= world_vertex_buffer_.GetChunkDataForGlobalCoordinates( i + world->Longitude(), j + world->Latitude() );
-			auto cluster= world_vertex_buffer_.GetClusterForGlobalCoordinates( i + world->Longitude(), j + world->Latitude() );
+			auto chunk_vb_data= world_vertex_buffer_.GetChunkDataForGlobalCoordinates( i + world_->Longitude(), j + world_->Latitude() );
+			auto cluster= world_vertex_buffer_.GetClusterForGlobalCoordinates( i + world_->Longitude(), j + world_->Latitude() );
 
 			chunk_info[k].chunk_vb_.vb_data= chunk_vb_data->vbo_offset_ + cluster->vbo_data_;
 			chunk_info[k].BuildChunkMesh();
@@ -1133,11 +1137,10 @@ void r_WorldRenderer::BuildWorld()
 
 	world_vb.vbo_update_ready = true;
 
-
 	memcpy( chunk_info_to_draw, chunk_info,
-			sizeof( r_ChunkInfo ) * world->ChunkNumberX() * world->ChunkNumberY() );
+			sizeof( r_ChunkInfo ) * world_->ChunkNumberX() * world_->ChunkNumberY() );
 	//chunk list data
-	unsigned int c= world->ChunkNumberX() * world->ChunkNumberY();
+	unsigned int c= world_->ChunkNumberX() * world_->ChunkNumberY();
 	world_vb.chunk_meshes_index_count= new int[ c ];
 	world_vb.base_vertices= new int[ c ];
 	world_vb.multi_indeces= new int*[ c ];
@@ -1146,51 +1149,7 @@ void r_WorldRenderer::BuildWorld()
 	world_vb.chunk_meshes_water_index_count= new int[c];
 	world_vb.base_water_vertices= new int[ c ];
 
-
 	BuildWorldWater();
-}
-
-r_WorldRenderer::r_WorldRenderer( const h_World* w ):
-	world(w),
-	host_data_mutex( QMutex::NonRecursive ), gpu_data_mutex( QMutex::NonRecursive ),
-	//update_thread( &r_WorldRenderer::UpdateFunc, (r_WorldRenderer*) this, 1u ),
-	settings( "config.ini", QSettings::IniFormat ),
-	frame_count(0),update_count(0),
-	sun_vector( 0.7f, 0.8f, 0.6f )
-{
-	world_vb.need_update_vbo= false;
-
-	/*connect( world, SIGNAL(ChunkUpdated( unsigned short, unsigned short )),
-	         this, SLOT( UpdateChunk( unsigned short, unsigned short ) ), Qt::DirectConnection );
-
-	connect( world, SIGNAL(ChunkWaterUpdated( unsigned short, unsigned short )),
-	         this, SLOT( UpdateChunkWater( unsigned short, unsigned short ) ), Qt::DirectConnection );
-
-	connect( world, SIGNAL(FullUpdate( void )),
-	         this, SLOT( FullUpdate( void ) ), Qt::DirectConnection );*/
-
-
-	startup_time= QTime::currentTime();
-
-
-	last_fps= 0;
-	last_fps_time= QTime::currentTime();
-	frames_in_last_second= 0;
-	chunk_updates_in_last_second = chunk_updates_per_second= 0;
-	chunks_rebuild_per_second= chunk_rebuild_in_last_second= 0;
-
-	water_quadchunks_updates_per_second= water_quadchunks_updates_in_last_second= 0;
-	water_quadchunks_rebuild_per_second= water_quadchunks_rebuild_in_last_second= 0;
-
-	updade_ticks_per_second= update_ticks_in_last_second= 0;
-}
-
-
-r_WorldRenderer::~r_WorldRenderer()
-{
-	//update_thread.killTimer(
-	//update_thread.wait();
-	//update_thread.exit();
 }
 
 void r_WorldRenderer::InitGL()
@@ -1205,8 +1164,7 @@ void r_WorldRenderer::InitGL()
 	LoadTextures();
 
 	text_manager= new r_Text( /*"textures/fixedsys8x18.bmp"*//*"textures/DejaVuSansMono12.bmp"*/"textures/mono_font_sdf.tga" );
-	text_manager->SetViewport( viewport_x, viewport_y );
-
+	text_manager->SetViewport( viewport_width_, viewport_height_ );
 
 	BuildWorld();
 	InitVertexBuffers();
@@ -1251,7 +1209,7 @@ void r_WorldRenderer::LoadShaders()
 	if( !sun_shader.Load( "shaders/sun_frag.glsl",  "shaders/sun_vert.glsl", nullptr ) )
 		h_Console::Error( "sun shader not found" );
 
-	sprintf( define_str, "SUN_SIZE %3.0f", float( viewport_x ) * 0.1f );
+	sprintf( define_str, "SUN_SIZE %3.0f", float( viewport_width_ ) * 0.1f );
 	sun_shader.Define( define_str );
 	sun_shader.Create();
 
@@ -1265,10 +1223,15 @@ void r_WorldRenderer::LoadShaders()
 	supersampling_final_shader.Create();
 
 }
+
 void r_WorldRenderer::InitFrameBuffers()
 {
 	std::vector<r_FramebufferTexture::TextureFormat> formats { r_FramebufferTexture::FORMAT_RGBA8 };
-	supersampling_buffer.Create( formats, r_FramebufferTexture::FORMAT_DEPTH24_STENCIL8, viewport_x*2, viewport_y*2 );
+	supersampling_buffer.Create(
+		formats,
+		r_FramebufferTexture::FORMAT_DEPTH24_STENCIL8,
+		viewport_width_ * 2,
+		viewport_height_ * 2 );
 }
 
 void r_WorldRenderer::InitVertexBuffers()
@@ -1361,9 +1324,6 @@ void r_WorldRenderer::InitVertexBuffers()
 	skybox_vbo.IndexData( sky_indeces, sizeof(quint16) * 36, GL_UNSIGNED_SHORT, GL_TRIANGLES );
 	skybox_vbo.VertexAttribPointer( 0, 3, GL_SHORT, false, 0 );
 
-
-
-
 	world_vertex_buffer_.InitCommonData();
 	for( int j= 0; j< world_vertex_buffer_.cluster_matrix_size_y_; j++ )
 		for( int i= 0; i< world_vertex_buffer_.cluster_matrix_size_x_; i++ )
@@ -1372,10 +1332,8 @@ void r_WorldRenderer::InitVertexBuffers()
 			cluster->LoadVertexBuffer();
 		}
 
-
 	weather_effects_particle_manager.Create( 65536*2, m_Vec3(72.0f, 72.0f, 96.0f) );
 }
-
 
 void r_WorldRenderer::LoadTextures()
 {
