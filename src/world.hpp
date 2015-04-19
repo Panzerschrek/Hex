@@ -1,17 +1,19 @@
 #pragma once
+#include <memory>
+#include <mutex>
 #include <queue>
-#include <QMutex>
+#include <thread>
+
+#include <QSettings>
 
 #include "hex.hpp"
 #include "fwd.hpp"
 #include "block.hpp"
 #include "chunk.hpp"
-#include "thread.hpp"
 #include "chunk_phys_mesh.hpp"
 #include "math_lib/rand.h"
 #include "world_action.hpp"
 #include "chunk_loader.hpp"
-
 
 class h_World : public QObject
 {
@@ -132,12 +134,13 @@ private:
 	h_Block normal_blocks_[ NUM_BLOCK_TYPES ];
 
 	unsigned int phys_tick_count_;
-	h_Thread< h_World > phys_thread_;
-	mutable QMutex world_mutex_;
+	//h_Thread< h_World > phys_thread_;
+	std::unique_ptr< std::thread > phys_thread_;
+	//mutable QMutex world_mutex_;
 
 	//queue 0 - for enqueue, queue 1 - for dequeue
 	std::queue< h_WorldAction > action_queue_[2];
-	QMutex action_queue_mutex_;
+	std::mutex action_queue_mutex_;
 
 	QSettings settings_;
 

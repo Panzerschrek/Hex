@@ -1,9 +1,11 @@
 #pragma once
 #include "hex.hpp"
 #include "fwd.hpp"
-#include <QtOpenGL>
+#include "vec.hpp"
 
-#include "player.hpp"
+#include <QtGlobal>
+#include <QObject>
+#include <QtOpenGL>
 
 class h_MainLoop : public QGLWidget
 {
@@ -16,30 +18,25 @@ public:
 	virtual QSize sizeHint() const;
 
 protected:
-	h_MainLoop( QGLFormat format );
+	h_MainLoop( const QGLFormat& format );
 	virtual ~h_MainLoop() override;
 
 	virtual void initializeGL() override;
 	virtual void resizeGL(int w , int h) override;
 	virtual void paintGL()  override;
 
-	void mousePressEvent(QMouseEvent* e) override;
-	void mouseReleaseEvent(QMouseEvent* e) override;
-	void mouseMoveEvent(QMouseEvent* e) override;
-	void keyPressEvent(QKeyEvent* e) override;
-	void keyReleaseEvent(QKeyEvent* e) override;
-	void focusInEvent(QFocusEvent *) override;
-	void focusOutEvent( QFocusEvent *) override;
-	void closeEvent(QCloseEvent* e) override;
+	virtual void mousePressEvent(QMouseEvent* e) override;
+	virtual void mouseReleaseEvent(QMouseEvent* e) override;
+	virtual void mouseMoveEvent(QMouseEvent* e) override;
+	virtual void keyPressEvent(QKeyEvent* e) override;
+	virtual void keyReleaseEvent(QKeyEvent* e) override;
+	virtual void focusInEvent(QFocusEvent *) override;
+	virtual void focusOutEvent( QFocusEvent *) override;
+	virtual void closeEvent(QCloseEvent* e) override;
 
 	virtual void initializeOverlayGL() override {}
 	virtual void resizeOverlayGL(int w, int h) override {}
 	virtual void paintOverlayGL() override {}
-
-public slots:
-	void setXRotation(int) {}
-	void setYRotation(int) {}
-	void setZRotation(int) {}
 
 public://main menu interface logic
 	void Quit();

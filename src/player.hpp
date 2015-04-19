@@ -1,8 +1,9 @@
 #pragma once
+#include <mutex>
+
 #include "hex.hpp"
 #include "vec.hpp"
 #include "math_lib/m_math.h"
-#include "QMutex"
 #include "chunk_phys_mesh.hpp"
 class h_World;
 
@@ -29,7 +30,7 @@ private:
 	m_Vec3 pos_;
 	m_Vec3 view_angle_;
 
-	QMutex player_data_mutex_;
+	std::mutex player_data_mutex_;
 
 	h_ChunkPhysMesh phys_mesh_;
 };

@@ -1,5 +1,5 @@
-#include "console.hpp"
 #include "hex.hpp"
+#include "console.hpp"
 #include "renderer/text.hpp"
 
 char h_Console:: buffer[ H_CONSOLE_BUFFER_LEN ];

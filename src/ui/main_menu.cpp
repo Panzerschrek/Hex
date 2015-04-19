@@ -10,7 +10,6 @@ static const unsigned char normal_color[]= { 128, 128, 128, 255 };
 static const unsigned char active_color[]= { 200, 48, 48, 255 };
 static const unsigned char text_color[]= { normal_color[0], normal_color[1], normal_color[2], 255 };
 
-
 /*
 ------------ui_SettingsMenu---------------
 */
@@ -81,7 +80,6 @@ ui_MainMenu::ui_MainMenu( h_MainLoop* main_loop_, int sx, int sy )
 	: ui_MenuBase( nullptr, 0, 0, sx, sy )
 	, main_loop(main_loop_)
 {
-
 	const int menu_buttons= 3;
 	const int button_size= 10;
 	int button_shift_x= ui_MenuBase::size_x_/(ui_Base::CellSize()*2) - button_size/2;
@@ -110,7 +108,6 @@ ui_MainMenu::ui_MainMenu( h_MainLoop* main_loop_, int sx, int sy )
 	ui_MenuBase::elements_.push_back( game_title );
 	ui_MenuBase::elements_.push_back( game_subtitle );
 	//ui_MenuBase::elements_.push_back( progress_bar );
-
 }
 
 ui_MainMenu::~ui_MainMenu()

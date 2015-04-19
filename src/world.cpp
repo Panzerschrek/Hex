@@ -1,3 +1,5 @@
+#include <QTime>
+
 #include "world.hpp"
 #include "player.hpp"
 #include "math_lib/m_math.h"
@@ -6,8 +8,6 @@
 h_World::h_World()
 	: chunk_loader_( "world" )
 	, phys_tick_count_(0)
-	, phys_thread_( &h_World::PhysTick, this, 1u )
-	, world_mutex_( QMutex::Recursive )
 	, player_( nullptr )
 	, renderer_( nullptr )
 	, settings_( "config.ini", QSettings::IniFormat )
@@ -33,7 +33,7 @@ h_World::h_World()
 
 	LightWorld();
 
-	phys_thread_.setStackSize( 16 * 1024 * 1024 );//inrease stack for recursive methods( lighting, blasts, etc )
+	//phys_thread_.setStackSize( 16 * 1024 * 1024 );//inrease stack for recursive methods( lighting, blasts, etc )
 }
 
 h_World::~h_World()
@@ -96,8 +96,8 @@ void h_World::Blast( short x, short y, short z, short radius )
 }
 
 void h_World::StartUpdates()
-{
-	phys_thread_.start();
+{;
+	phys_thread_.reset( new std::thread( &h_World::PhysTick, this ) );
 }
 
 void h_World::Save()
@@ -550,48 +550,51 @@ bool h_World::CanBuild( short x, short y, short z ) const
 
 void h_World::PhysTick()
 {
-	while( player_ == NULL )
-		usleep( 1000000 );
-	QTime t0= QTime::currentTime();
+	while(1)
+	{
+		while( player_ == NULL )
+			usleep( 1000000 );
+		QTime t0= QTime::currentTime();
 
-	FlushActionQueue();
-	WaterPhysTick();
-	RelightWaterModifedChunksLight();
+		FlushActionQueue();
+		WaterPhysTick();
+		RelightWaterModifedChunksLight();
 
-	player_->Lock();
-	player_coord_[2]= short( player_->Pos().z );
-	GetHexogonCoord( player_->Pos().xy(), &player_coord_[0], &player_coord_[1] );
-	player_->Unlock();
+		player_->Lock();
+		player_coord_[2]= short( player_->Pos().z );
+		GetHexogonCoord( player_->Pos().xy(), &player_coord_[0], &player_coord_[1] );
+		player_->Unlock();
 
-	player_coord_[0]-= Longitude() * H_CHUNK_WIDTH;
-	player_coord_[1]-= Latitude() * H_CHUNK_WIDTH;
-	BuildPhysMesh( &player_phys_mesh_,
-				   player_coord_[0] - 4, player_coord_[0] + 4,
-				   player_coord_[1] - 5, player_coord_[1] + 5,
-				   player_coord_[2] - 5, player_coord_[2] + 5 );
+		player_coord_[0]-= Longitude() * H_CHUNK_WIDTH;
+		player_coord_[1]-= Latitude() * H_CHUNK_WIDTH;
+		BuildPhysMesh( &player_phys_mesh_,
+					   player_coord_[0] - 4, player_coord_[0] + 4,
+					   player_coord_[1] - 5, player_coord_[1] + 5,
+					   player_coord_[2] - 5, player_coord_[2] + 5 );
 
-	if( player_coord_[1]/H_CHUNK_WIDTH > chunk_number_y_/2+2 )
-		MoveWorld( NORTH );
-	else if( player_coord_[1]/H_CHUNK_WIDTH < chunk_number_y_/2-2 )
-		MoveWorld( SOUTH );
-	if( player_coord_[0]/H_CHUNK_WIDTH > chunk_number_x_/2+2 )
-		MoveWorld( EAST );
-	else if( player_coord_[0]/H_CHUNK_WIDTH < chunk_number_x_/2-2 )
-		MoveWorld( WEST );
+		if( player_coord_[1]/H_CHUNK_WIDTH > chunk_number_y_/2+2 )
+			MoveWorld( NORTH );
+		else if( player_coord_[1]/H_CHUNK_WIDTH < chunk_number_y_/2-2 )
+			MoveWorld( SOUTH );
+		if( player_coord_[0]/H_CHUNK_WIDTH > chunk_number_x_/2+2 )
+			MoveWorld( EAST );
+		else if( player_coord_[0]/H_CHUNK_WIDTH < chunk_number_x_/2-2 )
+			MoveWorld( WEST );
 
-	player_->Lock();
-	player_->SetCollisionMesh( &player_phys_mesh_ );
-	player_->Unlock();
+		player_->Lock();
+		player_->SetCollisionMesh( &player_phys_mesh_ );
+		player_->Unlock();
 
-	phys_tick_count_++;
+		phys_tick_count_++;
 
-	if( renderer_ != nullptr )
-		renderer_->Update();
+		if( renderer_ != nullptr )
+			renderer_->Update();
 
-	QTime t1= QTime::currentTime();
-	unsigned int dt_ms= t0.msecsTo(t1);
-	if( dt_ms < 50 )
+		QTime t1= QTime::currentTime();
+		unsigned int dt_ms= t0.msecsTo(t1);
+		if( dt_ms < 50 )
 		usleep( (50 - dt_ms ) * 1000 );
+	}
 }
 
 void h_World::WaterPhysTick()

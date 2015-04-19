@@ -1,4 +1,9 @@
 #pragma once
+#include <mutex>
+
+#include <QSettings>
+#include <QTime>
+
 #include "../hex.hpp"
 #include "../fwd.hpp"
 #include "i_world_renderer.hpp"
@@ -242,7 +247,7 @@ private:
 	r_WeatherEffectsParticleManager weather_effects_particle_manager;
 
 	//h_Thread<r_WorldRenderer> update_thread;
-	QMutex host_data_mutex, gpu_data_mutex;
+	std::mutex host_data_mutex, gpu_data_mutex;
 	QTime startup_time;
 
 	//config variables here:

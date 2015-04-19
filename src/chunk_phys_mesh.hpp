@@ -12,5 +12,4 @@ public:
 	m_Collection< p_UpperBlockFace > upper_block_faces;
 
 	short z_min, z_max;
-
 };

@@ -1,9 +1,6 @@
-#include <stdio.h>
-
 #include <QApplication>
 
-#include "world.hpp"
-#include "thread.hpp"
+#include "hex.hpp"
 #include "main_loop.hpp"
 #include "console.hpp"
 

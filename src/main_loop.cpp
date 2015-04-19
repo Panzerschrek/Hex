@@ -38,7 +38,7 @@ QSize h_MainLoop::sizeHint() const
 	return QSize( screen_width_, screen_height_ );
 }
 
-h_MainLoop::h_MainLoop(QGLFormat format )
+h_MainLoop::h_MainLoop( const QGLFormat& format )
 	: QGLWidget(format, NULL )
 	, settings_( "config.ini", QSettings::IniFormat )
 	, cam_pos_( 0.0f, 0.0f, 67.0f )

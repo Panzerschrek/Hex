@@ -1,8 +1,5 @@
-#ifndef MAIN_MENU_HPP
-#define MAIN_MENU_HPP
-
+#pragma once
 #include "ui_base_classes.hpp"
-
 
 class h_MainLoop;
 
@@ -11,13 +8,13 @@ class ui_SettingsMenu:
 	public ui_Button::ui_ButtonCallback,
 	public ui_Slider::ui_SliderCallback
 {
-	public:
+public:
 	ui_SettingsMenu( ui_MenuBase* parent, int x, int y, int sx, int sy );
-	~ui_SettingsMenu();
+	virtual ~ui_SettingsMenu() override;
 
-	void ButtonCallback( ui_Button* button ) override;
-	void SliderCallback( ui_Slider* slider ) override;
-	void Tick() override {};
+	virtual void ButtonCallback( ui_Button* button ) override;
+	virtual void SliderCallback( ui_Slider* slider ) override;
+	virtual void Tick() override {};
 
 private:
 	ui_Button* button_back;
@@ -35,21 +32,18 @@ class ui_MainMenu :
 	public ui_Checkbox::ui_CheckboxCallback,
 	public ui_Slider::ui_SliderCallback
 {
-	public:
-
+public:
 	ui_MainMenu( h_MainLoop* main_loop_, int sx, int sy );
-	virtual ~ui_MainMenu();
+	virtual ~ui_MainMenu() override;
 
 	//void Draw( ui_Painter* painter );
 
-	void ButtonCallback( ui_Button* button ) override;
-	void CheckboxCallback( ui_Checkbox* checkbox ) override;
-	void SliderCallback( ui_Slider* slider ) override;
-	void Tick() override;
+	virtual void ButtonCallback( ui_Button* button ) override;
+	virtual void CheckboxCallback( ui_Checkbox* checkbox ) override;
+	virtual void SliderCallback( ui_Slider* slider ) override;
+	virtual void Tick() override;
 
-
-	private:
-
+private:
 	ui_Button* button_play;
 	ui_Button* button_settings;
 	ui_Button* button_quit;
@@ -59,6 +53,4 @@ class ui_MainMenu :
 	ui_ProgressBar* progress_bar;
 
 	h_MainLoop * const main_loop;
-
 };
-#endif//MAIN_MENU_HPP

@@ -1,15 +1,10 @@
 #pragma once
+// common C lybrary headers, without std::
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
+#include <ctype.h>
 #include <math.h>
-
-#include <QtGlobal>
-#include <QObject>
-#include <QThread>
-#include <QMutex>
-#include <QTime>
-#include <QSettings>
-
 
 #ifdef Q_OS_WIN
 #include <windows.h>

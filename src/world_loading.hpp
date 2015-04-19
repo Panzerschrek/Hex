@@ -1,6 +1,8 @@
 #pragma once
-#include "hex.hpp"
 
+#include <QDataStream>
+
+#include "hex.hpp"
 
 #define H_CHUNK_FORMAT_VERSION 1
 #define H_REGION_FORMAT_VERSION 1

@@ -13,7 +13,7 @@
 
 r_WorldRenderer::r_WorldRenderer( const h_World* world )
 	: world_(world)
-	, host_data_mutex( QMutex::NonRecursive ), gpu_data_mutex( QMutex::NonRecursive )
+	, host_data_mutex(), gpu_data_mutex()
 	, settings( "config.ini", QSettings::IniFormat )
 	, frame_count(0), update_count(0)
 	, sun_vector( 0.7f, 0.8f, 0.6f )
@@ -485,7 +485,7 @@ void r_WorldRenderer::UpdateGPUData()
 	gpu_data_mutex.unlock();
 	*/
 
-	if( host_data_mutex.tryLock() )
+	if( host_data_mutex.try_lock() )
 	{
 		for( int j= 0; j< world_vertex_buffer_.cluster_matrix_size_y_; j++ )
 		{

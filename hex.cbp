@@ -95,10 +95,6 @@
 		<Unit filename="src\renderer\world_renderer.hpp" />
 		<Unit filename="src\renderer\world_vertex_buffer.cpp" />
 		<Unit filename="src\renderer\world_vertex_buffer.hpp" />
-		<Unit filename="src\res.rc">
-			<Option compilerVar="WINDRES" />
-			<Option target="Release" />
-		</Unit>
 		<Unit filename="src\settings.cpp" />
 		<Unit filename="src\settings.hpp" />
 		<Unit filename="src\thread.hpp" />

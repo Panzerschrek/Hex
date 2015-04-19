@@ -6,7 +6,7 @@ h_Player::h_Player( const h_World* world )
 	: world_(world)
 	, pos_()
 	, view_angle_( 0.0f, 0.0f, 0.0f )
-	, player_data_mutex_( QMutex::NonRecursive )
+	, player_data_mutex_()
 	, phys_mesh_()
 {
 	pos_.x= ( world->Longitude() + world->ChunkNumberX()/2 ) * H_SPACE_SCALE_VECTOR_X * float( H_CHUNK_WIDTH );

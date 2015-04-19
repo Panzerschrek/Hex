@@ -1,4 +1,7 @@
 #pragma once
+
+#include <QImage>
+
 #include "../hex.hpp"
 #include "ph.h"
 
