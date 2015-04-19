@@ -21,18 +21,17 @@
 #pragma pack( push, 1 )
 struct r_WorldVertex
 {
-	qint16 coord[3];
-	qint16 tex_coord[3];
-	quint8 light[2];
-	quint8 normal_id;
-	qint8 reserved[1];
+	short coord[3];
+	short tex_coord[3];
+	unsigned char light[2];
+	unsigned char normal_id;
+	char reserved[1];
 };//16b struct
-
 
 struct r_WaterVertex
 {
-	qint16 coord[3];
-	quint8 light[2];
+	short coord[3];
+	unsigned char light[2];
 };//8b struct
 
 #pragma pack( pop )
@@ -54,22 +53,20 @@ public:
 		r_WorldVertex* vb_data;//pointer to r_WorldRenderer::world_vb::vb_data
 		unsigned int allocated_vertex_count, real_vertex_count;
 		unsigned int new_vertex_count;
-	} chunk_vb;
-
+	} chunk_vb_;
 
 	//geomentry up and down range borders. Used only for generation of center chunk blocks( not for border blocks )
-	int max_geometry_height, min_geometry_height;
+	int max_geometry_height_, min_geometry_height_;
 
-	m_Collection< r_WaterVertex > water_surface_mesh_vertices;
-	m_Collection< r_WaterVertex > water_side_mesh_vertices;
+	m_Collection< r_WaterVertex > water_surface_mesh_vertices_;
+	m_Collection< r_WaterVertex > water_side_mesh_vertices_;
 
-	bool chunk_data_updated, chunk_water_data_updated;
-	bool chunk_mesh_rebuilded;
+	bool chunk_data_updated_, chunk_water_data_updated_;
+	bool chunk_mesh_rebuilded_;
 
-	const h_Chunk* chunk;
-	const h_Chunk* chunk_front, *chunk_right, *chunk_back_right, *chunk_back;
+	const h_Chunk* chunk_;
+	const h_Chunk* chunk_front_, *chunk_right_, *chunk_back_right_, *chunk_back_;
 };
-
 
 class r_WaterQuadChunkInfo
 {
@@ -78,14 +75,14 @@ public:
 	void BuildFinalMesh();
 	void GetUpdatedState();// set up water_updated= true, if any of h_ChunkInfo::chunk_water_data_updated= true
 
-	r_WaterVertex* vb_data;// pointer in array in r_WorldRenderer::water_vb::vb_data
-	unsigned int allocated_vertex_count, real_vertex_count;
-	unsigned int new_vertex_count;
+	r_WaterVertex* vb_data_;// pointer in array in r_WorldRenderer::water_vb_::vb_data
+	unsigned int allocated_vertex_count_, real_vertex_count_;
+	unsigned int new_vertex_count_;
 
-	bool water_updated;
-	bool water_mesh_rebuilded;
+	bool water_updated_;
+	bool water_mesh_rebuilded_;
 
-	r_ChunkInfo* chunks[2][2];
+	r_ChunkInfo* chunks_[2][2];
 
 };
 
