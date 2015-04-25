@@ -25,7 +25,7 @@ void GetHexogonCoord( m_Vec2 pos, short* x, short* y )
 	float dst_min= 16.0f;
 	for( unsigned int i= 0; i< 3; i++ )
 	{
-		float dst= ( center_pos[i] - pos ).LengthSqr();
+		float dst= ( center_pos[i] - pos ).SquareLength();
 		if( dst < dst_min )
 		{
 			dst_min= dst;
@@ -238,9 +238,9 @@ bool p_BlockSide::HasCollisionWithCircle( m_Vec2 pos,  float radius ) const
 	if( nearest_vec_to_edge.Length() < radius )// if distance to line less than circle radius
 	{
 		float r2= radius * radius;
-		if( ( pos - edge[0] ).LengthSqr() < r2 )
+		if( ( pos - edge[0] ).SquareLength() < r2 )
 			return true;
-		if( ( pos - edge[1] ).LengthSqr() < r2 )
+		if( ( pos - edge[1] ).SquareLength() < r2 )
 			return true;
 
 		m_Vec2 nearest_point_on_edge= pos - nearest_vec_to_edge;
@@ -274,13 +274,13 @@ m_Vec2 p_BlockSide::CollideWithCirlce( m_Vec2 pos, float radius ) const
 		//collision with points
 		float r2= radius * radius;
 		m_Vec2 to_edge_vec= pos - edge[0];
-		if( to_edge_vec.LengthSqr() < r2 )
+		if( to_edge_vec.SquareLength() < r2 )
 		{
 			to_edge_vec.Normalize();
 			return edge[0] + to_edge_vec * radius;
 		}
 		to_edge_vec= pos - edge[1];
-		if( to_edge_vec.LengthSqr() < r2 )
+		if( to_edge_vec.SquareLength() < r2 )
 		{
 			to_edge_vec.Normalize();
 			return edge[1] + to_edge_vec * radius;
