@@ -1,7 +1,7 @@
-#ifndef WORLD_ACTION_HPP
-#define WORLD_ACTION_HPP
+#pragma once
 
-enum h_ActionType: unsigned char
+enum h_ActionType:
+unsigned char
 {
 	ACTION_BUILD= 0,
 	ACTION_DESTROY
@@ -14,5 +14,3 @@ struct h_WorldAction
 	h_BlockType block_type;
 };
 
-
-#endif//WORLD_ACTION_HPP

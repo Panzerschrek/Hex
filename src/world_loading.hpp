@@ -1,7 +1,8 @@
-#ifndef WORLD_LOADING_HPP
-#define WORLD_LOADING_HPP
-#include "hex.hpp"
+#pragma once
 
+#include <QDataStream>
+
+#include "hex.hpp"
 
 #define H_CHUNK_FORMAT_VERSION 1
 #define H_REGION_FORMAT_VERSION 1
@@ -35,7 +36,7 @@ struct HEXCHUNK_header
 
 	FileLump blocks_data;
 
- 	//if struct changed, this must be changed too
+	//if struct changed, this must be changed too
 	void Read( QDataStream& stream );
 	void Write( QDataStream& stream );
 };
@@ -70,4 +71,3 @@ struct WORLD_header
 	void Write( QDataStream& stream );
 };
 
-#endif// WORLD_LOADING_HPP

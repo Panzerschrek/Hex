@@ -1,16 +1,13 @@
-#ifndef CONSOLE_HPP
-#define CONSOLE_HPP
-
+#pragma once
 #define H_CONSOLE_BUFFER_LEN 4096
 #define H_CONSOLE_BUFFER_MAX_LINES (H_CONSOLE_BUFFER_LEN/2)
 #define H_CONSOLE_MOVING_SPEED 1.0f
 
 class r_Text;
 
-
 class h_Console
 {
-	public:
+public:
 
 	inline static float GetPosition();
 
@@ -23,9 +20,9 @@ class h_Console
 
 	static void Draw( r_Text* text );
 
-	private:
+private:
 
-	enum ConsoleColor:
+enum ConsoleColor:
 	unsigned char
 	{
 		WHITE,
@@ -67,6 +64,3 @@ inline float h_Console::GetPosition()
 {
 	return position;
 }
-
-
-#endif//console.hpp

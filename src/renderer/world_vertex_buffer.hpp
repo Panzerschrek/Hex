@@ -1,5 +1,4 @@
-﻿#ifndef WORLD_VERTEX_BUFFER_H
-#define WORLD_VERTEX_BUFFER_H
+#pragma once
 #include "../hex.hpp"
 #include "ph.h"
 
@@ -92,5 +91,3 @@ public:
 	GLuint index_buffer_;
 	GLuint stub_VBO_;
 };
-
-#endif//WORLD_VERTEX_BUFFER_H

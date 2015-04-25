@@ -1,8 +1,5 @@
-#ifndef CONSOLE_CPP
-#define CONSOLE_CPP
-
-#include "console.hpp"
 #include "hex.hpp"
+#include "console.hpp"
 #include "renderer/text.hpp"
 
 char h_Console:: buffer[ H_CONSOLE_BUFFER_LEN ];
@@ -20,28 +17,28 @@ float h_Console::position= 0.0f;
 static char tmp_buffer[ H_CONSOLE_BUFFER_LEN ];
 void h_Console::Message( const char* str, ... )
 {
-    va_list ap;
-    va_start( ap, str );
-    vsprintf( tmp_buffer, str, ap );
-    va_end( ap );
+	va_list ap;
+	va_start( ap, str );
+	vsprintf( tmp_buffer, str, ap );
+	va_end( ap );
 
 	WriteText( tmp_buffer, WHITE );
 }
 void h_Console::Warning( const char* str, ...  )
 {
-    va_list ap;
-    va_start( ap, str );
-    vsprintf( tmp_buffer, str, ap );
-    va_end( ap );
+	va_list ap;
+	va_start( ap, str );
+	vsprintf( tmp_buffer, str, ap );
+	va_end( ap );
 
 	WriteText( tmp_buffer, YELLOW );
 }
 void h_Console::Error( const char* str, ...  )
 {
-    va_list ap;
-    va_start( ap, str );
-    vsprintf( tmp_buffer, str, ap );
-    va_end( ap );
+	va_list ap;
+	va_start( ap, str );
+	vsprintf( tmp_buffer, str, ap );
+	va_end( ap );
 
 	WriteText( tmp_buffer, RED );
 }
@@ -89,14 +86,16 @@ void h_Console::Draw( r_Text* text )
 		return;
 
 	float init_row= 4.0f * ( 0.5f * position * float( text->RowsInScreen() ) );
-	float i; int j;
+	float i;
+	int j;
 	for( i= init_row, j= lines_buffer_pos - 1; i>= 0.0f && j>=0 ; i-=1.0f, j-- )
 	{
 		const unsigned char* c;
 		static const unsigned char msg_colors[]= {
-			 255, 255, 255, 0,
-			 255, 32, 32, 0,
-			 255, 255, 32, 0 };
+			255, 255, 255, 0,
+			255, 32, 32, 0,
+			255, 255, 32, 0
+		};
 		int l= j % H_CONSOLE_BUFFER_MAX_LINES;
 		if( lines_color_id[l] == RED )
 			c= msg_colors + 4;
@@ -107,5 +106,3 @@ void h_Console::Draw( r_Text* text )
 		text->AddText( 0.5f, i, 0.25f, c, lines_beginning[ l ] );
 	}
 }
-
-#endif//CONSOLE_CPP

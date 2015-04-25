@@ -1,6 +1,5 @@
 #include "block_collision.hpp"
 
-
 void GetHexogonCoord( m_Vec2 pos, short* x, short* y )
 {
 	short nearest_x, nearest_y;
@@ -8,10 +7,11 @@ void GetHexogonCoord( m_Vec2 pos, short* x, short* y )
 	nearest_x= short( floor( pos.x / H_SPACE_SCALE_VECTOR_X ) );
 	nearest_y= short( floor( pos.y  - 0.5f * float((nearest_x+1)&1) )  );
 
-	short candidate_cells[]={
-	nearest_x, nearest_y,
-	short(nearest_x - 1), short( nearest_y - (nearest_x&1 )),//lower left
-	short(nearest_x - 1), short( nearest_y + ((nearest_x+1)&1) ) };//upper left
+	short candidate_cells[]= {
+		nearest_x, nearest_y,
+		short(nearest_x - 1), short( nearest_y - (nearest_x&1 )),//lower left
+		short(nearest_x - 1), short( nearest_y + ((nearest_x+1)&1) )
+	};//upper left
 
 	m_Vec2 center_pos[3];
 	center_pos[0].x= float( nearest_x ) * H_SPACE_SCALE_VECTOR_X + H_HEXAGON_EDGE_SIZE;
@@ -25,12 +25,12 @@ void GetHexogonCoord( m_Vec2 pos, short* x, short* y )
 	float dst_min= 16.0f;
 	for( unsigned int i= 0; i< 3; i++ )
 	{
-		float dst= ( center_pos[i] - pos ).LengthSqr();
+		float dst= ( center_pos[i] - pos ).SquareLength();
 		if( dst < dst_min )
-			{
-				dst_min= dst;
-				nearest_cell= i;
-			}
+		{
+			dst_min= dst;
+			nearest_cell= i;
+		}
 	}
 
 	*x= candidate_cells[nearest_cell*2];
@@ -124,109 +124,109 @@ bool IsPointInTriangle( m_Vec3* triangle, m_Vec3 point )
 
 void p_UpperBlockFace::Gen( short x, short y, short z, h_Direction dir )
 {
-    this->z= float(z);
-    this->dir= dir;
+	this->z= float(z);
+	this->dir= dir;
 	if( dir == DOWN )
 		this->z -= 1.0f;
 
-    edge[0].x= float(x) * H_SPACE_SCALE_VECTOR_X;
-    edge[1].x= edge[5].x= edge[0].x + 0.5f * H_HEXAGON_EDGE_SIZE;
-    edge[2].x= edge[4].x= edge[0].x + 1.5f * H_HEXAGON_EDGE_SIZE;
-    edge[3].x= edge[0].x + 2.0f * H_HEXAGON_EDGE_SIZE;
+	edge[0].x= float(x) * H_SPACE_SCALE_VECTOR_X;
+	edge[1].x= edge[5].x= edge[0].x + 0.5f * H_HEXAGON_EDGE_SIZE;
+	edge[2].x= edge[4].x= edge[0].x + 1.5f * H_HEXAGON_EDGE_SIZE;
+	edge[3].x= edge[0].x + 2.0f * H_HEXAGON_EDGE_SIZE;
 
-    edge[0].y= edge[3].y= float(y) + 0.5f * float( (x+1)&1 ) + 0.5f;
-    edge[1].y= edge[2].y= edge[0].y + 0.5f;
-    edge[4].y= edge[5].y= edge[0].y - 0.5f;
+	edge[0].y= edge[3].y= float(y) + 0.5f * float( (x+1)&1 ) + 0.5f;
+	edge[1].y= edge[2].y= edge[0].y + 0.5f;
+	edge[4].y= edge[5].y= edge[0].y - 0.5f;
 }
 
-bool p_UpperBlockFace::HasCollisionWithCircle( m_Vec2 pos, float radius )
+bool p_UpperBlockFace::HasCollisionWithCircle( m_Vec2 pos, float radius ) const
 {
-    m_Vec2 center
-    (
-        edge[0].x + H_HEXAGON_EDGE_SIZE,
-        edge[0].y
-    );
+	m_Vec2 center
+	(
+		edge[0].x + H_HEXAGON_EDGE_SIZE,
+		edge[0].y
+	);
 
-    float dst= ( pos - center ).Length();
+	float dst= ( pos - center ).Length();
 
-    if( dst  < radius + H_HEXAGON_EDGE_SIZE )
-    	return true;
+	if( dst  < radius + H_HEXAGON_EDGE_SIZE )
+		return true;
 	else return false;//temporal hack - replase hexagon by outer circle
 
 
-    if( dst < 0.5f )// if center of circle inside inner hexagon cirlce
-        return true;
-    else if( dst > radius + H_HEXAGON_EDGE_SIZE )
-        return false;
+	if( dst < 0.5f )// if center of circle inside inner hexagon cirlce
+		return true;
+	else if( dst > radius + H_HEXAGON_EDGE_SIZE )
+		return false;
 
-    //calculate distance from center of circle to vertices of hexagon
-    for( unsigned int i= 0; i< 6; i++ )
-    {
-        /*float dst_to_edge;
-        m_Vec2 v= pos - edge[i];
-        m_Vec2 n= edge[(i+1)%6] - edge[i];
-        n.Normalize();
-        m_Vec2 v2= float( n * v ) * n;
-        m_Vec2 vec_to_edge= v - v2;*/
-        if( ( edge[i] - pos ).Length() < radius )
-            return true;
-    }
+	//calculate distance from center of circle to vertices of hexagon
+	for( unsigned int i= 0; i< 6; i++ )
+	{
+		/*float dst_to_edge;
+		m_Vec2 v= pos - edge[i];
+		m_Vec2 n= edge[(i+1)%6] - edge[i];
+		n.Normalize();
+		m_Vec2 v2= float( n * v ) * n;
+		m_Vec2 vec_to_edge= v - v2;*/
+		if( ( edge[i] - pos ).Length() < radius )
+			return true;
+	}
 
-    return false;
+	return false;
 }
 
 void p_BlockSide::Gen( short x, short y, short z, h_Direction dir )
 {
-    this->z= float(z);
-    this->dir= dir;
+	this->z= float(z);
+	this->dir= dir;
 
-    switch( dir )
-    {
-    case FORWARD:
-        edge[0].x= float(x) * H_SPACE_SCALE_VECTOR_X + 1.5f * H_HEXAGON_EDGE_SIZE;
-        edge[1].x= edge[0].x - H_HEXAGON_EDGE_SIZE;
-        edge[0].y= edge[1].y= float(y) + 0.5f * float( (x+1)&1 ) + 1.0f;
-        break;
+	switch( dir )
+	{
+	case FORWARD:
+		edge[0].x= float(x) * H_SPACE_SCALE_VECTOR_X + 1.5f * H_HEXAGON_EDGE_SIZE;
+		edge[1].x= edge[0].x - H_HEXAGON_EDGE_SIZE;
+		edge[0].y= edge[1].y= float(y) + 0.5f * float( (x+1)&1 ) + 1.0f;
+		break;
 
-    case BACK:
-        edge[0].x= float(x) * H_SPACE_SCALE_VECTOR_X + 0.5f * H_HEXAGON_EDGE_SIZE;
-        edge[1].x= edge[0].x + H_HEXAGON_EDGE_SIZE;
-        edge[0].y= edge[1].y= float(y) + 0.5f * float( (x+1)&1 );
-        break;
+	case BACK:
+		edge[0].x= float(x) * H_SPACE_SCALE_VECTOR_X + 0.5f * H_HEXAGON_EDGE_SIZE;
+		edge[1].x= edge[0].x + H_HEXAGON_EDGE_SIZE;
+		edge[0].y= edge[1].y= float(y) + 0.5f * float( (x+1)&1 );
+		break;
 
-    case FORWARD_RIGHT:
-        edge[0].x= float(x) * H_SPACE_SCALE_VECTOR_X + H_HEXAGON_EDGE_SIZE * 2.0f;
-        edge[1].x= edge[0].x - 0.5f * H_HEXAGON_EDGE_SIZE;
-        edge[0].y= float(y) + 0.5f * float( (x+1)&1 ) + 0.5f;
-        edge[1].y= edge[0].y + 0.5f;
-        break;
+	case FORWARD_RIGHT:
+		edge[0].x= float(x) * H_SPACE_SCALE_VECTOR_X + H_HEXAGON_EDGE_SIZE * 2.0f;
+		edge[1].x= edge[0].x - 0.5f * H_HEXAGON_EDGE_SIZE;
+		edge[0].y= float(y) + 0.5f * float( (x+1)&1 ) + 0.5f;
+		edge[1].y= edge[0].y + 0.5f;
+		break;
 
-    case BACK_LEFT:
-        edge[0].x= float(x) * H_SPACE_SCALE_VECTOR_X;
-        edge[1].x= edge[0].x + 0.5f * H_HEXAGON_EDGE_SIZE;
-        edge[0].y= float(y) + 0.5f * float( (x+1)&1 ) + 0.5f;
-        edge[1].y= edge[0].y - 0.5f;
-        break;
+	case BACK_LEFT:
+		edge[0].x= float(x) * H_SPACE_SCALE_VECTOR_X;
+		edge[1].x= edge[0].x + 0.5f * H_HEXAGON_EDGE_SIZE;
+		edge[0].y= float(y) + 0.5f * float( (x+1)&1 ) + 0.5f;
+		edge[1].y= edge[0].y - 0.5f;
+		break;
 
-    case FORWARD_LEFT:
-        edge[0].x= float(x) * H_SPACE_SCALE_VECTOR_X + H_HEXAGON_EDGE_SIZE * 0.5f;
-        edge[1].x= edge[0].x - 0.5f * H_HEXAGON_EDGE_SIZE;
-        edge[0].y= float(y) + 0.5f * float( (x+1)&1 ) + 1.0f;
-        edge[1].y= edge[0].y - 0.5f;
-        break;
+	case FORWARD_LEFT:
+		edge[0].x= float(x) * H_SPACE_SCALE_VECTOR_X + H_HEXAGON_EDGE_SIZE * 0.5f;
+		edge[1].x= edge[0].x - 0.5f * H_HEXAGON_EDGE_SIZE;
+		edge[0].y= float(y) + 0.5f * float( (x+1)&1 ) + 1.0f;
+		edge[1].y= edge[0].y - 0.5f;
+		break;
 
-    case BACK_RIGHT:
-        edge[0].x= float(x) * H_SPACE_SCALE_VECTOR_X  + 1.5f * H_HEXAGON_EDGE_SIZE;
-        edge[1].x= edge[0].x + 0.5f * H_HEXAGON_EDGE_SIZE;
-        edge[0].y= float(y) + 0.5f * float( (x+1)&1 );
-        edge[1].y= edge[0].y + 0.5f;
-        break;
+	case BACK_RIGHT:
+		edge[0].x= float(x) * H_SPACE_SCALE_VECTOR_X  + 1.5f * H_HEXAGON_EDGE_SIZE;
+		edge[1].x= edge[0].x + 0.5f * H_HEXAGON_EDGE_SIZE;
+		edge[0].y= float(y) + 0.5f * float( (x+1)&1 );
+		edge[1].y= edge[0].y + 0.5f;
+		break;
 
-    }
+	}
 }
 
 
-bool p_BlockSide::HasCollisionWithCircle( m_Vec2 pos,  float radius )
+bool p_BlockSide::HasCollisionWithCircle( m_Vec2 pos,  float radius ) const
 {
 	m_Vec2 edge_vec= edge[0]- edge[1];
 	edge_vec.Normalize();
@@ -238,9 +238,9 @@ bool p_BlockSide::HasCollisionWithCircle( m_Vec2 pos,  float radius )
 	if( nearest_vec_to_edge.Length() < radius )// if distance to line less than circle radius
 	{
 		float r2= radius * radius;
-		if( ( pos - edge[0] ).LengthSqr() < r2 )
+		if( ( pos - edge[0] ).SquareLength() < r2 )
 			return true;
-		if( ( pos - edge[1] ).LengthSqr() < r2 )
+		if( ( pos - edge[1] ).SquareLength() < r2 )
 			return true;
 
 		m_Vec2 nearest_point_on_edge= pos - nearest_vec_to_edge;
@@ -252,7 +252,7 @@ bool p_BlockSide::HasCollisionWithCircle( m_Vec2 pos,  float radius )
 	else return false;
 }
 
-m_Vec2 p_BlockSide::CollideWithCirlce( m_Vec2 pos, float radius )
+m_Vec2 p_BlockSide::CollideWithCirlce( m_Vec2 pos, float radius ) const
 {
 	m_Vec2 edge_vec= edge[0]- edge[1];
 	edge_vec.Normalize();
@@ -274,13 +274,13 @@ m_Vec2 p_BlockSide::CollideWithCirlce( m_Vec2 pos, float radius )
 		//collision with points
 		float r2= radius * radius;
 		m_Vec2 to_edge_vec= pos - edge[0];
-		if( to_edge_vec.LengthSqr() < r2 )
+		if( to_edge_vec.SquareLength() < r2 )
 		{
 			to_edge_vec.Normalize();
 			return edge[0] + to_edge_vec * radius;
 		}
 		to_edge_vec= pos - edge[1];
-		if( to_edge_vec.LengthSqr() < r2 )
+		if( to_edge_vec.SquareLength() < r2 )
 		{
 			to_edge_vec.Normalize();
 			return edge[1] + to_edge_vec * radius;

@@ -1,5 +1,3 @@
-#include <fstream>
-
 #include "settings.hpp"
 
 using namespace std;
@@ -64,8 +62,6 @@ static bool hStrToFloat( const char* str, float* f )
 	return true;
 }
 
-
-
 h_Settings::h_Settings()
 {
 }
@@ -82,12 +78,10 @@ void h_Settings::WriteToFile( const char* file_name ) const
 {
 }
 
-
 void h_Settings::SetSetting( const char* name, const char* value )
 {
 	map_[ h_SettingsStringContainer(name) ]= string(value);
 }
-
 
 void h_Settings::SetSetting( const char* name, int value )
 {
@@ -119,7 +113,6 @@ bool h_Settings::IsNumber( const char* name ) const
 	float f;
 	return hStrToFloat( (*it).second.data(), &f );
 }
-
 
 const char* h_Settings::GetString( const char* name, const char* default_value ) const
 {
@@ -165,17 +158,14 @@ bool h_Settings::GetBool( const char* name, bool default_value ) const
 
 
 h_Settings::h_SettingsStringContainer::h_SettingsStringContainer( const char* str )
-	: c_str_(str)
+	: c_str_(str), str_()
 {
 }
 
 h_Settings::h_SettingsStringContainer::h_SettingsStringContainer( const h_SettingsStringContainer& other )
 	: c_str_(nullptr)
+	, str_( other.c_str_ == nullptr ? other.str_ : other.c_str_ )
 {
-	if( other.c_str_ != nullptr )
-		str_ = other.c_str_;
-	else
-		str_ = other.str_;
 }
 
 h_Settings::h_SettingsStringContainer::~h_SettingsStringContainer()
@@ -184,16 +174,9 @@ h_Settings::h_SettingsStringContainer::~h_SettingsStringContainer()
 
 bool h_Settings::h_SettingsStringContainer::operator == ( const h_SettingsStringContainer& other) const
 {
-	if( c_str_ != nullptr && other.c_str_ != nullptr )
-		return strcmp( c_str_, other.c_str_ ) == 0;
-
-	if( c_str_ == nullptr && other.c_str_ != nullptr )
-		return strcmp( str_.c_str(), other.c_str_ ) == 0;
-
-	if( c_str_ != nullptr && other.c_str_ == nullptr )
-		return strcmp( c_str_, other.str_.c_str() ) == 0;
-
-	return str_ == other.str_;
+	const char* this_c_str= c_str_ ? c_str_ : str_.c_str();
+	const char* other_c_str= other.c_str_ ? other.c_str_ : other.str_.c_str();
+	return strcmp( this_c_str, other_c_str ) == 0;
 }
 
 bool h_Settings::h_SettingsStringContainer::operator != ( const h_SettingsStringContainer& other) const
@@ -202,16 +185,9 @@ bool h_Settings::h_SettingsStringContainer::operator != ( const h_SettingsString
 }
 bool h_Settings::h_SettingsStringContainer::operator > ( const h_SettingsStringContainer& other) const
 {
-	if( c_str_ != nullptr && other.c_str_ != nullptr )
-		return strcmp( c_str_, other.c_str_ ) > 0;
-
-	if( c_str_ == nullptr && other.c_str_ != nullptr )
-		return strcmp( str_.c_str(), other.c_str_ ) > 0;
-
-	if( c_str_ != nullptr && other.c_str_ == nullptr )
-		return strcmp( c_str_, other.str_.c_str() ) > 0;
-
-	return str_ > other.str_;
+	const char* this_c_str= c_str_ ? c_str_ : str_.c_str();
+	const char* other_c_str= other.c_str_ ? other.c_str_ : other.str_.c_str();
+	return strcmp( this_c_str, other_c_str ) > 0;
 }
 
 bool h_Settings::h_SettingsStringContainer::operator <=( const h_SettingsStringContainer& other) const
@@ -221,19 +197,12 @@ bool h_Settings::h_SettingsStringContainer::operator <=( const h_SettingsStringC
 
 bool h_Settings::h_SettingsStringContainer::operator < ( const h_SettingsStringContainer& other) const
 {
-	if( c_str_ != nullptr && other.c_str_ != nullptr )
-		return strcmp( c_str_, other.c_str_ ) < 0;
-
-	if( c_str_ == nullptr && other.c_str_ != nullptr )
-		return strcmp( str_.c_str(), other.c_str_ ) < 0;
-
-	if( c_str_ != nullptr && other.c_str_ == nullptr )
-		return strcmp( c_str_, other.str_.c_str() ) < 0;
-
-	return str_ < other.str_;
+	return !(*this >=  other);
 }
 
 bool h_Settings::h_SettingsStringContainer::operator >= ( const h_SettingsStringContainer& other) const
 {
-	return !(*this < other);
+	const char* this_c_str= c_str_ ? c_str_ : str_.c_str();
+	const char* other_c_str= other.c_str_ ? other.c_str_ : other.str_.c_str();
+	return strcmp( this_c_str, other_c_str ) >= 0;
 }

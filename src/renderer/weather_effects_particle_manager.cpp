@@ -41,7 +41,7 @@ void r_WeatherEffectsParticleManager::Create( unsigned int particles_count, cons
 	}
 
 	if( !shader_.Load( "shaders/rain_frag.glsl", "shaders/rain_vert.glsl" ) )
-		 h_Console::Error( "particles shader not found" );
+		h_Console::Error( "particles shader not found" );
 	shader_.SetAttribLocation( "coord", 0 );
 
 	shader_.Create();

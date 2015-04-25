@@ -1,27 +1,18 @@
-#ifndef HEX_HPP
-#define HEX_HPP
-
+#pragma once
+// common C lybrary headers, without std::
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
+#include <ctype.h>
 #include <math.h>
-
-
-#include <QtGlobal>
-#include <QObject>
-#include <QThread>
-#include <QMutex>
-#include <QTime>
-#include <QSettings>
-
 
 #ifdef Q_OS_WIN
 #include <windows.h>
 inline void usleep(int n)
 {
-    Sleep(n/1000);
+	Sleep(n/1000);
 }
 #endif
-
 
 #define H_CHUNK_WIDTH 16
 #define H_CHUNK_WIDTH_LOG2 4
@@ -40,7 +31,6 @@ inline void usleep(int n)
 #define H_MAX_LONGITUDE ( 511)
 #define H_MIN_LATITUDE  (-512)
 #define H_MAX_LATITUDE  ( 511)
-
 
 
 #define H_WORLD_REGION_SIZE_X 24
@@ -85,26 +75,22 @@ inline void usleep(int n)
 #include "math_lib/minmax.hpp"
 
 
-
-
 enum h_BlockType:
 unsigned short
 {
-    AIR= 0,//MUST BE ZERO
-    SPHERICAL_BLOCK,
-    STONE,
-    SOIL,
-    WOOD,
-    GRASS,
-    WATER,
-    SAND,
-    FOLIAGE,
-    FIRE_STONE,
-    NUM_BLOCK_TYPES,
-    BLOCK_UNKNOWN= 65535
+	AIR= 0,//MUST BE ZERO
+	SPHERICAL_BLOCK,
+	STONE,
+	SOIL,
+	WOOD,
+	GRASS,
+	WATER,
+	SAND,
+	FOLIAGE,
+	FIRE_STONE,
+	NUM_BLOCK_TYPES,
+	BLOCK_UNKNOWN= 65535
 };
-
-
 
 /* COORDINATE SYSTEM:
   __
@@ -118,15 +104,15 @@ unsigned short
  |z( up )
  +-------> x
 
-	  f
+    f
     ______
 fl /      \ fr
   /   up   \
   \        /
 bl \______/ br
-	  b
+      b
 
-  __	__
+  __    __
  /03\__/23\
  \__/13\__/33\
  /02\__/22\__/
@@ -139,44 +125,40 @@ bl \______/ br
 
 */
 
-
 enum h_Direction:
 unsigned char
 {
-    FORWARD= 0,	//y+1
-    BACK,		//y-1
+	FORWARD= 0, //y+1
+	BACK,       //y-1
 
-    FORWARD_RIGHT= 2,	//x+1 y+?
-    BACK_LEFT,		//x-1 y-?
+	FORWARD_RIGHT= 2, //x+1 y+?
+	BACK_LEFT,        //x-1 y-?
 
-    FORWARD_LEFT= 4,	//x-1 y+?
-    BACK_RIGHT,		//x+1 y-?
+	FORWARD_LEFT= 4,  //x-1 y+?
+	BACK_RIGHT,       //x+1 y-?
 
-    UP= 6,	//z+1
-    DOWN, 	//z-1
+	UP= 6, //z+1
+	DOWN,  //z-1
 
-    DIRECTION_UNKNOWN= 255
+	DIRECTION_UNKNOWN= 255
 };
-
 
 enum h_TransparencyType:
 unsigned char
 {
-    TRANSPARENCY_SOLID= 	0, //rock, sand, wood, other blocks with non-alpha textures
-    TRANSPARENCY_GLASS= 	1, //glass and other syntetic transparent materials
-    TRANSPARENCY_GREENERY = 1, //greenery, leafs, grass
-    TRANSPARENCY_GAS = 		1, //visibly gas ( smoke, plasma, etc )
-    TRANSPARENCY_LIQUID= 	3, //water, oil, other liquids
-    TRANSPARENCY_AIR = 		3, //air transparency
+	TRANSPARENCY_SOLID=     0, //rock, sand, wood, other blocks with non-alpha textures
+	TRANSPARENCY_GLASS=     1, //glass and other syntetic transparent materials
+	TRANSPARENCY_GREENERY = 1, //greenery, leafs, grass
+	TRANSPARENCY_GAS =      1, //visibly gas ( smoke, plasma, etc )
+	TRANSPARENCY_LIQUID=    3, //water, oil, other liquids
+	TRANSPARENCY_AIR =      3, //air transparency
 };
 
 enum h_WorldMoveDirection:
 unsigned char
 {
-    NORTH,
-    SOUTH,
-    EAST,
-    WEST
+	NORTH,
+	SOUTH,
+	EAST,
+	WEST
 };
-
-#endif//HEX_HPP

@@ -10,13 +10,13 @@ h_RegionData::h_RegionData()
 }
 
 h_ChunkLoader::h_ChunkLoader( QString world_directory ):
-regions_path(world_directory)
+	regions_path(world_directory)
 {
 }
 
 h_ChunkLoader::~h_ChunkLoader()
 {
-	for( auto region : regions )
+for( auto region : regions )
 	{
 		delete region;
 	}
@@ -26,7 +26,7 @@ QByteArray& h_ChunkLoader::GetChunkData( int longitude, int latitude )
 	h_RegionData* reg= GetRegionForCoordinates( longitude, latitude );
 
 	int rel_lon= m_Math::ModNonNegativeRemainder( longitude, H_WORLD_REGION_SIZE_X ),
-		rel_lat= m_Math::ModNonNegativeRemainder( latitude, H_WORLD_REGION_SIZE_Y );
+				 rel_lat= m_Math::ModNonNegativeRemainder( latitude, H_WORLD_REGION_SIZE_Y );
 	int ind= rel_lon + rel_lat * H_WORLD_REGION_SIZE_X;
 
 	if( !reg->chunks_used_flags[ind] )
@@ -41,7 +41,7 @@ void h_ChunkLoader::FreeChunkData( int longitude, int latitude )
 	h_RegionData* reg= GetRegionForCoordinates( longitude, latitude );
 
 	int rel_lon= m_Math::ModNonNegativeRemainder( longitude, H_WORLD_REGION_SIZE_X ),
-	 	rel_lat= m_Math::ModNonNegativeRemainder( latitude, H_WORLD_REGION_SIZE_Y );
+				 rel_lat= m_Math::ModNonNegativeRemainder( latitude, H_WORLD_REGION_SIZE_Y );
 	int ind= rel_lon + rel_lat * H_WORLD_REGION_SIZE_X;
 
 	if( reg->chunks_used_flags[ind] )
@@ -73,7 +73,7 @@ h_RegionData* h_ChunkLoader::GetRegionForCoordinates( int longitude, int latitud
 	int region_longitude= m_Math::DivNonNegativeRemainder( longitude, H_WORLD_REGION_SIZE_X ) * H_WORLD_REGION_SIZE_X;
 	int region_latitude= m_Math::DivNonNegativeRemainder( latitude, H_WORLD_REGION_SIZE_Y ) * H_WORLD_REGION_SIZE_Y;
 
-	for( auto region : regions )
+for( auto region : regions )
 	{
 		if(
 			region->header.longitude == region_longitude &&

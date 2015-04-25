@@ -1,13 +1,11 @@
-#ifndef CHUNK_DATA_CACHE_HPP
-#define CHUNK_DATA_CACHE_HPP
+#pragma once
 
 #include "../hex.hpp"
 #include "ph.h"
 
 class r_ChunkDataCache
 {
-	public:
-
+public:
 	static const constexpr unsigned int CHUNK_MATRIX_WIDTH_= (1+H_MAX_LONGITUDE-H_MIN_LONGITUDE);
 	static const constexpr unsigned int CHUNK_MATRIX_HEIGHT_= (1+H_MAX_LATITUDE-H_MIN_LATITUDE);
 
@@ -20,8 +18,7 @@ class r_ChunkDataCache
 	void GetChunkWaterHexCount( int longitude, int latitude, unsigned short cout );
 	unsigned short SetChunkWaterHexCount( int longitude, int latitude ) const;
 
-	private:
-
+private:
 	void SaveChunkMatrix( const char* file_name, const unsigned short* matrix ) const;
 	void LoadChunkMatrix( const char* file_name, unsigned short* matrix );
 
@@ -35,6 +32,7 @@ inline void r_ChunkDataCache::SetChunkQuadCount( int longitude, int latitude, un
 {
 	chunk_quad_count_matrix_[ longitude + latitude * CHUNK_MATRIX_WIDTH_ ]= count;
 }
+
 inline unsigned short r_ChunkDataCache::SetChunkQuadCount( int longitude, int latitude ) const
 {
 	return chunk_quad_count_matrix_[ longitude + latitude * CHUNK_MATRIX_WIDTH_ ];
@@ -44,9 +42,8 @@ inline void r_ChunkDataCache::GetChunkWaterHexCount( int longitude, int latitude
 {
 	chunk_water_hex_count_matrix_[ longitude + latitude * CHUNK_MATRIX_WIDTH_ ]= count;
 }
+
 inline unsigned short r_ChunkDataCache::SetChunkWaterHexCount( int longitude, int latitude ) const
 {
 	return chunk_water_hex_count_matrix_[ longitude + latitude * CHUNK_MATRIX_WIDTH_ ];
 }
-
-#endif//CHUNK_DATA_CACHE_HPP

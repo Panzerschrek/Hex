@@ -1,72 +1,55 @@
-#ifndef PLAYER_HPP
-#define PLAYER_HPP
+#pragma once
+#include <mutex>
 
 #include "hex.hpp"
 #include "vec.hpp"
 #include "math_lib/m_math.h"
-#include "QMutex"
 #include "chunk_phys_mesh.hpp"
 class h_World;
 
 class h_Player
 {
-	public:
-
-	h_Player( h_World* w );
+public:
+	h_Player( const h_World* w );
 	~h_Player();
 
-	void Move( m_Vec3 delta );
-	void Rotate( m_Vec3 delta );
+	void Move( const m_Vec3& delta );
+	void Rotate( const m_Vec3& delta );
 
 	m_Vec3 Pos() const;
 	m_Vec3 Angle() const;
 
 	void SetCollisionMesh( h_ChunkPhysMesh* mesh );
-	h_Direction GetBuildPos( short* x, short* y, short* z );
+	h_Direction GetBuildPos( short* x, short* y, short* z ) const;
 
 	void Lock();
 	void Unlock();
-	private:
 
-	const h_World* world;
-	m_Vec3 pos;
-	m_Vec3 view_angle;
+private:
+	const h_World* world_;
+	m_Vec3 pos_;
+	m_Vec3 view_angle_;
 
-	QMutex player_data_mutex;
+	std::mutex player_data_mutex_;
 
-	h_ChunkPhysMesh phys_mesh;
+	h_ChunkPhysMesh phys_mesh_;
 };
-
 
 inline m_Vec3 h_Player::Pos() const
 {
-	return pos;
+	return pos_;
 }
 inline m_Vec3 h_Player::Angle() const
 {
-	return view_angle;
+	return view_angle_;
 }
-
-inline void h_Player::Rotate( m_Vec3 delta )
-{
-	view_angle+= delta;
-
-	if( view_angle.z < 0.0f ) view_angle.z+= m_Math::FM_2PI;
-    else if( view_angle.z > m_Math::FM_2PI ) view_angle.z-= m_Math::FM_2PI;
-
-    if( view_angle.x > m_Math::FM_PI2 ) view_angle.x= m_Math::FM_PI2;
-    else if( view_angle.x < -m_Math::FM_PI2 ) view_angle.x= -m_Math::FM_PI2;
-}
-
 
 inline void h_Player::Lock()
 {
-	player_data_mutex.lock();
+	player_data_mutex_.lock();
 }
 
 inline void h_Player::Unlock()
 {
-	player_data_mutex.unlock();
+	player_data_mutex_.unlock();
 }
-
-#endif//PLAYER_HPP

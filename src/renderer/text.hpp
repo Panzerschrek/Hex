@@ -1,5 +1,4 @@
-#ifndef TEXT_H
-#define TEXT_H
+#pragma once
 
 #include "glsl_program.hpp"
 #include "polygon_buffer.hpp"
@@ -27,42 +26,42 @@ class r_Text
 public:
 
 	r_Text( const char* font_file );
-	~r_Text(){}
+	~r_Text() {}
 	void AddText( float colomn, float row, float, const unsigned char* color, const char* text );
 	void AddMultiText( float colomn, float row, float, const unsigned char* color, const char* text, ... );
 
 	void AddTextPixelCoords( float x, float y, float size/*in pixels*/, const unsigned char* color, const char* text );
 	void Draw();
-    void SetViewport( unsigned int x, unsigned int y );
+	void SetViewport( unsigned int x, unsigned int y );
 
 	unsigned int ColomnsInScreen()const;
 	unsigned int RowsInScreen()const;
 
-    float LetterWidth() const;
-    float LetterHeight() const;
+	float LetterWidth() const;
+	float LetterHeight() const;
 
 public:
-    static const unsigned char default_color[4];
+	static const unsigned char default_color[4];
 
 private:
 
 	r_GLSLProgram text_shader;
 	r_TextVertex* vertices;
-    r_PolygonBuffer text_vbo;
+	r_PolygonBuffer text_vbo;
 	unsigned int vertex_buffer_size;
 	unsigned int vertex_buffer_pos;
 	float screen_x, screen_y;
 
-    unsigned char* text_texture_data;
-    unsigned int letter_width, letter_height;
+	unsigned char* text_texture_data;
+	unsigned int letter_width, letter_height;
 
 	r_FramebufferTexture font_texture;
 };
 
 inline void r_Text::SetViewport( unsigned int x, unsigned int y )
 {
-    screen_x= float(x);
-    screen_y= float(y);
+	screen_x= float(x);
+	screen_y= float(y);
 }
 
 inline unsigned int r_Text::ColomnsInScreen()const
@@ -84,5 +83,3 @@ inline float r_Text::LetterHeight() const
 {
 	return float(letter_height);
 }
-
-#endif//TEXT_H
