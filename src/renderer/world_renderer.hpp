@@ -153,11 +153,11 @@ private:
 	unsigned int water_quadchunks_rebuild_per_second, water_quadchunks_rebuild_in_last_second;
 
 	// Shaders
-	r_GLSLProgram world_shader, build_prism_shader, water_shader, skybox_shader, sun_shader, console_bg_shader, supersampling_final_shader;
+	r_GLSLProgram world_shader_, build_prism_shader_, water_shader_, skybox_shader_, sun_shader_, console_bg_shader_, supersampling_final_shader_;
 
 	//VBO
-	r_PolygonBuffer build_prism_vbo;
-	r_PolygonBuffer skybox_vbo;
+	r_PolygonBuffer build_prism_vbo_;
+	r_PolygonBuffer skybox_vbo_;
 
 	struct
 	{
@@ -179,7 +179,7 @@ private:
 		//water chunks to rendering
 		int* chunk_meshes_water_index_count, *base_water_vertices;
 
-	} world_vb;
+	} world_vb_;
 
 	r_WorldVBO world_vertex_buffer_, world_vertex_buffer_to_draw_;
 	r_WorldVBO* draw_vertex_buffer_, *gen_vertex_buffer;
@@ -201,7 +201,7 @@ private:
 		int* chunk_meshes_index_count, *base_vertices;
 		int**  multi_indeces;//array of nulls
 		unsigned int quadchunks_to_draw;
-	} water_vb;
+	} water_vb_;
 
 	struct
 	{
@@ -209,8 +209,7 @@ private:
 		unsigned int quad_count;
 		unsigned short* index_data;
 		r_PolygonBuffer vbo;
-
-	} water_side_vb;
+	} water_side_vb_;
 
 
 	struct
@@ -218,56 +217,55 @@ private:
 		m_Vec3 current_sun_light;
 		m_Vec3 current_fire_light;
 		m_Vec3 sun_direction;
-	} lighting_data;
+	} lighting_data_;
 
 	//framebuffers
 	unsigned viewport_width_, viewport_height_;
-	r_Framebuffer supersampling_buffer;
+	r_Framebuffer supersampling_buffer_;
 
 	//textures
-	r_TextureManager texture_manager;
-	r_FramebufferTexture sun_texture;
-	r_FramebufferTexture water_texture;
-	r_FramebufferTexture console_bg_texture;
+	r_TextureManager texture_manager_;
+	r_FramebufferTexture sun_texture_;
+	r_FramebufferTexture water_texture_;
+	r_FramebufferTexture console_bg_texture_;
 
 	//matrices and vectors
-	m_Mat4 view_matrix, block_scale_matrix, block_final_matrix, water_final_matrix;
-	m_Vec3 cam_ang, cam_pos, build_pos, sun_vector;
+	m_Mat4 view_matrix_, block_scale_matrix_, block_final_matrix_, water_final_matrix_;
+	m_Vec3 cam_ang_, cam_pos_, build_pos_, sun_vector_;
 
-	unsigned int quadchunk_num_x, quadchunk_num_y;
-	unsigned int chunk_num_x, chunk_num_y;
-	r_ChunkInfo chunk_info[ H_MAX_CHUNKS*H_MAX_CHUNKS ];
-	r_ChunkInfo chunk_info_to_draw[ H_MAX_CHUNKS* H_MAX_CHUNKS];
-	r_WaterQuadChunkInfo* water_quadchunk_info;
-	r_WaterQuadChunkInfo* water_quadchunk_info_to_draw;
+	unsigned int quadchunk_num_x_, quadchunk_num_y_;
+	unsigned int chunk_num_x_, chunk_num_y_;
+	r_ChunkInfo chunk_info_[ H_MAX_CHUNKS * H_MAX_CHUNKS ];
+	r_ChunkInfo chunk_info_to_draw_[ H_MAX_CHUNKS * H_MAX_CHUNKS];
+	r_WaterQuadChunkInfo* water_quadchunk_info_;
+	r_WaterQuadChunkInfo* water_quadchunk_info_to_draw_;
 
 	//text out
-	r_Text* text_manager;
+	r_Text* text_manager_;
 
-	r_WeatherEffectsParticleManager weather_effects_particle_manager;
+	r_WeatherEffectsParticleManager weather_effects_particle_manager_;
 
-	//h_Thread<r_WorldRenderer> update_thread;
-	std::mutex host_data_mutex, gpu_data_mutex;
-	QTime startup_time;
+	std::mutex host_data_mutex_, gpu_data_mutex_;
+	QTime startup_time_;
 
 	//config variables here:
-	QSettings settings;
+	QSettings settings_;
 
 };
 
 inline void r_WorldRenderer::SetCamPos( const m_Vec3& p )
 {
-	cam_pos= p;
+	cam_pos_= p;
 }
 
 inline void r_WorldRenderer::SetCamAng( const m_Vec3& a )
 {
-	cam_ang= a;
+	cam_ang_= a;
 }
 
 inline void r_WorldRenderer::SetBuildPos( const m_Vec3& p )
 {
-	build_pos= p;
+	build_pos_= p;
 }
 
 inline void r_WorldRenderer::SetViewportSize( unsigned int viewport_width, unsigned int viewport_height )
