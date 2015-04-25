@@ -3,54 +3,48 @@
 
 class h_MainLoop;
 
-class ui_SettingsMenu:
-	public ui_MenuBase,
-	public ui_Button::ui_ButtonCallback,
-	public ui_Slider::ui_SliderCallback
+class ui_SettingsMenu : public ui_MenuBase
 {
 public:
 	ui_SettingsMenu( ui_MenuBase* parent, int x, int y, int sx, int sy );
 	virtual ~ui_SettingsMenu() override;
 
-	virtual void ButtonCallback( ui_Button* button ) override;
-	virtual void SliderCallback( ui_Slider* slider ) override;
 	virtual void Tick() override {};
 
 private:
-	ui_Button* button_back;
+	void OnBackButton();
+	void OnTexturesSizeSlider();
 
-	ui_Text* text_textures_size;
-	ui_Slider* slider_textures_size;
+private:
+	ui_Button* button_back_;
 
-	ui_Text* text_textures_filtration;
-	ui_Button* button_textures_fitration;
+	ui_Text* text_textures_size_;
+	ui_Slider* slider_textures_size_;
+
+	ui_Text* text_textures_filtration_;
+	ui_Button* button_textures_fitration_;
 };
 
-class ui_MainMenu :
-	public ui_MenuBase,
-	public ui_Button::ui_ButtonCallback,
-	public ui_Checkbox::ui_CheckboxCallback,
-	public ui_Slider::ui_SliderCallback
+class ui_MainMenu : public ui_MenuBase
 {
 public:
-	ui_MainMenu( h_MainLoop* main_loop_, int sx, int sy );
+	ui_MainMenu( h_MainLoop* main_loop, int sx, int sy );
 	virtual ~ui_MainMenu() override;
 
-	//void Draw( ui_Painter* painter );
-
-	virtual void ButtonCallback( ui_Button* button ) override;
-	virtual void CheckboxCallback( ui_Checkbox* checkbox ) override;
-	virtual void SliderCallback( ui_Slider* slider ) override;
 	virtual void Tick() override;
 
 private:
-	ui_Button* button_play;
-	ui_Button* button_settings;
-	ui_Button* button_quit;
-	ui_Checkbox* checkbox;
-	ui_Text* game_title;
-	ui_Text* game_subtitle;
-	ui_ProgressBar* progress_bar;
+	void OnPlayButton();
+	void OnSettingsButton();
+	void OnQuitButton();
+private:
+	ui_Button* button_play_;
+	ui_Button* button_settings_;
+	ui_Button* button_quit_;
+	ui_Checkbox* checkbox_;
+	ui_Text* game_title_;
+	ui_Text* game_subtitle_;
+	ui_ProgressBar* progress_bar_;
 
-	h_MainLoop * const main_loop;
+	h_MainLoop * const main_loop_;
 };

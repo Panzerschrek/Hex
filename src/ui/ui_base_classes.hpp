@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include <functional>
 
 #define H_UI_MAX_ELEMENTS 128
 #define H_UI_MAX_INSCRIPTION_LEN 64
@@ -9,6 +10,8 @@ class ui_Painter;
 class ui_Base;
 struct ui_Vertex;
 class ui_MenuBase;
+
+typedef std::function<void()> ui_Callback;
 
 class ui_CursorHandler
 {
@@ -117,46 +120,33 @@ protected:
 class ui_Button : public ui_Base
 {
 public:
-	class ui_ButtonCallback
-	{
-	public:
-		virtual void ButtonCallback( ui_Button* button )= 0;
-	};
-
 	ui_Button( const char* text, int cell_x, int cell_y, int cell_size_x, int cell_size_y );
-	ui_Button( const char* text, int cell_x, int cell_y, int cell_size_x, int cell_size_y,
-			   const unsigned char* normal_color, const unsigned char* in_cursor_over_color );
+	ui_Button(const char* text, int cell_x, int cell_y, int cell_size_x, int cell_size_y,
+			const unsigned char* normal_color, const unsigned char* in_cursor_over_color );
 	virtual ~ui_Button() override;
 
-	void SetCallback( ui_ButtonCallback* call )
+	void SetCallback( const ui_Callback& callback )
 	{
-		callback_= call;
+		callback_= callback;
 	}
 	virtual void CursorPress( int x, int y, bool pressed) override;
 	virtual void Draw( ui_Painter* painter )const override;
 
 private:
-	ui_ButtonCallback* callback_;
+	ui_Callback callback_;
 	char button_text_[ H_UI_MAX_INSCRIPTION_LEN ];
 };
 
 class ui_Checkbox : public ui_Base
 {
 public:
-
-	class ui_CheckboxCallback
-	{
-	public:
-		virtual void CheckboxCallback( ui_Checkbox* checkbox )= 0;
-
-	};
 	ui_Checkbox( int cell_x, int cell_y, bool state= false );
 	ui_Checkbox( int cell_x, int cell_y, bool state, const unsigned char* normal_color, const unsigned char* over_cursor_color );
 	virtual ~ui_Checkbox() override;
 
-	void SetCallback( ui_CheckboxCallback* call )
+	void SetCallback( const ui_Callback& callback )
 	{
-		callback_= call;
+		callback_= callback;
 	}
 	bool GetState() const
 	{
@@ -172,22 +162,21 @@ public:
 private:
 	bool flag_;
 
-	ui_CheckboxCallback* callback_;
+	ui_Callback callback_;
 };
 
 class ui_Text : public ui_Base
 {
 public:
-
-	enum ui_TextAlignment
+	enum Alignment
 	{
-		ALIGNMENT_LEFT,
-		ALIGNMENT_CENTER,
-		ALIGNMENT_RIGHT
+		Left,
+		Center,
+		Right
 	};
 
-	ui_Text( const char* text, ui_TextAlignment alignent_, int cell_x, int cell_y, int cell_width, int cell_height );
-	ui_Text( const char* text, ui_TextAlignment alignent_, int cell_x, int cell_y, int cell_width, int cell_height, const unsigned char* color );
+	ui_Text( const char* text, Alignment alignent_, int cell_x, int cell_y, int cell_width, int cell_height );
+	ui_Text( const char* text, Alignment alignent_, int cell_x, int cell_y, int cell_width, int cell_height, const unsigned char* color );
 	virtual ~ui_Text() override;
 
 	void SetText( const char* text );
@@ -195,7 +184,7 @@ public:
 
 private:
 	char text_[ H_UI_MAX_INSCRIPTION_LEN ];
-	ui_TextAlignment alignment_;
+	Alignment alignment_;
 };
 
 class ui_ProgressBar : public ui_Base
@@ -233,20 +222,13 @@ class ui_ListBox : public ui_Base
 class ui_Slider : public ui_Base
 {
 public:
-
-	class ui_SliderCallback
-	{
-	public:
-		virtual void SliderCallback( ui_Slider* slider )= 0;
-	};
-
 	ui_Slider( int cell_x, int cell_y, int cell_size_x, float slider_pos_= 0.0f );
 	ui_Slider( int cell_x, int cell_y, int cell_size_x, float slider_pos_, const unsigned char* normal_color, const unsigned char* cursor_over_color_ );
 	virtual ~ui_Slider() override;
 
-	void SetCallback( ui_SliderCallback* call )
+	void SetCallback( const ui_Callback callback )
 	{
-		callback_= call;
+		callback_= callback;
 	}
 
 	void SetSliderPos( float pos );
@@ -280,7 +262,7 @@ private:
 
 	float slider_pos_;// in range 0.0f-1.0f;
 	int slider_inv_step_;
-	ui_SliderCallback* callback_;
+	ui_Callback callback_;
 };
 
 class ui_MenuBase
