@@ -3,18 +3,17 @@
 
 #include "world_renderer.hpp"
 
-r_WorldVBO::r_WorldVBOCluster::r_ChunkVBOData::r_ChunkVBOData()
+r_WorldVBO::Cluster::ChunkVBOData::ChunkVBOData()
 	: vertex_count_(0)
 	, reserved_vertex_count_(0)
 	, vbo_offset_(0)
 	, updated_(false), rebuilded_(false)
-
 {
 }
 
-r_WorldVBO::r_WorldVBOCluster::r_WorldVBOCluster( int longitude, int latitude, r_WorldVBO* vbo )
+r_WorldVBO::Cluster::Cluster( int longitude, int latitude, r_WorldVBO* vbo )
 	: common_vbo_data_(vbo)
-	, VBO_(0)
+	, VAO_(0), VBO_(0)
 	, vbo_data_(nullptr)
 	, vbo_vertex_count_(0)
 	, longitude_(longitude)
@@ -23,7 +22,11 @@ r_WorldVBO::r_WorldVBOCluster::r_WorldVBOCluster( int longitude, int latitude, r
 {
 }
 
-void r_WorldVBO::r_WorldVBOCluster::PrepareBufferSizes()
+r_WorldVBO::Cluster::~Cluster()
+{
+}
+
+void r_WorldVBO::Cluster::PrepareBufferSizes()
 {
 	int non_empty_chunk_count= 0;
 	int vertex_buffer_size_in_non_empty_chunks= 0;
@@ -32,7 +35,7 @@ void r_WorldVBO::r_WorldVBOCluster::PrepareBufferSizes()
 	for( int j= 0; j< common_vbo_data_->chunks_per_cluster_y_; j++ )
 		for( int i= 0; i< common_vbo_data_->chunks_per_cluster_x_; i++ )
 		{
-			r_ChunkVBOData* ch= GetChunkVBOData( i, j );
+			ChunkVBOData* ch= GetChunkVBOData( i, j );
 			if( ch->vertex_count_ != 0 )
 			{
 				vertex_buffer_size_in_non_empty_chunks+= ch->reserved_vertex_count_;
@@ -47,7 +50,7 @@ void r_WorldVBO::r_WorldVBOCluster::PrepareBufferSizes()
 	for( int j= 0; j< common_vbo_data_->chunks_per_cluster_y_; j++ )
 		for( int i= 0; i< common_vbo_data_->chunks_per_cluster_x_; i++ )
 		{
-			r_ChunkVBOData* ch= GetChunkVBOData( i, j );
+			ChunkVBOData* ch= GetChunkVBOData( i, j );
 			if( ch->vertex_count_ == 0 )
 				ch->reserved_vertex_count_= reserved_vertex_count_in_empty_chunks;
 		}
@@ -62,13 +65,13 @@ void r_WorldVBO::r_WorldVBOCluster::PrepareBufferSizes()
 	for( int j= 0; j< common_vbo_data_->chunks_per_cluster_y_; j++ )
 		for( int i= 0; i< common_vbo_data_->chunks_per_cluster_x_; i++ )
 		{
-			r_ChunkVBOData* ch= GetChunkVBOData( i, j );
+			ChunkVBOData* ch= GetChunkVBOData( i, j );
 			ch->vbo_offset_= offset;
 			offset+= ch->reserved_vertex_count_;
 		}
 }
 
-void r_WorldVBO::r_WorldVBOCluster::LoadVertexBuffer()
+void r_WorldVBO::Cluster::LoadVertexBuffer()
 {
 	int real_vertex_count= 0, allocated_vertex_count= 0;
 
@@ -76,17 +79,44 @@ void r_WorldVBO::r_WorldVBOCluster::LoadVertexBuffer()
 	for( int j= 0; j< common_vbo_data_->chunks_per_cluster_y_; j++ )
 		for( int i= 0; i< common_vbo_data_->chunks_per_cluster_x_; i++ )
 		{
-			r_ChunkVBOData* ch= GetChunkVBOData( i, j );
+			ChunkVBOData* ch= GetChunkVBOData( i, j );
 			real_vertex_count+= ch->vertex_count_;
 			allocated_vertex_count+= ch->reserved_vertex_count_;
 		}
 
 	if( VBO_ == 0 )
+	{
+		glGenVertexArrays( 1, &VAO_ );
+		glBindVertexArray( VAO_ );
+
+		glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, common_vbo_data_->index_buffer_ );
+
 		glGenBuffers( 1, &VBO_ );
+		glBindBuffer( GL_ARRAY_BUFFER, VBO_ );
 
-	glBindBuffer( GL_ARRAY_BUFFER, VBO_ );
+		r_WorldVertex v;
+		int shift;
 
-	if( float(real_vertex_count) / float(allocated_vertex_count) < 0.5f )
+		shift= ((char*)v.coord) - ((char*)&v);
+		glEnableVertexAttribArray( 0 );
+		glVertexAttribPointer( 0, 3, GL_SHORT, false, sizeof(r_WorldVertex), (void*) shift );
+
+		shift= ((char*)v.tex_coord) - ((char*)&v);
+		glEnableVertexAttribArray( 1 );
+		glVertexAttribPointer( 1, 3, GL_SHORT, false, sizeof(r_WorldVertex), (void*) shift );
+
+		shift= ((char*)&v.normal_id) - ((char*)&v);
+		glEnableVertexAttribArray( 2 );
+		glVertexAttribIPointer( 2, 1, GL_UNSIGNED_BYTE, sizeof(r_WorldVertex), (void*) shift );
+
+		shift= ((char*)v.light) - ((char*)&v);
+		glEnableVertexAttribArray( 3 );
+		glVertexAttribPointer( 3, 2, GL_UNSIGNED_BYTE, false, sizeof(r_WorldVertex), (void*) shift );
+	}
+	else
+		glBindVertexArray( VAO_ );
+
+	if( float(real_vertex_count) / float(allocated_vertex_count) < r_WorldVBO::MIN_BUFFER_OCCUPANCY_FOR_FULL_UPLOADING_ )
 	{
 		// real occupancy of buffer too low, send data parts
 
@@ -94,12 +124,13 @@ void r_WorldVBO::r_WorldVBOCluster::LoadVertexBuffer()
 		for( int j= 0; j< common_vbo_data_->chunks_per_cluster_y_; j++ )
 			for( int i= 0; i< common_vbo_data_->chunks_per_cluster_x_; i++ )
 			{
-				r_ChunkVBOData* ch= GetChunkVBOData( i, j );
+				ChunkVBOData* ch= GetChunkVBOData( i, j );
 				if( ch->vertex_count_ != 0 )
-					glBufferSubData( GL_ARRAY_BUFFER,
-									 ch->vbo_offset_ * sizeof(r_WorldVertex),
-									 ch->vertex_count_ * sizeof(r_WorldVertex),
-									 vbo_data_ + ch->vbo_offset_ );
+					glBufferSubData(
+						GL_ARRAY_BUFFER,
+						ch->vbo_offset_ * sizeof(r_WorldVertex),
+						ch->vertex_count_ * sizeof(r_WorldVertex),
+						vbo_data_ + ch->vbo_offset_ );
 			}
 	}
 	else
@@ -107,51 +138,20 @@ void r_WorldVBO::r_WorldVBOCluster::LoadVertexBuffer()
 
 }
 
-
-r_WorldVBO::r_WorldVBOCluster* r_WorldVBO::GetClusterForGlobalCoordinates( int longitude, int latitude )
+r_WorldVBO::Cluster* r_WorldVBO::GetClusterForGlobalCoordinates( int longitude, int latitude )
 {
 	int i= m_Math::DivNonNegativeRemainder( longitude - longitude_, chunks_per_cluster_x_ );
 	int j= m_Math::DivNonNegativeRemainder( latitude  - latitude_ , chunks_per_cluster_y_ );
 	return clusters_[ i + j * MAX_CLUSTERS_ ];
 }
 
-r_WorldVBO::r_WorldVBOCluster::r_ChunkVBOData* r_WorldVBO::GetChunkDataForGlobalCoordinates ( int longitude, int latitude )
+r_WorldVBO::Cluster::ChunkVBOData* r_WorldVBO::GetChunkDataForGlobalCoordinates ( int longitude, int latitude )
 {
 	int i=  m_Math::DivNonNegativeRemainder( longitude - longitude_, chunks_per_cluster_x_ );
 	int j=  m_Math::DivNonNegativeRemainder( latitude  - latitude_ , chunks_per_cluster_y_ );
 	int di= m_Math::ModNonNegativeRemainder( longitude - longitude_, chunks_per_cluster_x_ );
 	int dj= m_Math::ModNonNegativeRemainder( latitude  - latitude_ , chunks_per_cluster_y_ );
 	return clusters_[ i + j * MAX_CLUSTERS_ ]->GetChunkVBOData( di, dj );
-}
-
-void r_WorldVBO::InitVAO()
-{
-
-	glGenVertexArrays( 1, &VAO_ );
-	glBindVertexArray( VAO_ );
-
-	/*r_WorldVertex v;
-	int shift;
-
-	glGenBuffers( 1, &stub_VBO_ );
-	glBindBuffer( GL_ARRAY_BUFFER, stub_VBO_ );
-	glBufferData( GL_ARRAY_BUFFER, 64, NULL, GL_STATIC_DRAW );
-
-	shift= ((char*)v.coord) - ((char*)&v);
-	glEnableVertexAttribArray( 0 );
-	glVertexAttribPointer( 0, 3, GL_SHORT, false, sizeof(r_WorldVertex), (void*) shift );
-
-	shift= ((char*)v.tex_coord) - ((char*)&v);
-	glEnableVertexAttribArray( 1 );
-	glVertexAttribPointer( 1, 3, GL_SHORT, false, sizeof(r_WorldVertex), (void*) shift );
-
-	shift= ((char*)v.light) - ((char*)&v);
-	glEnableVertexAttribArray( 3 );
-	glVertexAttribPointer( 3, 2, GL_UNSIGNED_BYTE, false, sizeof(r_WorldVertex), (void*) shift );
-
-	shift= ((char*)&v.normal_id) - ((char*)&v);
-	glEnableVertexAttribArray( 2 );
-	glVertexAttribIPointer( 2, 1, GL_UNSIGNED_BYTE, sizeof(r_WorldVertex), (void*) shift );*/
 }
 
 void r_WorldVBO::InitIndexBuffer()
@@ -171,6 +171,9 @@ void r_WorldVBO::InitIndexBuffer()
 		quads_indeces[x+5]= y + 3;
 	}
 
+	glGenVertexArrays( 1, &stub_VAO_ );
+	glBindVertexArray( stub_VAO_ );
+
 	glGenBuffers( 1, &index_buffer_ );
 	glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, index_buffer_ );
 	glBufferData( GL_ELEMENT_ARRAY_BUFFER, index_count * sizeof(unsigned short), quads_indeces, GL_STATIC_DRAW );
@@ -178,32 +181,7 @@ void r_WorldVBO::InitIndexBuffer()
 	delete[] quads_indeces;
 }
 
-void r_WorldVBO::InitCommonData()
+void r_WorldVBO::Cluster::BindVBO()
 {
-	InitVAO();
-	InitIndexBuffer();
-}
-
-void r_WorldVBO::r_WorldVBOCluster::BindVBO()
-{
-	glBindBuffer( GL_ARRAY_BUFFER, VBO_ );
-
-	r_WorldVertex v;
-	int shift;
-
-	shift= ((char*)v.coord) - ((char*)&v);
-	glEnableVertexAttribArray( 0 );
-	glVertexAttribPointer( 0, 3, GL_SHORT, false, sizeof(r_WorldVertex), (void*) shift );
-
-	shift= ((char*)v.tex_coord) - ((char*)&v);
-	glEnableVertexAttribArray( 1 );
-	glVertexAttribPointer( 1, 3, GL_SHORT, false, sizeof(r_WorldVertex), (void*) shift );
-
-	shift= ((char*)&v.normal_id) - ((char*)&v);
-	glEnableVertexAttribArray( 2 );
-	glVertexAttribIPointer( 2, 1, GL_UNSIGNED_BYTE, sizeof(r_WorldVertex), (void*) shift );
-
-	shift= ((char*)v.light) - ((char*)&v);
-	glEnableVertexAttribArray( 3 );
-	glVertexAttribPointer( 3, 2, GL_UNSIGNED_BYTE, false, sizeof(r_WorldVertex), (void*) shift );
+	glBindVertexArray( VAO_ );
 }

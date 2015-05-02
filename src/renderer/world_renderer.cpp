@@ -132,7 +132,7 @@ void r_WorldRenderer::UpdateWorld()
 			if( chunk_info_[n].chunk_data_updated_ )
 			{
 				chunk_info_[n].GetQuadCount();
-				r_WorldVBO::r_WorldVBOCluster* cluster;
+				r_WorldVBO::Cluster* cluster;
 				auto chunk_data= world_vertex_buffer_.
 								 GetChunkDataForGlobalCoordinates( chunk_info_[n].chunk_->Longitude(), chunk_info_[n].chunk_->Latitude() );
 				chunk_data->updated_= true;
@@ -150,11 +150,11 @@ void r_WorldRenderer::UpdateWorld()
 	for( int j= 0; j< world_vertex_buffer_.chunks_per_cluster_y_; j++ )
 		for( int i= 0; i< world_vertex_buffer_.chunks_per_cluster_x_; i++ )
 		{
-			r_WorldVBO::r_WorldVBOCluster* cluster= world_vertex_buffer_.clusters_[ i + j * r_WorldVBO::MAX_CLUSTERS_ ];
+			r_WorldVBO::Cluster* cluster= world_vertex_buffer_.clusters_[ i + j * r_WorldVBO::MAX_CLUSTERS_ ];
 			if( cluster-> need_reallocate_vbo_ )
 			{
-				r_WorldVBO::r_WorldVBOCluster* new_cluster=
-					new r_WorldVBO::r_WorldVBOCluster( cluster->longitude_, cluster->latitude_, &world_vertex_buffer_ );
+				r_WorldVBO::Cluster* new_cluster=
+					new r_WorldVBO::Cluster( cluster->longitude_, cluster->latitude_, &world_vertex_buffer_ );
 				*new_cluster= *cluster;
 				// now, we have copy of cluster. copy to new cluster vertex data inside old cluster, for chunks, which do not need rebuild
 
@@ -166,10 +166,10 @@ void r_WorldRenderer::UpdateWorld()
 				for( int y= 0; y< world_vertex_buffer_.chunks_per_cluster_y_; y++ )
 					for( int x= 0; x< world_vertex_buffer_.chunks_per_cluster_x_; x++ )
 					{
-						r_WorldVBO::r_WorldVBOCluster::r_ChunkVBOData* chunk_data= new_cluster->GetChunkVBOData( x, y );
+						r_WorldVBO::Cluster::ChunkVBOData* chunk_data= new_cluster->GetChunkVBOData( x, y );
 						if( !chunk_data->updated_ )
 						{
-							r_WorldVBO::r_WorldVBOCluster::r_ChunkVBOData* old_chunk_data= cluster->GetChunkVBOData( x, y );
+							r_WorldVBO::Cluster::ChunkVBOData* old_chunk_data= cluster->GetChunkVBOData( x, y );
 							memcpy( cluster->vbo_data_ + old_chunk_data->vbo_offset_,
 									new_cluster->vbo_data_ + chunk_data->vbo_offset_, chunk_data->vertex_count_ * sizeof(r_WorldVertex) );
 						}
@@ -428,134 +428,7 @@ void r_WorldRenderer::UpdateFunc()
 }
 
 void r_WorldRenderer::UpdateGPUData()
-{	return;
-	/*gpu_data_mutex.lock();
-	if( world_vb.vbo_update_ready )
-	{
-	    host_data_mutex.lock();
-
-	    unsigned int i, j, n;
-
-	    if( world_vb.need_update_vbo )
-	    {
-	        world_vb.vb_data= world_vb.new_vb_data;
-	        world_vb.vbo.VertexData( (float*) world_vb.vb_data, world_vb.allocated_vertex_count * sizeof( r_WorldVertex ),
-	                                 sizeof( r_WorldVertex ) );
-	        for( i= 0; i< world_->ChunkNumberX(); i++ )
-	            for( j= 0; j< world_->ChunkNumberY(); j++ )
-	            {
-	                n=  i + j * world_->ChunkNumberX();
-	                if( chunk_info_[n].chunk_mesh_rebuilded )
-	                {
-	                    chunk_info_[n].chunk_mesh_rebuilded= false;
-	                    chunk_info_[n].chunk_vb.real_vertex_count= chunk_info_[n].chunk_vb.new_vertex_count;
-	                }
-	            }
-
-	        memcpy( chunk_info_to_draw, chunk_info,
-	                sizeof( r_ChunkInfo ) * world_->ChunkNumberX() * world_->ChunkNumberY() );
-
-	        world_vb.need_update_vbo= false;
-	        chunk_updates_in_last_second+= world_->ChunkNumberX() * world_->ChunkNumberY();
-	        h_Console::Message( "GPU full update" );
-	    }
-	    else
-	        for( i= 0; i< world_->ChunkNumberX(); i++ )
-	            for( j= 0; j< world_->ChunkNumberY(); j++ )
-	            {
-	                n=  i + j * world_->ChunkNumberX();
-	                if( chunk_info_[n].chunk_mesh_rebuilded )
-	                {
-	                    world_vb.vbo.VertexSubData( chunk_info_[n].chunk_vb.vb_data,
-	                                                chunk_info_[n].chunk_vb.new_vertex_count * sizeof( r_WorldVertex ),
-	                                                (unsigned int)( chunk_info_[n].chunk_vb.vb_data - world_vb.vb_data ) * sizeof( r_WorldVertex ) );
-
-	                    chunk_info_[n].chunk_mesh_rebuilded= false;
-	                    chunk_info_[n].chunk_vb.real_vertex_count= chunk_info_[n].chunk_vb.new_vertex_count;
-
-	                    memcpy( &chunk_info_to_draw[n], &chunk_info_[n], sizeof( r_ChunkInfo ) );
-	                    chunk_updates_in_last_second++;
-	                }
-	            }
-
-	    host_data_mutex.unlock();
-
-	    world_vb.vbo_update_ready = false;
-	}//if( world_vb.vbo_update_ready )
-	gpu_data_mutex.unlock();
-	*/
-
-	if( host_data_mutex_.try_lock() )
-	{
-		for( int j= 0; j< world_vertex_buffer_.cluster_matrix_size_y_; j++ )
-		{
-			for( int i= 0; i< world_vertex_buffer_.cluster_matrix_size_x_; i++ )
-			{
-				int k=  i + j * r_WorldVBO::MAX_CLUSTERS_;
-			}
-		}
-		host_data_mutex_.unlock();
-	}
-//water update
-
-	gpu_data_mutex_.lock();
-	if( water_vb_.vbo_update_ready )
-	{
-		host_data_mutex_.lock();
-
-		if( water_vb_.need_update_vbo )
-		{
-			water_vb_.vb_data= water_vb_.new_vb_data;
-			water_vb_.vbo.VertexData( water_vb_.vb_data,
-									 water_vb_.allocated_vertex_count * sizeof( r_WaterVertex ),
-									 sizeof( r_WaterVertex ) );
-			for( unsigned int i= 0; i< quadchunk_num_x_; i++ )
-				for( unsigned int j= 0; j< quadchunk_num_y_; j++ )
-				{
-					r_WaterQuadChunkInfo* ch= & water_quadchunk_info_[ i + j * quadchunk_num_x_ ];
-					if( ch->water_mesh_rebuilded_ )
-					{
-						ch->water_mesh_rebuilded_= false;
-						ch->real_vertex_count_= ch->new_vertex_count_;
-					}
-				}
-
-			water_vb_.need_update_vbo= false;
-
-			memcpy( water_quadchunk_info_to_draw_, water_quadchunk_info_,
-					sizeof( r_WaterQuadChunkInfo ) * quadchunk_num_x_ * quadchunk_num_y_ );
-
-			water_quadchunks_updates_in_last_second+= quadchunk_num_x_ * quadchunk_num_y_;
-			h_Console::Message( "GPU water full update" );
-		}//if( water_vb_.need_update_vbo )
-		else
-		{
-			for( unsigned int i= 0; i< quadchunk_num_x_; i++ )
-				for( unsigned int j= 0; j< quadchunk_num_y_; j++ )
-				{
-					r_WaterQuadChunkInfo* ch= & water_quadchunk_info_[ i + j * quadchunk_num_x_ ];
-					if( ch->water_mesh_rebuilded_ )
-					{
-						water_vb_.vbo.VertexSubData(
-							ch->vb_data_,
-							ch->new_vertex_count_ * sizeof( r_WaterVertex ),
-							(ch->vb_data_ - water_vb_.vb_data) * sizeof( r_WaterVertex ) );
-
-						ch->water_mesh_rebuilded_= false;
-						ch->real_vertex_count_= ch->new_vertex_count_;
-						memcpy( & water_quadchunk_info_to_draw_[ i + j * quadchunk_num_x_ ],
-								& water_quadchunk_info_[ i + j * quadchunk_num_x_ ],
-								sizeof( r_WaterQuadChunkInfo )  );
-
-						water_quadchunks_updates_in_last_second++;
-					}
-				}
-		}
-
-		water_vb_.vbo_update_ready= false;
-		host_data_mutex_.unlock();
-	}
-	gpu_data_mutex_.unlock();
+{
 }
 
 void r_WorldRenderer::CalculateMatrices()
@@ -763,36 +636,10 @@ void r_WorldRenderer::DrawWorld()
 	world_shader_.Uniform( "fire_light_color", lighting_data_.current_fire_light );
 	world_shader_.Uniform( "ambient_light_color", R_AMBIENT_LIGHT_COLOR );
 
-	/*world_vb.vbo.Bind();
-	glMultiDrawElementsBaseVertex( GL_TRIANGLES, world_vb.chunk_meshes_index_count, GL_UNSIGNED_SHORT,
-	                               (const GLvoid**)(world_vb.multi_indeces), world_vb.chunks_to_draw,
-	                               world_vb.base_vertices );*/
-	glBindVertexArray( world_vertex_buffer_.VAO_ );
-
 	for( int j= 0; j< world_vertex_buffer_.cluster_matrix_size_y_; j++ )
 		for( int i= 0; i< world_vertex_buffer_.cluster_matrix_size_x_; i++ )
 		{
 			auto cluster= world_vertex_buffer_.clusters_[ i + j * r_WorldVBO::MAX_CLUSTERS_ ];
-			/*glBindBuffer( GL_ARRAY_BUFFER, cluster->VBO_ );
-
-			r_WorldVertex v;
-			int shift;
-
-			shift= ((char*)v.coord) - ((char*)&v);
-			glEnableVertexAttribArray( 0 );
-			glVertexAttribPointer( 0, 3, GL_SHORT, false, sizeof(r_WorldVertex), (void*) shift );
-
-			shift= ((char*)v.tex_coord) - ((char*)&v);
-			glEnableVertexAttribArray( 1 );
-			glVertexAttribPointer( 1, 3, GL_SHORT, false, sizeof(r_WorldVertex), (void*) shift );
-
-			shift= ((char*)&v.normal_id) - ((char*)&v);
-			glEnableVertexAttribArray( 2 );
-			glVertexAttribIPointer( 2, 1, GL_UNSIGNED_BYTE, sizeof(r_WorldVertex), (void*) shift );
-
-			shift= ((char*)v.light) - ((char*)&v);
-			glEnableVertexAttribArray( 3 );
-			glVertexAttribPointer( 3, 2, GL_UNSIGNED_BYTE, false, sizeof(r_WorldVertex), (void*) shift );*/
 			cluster->BindVBO();
 
 			for( int y= 0; y< world_vertex_buffer_.chunks_per_cluster_y_; y++ )
@@ -1056,11 +903,11 @@ void r_WorldRenderer::BuildWorld()
 			for( int i= 0; i< world_vertex_buffer_.cluster_matrix_size_x_; i++ )
 			{
 				int k=  i + j * r_WorldVBO::MAX_CLUSTERS_;
-				world_vertex_buffer_.clusters_[k]= new r_WorldVBO::r_WorldVBOCluster(
+				world_vertex_buffer_.clusters_[k]= new r_WorldVBO::Cluster(
 					min_longitude+ i*world_vertex_buffer_.chunks_per_cluster_x_ ,
 					min_latitude+  j*world_vertex_buffer_.chunks_per_cluster_y_ , &world_vertex_buffer_ );
 
-				world_vertex_buffer_to_draw_.clusters_[k]= new r_WorldVBO::r_WorldVBOCluster(
+				world_vertex_buffer_to_draw_.clusters_[k]= new r_WorldVBO::Cluster(
 					min_longitude+ i*world_vertex_buffer_.chunks_per_cluster_x_ ,
 					min_latitude+  j*world_vertex_buffer_.chunks_per_cluster_y_ , &world_vertex_buffer_ );
 			}
@@ -1110,11 +957,11 @@ void r_WorldRenderer::BuildWorld()
 	for( int j= 0; j< world_vertex_buffer_.cluster_matrix_size_y_; j++ )
 		for( int i= 0; i< world_vertex_buffer_.cluster_matrix_size_x_; i++ )
 		{
-			r_WorldVBO::r_WorldVBOCluster* cluster= world_vertex_buffer_.clusters_[ i + j * r_WorldVBO::MAX_CLUSTERS_ ];
+			r_WorldVBO::Cluster* cluster= world_vertex_buffer_.clusters_[ i + j * r_WorldVBO::MAX_CLUSTERS_ ];
 			cluster->PrepareBufferSizes();
 			cluster->vbo_data_= new r_WorldVertex[ cluster->vbo_vertex_count_ ];
 
-			r_WorldVBO::r_WorldVBOCluster* cluster_to_draw= world_vertex_buffer_to_draw_.clusters_[ i + j * r_WorldVBO::MAX_CLUSTERS_ ];
+			r_WorldVBO::Cluster* cluster_to_draw= world_vertex_buffer_to_draw_.clusters_[ i + j * r_WorldVBO::MAX_CLUSTERS_ ];
 			*cluster_to_draw= *cluster;
 		}
 
@@ -1232,27 +1079,6 @@ void r_WorldRenderer::InitFrameBuffers()
 
 void r_WorldRenderer::InitVertexBuffers()
 {
-	/*world_vb.vbo.VertexData( world_vb.vb_data,
-	                         sizeof( r_WorldVertex ) * world_vb.allocated_vertex_count,
-	                         sizeof( r_WorldVertex ) );
-
-	world_vb.vbo.IndexData(  world_vb.vb_index_data,
-	                         sizeof(quint16) * world_vb.index_buffer_size,
-	                         GL_UNSIGNED_SHORT, GL_TRIANGLES );
-
-	r_WorldVertex v;
-	unsigned int shift;
-	shift= ((char*)v.coord) - ((char*)&v );
-	world_vb.vbo.VertexAttribPointer( 0, 3, GL_SHORT, false, shift );
-	shift= ((char*)v.tex_coord) - ((char*)&v );
-	world_vb.vbo.VertexAttribPointer( 1, 3, GL_SHORT, false, shift );
-	shift= ((char*)&v.normal_id) - ((char*)&v );
-
-	world_vb.vbo.VertexAttribPointerInt( 2, 1, GL_UNSIGNED_BYTE, shift );
-	shift= ((char*)v.light ) - ((char*)&v );
-	world_vb.vbo.VertexAttribPointer( 3, 2, GL_UNSIGNED_BYTE, false, shift );*/
-
-
 	water_vb_.vbo.VertexData( water_vb_.vb_data,
 							 sizeof( r_WaterVertex ) * water_vb_.allocated_vertex_count,
 							 sizeof( r_WaterVertex ) );
@@ -1310,8 +1136,8 @@ void r_WorldRenderer::InitVertexBuffers()
 	{
 		0, 1, 5,  0, 5, 4,
 		0, 4, 6,  0, 6, 2,
-		4, 5, 7,  4, 7, 6,//bottom
-		0, 3, 1,  0, 2, 3, //top
+		4, 5, 7,  4, 7, 6, // bottom
+		0, 3, 1,  0, 2, 3, // top
 		2, 7, 3,  2, 6, 7,
 		1, 3, 7,  1, 7, 5
 	};
@@ -1319,11 +1145,11 @@ void r_WorldRenderer::InitVertexBuffers()
 	skybox_vbo_.IndexData( sky_indeces, sizeof(unsigned short) * 36, GL_UNSIGNED_SHORT, GL_TRIANGLES );
 	skybox_vbo_.VertexAttribPointer( 0, 3, GL_SHORT, false, 0 );
 
-	world_vertex_buffer_.InitCommonData();
+	world_vertex_buffer_.InitIndexBuffer();
 	for( int j= 0; j< world_vertex_buffer_.cluster_matrix_size_y_; j++ )
 		for( int i= 0; i< world_vertex_buffer_.cluster_matrix_size_x_; i++ )
 		{
-			r_WorldVBO::r_WorldVBOCluster* cluster= world_vertex_buffer_.clusters_[ i + j * r_WorldVBO::MAX_CLUSTERS_ ];
+			r_WorldVBO::Cluster* cluster= world_vertex_buffer_.clusters_[ i + j * r_WorldVBO::MAX_CLUSTERS_ ];
 			cluster->LoadVertexBuffer();
 		}
 
