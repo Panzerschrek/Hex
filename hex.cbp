@@ -97,7 +97,6 @@
 		<Unit filename="src\renderer\world_vertex_buffer.hpp" />
 		<Unit filename="src\settings.cpp" />
 		<Unit filename="src\settings.hpp" />
-		<Unit filename="src\thread.hpp" />
 		<Unit filename="src\ui\main_menu.cpp" />
 		<Unit filename="src\ui\main_menu.hpp" />
 		<Unit filename="src\ui\ui_base_classes.cpp" />
