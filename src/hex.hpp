@@ -6,14 +6,6 @@
 #include <ctype.h>
 #include <math.h>
 
-#ifdef Q_OS_WIN
-#include <windows.h>
-inline void usleep(int n)
-{
-	Sleep(n/1000);
-}
-#endif
-
 #define H_CHUNK_WIDTH 16
 #define H_CHUNK_WIDTH_LOG2 4
 
@@ -121,7 +113,7 @@ bl \______/ br
  \__/11\__/31\
  /00\__/20\__/
  \__/10\__/30\
- 	\__/  \__/
+    \__/  \__/
 
 */
 
