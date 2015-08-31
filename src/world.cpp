@@ -553,7 +553,7 @@ void h_World::PhysTick()
 	while(1)
 	{
 		while( player_ == NULL )
-			usleep( 1000000 );
+			std::this_thread::sleep_for(std::chrono::seconds(1));
 		QTime t0= QTime::currentTime();
 
 		FlushActionQueue();
@@ -592,8 +592,8 @@ void h_World::PhysTick()
 
 		QTime t1= QTime::currentTime();
 		unsigned int dt_ms= t0.msecsTo(t1);
-		if( dt_ms < 50 )
-		usleep( (50 - dt_ms ) * 1000 );
+		if (dt_ms < 50)
+			std::this_thread::sleep_for(std::chrono::milliseconds(50 - dt_ms));
 	}
 }
 

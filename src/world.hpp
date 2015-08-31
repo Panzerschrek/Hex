@@ -134,9 +134,7 @@ private:
 	h_Block normal_blocks_[ NUM_BLOCK_TYPES ];
 
 	unsigned int phys_tick_count_;
-	//h_Thread< h_World > phys_thread_;
 	std::unique_ptr< std::thread > phys_thread_;
-	//mutable QMutex world_mutex_;
 
 	//queue 0 - for enqueue, queue 1 - for dequeue
 	std::queue< h_WorldAction > action_queue_[2];
