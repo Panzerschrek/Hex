@@ -174,9 +174,11 @@ void r_Text::Draw()
 		text_shader.Uniform( "inv_letters_in_texture", inv_letters_in_texture );
 	}
 
-	r_OGLStateManager::BlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
-	r_OGLStateManager::EnableBlend();
-	r_OGLStateManager::DisableDepthTest();
+	static const GLenum blend_func[]= { GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA };
+	static const r_OGLState state(
+		true, false, false, false,
+		blend_func );
+	r_OGLStateManager::UpdateState( state );
 
 	glDrawElements( GL_TRIANGLES, vertex_buffer_pos * 6 / 4, GL_UNSIGNED_SHORT, NULL );
 

@@ -143,11 +143,11 @@ void h_MainLoop::paintGL()
 	mat[13]= 1.0f;
 	ui_painter_->SetMatrix( mat );
 
-	r_OGLStateManager::EnableBlend();
-	r_OGLStateManager::DisableFaceCulling();
-	r_OGLStateManager::DisableDepthTest();
-	r_OGLStateManager::DepthMask(true);
-	r_OGLStateManager::BlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+	static const GLenum blend_func[]= { GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA };
+	static const r_OGLState state(
+		true, false, false, false,
+		blend_func );
+	r_OGLStateManager::UpdateState( state );
 
 	main_menu_->Draw( ui_painter_ );
 

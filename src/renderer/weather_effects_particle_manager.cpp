@@ -5,16 +5,15 @@
 #include "img_utils.hpp"
 #include "../math_lib/rand.h"
 #include "../console.hpp"
+#include "ogl_state_manager.hpp"
 
 r_WeatherEffectsParticleManager::r_WeatherEffectsParticleManager()
 	: particles_count_(0)
 {
-
 }
 
 r_WeatherEffectsParticleManager::~r_WeatherEffectsParticleManager()
 {
-
 }
 
 void r_WeatherEffectsParticleManager::Create( unsigned int particles_count, const m_Vec3& rain_zone_size )
@@ -55,6 +54,12 @@ void r_WeatherEffectsParticleManager::Destroy()
 
 void r_WeatherEffectsParticleManager::Draw( const m_Mat4& view_matrix, const m_Vec3& cam_pos )
 {
+	static const GLenum blend_func[2]= { GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA };
+	static const r_OGLState state(
+		true, false, true, true,
+		blend_func );
+	r_OGLStateManager::UpdateState( state );
+
 	vbo_.Bind();
 
 	particle_texture_.Bind(0);
