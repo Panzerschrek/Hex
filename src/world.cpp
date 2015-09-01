@@ -1,5 +1,3 @@
-#include <QTime>
-
 #include "world.hpp"
 #include "player.hpp"
 #include "math_lib/m_math.h"
@@ -554,7 +552,7 @@ void h_World::PhysTick()
 	{
 		while( player_ == NULL )
 			std::this_thread::sleep_for(std::chrono::seconds(1));
-		QTime t0= QTime::currentTime();
+		int64_t t0_ms = clock() * 1000 / CLOCKS_PER_SEC;
 
 		FlushActionQueue();
 		WaterPhysTick();
@@ -590,8 +588,8 @@ void h_World::PhysTick()
 		if( renderer_ != nullptr )
 			renderer_->Update();
 
-		QTime t1= QTime::currentTime();
-		unsigned int dt_ms= t0.msecsTo(t1);
+		int64_t t1_ms= clock() * 1000 / CLOCKS_PER_SEC;
+		unsigned int dt_ms= (unsigned int)(t1_ms - t0_ms);
 		if (dt_ms < 50)
 			std::this_thread::sleep_for(std::chrono::milliseconds(50 - dt_ms));
 	}
