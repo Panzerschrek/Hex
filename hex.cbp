@@ -97,6 +97,10 @@
 		<Unit filename="src\renderer\world_vertex_buffer.hpp" />
 		<Unit filename="src\settings.cpp" />
 		<Unit filename="src\settings.hpp" />
+		<Unit filename="src\settings_keys.cpp" />
+		<Unit filename="src\settings_keys.hpp" />
+		<Unit filename="src\ticks_counter.cpp" />
+		<Unit filename="src\ticks_counter.hpp" />
 		<Unit filename="src\ui\main_menu.cpp" />
 		<Unit filename="src\ui\main_menu.hpp" />
 		<Unit filename="src\ui\ui_base_classes.cpp" />
