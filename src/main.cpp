@@ -4,8 +4,6 @@
 #include "main_loop.hpp"
 #include "console.hpp"
 
-#include "settings.hpp"
-
 int main( int argc, char* argv[] )
 {
 	QApplication hex(argc, argv);

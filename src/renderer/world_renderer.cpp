@@ -20,23 +20,10 @@ r_WorldRenderer::r_WorldRenderer(
 	: settings_(settings)
 	, world_(world)
 	, host_data_mutex_(), gpu_data_mutex_()
-	, frame_count(0), update_count(0)
 	, sun_vector_( 0.7f, 0.8f, 0.6f )
+	, startup_time_(clock())
 {
 	world_vb_.need_update_vbo= false;
-
-	startup_time_= QTime::currentTime();
-
-	last_fps= 0;
-	last_fps_time= QTime::currentTime();
-	frames_in_last_second= 0;
-	chunk_updates_in_last_second = chunk_updates_per_second= 0;
-	chunks_rebuild_per_second= chunk_rebuild_in_last_second= 0;
-
-	water_quadchunks_updates_per_second= water_quadchunks_updates_in_last_second= 0;
-	water_quadchunks_rebuild_per_second= water_quadchunks_rebuild_in_last_second= 0;
-
-	updade_ticks_per_second= update_ticks_in_last_second= 0;
 }
 
 r_WorldRenderer::~r_WorldRenderer()
@@ -48,7 +35,7 @@ r_WorldRenderer::~r_WorldRenderer()
 
 void r_WorldRenderer::UpdateChunk(unsigned short X,  unsigned short Y )
 {
-	if( frame_count == 0 )
+	if( frames_counter_.GetTotalTicks() == 0 )
 		return;
 	else
 		chunk_info_[ X + Y * world_->ChunkNumberX() ].chunk_data_updated_= true;
@@ -56,7 +43,7 @@ void r_WorldRenderer::UpdateChunk(unsigned short X,  unsigned short Y )
 
 void r_WorldRenderer::UpdateChunkWater(unsigned short X,  unsigned short Y )
 {
-	if( frame_count == 0 )
+	if( frames_counter_.GetTotalTicks() == 0 )
 		return;
 	else
 		chunk_info_[ X + Y * world_->ChunkNumberX() ].chunk_water_data_updated_= true;
@@ -66,7 +53,7 @@ void r_WorldRenderer::FullUpdate()
 {
 	return;
 
-	if( frame_count == 0 )
+	if( frames_counter_.GetTotalTicks() == 0 )
 		return;
 	for( unsigned int i= 0; i< world_->ChunkNumberX(); i++ )
 		for( unsigned int j= 0; j< world_->ChunkNumberY(); j++ )
@@ -388,7 +375,6 @@ void r_WorldRenderer::UpdateWater()
 				ch->water_updated_= false;
 				ch->water_mesh_rebuilded_= true;
 				any_vbo_updated= true;
-				water_quadchunks_rebuild_in_last_second++;
 			}
 		}
 
@@ -415,19 +401,18 @@ void r_WorldRenderer::UpdateFunc()
 
 	//while(1)
 	//{
-	QTime t0= QTime::currentTime();
+	unsigned int t0_ms= std::clock() * 1000 / CLOCKS_PER_SEC;
 
 	UpdateWorld();
-	if( update_count&1 )
+	if( updates_counter_.GetTotalTicks() &1 )
 		UpdateWater();
 
-	QTime t1= QTime::currentTime();
-	unsigned int dt_ms= t0.msecsTo( t1 );
+	unsigned int t1_ms= std::clock() * 1000 / CLOCKS_PER_SEC;
+	unsigned int dt_ms= t1_ms - t0_ms;
 	if( dt_ms < 50 )
 		std::this_thread::sleep_for(std::chrono::milliseconds((50 - dt_ms)));
 
-	update_count++;
-	update_ticks_in_last_second++;
+	updates_counter_.Tick();
 
 	//}
 }
@@ -507,7 +492,7 @@ void r_WorldRenderer::BuildChunkList()
 
 void r_WorldRenderer::Draw()
 {
-	if( frame_count == 0 )
+	if( frames_counter_.GetTotalTicks() == 0 )
 	{
 
 	}
@@ -542,12 +527,9 @@ void r_WorldRenderer::Draw()
 	if( settings_->GetBool( h_SettingsKeys::show_debug_info, false ) && h_Console::GetPosition() == 0.0f )
 	{
 		float text_scale= 0.25f;
-		text_manager_->AddMultiText( 0, 0, text_scale, r_Text::default_color, "fps: %d", last_fps );
-		text_manager_->AddMultiText( 0, 1, text_scale, r_Text::default_color, "chunks: %dx%d", chunk_num_x_, chunk_num_y_ );
-		text_manager_->AddMultiText( 0, 2, text_scale, r_Text::default_color, "chunks updated per second: %d", chunk_updates_per_second );
-		text_manager_->AddMultiText( 0, 3, text_scale, r_Text::default_color, "water quadchunks updated per second: %d", water_quadchunks_updates_per_second );
-		text_manager_->AddMultiText( 0, 4, text_scale, r_Text::default_color, "update ticks per second: %d",updade_ticks_per_second );
-		text_manager_->AddMultiText( 0, 5, text_scale, r_Text::default_color, "cam pos: %4.1f %4.1f %4.1f",
+		text_manager_->AddMultiText( 0, 0, text_scale, r_Text::default_color, "fps: %d", frames_counter_.GetTicksFrequency() );
+		text_manager_->AddMultiText( 0, 1, text_scale, r_Text::default_color, "update ticks per second: %d",updates_counter_.GetTicksFrequency() );
+		text_manager_->AddMultiText( 0, 2, text_scale, r_Text::default_color, "cam pos: %4.1f %4.1f %4.1f",
 									cam_pos_.x, cam_pos_.y, cam_pos_.z );
 
 		//text_manager->AddMultiText( 0, 11, text_scale, r_Text::default_color, "quick brown fox jumps over the lazy dog\nQUICK BROWN FOX JUMPS OVER THE LAZY DOG\n9876543210-+/\\" );
@@ -557,7 +539,8 @@ void r_WorldRenderer::Draw()
 
 		text_manager_->Draw();
 	}
-	CalculateFPS();
+
+	frames_counter_.Tick();
 }
 
 void r_WorldRenderer::DrawConsole()
@@ -588,35 +571,6 @@ void r_WorldRenderer::DrawConsole()
 	glDrawArrays( GL_POINTS, 0, 1 );
 	h_Console::Draw( text_manager_ );
 	text_manager_->Draw();
-}
-
-void r_WorldRenderer::CalculateFPS()
-{
-	frames_in_last_second++;
-
-	if( last_fps_time.msecsTo( QTime::currentTime() ) > 1000 )
-	{
-		last_fps= frames_in_last_second;
-		frames_in_last_second= 0;
-		last_fps_time= QTime::currentTime();
-
-		chunk_updates_per_second= chunk_updates_in_last_second;
-		chunk_updates_in_last_second= 0;
-
-		chunks_rebuild_per_second= chunk_rebuild_in_last_second;
-		chunk_rebuild_in_last_second= 0;
-
-
-		water_quadchunks_rebuild_per_second= water_quadchunks_rebuild_in_last_second;
-		water_quadchunks_rebuild_in_last_second= 0;
-
-		water_quadchunks_updates_per_second= water_quadchunks_updates_in_last_second;
-		water_quadchunks_updates_in_last_second= 0;
-
-		updade_ticks_per_second= update_ticks_in_last_second;
-		update_ticks_in_last_second= 0;
-	}
-	frame_count++;
 }
 
 void r_WorldRenderer::DrawWorld()
@@ -719,7 +673,7 @@ void r_WorldRenderer::DrawWater()
 	water_final_matrix_= water_matrix * block_final_matrix_;
 	water_shader_.Uniform( "view_matrix", water_final_matrix_ );
 	water_shader_.Uniform( "tex", 0 );
-	water_shader_.Uniform( "time", float( startup_time_.msecsTo(QTime::currentTime()) ) * 0.001f );
+	water_shader_.Uniform( "time", float( (clock() - startup_time_) * 1000 / CLOCKS_PER_SEC) * 0.001f );
 
 	water_shader_.Uniform( "sun_light_color", lighting_data_.current_sun_light );
 	water_shader_.Uniform( "fire_light_color", lighting_data_.current_fire_light );

@@ -1,10 +1,10 @@
 #pragma once
 #include <mutex>
-
-#include <QTime>
+#include <ctime>
 
 #include "../hex.hpp"
 #include "../fwd.hpp"
+#include "../ticks_counter.hpp"
 #include "i_world_renderer.hpp"
 #include "chunk_data_cache.hpp"
 
@@ -95,8 +95,8 @@ public:
 	virtual ~r_WorldRenderer() override;
 
 public: // r_IWorldRenderer
-	virtual void UpdateChunk( unsigned short,  unsigned short ) override;
-	virtual void UpdateChunkWater( unsigned short,  unsigned short ) override;
+	virtual void UpdateChunk( unsigned short, unsigned short ) override;
+	virtual void UpdateChunkWater( unsigned short, unsigned short ) override;
 	virtual void FullUpdate() override;
 
 public:
@@ -136,23 +136,12 @@ private:
 	void DrawSun();
 	void DrawConsole();
 
-	void CalculateFPS();
-
 private:
 	const h_SettingsPtr settings_;
 	const h_World* const world_;
 
-	//perfomance metrics
-	unsigned int update_count;
-	unsigned int frame_count;
-	unsigned int last_fps;
-	unsigned int frames_in_last_second;
-	unsigned int updade_ticks_per_second, update_ticks_in_last_second;
-	QTime last_fps_time;
-	unsigned int chunk_updates_per_second, chunk_updates_in_last_second;
-	unsigned int chunks_rebuild_per_second, chunk_rebuild_in_last_second;
-	unsigned int water_quadchunks_updates_per_second, water_quadchunks_updates_in_last_second;
-	unsigned int water_quadchunks_rebuild_per_second, water_quadchunks_rebuild_in_last_second;
+	h_TicksCounter frames_counter_;
+	h_TicksCounter updates_counter_;
 
 	// Shaders
 	r_GLSLProgram world_shader_, build_prism_shader_, water_shader_, skybox_shader_, sun_shader_, console_bg_shader_, supersampling_final_shader_;
@@ -248,7 +237,7 @@ private:
 	r_WeatherEffectsParticleManager weather_effects_particle_manager_;
 
 	std::mutex host_data_mutex_, gpu_data_mutex_;
-	QTime startup_time_;
+	time_t startup_time_;
 };
 
 inline void r_WorldRenderer::SetCamPos( const m_Vec3& p )
