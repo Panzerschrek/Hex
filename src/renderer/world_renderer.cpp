@@ -16,7 +16,7 @@
 
 r_WorldRenderer::r_WorldRenderer(
 	const h_SettingsPtr& settings,
-	const h_World* world )
+	const h_WorldConstPtr& world )
 	: settings_(settings)
 	, world_(world)
 	, host_data_mutex_(), gpu_data_mutex_()

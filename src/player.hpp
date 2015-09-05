@@ -5,12 +5,11 @@
 #include "vec.hpp"
 #include "math_lib/m_math.h"
 #include "chunk_phys_mesh.hpp"
-class h_World;
 
 class h_Player
 {
 public:
-	h_Player( const h_World* w );
+	h_Player( const h_WorldPtr& world );
 	~h_Player();
 
 	void Move( const m_Vec3& delta );
@@ -26,7 +25,7 @@ public:
 	void Unlock();
 
 private:
-	const h_World* world_;
+	const h_WorldPtr world_;
 	m_Vec3 pos_;
 	m_Vec3 view_angle_;
 

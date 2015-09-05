@@ -91,7 +91,7 @@ public:
 class r_WorldRenderer : public r_IWorldRenderer
 {
 public:
-	r_WorldRenderer( const h_SettingsPtr& settings, const h_World* world );
+	r_WorldRenderer( const h_SettingsPtr& settings, const h_WorldConstPtr& world );
 	virtual ~r_WorldRenderer() override;
 
 public: // r_IWorldRenderer
@@ -138,7 +138,7 @@ private:
 
 private:
 	const h_SettingsPtr settings_;
-	const h_World* const world_;
+	const h_WorldConstPtr world_;
 
 	h_TicksCounter frames_counter_;
 	h_TicksCounter updates_counter_;

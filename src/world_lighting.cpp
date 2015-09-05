@@ -683,6 +683,10 @@ void h_World::AddLightToBorderChunk( unsigned int X, unsigned int Y )
 
 void h_World::RelightWaterModifedChunksLight()
 {
+	r_IWorldRendererPtr renderer= renderer_.lock();
+	if( renderer == nullptr )
+		return;
+
 	unsigned int chunk_count= 0;
 	h_Chunk* ch;
 	short X, Y;
@@ -725,7 +729,7 @@ void h_World::RelightWaterModifedChunksLight()
 						}
 					ch->need_update_light= false;
 
-					if( renderer_ != nullptr )
+					if( renderer != nullptr )
 					{
 						/*emit ChunkUpdated( i, j );
 						emit ChunkUpdated( i+1, j+1 );
@@ -733,12 +737,12 @@ void h_World::RelightWaterModifedChunksLight()
 						emit ChunkUpdated( i-1, j+1 );
 						emit ChunkUpdated( i-1, j-1 );
 						emit ChunkWaterUpdated( i, j );*/
-						renderer_->UpdateChunk( i, j );
-						renderer_->UpdateChunk( i+1, j+1 );
-						renderer_->UpdateChunk( i+1, j-1 );
-						renderer_->UpdateChunk( i-1, j+1 );
-						renderer_->UpdateChunk( i-1, j-1 );
-						renderer_->UpdateChunkWater( i, j );
+						renderer->UpdateChunk( i, j );
+						renderer->UpdateChunk( i+1, j+1 );
+						renderer->UpdateChunk( i+1, j-1 );
+						renderer->UpdateChunk( i-1, j+1 );
+						renderer->UpdateChunk( i-1, j-1 );
+						renderer->UpdateChunkWater( i, j );
 					}
 				}//if rand
 			}//if need update light

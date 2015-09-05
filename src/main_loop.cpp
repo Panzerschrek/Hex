@@ -50,13 +50,10 @@ h_MainLoop::h_MainLoop(
 	, cam_pos_( 0.0f, 0.0f, 67.0f )
 	, cam_ang_( 0.0f, 0.0f, 0.0f )
 	, startup_time_(0,0,0,0)
-	, world_renderer_(nullptr)
-	, world_(nullptr)
-	, player_(nullptr)
 	, game_started_(false)
 	, use_mouse_(false)
 {
-	window_= new QMainWindow( NULL, 0 );
+	window_= new QMainWindow( nullptr );
 
 	window_->move( 0, 0 );
 	window_->setWindowTitle( "Hex" );
@@ -374,16 +371,21 @@ void h_MainLoop::closeEvent(QCloseEvent* e)
 
 void h_MainLoop::Quit()
 {
-	exit(0);
+	game_started_= false;
+	world_renderer_.reset();
+	player_.reset();
+	world_.reset();
+
+	window_->close();
 }
 
 void h_MainLoop::StartGame()
 {
 	if( !game_started_ )
 	{
-		world_= new h_World( settings_ );
-		world_renderer_= new r_WorldRenderer( settings_, world_ );
-		player_= new h_Player( world_ );
+		world_= std::make_shared<h_World>( settings_ );
+		world_renderer_= std::make_shared<r_WorldRenderer>( settings_, world_ );
+		player_= std::make_shared<h_Player>( world_ );
 		world_->SetPlayer( player_ );
 		world_->SetRenderer( world_renderer_ );
 		world_renderer_->SetViewportSize( screen_width_, screen_height_ );

@@ -2,7 +2,7 @@
 #include "block_collision.hpp"
 #include "world.hpp"
 
-h_Player::h_Player( const h_World* world )
+h_Player::h_Player( const h_WorldPtr& world  )
 	: world_(world)
 	, pos_()
 	, view_angle_( 0.0f, 0.0f, 0.0f )
@@ -12,6 +12,10 @@ h_Player::h_Player( const h_World* world )
 	pos_.x= ( world->Longitude() + world->ChunkNumberX()/2 ) * H_SPACE_SCALE_VECTOR_X * float( H_CHUNK_WIDTH );
 	pos_.y= ( world->Latitude() + world->ChunkNumberY()/2 ) * H_SPACE_SCALE_VECTOR_Y  * float( H_CHUNK_WIDTH );
 	pos_.z= float(H_CHUNK_HEIGHT/2 + 10);
+}
+
+h_Player::~h_Player()
+{
 }
 
 void h_Player::SetCollisionMesh( h_ChunkPhysMesh* mesh )

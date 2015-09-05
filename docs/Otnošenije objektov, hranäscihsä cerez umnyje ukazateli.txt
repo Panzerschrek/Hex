@@ -1,0 +1,23 @@
+﻿Cerez umnyje ukazateli hranätsä:
+* h_World
+* h_Player
+* h_WorldRenderer
+
+Siljnyje ukazateli na vseh nih hranit h_MainLoop.
+h_WorldRenderer hranit siljnyje ukazateli na h_World i h_Player.
+h_Player hranit siljnyj ukazatelj na h_World.
+h_World hranit slabyje ukazateli na h_Player i h_WorldRenderer.
+
+^ Primecanije:
+Graf, sostavlennyj iz objektov i siljnyh ukazatelej ne dolžen soderžatj
+çiklov.
+
+Porädok sozdanija:
+* h_World
+* h_Player
+* h_WorldRenderer
+
+Porädok razrušenija:
+* h_WorldRenderer
+* h_Player
+* h_World

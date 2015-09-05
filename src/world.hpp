@@ -1,4 +1,5 @@
 #pragma once
+#include <atomic>
 #include <memory>
 #include <mutex>
 #include <queue>
@@ -41,8 +42,8 @@ public:
 	//ACHTUNG! This function unfinished. It ignores destruction of light sources. also, danger of stack owerflow. time ~ 6^radius
 	void Blast( short x, short y, short z, short radius );
 
-	void SetPlayer( h_Player* p );
-	void SetRenderer( r_IWorldRenderer* r );
+	void SetPlayer( const h_PlayerWeakPtr& player );
+	void SetRenderer( const r_IWorldRendererWeakPtr& renderer );
 	void StartUpdates(); // start main phys loop of world
 
 	void Save();//save world data to disk
@@ -125,8 +126,8 @@ private:
 
 	m_Rand phys_processes_rand_;
 
-	r_IWorldRenderer* renderer_;
-	h_Player* player_;
+	r_IWorldRendererWeakPtr renderer_;
+	h_PlayerWeakPtr player_;
 	short player_coord_[3];//global coordinate of player hexagon
 
 	h_ChunkPhysMesh player_phys_mesh_;
@@ -135,6 +136,7 @@ private:
 
 	unsigned int phys_tick_count_;
 	std::unique_ptr< std::thread > phys_thread_;
+	std::atomic<bool> terminated_;
 
 	//queue 0 - for enqueue, queue 1 - for dequeue
 	std::queue< h_WorldAction > action_queue_[2];
@@ -175,14 +177,14 @@ inline h_Block* h_World::NormalBlock( h_BlockType block_type )
 	return &normal_blocks_[ (int)block_type ];
 }
 
-inline void h_World::SetPlayer( h_Player* p )
+inline void h_World::SetPlayer( const h_PlayerWeakPtr& player )
 {
-	player_= p;
+	player_= player;
 }
 
-inline void h_World::SetRenderer( r_IWorldRenderer* r )
+inline void h_World::SetRenderer( const r_IWorldRendererWeakPtr& renderer)
 {
-	renderer_= r;
+	renderer_= renderer;
 }
 
 /*inline h_Block* h_World::WaterBlock( unsigned char water_level )

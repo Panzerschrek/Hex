@@ -8,10 +8,9 @@
 h_World::h_World(
 	const h_SettingsPtr& settings )
 	: settings_( settings )
+	, terminated_(false)
 	, chunk_loader_( "world" )
 	, phys_tick_count_(0)
-	, player_( nullptr )
-	, renderer_( nullptr )
 {
 	InitNormalBlocks();
 
@@ -39,6 +38,13 @@ h_World::h_World(
 
 h_World::~h_World()
 {
+	if( phys_thread_ )
+	{
+		terminated_.store(true);
+		phys_thread_->join();
+		phys_thread_.reset();
+	}
+
 	for( unsigned int x= 0; x< chunk_number_x_; x++ )
 		for( unsigned int y= 0; y< chunk_number_y_; y++ )
 		{
@@ -210,7 +216,8 @@ void h_World::FlushActionQueue()
 
 void h_World::UpdateInRadius( short x, short y, short r )
 {
-	if( renderer_ == nullptr )
+	r_IWorldRendererPtr renderer= renderer_.lock();
+	if( renderer == nullptr )
 		return;
 
 	short x_min, x_max, y_min, y_max;
@@ -225,13 +232,15 @@ void h_World::UpdateInRadius( short x, short y, short r )
 	y_max>>= H_CHUNK_WIDTH_LOG2;
 	for( short i= x_min; i<= x_max; i++ )
 		for( short j= y_min; j<= y_max; j++ )
-			renderer_->UpdateChunk( i, j );
+			renderer->UpdateChunk( i, j );
 }
 
 void h_World::UpdateWaterInRadius( short x, short y, short r )
 {
-	if( renderer_ == nullptr )
+	r_IWorldRendererPtr renderer= renderer_.lock();
+	if( renderer == nullptr )
 		return;
+
 	short x_min, x_max, y_min, y_max;
 	x_min= ClampX( x - r );
 	x_max= ClampX( x + r );
@@ -244,7 +253,7 @@ void h_World::UpdateWaterInRadius( short x, short y, short r )
 	y_max>>= H_CHUNK_WIDTH_LOG2;
 	for( short i= x_min; i<= x_max; i++ )
 		for( short j= y_min; j<= y_max; j++ )
-			renderer_->UpdateChunkWater( i, j );
+			renderer->UpdateChunkWater( i, j );
 }
 
 void h_World::MoveWorld( h_WorldMoveDirection dir )
@@ -339,8 +348,9 @@ void h_World::MoveWorld( h_WorldMoveDirection dir )
 		break;
 	};
 
-	if( renderer_ != nullptr )
-		renderer_->FullUpdate();
+	r_IWorldRendererPtr renderer= renderer_.lock();
+	if( renderer != nullptr )
+		renderer->FullUpdate();
 }
 
 void h_World::SaveChunk( h_Chunk* ch )
@@ -551,20 +561,23 @@ bool h_World::CanBuild( short x, short y, short z ) const
 
 void h_World::PhysTick()
 {
-	while(1)
+	while(!terminated_.load())
 	{
-		while( player_ == NULL )
-			std::this_thread::sleep_for(std::chrono::seconds(1));
 		int64_t t0_ms = clock() * 1000 / CLOCKS_PER_SEC;
+
+		h_PlayerPtr player= player_.lock();
 
 		FlushActionQueue();
 		WaterPhysTick();
 		RelightWaterModifedChunksLight();
 
-		player_->Lock();
-		player_coord_[2]= short( player_->Pos().z );
-		GetHexogonCoord( player_->Pos().xy(), &player_coord_[0], &player_coord_[1] );
-		player_->Unlock();
+		if( player )
+		{
+			player->Lock();
+			player_coord_[2]= short( player->Pos().z );
+			GetHexogonCoord( player->Pos().xy(), &player_coord_[0], &player_coord_[1] );
+			player->Unlock();
+		}
 
 		player_coord_[0]-= Longitude() * H_CHUNK_WIDTH;
 		player_coord_[1]-= Latitude() * H_CHUNK_WIDTH;
@@ -582,14 +595,17 @@ void h_World::PhysTick()
 		else if( player_coord_[0]/H_CHUNK_WIDTH < chunk_number_x_/2-2 )
 			MoveWorld( WEST );
 
-		player_->Lock();
-		player_->SetCollisionMesh( &player_phys_mesh_ );
-		player_->Unlock();
+		if( player )
+		{
+			player->Lock();
+			player->SetCollisionMesh( &player_phys_mesh_ );
+			player->Unlock();
+		}
 
 		phys_tick_count_++;
 
-		if( renderer_ != nullptr )
-			renderer_->Update();
+		if( r_IWorldRendererPtr renderer= renderer_.lock() )
+			renderer->Update();
 
 		int64_t t1_ms= clock() * 1000 / CLOCKS_PER_SEC;
 		unsigned int dt_ms= (unsigned int)(t1_ms - t0_ms);
@@ -709,17 +725,17 @@ void h_World::WaterPhysTick()
 			}//for all water blocks in chunk
 			if( chunk_modifed )
 			{
-				if( renderer_ != nullptr )
+				if( r_IWorldRendererPtr renderer= renderer_.lock() )
 				{
-					renderer_->UpdateChunk( i, j );
+					renderer->UpdateChunk( i, j );
 					if( i > 0 )
-						renderer_->UpdateChunkWater( i-1, j );
+						renderer->UpdateChunkWater( i-1, j );
 					if( i < ChunkNumberX() - 1 );
-					renderer_->UpdateChunkWater( i+1, j );
+					renderer->UpdateChunkWater( i+1, j );
 					if( j > 0 )
-						renderer_->UpdateChunkWater( i, j-1 );
+						renderer->UpdateChunkWater( i, j-1 );
 					if( j < ChunkNumberY() - 1 );
-					renderer_->UpdateChunkWater( i, j+1 );
+					renderer->UpdateChunkWater( i, j+1 );
 				}
 
 				ch->need_update_light= true;

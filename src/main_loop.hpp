@@ -57,9 +57,9 @@ private:
 
 	int screen_width_, screen_height_;
 
-	r_WorldRenderer* world_renderer_;
-	h_World* world_;
-	h_Player* player_;
+	r_WorldRendererPtr world_renderer_;
+	h_WorldPtr world_;
+	h_PlayerPtr player_;
 
 	bool game_started_;
 
