@@ -2,18 +2,21 @@
 #include "player.hpp"
 #include "math_lib/m_math.h"
 #include "renderer/i_world_renderer.hpp"
+#include "settings.hpp"
+#include "settings_keys.hpp"
 
-h_World::h_World()
-	: chunk_loader_( "world" )
+h_World::h_World(
+	const h_SettingsPtr& settings )
+	: settings_( settings )
+	, chunk_loader_( "world" )
 	, phys_tick_count_(0)
 	, player_( nullptr )
 	, renderer_( nullptr )
-	, settings_( "config.ini", QSettings::IniFormat )
 {
 	InitNormalBlocks();
 
-	chunk_number_x_= max( min( settings_.value( QString( "chunk_number_x" ), 14 ).toInt(), H_MAX_CHUNKS ), H_MIN_CHUNKS );
-	chunk_number_y_= max( min( settings_.value( QString( "chunk_number_y" ), 12 ).toInt(), H_MAX_CHUNKS ), H_MIN_CHUNKS ); ;
+	chunk_number_x_= std::max( std::min( settings_->GetInt( h_SettingsKeys::chunk_number_x, 14 ), H_MAX_CHUNKS ), H_MIN_CHUNKS );
+	chunk_number_y_= std::max( std::min( settings_->GetInt( h_SettingsKeys::chunk_number_y, 12 ), H_MAX_CHUNKS ), H_MIN_CHUNKS );
 	longitude_= -(chunk_number_x_/2);
 	latitude_= -(chunk_number_y_/2);
 	//chunk_matrix_size_x_log2= m_Math::NearestPOTLog2( chunk_number_x );

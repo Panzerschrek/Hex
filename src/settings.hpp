@@ -2,18 +2,15 @@
 #include <map>
 #include <string>
 
+#include "fwd.hpp"
+
 #include "hex.hpp"
 
 class h_Settings
 {
-
 public:
-
-	h_Settings();
+	h_Settings(const char* file_name);
 	~h_Settings();
-
-	void ReadFromFile( const char* file_name );
-	void WriteToFile( const char* file_name ) const;
 
 	void SetSetting( const char* name, const char* value );
 	void SetSetting( const char* name, int value );
@@ -45,6 +42,8 @@ private:
 		h_SettingsStringContainer( const h_SettingsStringContainer& other );
 		~h_SettingsStringContainer();
 
+		explicit operator std::string() const;
+
 		bool operator == ( const h_SettingsStringContainer& other) const;
 		bool operator != ( const h_SettingsStringContainer& other) const;
 		bool operator >  ( const h_SettingsStringContainer& other) const;
@@ -61,6 +60,8 @@ private:
 	};
 
 	typedef std::map< h_SettingsStringContainer, std::string > MapType;
-	MapType map_;
 
+private:
+	MapType map_;
+	std::string file_name_;
 };

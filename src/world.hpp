@@ -4,8 +4,6 @@
 #include <queue>
 #include <thread>
 
-#include <QSettings>
-
 #include "hex.hpp"
 #include "fwd.hpp"
 #include "block.hpp"
@@ -15,12 +13,12 @@
 #include "world_action.hpp"
 #include "chunk_loader.hpp"
 
-class h_World : public QObject
+class h_World
 {
 	friend class h_Chunk;
 
 public:
-	h_World();
+	h_World( const h_SettingsPtr& settings );
 	~h_World();
 
 	h_Chunk* GetChunk( short X, short Y );//relative chunk coordinates
@@ -116,6 +114,8 @@ private:
 	void InitNormalBlocks();
 
 private:
+	const h_SettingsPtr settings_;
+
 	h_ChunkLoader chunk_loader_;
 
 	unsigned int chunk_number_x_, chunk_number_y_;
@@ -139,9 +139,6 @@ private:
 	//queue 0 - for enqueue, queue 1 - for dequeue
 	std::queue< h_WorldAction > action_queue_[2];
 	std::mutex action_queue_mutex_;
-
-	QSettings settings_;
-
 };
 
 inline int h_World::ChunkNumberX() const

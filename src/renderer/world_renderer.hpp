@@ -1,7 +1,6 @@
 #pragma once
 #include <mutex>
 
-#include <QSettings>
 #include <QTime>
 
 #include "../hex.hpp"
@@ -92,7 +91,7 @@ public:
 class r_WorldRenderer : public r_IWorldRenderer
 {
 public:
-	r_WorldRenderer( const h_World* world );
+	r_WorldRenderer( const h_SettingsPtr& settings, const h_World* world );
 	virtual ~r_WorldRenderer() override;
 
 public: // r_IWorldRenderer
@@ -113,6 +112,8 @@ public:
 	void SetViewportSize( unsigned int viewport_width, unsigned int viewport_height );
 
 private:
+	r_WorldRenderer& operator=( const r_WorldRenderer& other ) = delete;
+
 	void LoadShaders();
 	void LoadTextures();
 	void InitFrameBuffers();
@@ -138,7 +139,8 @@ private:
 	void CalculateFPS();
 
 private:
-	const h_World* world_;
+	const h_SettingsPtr settings_;
+	const h_World* const world_;
 
 	//perfomance metrics
 	unsigned int update_count;
@@ -247,10 +249,6 @@ private:
 
 	std::mutex host_data_mutex_, gpu_data_mutex_;
 	QTime startup_time_;
-
-	//config variables here:
-	QSettings settings_;
-
 };
 
 inline void r_WorldRenderer::SetCamPos( const m_Vec3& p )

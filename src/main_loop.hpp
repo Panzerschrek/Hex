@@ -18,7 +18,7 @@ public:
 	virtual QSize sizeHint() const;
 
 protected:
-	h_MainLoop( const QGLFormat& format );
+	h_MainLoop( const h_SettingsPtr& settings, const QGLFormat& format );
 	virtual ~h_MainLoop() override;
 
 	virtual void initializeGL() override;
@@ -47,10 +47,11 @@ private:
 	void GetBuildPos();
 
 private:
+	h_SettingsPtr settings_;
+
 	QMainWindow* window_;
 	QCursor cursor_;
 	QTime startup_time_;
-	QSettings settings_;
 	bool keys_[ 512 ];
 	bool use_mouse_;
 

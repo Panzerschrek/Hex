@@ -3,6 +3,9 @@
 #include "world.hpp"
 #include "player.hpp"
 
+#include "settings.hpp"
+#include "settings_keys.hpp"
+
 #include "block_collision.hpp"
 #include "console.hpp"
 #include "ui/ui_base_classes.hpp"
@@ -16,8 +19,9 @@ void h_MainLoop::Start()
 {
 	QGLFormat format;
 
-	QSettings settings( "config.ini", QSettings::IniFormat );
-	int antialiasing= min( max( settings.value( "antialiasing", 4 ).toInt(), 0 ), 16  );
+	h_SettingsPtr settings= std::make_shared<h_Settings>("config.json");
+
+	int antialiasing= std::min( std::max( settings->GetInt( h_SettingsKeys::antialiasing, 4 ), 0 ), 16 );
 	if( antialiasing )
 		format.setSamples( antialiasing );
 
@@ -25,7 +29,7 @@ void h_MainLoop::Start()
 	format.setProfile( QGLFormat::CoreProfile );
 	format.setSwapInterval(1);
 
-	new h_MainLoop( format );
+	new h_MainLoop( settings, format );
 }
 
 QSize h_MainLoop::minimumSizeHint() const
@@ -38,9 +42,11 @@ QSize h_MainLoop::sizeHint() const
 	return QSize( screen_width_, screen_height_ );
 }
 
-h_MainLoop::h_MainLoop( const QGLFormat& format )
-	: QGLWidget(format, NULL )
-	, settings_( "config.ini", QSettings::IniFormat )
+h_MainLoop::h_MainLoop(
+	const h_SettingsPtr& settings,
+	const QGLFormat& format )
+	: settings_(settings)
+	, QGLWidget(format, NULL )
 	, cam_pos_( 0.0f, 0.0f, 67.0f )
 	, cam_ang_( 0.0f, 0.0f, 0.0f )
 	, startup_time_(0,0,0,0)
@@ -54,13 +60,16 @@ h_MainLoop::h_MainLoop( const QGLFormat& format )
 
 	window_->move( 0, 0 );
 	window_->setWindowTitle( "Hex" );
-	window_->setWindowIcon( QIcon( QString( "src/hex-logo.ico" ) ) );
+	window_->setWindowIcon( QIcon( "src/hex-logo.ico" ) );
 
 	window_->setCentralWidget( this );
 	window_->setContentsMargins( 0, 0, 0, 0 );
 
-	screen_height_= min( max( settings_.value( "screen_height", 640 ).toInt(), H_MIN_SCREEN_HEIGHT ), H_MAX_SCREEN_WIDTH  );
-	screen_width_=  min( max( settings_.value( "screen_width" , 480 ).toInt(), H_MIN_SCREEN_WIDTH  ), H_MAX_SCREEN_HEIGHT );
+	if (!settings_->IsValue(h_SettingsKeys::screen_width ) ) settings_->SetSetting( h_SettingsKeys::screen_width , 640 );
+	if (!settings_->IsValue(h_SettingsKeys::screen_height) ) settings_->SetSetting( h_SettingsKeys::screen_height, 480 );
+
+	screen_width_=  std::min( std::max( settings_->GetInt( h_SettingsKeys::screen_width ), H_MIN_SCREEN_WIDTH ), H_MAX_SCREEN_WIDTH  );
+	screen_height_= std::min( std::max( settings_->GetInt( h_SettingsKeys::screen_height), H_MIN_SCREEN_HEIGHT), H_MAX_SCREEN_HEIGHT );
 
 	this->setFixedSize( screen_width_, screen_height_ );
 	window_->setFocusPolicy( Qt::ClickFocus );
@@ -372,8 +381,8 @@ void h_MainLoop::StartGame()
 {
 	if( !game_started_ )
 	{
-		world_= new h_World();
-		world_renderer_= new r_WorldRenderer( world_ );
+		world_= new h_World( settings_ );
+		world_renderer_= new r_WorldRenderer( settings_, world_ );
 		player_= new h_Player( world_ );
 		world_->SetPlayer( player_ );
 		world_->SetRenderer( world_renderer_ );

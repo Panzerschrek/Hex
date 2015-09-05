@@ -1,6 +1,9 @@
 #include "settings.hpp"
 
-using namespace std;
+#include <QFile>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonArray>
 
 static bool hStrToInt( const char* str, int* i )
 {
@@ -62,40 +65,67 @@ static bool hStrToFloat( const char* str, float* f )
 	return true;
 }
 
-h_Settings::h_Settings()
+h_Settings::h_Settings(const char* file_name)
+	: file_name_(file_name)
 {
+	//TODO - handle reading errors
+
+	QFile f( QString::fromStdString(file_name_) );
+	if( !f.open( QIODevice::ReadOnly ) ) return;
+
+	QByteArray ba= f.readAll();
+	f.close();
+
+	QJsonParseError err;
+	QJsonDocument doc= QJsonDocument::fromJson( ba, &err );
+
+	if (doc.isObject())
+	{
+		QJsonObject obj= doc.object();
+
+		for( auto cit= obj.constBegin(); cit != obj.constEnd(); cit++ )
+			map_[ h_SettingsStringContainer(cit.key().toStdString().data()) ] = cit.value().toString().toStdString();
+	}
 }
 
 h_Settings::~h_Settings()
 {
-}
+	QJsonObject obj;
+	for( const auto& key_value_pair : map_ )
+		obj[ QString::fromStdString(std::string(key_value_pair.first)) ]=
+			QString::fromStdString(key_value_pair.second);
 
-void h_Settings::ReadFromFile( const char* file_name )
-{
-}
+	QJsonDocument doc(obj);
+	QByteArray ba = doc.toJson();
 
-void h_Settings::WriteToFile( const char* file_name ) const
-{
+	FILE* f= fopen( file_name_.data(), "wb" );
+	fwrite( ba.data(), 1, ba.size(), f );
+	fclose(f);
 }
 
 void h_Settings::SetSetting( const char* name, const char* value )
 {
-	map_[ h_SettingsStringContainer(name) ]= string(value);
+	map_[ h_SettingsStringContainer(name) ]= std::string(value);
 }
 
 void h_Settings::SetSetting( const char* name, int value )
 {
-	map_[ h_SettingsStringContainer(name) ]= to_string(value);
+	map_[ h_SettingsStringContainer(name) ]= std::to_string(value);
 }
 
 void h_Settings::SetSetting( const char* name, bool value )
 {
-	map_[ h_SettingsStringContainer(name) ]= to_string( int(value) );
+	map_[ h_SettingsStringContainer(name) ]= std::to_string( int(value) );
 }
 
 void h_Settings::SetSetting( const char* name, float value )
 {
-	map_[ h_SettingsStringContainer(name) ]= to_string( value );
+	// HACK - replace ',' to '.' for bad locale
+	std::string str = std::to_string( value );
+	size_t pos = str.find(",");
+	if ( pos != std::string::npos ) str[pos] = '.';
+
+	map_[ h_SettingsStringContainer(name) ]= str;
 }
 
 bool h_Settings::IsValue( const char* name ) const
@@ -166,6 +196,11 @@ h_Settings::h_SettingsStringContainer::h_SettingsStringContainer( const h_Settin
 	: c_str_(nullptr)
 	, str_( other.c_str_ == nullptr ? other.str_ : other.c_str_ )
 {
+}
+
+h_Settings::h_SettingsStringContainer::operator std::string() const
+{
+	return c_str_ ? std::string(c_str_) : str_;
 }
 
 h_Settings::h_SettingsStringContainer::~h_SettingsStringContainer()

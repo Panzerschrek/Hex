@@ -1,20 +1,25 @@
 #include <vector>
+#include <thread>
 
 #include "world_renderer.hpp"
 #include "world_vertex_buffer.hpp"
 #include "glcorearb.h"
 #include "rendering_constants.hpp"
 #include "../console.hpp"
+#include "../settings.hpp"
+#include "../settings_keys.hpp"
 #include "ogl_state_manager.hpp"
 #include "img_utils.hpp"
 #include "../math_lib/m_math.h"
 
 #include "../world.hpp"
 
-r_WorldRenderer::r_WorldRenderer( const h_World* world )
-	: world_(world)
+r_WorldRenderer::r_WorldRenderer(
+	const h_SettingsPtr& settings,
+	const h_World* world )
+	: settings_(settings)
+	, world_(world)
 	, host_data_mutex_(), gpu_data_mutex_()
-	, settings_( "config.ini", QSettings::IniFormat )
 	, frame_count(0), update_count(0)
 	, sun_vector_( 0.7f, 0.8f, 0.6f )
 {
@@ -419,7 +424,7 @@ void r_WorldRenderer::UpdateFunc()
 	QTime t1= QTime::currentTime();
 	unsigned int dt_ms= t0.msecsTo( t1 );
 	if( dt_ms < 50 )
-		usleep( (50 - dt_ms) * 1000);
+		std::this_thread::sleep_for(std::chrono::milliseconds((50 - dt_ms)));
 
 	update_count++;
 	update_ticks_in_last_second++;
@@ -534,7 +539,7 @@ void r_WorldRenderer::Draw()
 
 	DrawConsole();
 
-	if( settings_.value( "show_debug_info", false ).toBool() && h_Console::GetPosition() == 0.0f )
+	if( settings_->GetBool( h_SettingsKeys::show_debug_info, false ) && h_Console::GetPosition() == 0.0f )
 	{
 		float text_scale= 0.25f;
 		text_manager_->AddMultiText( 0, 0, text_scale, r_Text::default_color, "fps: %d", last_fps );
@@ -999,7 +1004,7 @@ void r_WorldRenderer::BuildWorld()
 
 void r_WorldRenderer::InitGL()
 {
-	if( settings_.value( "antialiasing", 0 ).toInt() != 0 )
+	if( settings_->GetInt( h_SettingsKeys::antialiasing )!= 0 )
 		glEnable( GL_MULTISAMPLE );
 	//glEnable( GL_SAMPLE_ALPHA_TO_COVERAGE );
 
@@ -1159,9 +1164,9 @@ void r_WorldRenderer::InitVertexBuffers()
 void r_WorldRenderer::LoadTextures()
 {
 	texture_manager_.SetTextureSize(
-		max( min( settings_.value( "texture_size", R_MAX_TEXTURE_RESOLUTION ).toInt(), R_MAX_TEXTURE_RESOLUTION ), R_MIN_TEXTURE_RESOLUTION ) );
+		std::max( std::min( settings_->GetInt( h_SettingsKeys::texture_size, 512 ), R_MAX_TEXTURE_RESOLUTION ), R_MIN_TEXTURE_RESOLUTION ) );
 
-	texture_manager_.SetFiltration( settings_.value( "filter_textures", false ).toBool() );
+	texture_manager_.SetFiltration( settings_->GetBool( h_SettingsKeys::filter_textures, true ) );
 	texture_manager_.LoadTextures();
 
 	r_ImgUtils::LoadTexture( &water_texture_, "textures/water2.tga" );

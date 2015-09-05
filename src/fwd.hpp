@@ -1,4 +1,8 @@
 #pragma once
+#include <memory>
+
+class h_Settings;
+typedef std::shared_ptr<h_Settings> h_SettingsPtr;
 
 class h_MainLoop;
 class h_Player;
