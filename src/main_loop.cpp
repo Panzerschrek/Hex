@@ -45,9 +45,10 @@ QSize h_MainLoop::sizeHint() const
 h_MainLoop::h_MainLoop(
 	const h_SettingsPtr& settings,
 	const QGLFormat& format )
-	: QGLWidget(format, NULL )
+	: QGLWidget( format, NULL )
 	, settings_(settings)
 	, startup_time_(0,0,0,0)
+	, prev_move_time_(QTime::currentTime())
 	, use_mouse_(false)
 	, game_started_(false)
 	, cam_pos_( 0.0f, 0.0f, 67.0f )
@@ -68,18 +69,16 @@ h_MainLoop::h_MainLoop(
 	screen_width_=  std::min( std::max( settings_->GetInt( h_SettingsKeys::screen_width ), H_MIN_SCREEN_WIDTH ), H_MAX_SCREEN_WIDTH  );
 	screen_height_= std::min( std::max( settings_->GetInt( h_SettingsKeys::screen_height), H_MIN_SCREEN_HEIGHT), H_MAX_SCREEN_HEIGHT );
 
-	this->setFixedSize( screen_width_, screen_height_ );
+	QWidget::setFixedSize( screen_width_, screen_height_ );
 	window_->setFocusPolicy( Qt::ClickFocus );
-	this->setFocusPolicy( Qt::ClickFocus );
-	this->setFocus();
+	QWidget::setFocusPolicy( Qt::ClickFocus );
+	QWidget::setFocus();
 
 	window_->show();
 	window_->setFixedSize( window_->size() );
 
-	this->setAutoFillBackground( false );
+	QWidget::setAutoFillBackground( false );
 
-	for( int i= 0; i< 512; i++ )
-		keys_[i]= false;
 	//window->setWindowState( Qt::WindowFullScreen );
 
 	frame_count_= 0;
@@ -167,9 +166,11 @@ void h_MainLoop::GetBuildPos()
 {
 	build_dir_= player_->GetBuildPos( &build_pos_x_, &build_pos_y_, &build_pos_z_ );
 
-	m_Vec3 discret_build_pos( ( float( build_pos_x_ + 0.3333333333f ) ) * H_SPACE_SCALE_VECTOR_X,
-							  float( build_pos_y_ ) - 0.5f * float(build_pos_x_&1) + 0.5f,
-							  float( build_pos_z_ ) - 1.0f );
+	m_Vec3 discret_build_pos(
+		( float( build_pos_x_ + 0.3333333333f ) ) * H_SPACE_SCALE_VECTOR_X,
+		float( build_pos_y_ ) - 0.5f * float(build_pos_x_&1) + 0.5f,
+		float( build_pos_z_ ) - 1.0f );
+
 	if( build_dir_ == DIRECTION_UNKNOWN )
 		discret_build_pos.z= -1.0f;
 
@@ -187,7 +188,7 @@ void h_MainLoop::Input()
 	if( use_mouse_ )
 	{
 		m_Vec3 ang_delta;
-		ang_delta.z= float( screen_width_/2 - cur_local_pos.x() ) * 0.005f;
+		ang_delta.z= float( screen_width_ /2 - cur_local_pos.x() ) * 0.005f;
 		ang_delta.x= float( screen_height_/2 - cur_local_pos.y() ) * 0.005f;
 		ang_delta.y= 0.0f;
 		player_->Rotate( ang_delta );
@@ -197,15 +198,11 @@ void h_MainLoop::Input()
 		cursor_.setPos( screen_width_/2 - cur_local_pos.x(), screen_height_/2 - cur_local_pos.y() );
 	}
 
-	static  int prev_time= 0;
-	int time;
-	float dt;
-	time=  -QTime::currentTime().msecsTo( startup_time_ );
-	dt= float( time - prev_time ) / 1000.0f;
-	prev_time= time;
+	QTime current_time= QTime::currentTime();
+	float dt = float( prev_move_time_.msecsTo(current_time) ) / 1000.0f;
+	prev_move_time_= current_time;
 
 	const float speed= 5.0f;
-
 
 	m_Vec3 move_vec( 0.0f, 0.0f, 0.0f );
 	if( keys_[ Qt::Key_W ] )
@@ -230,16 +227,9 @@ void h_MainLoop::Input()
 	}
 
 	if( keys_[ Qt::Key_Space ] )
-	{
 		move_vec.z+= dt * speed;
-	}
 	if( keys_[ Qt::Key_C ] )
-	{
 		move_vec.z-= dt * speed;
-	}
-
-	//if( dt < 0.25f )
-	//    move_vec.z+= -3.0f * dt;
 
 	player_->Move( move_vec );
 	cam_pos_= player_->Pos();
@@ -259,9 +249,10 @@ void h_MainLoop::mousePressEvent(QMouseEvent* e)
 		return;
 
 	if( e->button() == Qt::RightButton )
-		world_->AddBuildEvent( build_pos_x_ - world_->Longitude() * H_CHUNK_WIDTH,
-							  build_pos_y_ - world_->Latitude() * H_CHUNK_WIDTH,
-							  build_pos_z_, FIRE_STONE );
+		world_->AddBuildEvent(
+			build_pos_x_ - world_->Longitude() * H_CHUNK_WIDTH,
+			build_pos_y_ - world_->Latitude () * H_CHUNK_WIDTH,
+			build_pos_z_, FIRE_STONE );
 	else if( e->button() == Qt::LeftButton )
 	{
 		short new_build_pos[]= { build_pos_x_, build_pos_y_, build_pos_z_ };
@@ -290,7 +281,6 @@ void h_MainLoop::mousePressEvent(QMouseEvent* e)
 			new_build_pos[0]--;
 			break;
 
-
 		case FORWARD_LEFT:
 			new_build_pos[1]-= (new_build_pos[0]&1);
 			new_build_pos[0]++;
@@ -304,65 +294,73 @@ void h_MainLoop::mousePressEvent(QMouseEvent* e)
 			new_build_pos[2]= 1024;// make build position not in bounds
 		};
 		if( keys_[ Qt::Key_X ] )
-			world_->Blast( new_build_pos[0] - world_->Longitude() * H_CHUNK_WIDTH,
-						  new_build_pos[1] - world_->Latitude() * H_CHUNK_WIDTH,
-						  new_build_pos[2], 4 );
+			world_->Blast(
+				new_build_pos[0] - world_->Longitude() * H_CHUNK_WIDTH,
+				new_build_pos[1] - world_->Latitude() * H_CHUNK_WIDTH,
+				new_build_pos[2], 4 );
 		else
-			world_->AddDestroyEvent( new_build_pos[0] - world_->Longitude() * H_CHUNK_WIDTH,
-									new_build_pos[1] - world_->Latitude() * H_CHUNK_WIDTH,
-									new_build_pos[2] );
+			world_->AddDestroyEvent(
+				new_build_pos[0] - world_->Longitude() * H_CHUNK_WIDTH,
+				new_build_pos[1] - world_->Latitude() * H_CHUNK_WIDTH,
+				new_build_pos[2] );
 	}
 	else if( e->button() == Qt::MiddleButton )
 	{
-		world_->AddBuildEvent( build_pos_x_ - world_->Longitude() * H_CHUNK_WIDTH,
-							  build_pos_y_ - world_->Latitude() * H_CHUNK_WIDTH,
-							  build_pos_z_, SPHERICAL_BLOCK );
+		world_->AddBuildEvent(
+			build_pos_x_ - world_->Longitude() * H_CHUNK_WIDTH,
+			build_pos_y_ - world_->Latitude() * H_CHUNK_WIDTH,
+			build_pos_z_, SPHERICAL_BLOCK );
 	}
 }
-void h_MainLoop::mouseMoveEvent(QMouseEvent* e)
-{
-}
+
+void h_MainLoop::mouseMoveEvent(QMouseEvent*){}
+
 void h_MainLoop::keyPressEvent(QKeyEvent* e)
 {
-	if( e->key() < 512 )
-		keys_[ e->key() ]= true;
+	keys_[ e->key() ]= true;
 
-	if( e->key() == Qt::Key_M )
+	switch( e->key() )
 	{
+	case Qt::Key_M:
 		use_mouse_= !use_mouse_;
-		printf( "cam_ang.z= %f\n", cam_ang_.z / M_PI * 180.0f );
-		printf( "cam_ang.x= %f\n", cam_ang_.x/ M_PI * 180.0f );
-	}
-	else if( e->key() == Qt::Key_B )
+		break;
+
+	case Qt::Key_B:
 		printf( "build: %d %d %d\n", build_pos_x_, build_pos_y_, build_pos_z_ );
-	else if( e->key() == Qt::Key_QuoteLeft )
-		h_Console::OpenClose();
-	else if( e->key() == Qt::Key_Q )
-	{
-		if( game_started_ )
-			world_->Save();
-	}
-	return;
+		break;
+
+	case Qt::Key_QuoteLeft:
+		h_Console::Toggle();
+		break;
+
+	case Qt::Key_Q:
+		if( game_started_ ) world_->Save();
+		break;
+
+	default:
+		break;
+	};
 }
 
 void h_MainLoop::keyReleaseEvent(QKeyEvent* e)
 {
-	if( e->key() < 512 )
-		keys_[ e->key() ]= false;
+	keys_[ e->key() ]= false;
 }
 
-void h_MainLoop::focusInEvent(QFocusEvent *)
-{
-}
+void h_MainLoop::focusInEvent(QFocusEvent *) {}
 
 void h_MainLoop::focusOutEvent( QFocusEvent *)
 {
 	use_mouse_= false;
 }
 
-void h_MainLoop::closeEvent(QCloseEvent* e)
-{
-}
+void h_MainLoop::closeEvent(QCloseEvent* e) {}
+
+void h_MainLoop::initializeOverlayGL() {}
+
+void h_MainLoop::resizeOverlayGL(int, int){}
+
+void h_MainLoop::paintOverlayGL(){}
 
 void h_MainLoop::Quit()
 {

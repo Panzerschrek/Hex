@@ -1,4 +1,7 @@
 #pragma once
+
+#include <map>
+
 #include "hex.hpp"
 #include "fwd.hpp"
 #include "vec.hpp"
@@ -23,20 +26,20 @@ protected:
 
 	virtual void initializeGL() override;
 	virtual void resizeGL(int w , int h) override;
-	virtual void paintGL()  override;
+	virtual void paintGL() override;
 
 	virtual void mousePressEvent(QMouseEvent* e) override;
 	virtual void mouseReleaseEvent(QMouseEvent* e) override;
 	virtual void mouseMoveEvent(QMouseEvent* e) override;
 	virtual void keyPressEvent(QKeyEvent* e) override;
 	virtual void keyReleaseEvent(QKeyEvent* e) override;
-	virtual void focusInEvent(QFocusEvent *) override;
-	virtual void focusOutEvent( QFocusEvent *) override;
+	virtual void focusInEvent(QFocusEvent* e) override;
+	virtual void focusOutEvent(QFocusEvent* e) override;
 	virtual void closeEvent(QCloseEvent* e) override;
 
-	virtual void initializeOverlayGL() override {}
-	virtual void resizeOverlayGL(int w, int h) override {}
-	virtual void paintOverlayGL() override {}
+	virtual void initializeOverlayGL() override;
+	virtual void resizeOverlayGL(int w, int h) override;
+	virtual void paintOverlayGL() override;
 
 public://main menu interface logic
 	void Quit();
@@ -52,7 +55,8 @@ private:
 	QMainWindow* window_;
 	QCursor cursor_;
 	QTime startup_time_;
-	bool keys_[ 512 ];
+	QTime prev_move_time_;
+	std::map<int, bool> keys_;
 	bool use_mouse_;
 
 	int screen_width_, screen_height_;

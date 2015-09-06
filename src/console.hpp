@@ -11,7 +11,7 @@ public:
 
 	inline static float GetPosition();
 
-	inline static void OpenClose();//oper or close console
+	inline static void Toggle();//open or close console
 	inline static void Move( float dt );//roll up or roll down colsole
 
 	static void Message( const char* str, ... );
@@ -46,7 +46,7 @@ enum ConsoleColor:
 
 };
 
-inline void h_Console::OpenClose()
+inline void h_Console::Toggle()
 {
 	if( moving_direction != 1.0f )
 		moving_direction= 1.0f;
