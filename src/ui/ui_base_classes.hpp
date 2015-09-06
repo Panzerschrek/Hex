@@ -56,7 +56,7 @@ public:
 	{
 		return size_y_;
 	};
-	int SetPos( int x, int y )
+	void SetPos( int x, int y )
 	{
 		pos_x_= x;
 		pos_y_= y;

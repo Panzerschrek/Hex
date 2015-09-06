@@ -63,7 +63,7 @@ private:
 
 	bool game_started_;
 
-	m_Vec3 cam_ang_, cam_pos_;
+	m_Vec3 cam_pos_, cam_ang_;
 
 	short build_pos_x_, build_pos_y_, build_pos_z_;
 	h_Direction build_dir_;

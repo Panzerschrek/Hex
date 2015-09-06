@@ -8,9 +8,9 @@
 h_World::h_World(
 	const h_SettingsPtr& settings )
 	: settings_( settings )
-	, terminated_(false)
 	, chunk_loader_( "world" )
 	, phys_tick_count_(0)
+	, terminated_(false)
 {
 	InitNormalBlocks();
 

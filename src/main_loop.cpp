@@ -45,13 +45,13 @@ QSize h_MainLoop::sizeHint() const
 h_MainLoop::h_MainLoop(
 	const h_SettingsPtr& settings,
 	const QGLFormat& format )
-	: settings_(settings)
-	, QGLWidget(format, NULL )
+	: QGLWidget(format, NULL )
+	, settings_(settings)
+	, startup_time_(0,0,0,0)
+	, use_mouse_(false)
+	, game_started_(false)
 	, cam_pos_( 0.0f, 0.0f, 67.0f )
 	, cam_ang_( 0.0f, 0.0f, 0.0f )
-	, startup_time_(0,0,0,0)
-	, game_started_(false)
-	, use_mouse_(false)
 {
 	window_= new QMainWindow( nullptr );
 
@@ -245,11 +245,6 @@ void h_MainLoop::Input()
 	cam_pos_= player_->Pos();
 	cam_pos_.z+= H_PLAYER_EYE_LEVEL;
 
-}
-
-static void* GetGLProcessAddress(const char* name)
-{
-	return (void*)QOpenGLContext::currentContext()->getProcAddress(name);
 }
 
 void h_MainLoop::mouseReleaseEvent(QMouseEvent* e)

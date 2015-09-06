@@ -55,8 +55,8 @@ private:
 		void operator=(const h_SettingsStringContainer& other )= delete;
 
 	private:
-		const std::string str_;
 		const char* const c_str_;
+		const std::string str_;
 	};
 
 	typedef std::map< h_SettingsStringContainer, std::string > MapType;
