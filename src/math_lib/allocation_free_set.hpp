@@ -35,6 +35,16 @@ typedef T StoredType;
 			p= other.p;
 		}
 
+		bool operator==(const iterator& other)
+		{
+			return p == other.p;
+		}
+
+		bool operator!=(const iterator& other)
+		{
+			return !( *this == other);
+		}
+
 		StoredType& operator*()
 		{
 			H_ASSERT(p);
@@ -180,22 +190,26 @@ typedef T StoredType;
 		CheckSize();
 	}
 
-#ifdef DEBUG
+	iterator find_nearest_less_or_equal(const StoredType& v)
+	{
+		if( !root_ ) return iterator(nullptr);
+
+		return find_nearest_less_or_equal_r(root_, v);
+	}
+
 	void Print() const
 	{
 		if( root_ ) Print_r(root_, 1);
 	}
-#endif//DEBUG
 
 private:
 
-#ifdef DEBUG
 	void Print_r(const Node* n, int depth) const
 	{
 		if (n->left) Print_r(n->left, depth + 1);
 		for( int i = 0; i < depth*2; i++ )
 			std::cout<<"-";
-		std::cout<<" "<<n->value<<std::endl;
+		std::cout<<" "<<reinterpret_cast<unsigned int>(n->value)<<std::endl;
 
 		if (n->right) Print_r(n->right, depth + 1);
 	}
@@ -215,7 +229,29 @@ private:
 		if( n->right ) s+= GetSize_r(n->right);
 		return s;
 	}
-#endif//DEBUG
+
+	iterator find_nearest_less_or_equal_r(Node* n, const StoredType& v)
+	{
+		next_iteration:
+		if( n->value > v )
+		{
+			if( n->left )
+			{
+				n= n->left;
+				goto next_iteration;
+			}
+			else return iterator(nullptr);
+		}
+
+		if( n->value == v ) return iterator(n);
+
+		if( n->right )
+		{
+			iterator c= find_nearest_less_or_equal_r(n->right, v);
+			if(c.p) return c;
+		}
+		return iterator(n);
+	}
 
 private:
 	Node* root_;
