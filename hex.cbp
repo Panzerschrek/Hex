@@ -27,6 +27,7 @@
 				<Option compiler="mingw_qt_53" />
 				<Compiler>
 					<Add option="-g" />
+					<Add option="-DDEBUG" />
 				</Compiler>
 			</Target>
 		</Build>
@@ -68,12 +69,15 @@
 		<Unit filename="src\main.cpp" />
 		<Unit filename="src\main_loop.cpp" />
 		<Unit filename="src\main_loop.hpp" />
+		<Unit filename="src\math_lib\allocation_free_set.hpp" />
+		<Unit filename="src\math_lib\assert.hpp" />
 		<Unit filename="src\math_lib\collection.hpp" />
 		<Unit filename="src\math_lib\m_math.cpp" />
 		<Unit filename="src\math_lib\m_math.h" />
 		<Unit filename="src\math_lib\minmax.hpp" />
 		<Unit filename="src\math_lib\rand.cpp" />
 		<Unit filename="src\math_lib\rand.h" />
+		<Unit filename="src\math_lib\small_objects_allocator.hpp" />
 		<Unit filename="src\moc\moc_main_loop.cpp" />
 		<Unit filename="src\player.cpp" />
 		<Unit filename="src\player.hpp" />

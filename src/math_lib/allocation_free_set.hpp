@@ -1,4 +1,8 @@
+#pragma once
+
 #include <iostream>
+
+#include "assert.hpp"
 
 template<class T>
 class AllocationFreeSet
@@ -20,6 +24,7 @@ typedef T StoredType;
 	class iterator
 	{
 		friend class AllocationFreeSet;
+
 		iterator(Node* n)
 			: p(n)
 		{}
@@ -32,6 +37,7 @@ typedef T StoredType;
 
 		StoredType& operator*()
 		{
+			H_ASSERT(p);
 			return p->value;
 		}
 
@@ -46,7 +52,18 @@ typedef T StoredType;
 
 	AllocationFreeSet()
 		: root_(nullptr)
+		, size_(0)
 	{
+	}
+
+	iterator begin()
+	{
+		return iterator(root_);
+	}
+
+	iterator end()
+	{
+		return iterator(nullptr);
 	}
 
 	iterator find(const StoredType& v)
@@ -63,6 +80,8 @@ typedef T StoredType;
 
 	iterator insert(Node* node, const StoredType& v)
 	{
+		size_++;
+
 		Node* p= root_;
 		Node* p_parent= nullptr;
 		while(p)
@@ -84,15 +103,93 @@ typedef T StoredType;
 		node->left= node->right= nullptr;
 		node->value= v;
 
+		CheckSize();
+
 		return iterator(node);
 	}
 
+	void erase(iterator it)
+	{
+		H_ASSERT(it.p);
+
+		size_--;
+
+		Node* deleted_parent= it.p->parent;
+
+		if( !it.p->left && !it.p->right) // leaf
+		{
+			if(deleted_parent)
+			{
+				if( deleted_parent->right == it.p ) deleted_parent->right= nullptr;
+				else deleted_parent->left= nullptr;
+			}
+			else
+			{
+				H_ASSERT(it.p == root_);
+				root_= nullptr;
+			}
+		}
+		else if( it.p->left ) // left, and, maybe, right exist
+		{
+			// move left pointer to parent
+			if( deleted_parent )
+			{
+				if( deleted_parent->right == it.p ) deleted_parent->right= it.p->left;
+				else deleted_parent->left= it.p->left;
+				if( it.p->right ) it.p->right->parent= deleted_parent;
+			}
+			else
+			{
+				H_ASSERT(it.p == root_);
+				root_= it.p->left;
+				root_->parent= nullptr;
+			}
+
+			if( it.p->right )
+			{
+				Node* most_right= it.p->left;
+				while(1)
+				{
+					if(most_right->right == nullptr)
+					{
+						most_right->right= it.p->right;
+						it.p->right->parent= most_right;
+						goto erase_end;
+					}
+					most_right= most_right->right;
+				}
+			}
+		} // if( it.p->left )
+		else // only right
+		{
+			if( deleted_parent )
+			{
+				if( deleted_parent->right == it.p ) deleted_parent->right= it.p->right;
+				else deleted_parent->left= it.p->right;
+				it.p->right->parent= deleted_parent;
+			}
+			else
+			{
+				H_ASSERT(it.p == root_);
+				root_= it.p->right;
+				root_->parent= nullptr;
+			}
+		}
+
+		erase_end:
+		CheckSize();
+	}
+
+#ifdef DEBUG
 	void Print() const
 	{
 		if( root_ ) Print_r(root_, 1);
 	}
+#endif//DEBUG
 
 private:
+
+#ifdef DEBUG
 	void Print_r(const Node* n, int depth) const
 	{
 		if (n->left) Print_r(n->left, depth + 1);
@@ -103,6 +200,24 @@ private:
 		if (n->right) Print_r(n->right, depth + 1);
 	}
 
+	void CheckSize()
+	{
+		if( root_ )
+		{
+			H_ASSERT(GetSize_r(root_) == size_);
+		}
+	}
+
+	size_t GetSize_r(Node* n)
+	{
+		size_t s= 1;
+		if( n->left  ) s+= GetSize_r(n->left );
+		if( n->right ) s+= GetSize_r(n->right);
+		return s;
+	}
+#endif//DEBUG
+
 private:
 	Node* root_;
+	size_t size_;
 };

@@ -1,10 +1,9 @@
+#pragma once
+
 #include <limits>
 #include <set>
 
-inline void Assert(bool must_be_true)
-{
-	if( !must_be_true ) printf( "ASSERT!\n");
-}
+#include "assert.hpp"
 
 template<class StoredType, size_t block_size, class IndexType>
 class SmallObjectsAllocatorBlock
@@ -45,7 +44,7 @@ public:
 
 	StoredType* New()
 	{
-		Assert(occupancy_ < block_size);
+		H_ASSERT(occupancy_ < block_size);
 
 		StoredType* result= GetDataPointer() + first_free_index_;
 
@@ -57,11 +56,11 @@ public:
 
 	void Delete(StoredType* p)
 	{
-		Assert(occupancy_ > 0);
+		H_ASSERT(occupancy_ > 0);
 
 		IndexType index= p - GetDataPointer();
 
-		Assert(index >= 0 && index < block_size);
+		H_ASSERT(index >= 0 && index < block_size);
 
 		// add this place to free linked list head
 		if( occupancy_ < block_size )
@@ -130,7 +129,7 @@ public:
 
 	void Delete(StoredType* p)
 	{
-		Assert( !blocks_.empty() );
+		H_ASSERT( !blocks_.empty() );
 		auto it= blocks_.lower_bound(reinterpret_cast<BlockType*>(p));
 
 		it--;
