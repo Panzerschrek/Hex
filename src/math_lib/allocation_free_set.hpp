@@ -51,9 +51,25 @@ typedef T StoredType;
 			return p->value;
 		}
 
-		void operator++()
+		void operator++(int) // it++
 		{
-			//TODO
+			H_ASSERT(p);
+
+			if( p->right )
+			{
+				p= p->right;
+				while( p->left ) p= p->left;
+			}
+			else
+			{
+				const StoredType& v= p->value;
+				while( p && p->value <= v ) p= p->parent;
+			}
+		}
+
+		void operator++() // ++it
+		{
+			return (*this)++;
 		}
 
 	private:
@@ -68,7 +84,11 @@ typedef T StoredType;
 
 	iterator begin()
 	{
-		return iterator(root_);
+		if( !root_ ) return nullptr;
+
+		Node* p= root_;
+		while(p->left) p= p->left;
+		return iterator(p);
 	}
 
 	iterator end()
