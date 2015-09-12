@@ -76,6 +76,7 @@ typedef T StoredType;
 		Node* p;
 	};
 
+public:
 	AllocationFreeSet()
 		: root_(nullptr)
 		, size_(0)
@@ -216,14 +217,15 @@ typedef T StoredType;
 
 		return find_nearest_less_or_equal_r(root_, v);
 	}
-
+#ifdef DEBUG
 	void Print() const
 	{
 		if( root_ ) Print_r(root_, 1);
 	}
+#endif
 
 private:
-
+#ifdef DEBUG
 	void Print_r(const Node* n, int depth) const
 	{
 		if (n->left) Print_r(n->left, depth + 1);
@@ -233,6 +235,7 @@ private:
 
 		if (n->right) Print_r(n->right, depth + 1);
 	}
+#endif
 
 	void CheckSize()
 	{

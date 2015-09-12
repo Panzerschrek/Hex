@@ -1,8 +1,10 @@
 #pragma once
 
 #include <limits>
-#include <set>
+#include <new>
 
+#include "allocation_free_list.hpp"
+#include "allocation_free_set.hpp"
 #include "assert.hpp"
 
 template<class StoredType, size_t block_size, class IndexType>
@@ -19,7 +21,8 @@ class SmallObjectsAllocatorBlock
 		"IndexType must be integer");
 
 public:
-	SmallObjectsAllocatorBlock* next_;
+	typename AllocationFreeList<SmallObjectsAllocatorBlock* >::Node list_node_;
+	typename AllocationFreeSet <SmallObjectsAllocatorBlock* >::Node  set_node_;
 
 public:
 	SmallObjectsAllocatorBlock()
@@ -42,7 +45,12 @@ public:
 		return occupancy_ <= block_size;
 	}
 
-	StoredType* New()
+	bool IsEmpty() const
+	{
+		return occupancy_ == 0;
+	}
+
+	StoredType* Alloc()
 	{
 		H_ASSERT(occupancy_ < block_size);
 
@@ -54,7 +62,7 @@ public:
 		return result;
 	}
 
-	void Delete(StoredType* p)
+	void Free(StoredType* p)
 	{
 		H_ASSERT(occupancy_ > 0);
 
@@ -100,45 +108,87 @@ class SmallObjectsAllocator
 {
 public:
 	SmallObjectsAllocator()
-		: blocks_()
-		, first_not_full_block_(nullptr)
+	{}
+
+	StoredType* Alloc()
 	{
+		StoredType* result;
+
+		auto it= not_full_blocks_list_.begin();
+		if( it == not_full_blocks_list_.end() )
+		{
+			BlockType* block= new BlockType();
+			blocks_.insert( &block->set_node_, block );
+			result= block->Alloc();
+
+			if( !block->IsFull() )
+				not_full_blocks_list_.push_front( &block->list_node_, block );
+		}
+		else
+		{
+			result= (*it)->Alloc();
+			if( (*it)->IsFull() )
+				not_full_blocks_list_.erase(it);
+		}
+
+		return result;
+	}
+
+	template<class ... Args>
+	StoredType* New(Args... args)
+	{
+		StoredType* p= Alloc();
+		new(p) StoredType (args...);
+		return p;
 	}
 
 	StoredType* New()
 	{
-		StoredType* result;
-		if( first_not_full_block_ )
-		{
-			result= first_not_full_block_->New();
-			if (first_not_full_block_->IsFull())
-				first_not_full_block_= first_not_full_block_->next_;
-		}
-		else
-		{
-			BlockType* new_block= new BlockType();
-			new_block->next_= first_not_full_block_;
-			first_not_full_block_= new_block;
+		StoredType* p= Alloc();
+		new(p) StoredType();
+		return p;
+	}
 
-			blocks_.insert(new_block);
+	void Free(StoredType* p)
+	{
+		auto block_it= blocks_.find_nearest_less_or_equal( reinterpret_cast<BlockType*>(p) );
+		H_ASSERT( block_it != blocks_.end() );
 
-			result= new_block->New();
+		BlockType* block= *block_it;
+
+		block->Free(p);
+
+		if( block->IsEmpty() )
+		{
+			// remove from not full list
+			if( block_size > 1 )
+			{
+				auto it= not_full_blocks_list_.begin();
+				for( ; it != not_full_blocks_list_.end(); it++ )
+					if( *it == block )
+					{
+						not_full_blocks_list_.erase(it);
+						break;
+					}
+				H_ASSERT(it != not_full_blocks_list_.end());
+			}
+
+			blocks_.erase(block_it);
+			delete block;
 		}
-		return result;
 	}
 
 	void Delete(StoredType* p)
 	{
-		H_ASSERT( !blocks_.empty() );
-		auto it= blocks_.lower_bound(reinterpret_cast<BlockType*>(p));
-
-		it--;
+		p->~StoredType();
+		Free(p);
 	}
 
 private:
 	typedef SmallObjectsAllocatorBlock<StoredType, block_size, IndexType> BlockType;
-	typedef std::set<BlockType*> BlocksContainer;
+	typedef AllocationFreeSet<BlockType*> BlocksContainer;
+	typedef AllocationFreeList<BlockType*> NotFullBlocksContainer;
 
 	BlocksContainer blocks_;
-	BlockType* first_not_full_block_;
+	NotFullBlocksContainer not_full_blocks_list_;
 };
