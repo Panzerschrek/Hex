@@ -121,14 +121,28 @@ Allocation time = O(1)
 Deallocation time is O(n/block_size) for worst cases (too many blocks, for example).
 
 Best usage - when block count is small, up to 8, for example.
+
+Allocator is not thread safe. After allocator deletion all allocation memory will invalidated.
 */
 
 template<class StoredType, size_t block_size, class IndexType = unsigned short>
 class SmallObjectsAllocator
 {
 public:
-	SmallObjectsAllocator()
-	{}
+	SmallObjectsAllocator(){}
+
+	~SmallObjectsAllocator()
+	{
+		auto it= blocks_.begin();
+		while( it != blocks_.end() )
+		{
+			BlockType* block= *it;
+			blocks_.erase(it);
+			delete block;
+
+			it= blocks_.begin();
+		}
+	}
 
 	// Raw allocation, without constructor call. Use it directly for basic types, (ints, pointers, etc.).
 	StoredType* Alloc()

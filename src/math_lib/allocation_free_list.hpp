@@ -5,6 +5,7 @@
 /*
 Double-linked list with external storage for internal structures.
 Does not perform any memory allocation.
+Because storage for internal structures and stored data provides user, cantainer does not deallocate any data on destruction.
 
 UNFINISHED - you can add some members, if you need.
 */
