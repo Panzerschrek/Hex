@@ -1,8 +1,17 @@
 #pragma once
 
+#ifdef DEBUG
 #include <iostream>
+#endif
 
 #include "assert.hpp"
+
+/*
+Simple binary three with external storage for internal structures.
+Does not perform any memory allocation.
+
+UNFINISHED - you can add some members, if you need.
+*/
 
 template<class T>
 class AllocationFreeSet

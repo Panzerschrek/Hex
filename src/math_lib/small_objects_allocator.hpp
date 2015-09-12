@@ -7,12 +7,22 @@
 #include "allocation_free_set.hpp"
 #include "assert.hpp"
 
+/*
+Memory block, which can store up to block_size objects of type StoredType.
+Allocation and Deallocation time = O(1).
+
+Memory size ~= block_size * ( sizeof(StoredType) + sizeof(IndexType) ) + some counters + alignment.
+*/
+
 template<class StoredType, size_t block_size, class IndexType>
 class SmallObjectsAllocatorBlock
 {
 	static_assert(
 		block_size > 0,
 		"block_size must be positive");
+	static_assert(
+		!std::numeric_limits<IndexType>::is_signed,
+		"IndexType must be unsigned");
 	static_assert(
 		block_size - 1 <= std::numeric_limits<IndexType>::max(),
 		"block_size to big for IndexType");
@@ -42,7 +52,7 @@ public:
 
 	bool IsFull() const
 	{
-		return occupancy_ <= block_size;
+		return occupancy_ == block_size;
 	}
 
 	bool IsEmpty() const
@@ -78,7 +88,6 @@ public:
 		occupancy_--;
 	}
 
-
 private:
 	SmallObjectsAllocatorBlock& operator=(SmallObjectsAllocatorBlock&) = delete;
 
@@ -92,16 +101,27 @@ private:
 	}
 
 private:
-	// Store data in raw format.
-	// Convert data to StoredType and perform alignment.
-	unsigned char raw_data_[sizeof(StoredType) * block_size + alignof(StoredType)];
-	IndexType index_list_[block_size];
-
 	// Count of objects, really allocated inside.
 	size_t occupancy_;
 	// Store index, or nothing, if block is full.
 	size_t first_free_index_;
+
+	// Index of next free place.
+	IndexType index_list_[block_size];
+	// Store data in raw format.
+	// Convert data to StoredType and perform alignment.
+	unsigned char raw_data_[sizeof(StoredType) * block_size + alignof(StoredType)];
 };
+
+/*
+Allocator for large amount of small objects of same type.
+Group memory for objects to large blocks.
+
+Allocation time = O(1)
+Deallocation time is O(n/block_size) for worst cases (too many blocks, for example).
+
+Best usage - when block count is small, up to 8, for example.
+*/
 
 template<class StoredType, size_t block_size, class IndexType = unsigned short>
 class SmallObjectsAllocator
@@ -110,23 +130,29 @@ public:
 	SmallObjectsAllocator()
 	{}
 
+	// Raw allocation, without constructor call. Use it directly for basic types, (ints, pointers, etc.).
 	StoredType* Alloc()
 	{
 		StoredType* result;
 
 		auto it= not_full_blocks_list_.begin();
+
+		// No space - allocate new block.
 		if( it == not_full_blocks_list_.end() )
 		{
 			BlockType* block= new BlockType();
 			blocks_.insert( &block->set_node_, block );
 			result= block->Alloc();
 
+			// Add new block to list of blocsk with empty space.
 			if( !block->IsFull() )
 				not_full_blocks_list_.push_front( &block->list_node_, block );
 		}
 		else
 		{
+			// Just allocate.
 			result= (*it)->Alloc();
+			// If blocs is full - remove it from free list.
 			if( (*it)->IsFull() )
 				not_full_blocks_list_.erase(it);
 		}
@@ -134,6 +160,7 @@ public:
 		return result;
 	}
 
+	// Allocation with constructor call. Use for objects.
 	template<class ... Args>
 	StoredType* New(Args... args)
 	{
@@ -142,13 +169,7 @@ public:
 		return p;
 	}
 
-	StoredType* New()
-	{
-		StoredType* p= Alloc();
-		new(p) StoredType();
-		return p;
-	}
-
+	// Raw deletion, without destructor call.
 	void Free(StoredType* p)
 	{
 		auto block_it= blocks_.find_nearest_less_or_equal( reinterpret_cast<BlockType*>(p) );
@@ -176,13 +197,20 @@ public:
 			blocks_.erase(block_it);
 			delete block;
 		}
+		// Add to not full block, if was full
+		else if( block->Occupancy() == block_size - 1 )
+			not_full_blocks_list_.push_front( &block->list_node_, block );
 	}
 
+	// Call destructor and free.
 	void Delete(StoredType* p)
 	{
 		p->~StoredType();
 		Free(p);
 	}
+
+private:
+	SmallObjectsAllocator& operator=(const SmallObjectsAllocator&) = delete;
 
 private:
 	typedef SmallObjectsAllocatorBlock<StoredType, block_size, IndexType> BlockType;

@@ -2,6 +2,13 @@
 
 #include "assert.hpp"
 
+/*
+Double-linked list with external storage for internal structures.
+Does not perform any memory allocation.
+
+UNFINISHED - you can add some members, if you need.
+*/
+
 template<class T>
 class AllocationFreeList
 {
@@ -93,7 +100,7 @@ public:
 
 	iterator end()
 	{
-		return iterator(last_);
+		return iterator(nullptr);
 	}
 
 	void push_back(Node* node, const StoredType& v)
