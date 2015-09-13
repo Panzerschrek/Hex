@@ -1,4 +1,7 @@
+#include "../math_lib/assert.hpp"
 #include "wvb.hpp"
+
+#define H_BUFFER_OBJECT_NOT_CREATED 0xFFFFFFFF
 
 r_WorldVBOCluster::r_WorldVBOCluster( short longitude, short latitude )
 	: longitude_( longitude ), latitude_( latitude )
@@ -115,4 +118,37 @@ void r_WorldVBOClusterGPU::UpdateVBO(
 	buffer_reallocated_= false;
 	for( unsigned int i= 0; i < cluster_size_x * cluster_size_y; i++ )
 		segments_[i].updated= false;
+}
+
+/*
+---------------r_WVB-------------------
+*/
+
+r_WVB::r_WVB(
+	unsigned int cluster_size_x, unsigned int cluster_size_y,
+	unsigned int cluster_matrix_size_x, unsigned int cluster_matrix_size_y,
+	std::vector<unsigned short> indeces )
+	: cluster_size_{ cluster_size_x, cluster_size_y }
+	, cluster_matrix_size_{ cluster_matrix_size_x, cluster_matrix_size_y }
+	, index_buffer_( H_BUFFER_OBJECT_NOT_CREATED )
+	, indeces_( std::move(indeces) )
+{
+	H_ASSERT( cluster_size_x <= H_MAX_CHUNKS_IN_CLUSTER && cluster_size_y <= H_MAX_CHUNKS_IN_CLUSTER );
+}
+
+GLuint r_WVB::GetIndexBuffer()
+{
+	if( index_buffer_ == H_BUFFER_OBJECT_NOT_CREATED )
+	{
+		glGenBuffers( 1, &index_buffer_ );
+		glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, index_buffer_ );
+
+		glBufferData(
+			GL_ELEMENT_ARRAY_BUFFER,
+			indeces_.size() * sizeof(unsigned short),
+			indeces_.data(),
+			GL_STATIC_DRAW );
+	}
+
+	return index_buffer_;
 }

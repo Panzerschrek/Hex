@@ -90,9 +90,24 @@ typedef std::shared_ptr<r_WorldVBOClusterGPU> r_WorldVBOClusterGPUPtr;
 
 class r_WVB
 {
-	unsigned int cluster_matrix_size_[2];
-	unsigned int cluster_size_[2];
+public:
+	r_WVB(
+		unsigned int cluster_size_x, unsigned int cluster_size_y,
+		unsigned int cluster_matrix_size_x, unsigned int cluster_matrix_size_y,
+		std::vector<unsigned short> indeces );
+
+	// Call in GPU thread. Returns index buffer, and, maybe, create it, if it not exist.
+	GLuint GetIndexBuffer();
+
+	const unsigned int cluster_size_[2];
+	const unsigned int cluster_matrix_size_[2];
 
 	std::vector< r_WorldVBOClusterPtr    > cpu_cluster_matrix_;
+	unsigned int cpu_cluster_matrix_coord_[2]; // longitude + latitude
+
 	std::vector< r_WorldVBOClusterGPUPtr > gpu_cluster_matrix_;
+	unsigned int gpu_cluster_matrix_coord_[2];
+
+	GLuint index_buffer_;
+	const std::vector<unsigned short> indeces_;
 };
