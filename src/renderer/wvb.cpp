@@ -1,7 +1,14 @@
 #include "wvb.hpp"
 
-#define H_VBO_NOT_CREATED 0xFFFFFFFF
+r_WorldVBOCluster::r_WorldVBOCluster( short longitude, short latitude )
+	: longitude_( longitude ), latitude_( latitude )
+	, buffer_reallocated_( true )
+{
+}
 
+/*
+----------------r_WorldVBOClusterGPU-----------
+*/
 
 r_WorldVBOClusterGPU::r_WorldVBOClusterGPU(
 	const r_WorldVBOClusterPtr& cpu_cluster,
@@ -9,7 +16,6 @@ r_WorldVBOClusterGPU::r_WorldVBOClusterGPU(
 	GLuint index_buffer )
 	: cluster_( cpu_cluster )
 	, vertex_size_( vertex_format.vertex_size )
-	, buffer_reallocated_( true )
 {
 	// TODO - add thread check
 
@@ -17,20 +23,20 @@ r_WorldVBOClusterGPU::r_WorldVBOClusterGPU(
 	glBindVertexArray( VAO_ );
 
 	unsigned int i= 0;
-	for( const r_VertexFormat::Component& component : vertex_format.components )
+	for( const r_VertexFormat::Attribute& attribute : vertex_format.attrbutes )
 	{
 		glEnableVertexAttribArray(i);
 
-		if( component.type == r_VertexFormat::Component::TypeInShader::Integer )
+		if( attribute.type == r_VertexFormat::Attribute::TypeInShader::Integer )
 			glVertexAttribIPointer(
 				i,
-				component.components, component.input_type,
-				vertex_format.vertex_size, (void*) component.offset );
+				attribute.components, attribute.input_type,
+				vertex_format.vertex_size, (void*) attribute.offset );
 		else
 			glVertexAttribPointer(
 				i,
-				component.components, component.input_type, component.normalized,
-				vertex_format.vertex_size, (void*) component.offset );
+				attribute.components, attribute.input_type, attribute.normalized,
+				vertex_format.vertex_size, (void*) attribute.offset );
 
 		i++;
 	}
@@ -78,6 +84,8 @@ void r_WorldVBOClusterGPU::UpdateVBO(
 	r_WorldVBOClusterPtr cluster= cluster_.lock();
 	if( !cluster ) return;
 
+	glBindVertexArray( VAO_ );
+
 	if( buffer_reallocated_ )
 	{
 		if( cluster->vertices_.size() > 0 )
@@ -90,12 +98,21 @@ void r_WorldVBOClusterGPU::UpdateVBO(
 	{
 		for( unsigned int i= 0; i < cluster_size_x * cluster_size_y; i++ )
 		{
-			if( segments_[i].vertex_count > 0 )
+			if( segments_[i].updated && segments_[i].vertex_count > 0 )
+			{
+				unsigned int offset= segments_[i].first_vertex_index * vertex_size_;
+
 				glBufferSubData(
 					GL_ARRAY_BUFFER,
-					segments_[i].first_vertex_index * vertex_size_,
+					offset,
 					segments_[i].vertex_count * vertex_size_,
-					cluster->vertices_.data() );
+					cluster->vertices_.data() + offset );
+			}
 		}
 	}
+
+	// Clear update flags.
+	buffer_reallocated_= false;
+	for( unsigned int i= 0; i < cluster_size_x * cluster_size_y; i++ )
+		segments_[i].updated= false;
 }

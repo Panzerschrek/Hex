@@ -8,7 +8,7 @@
 
 struct r_VertexFormat
 {
-	struct Component
+	struct Attribute
 	{
 		enum class TypeInShader
 		{
@@ -25,8 +25,8 @@ struct r_VertexFormat
 		bool normalized; // for real type
 	};
 
-	std::vector<Component> components;
-	// size fo vertex structure, put sizeof(MyVertex) here
+	std::vector<Attribute> attrbutes;
+	// Size of vertex structure, put sizeof(MyVertex) here.
 	unsigned int vertex_size;
 };
 
@@ -40,11 +40,16 @@ struct r_WorldVBOClusterSegment
 	bool updated;
 };
 
-struct r_WorldVBOCluster
+class r_WorldVBOCluster
 {
+public:
+	r_WorldVBOCluster( short longitude, short latitude );
+
 	std::vector<char> vertices_;
 
-	short longitude_, latitude_;
+	// coordinates of beginning of cluster
+	// longitude_ % cluster_size_[0] is always zero, for example
+	const short longitude_, latitude_;
 
 	// As r_WorldVBOClusterSegment::updated
 	bool buffer_reallocated_;
