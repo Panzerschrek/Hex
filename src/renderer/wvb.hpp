@@ -32,6 +32,8 @@ struct r_VertexFormat
 
 struct r_WorldVBOClusterSegment
 {
+	r_WorldVBOClusterSegment();
+
 	unsigned int first_vertex_index;
 	unsigned int vertex_count;
 	unsigned int capacity;
@@ -43,13 +45,9 @@ struct r_WorldVBOClusterSegment
 class r_WorldVBOCluster
 {
 public:
-	r_WorldVBOCluster( short longitude, short latitude );
+	r_WorldVBOCluster();
 
 	std::vector<char> vertices_;
-
-	// coordinates of beginning of cluster
-	// longitude_ % cluster_size_[0] is always zero, for example
-	const short longitude_, latitude_;
 
 	// As r_WorldVBOClusterSegment::updated
 	bool buffer_reallocated_;
@@ -99,14 +97,17 @@ public:
 	// Call in GPU thread. Returns index buffer, and, maybe, create it, if it not exist.
 	GLuint GetIndexBuffer();
 
+	// Call in cpu matrix. Moves cpu matrix to position longitude, latitude.
+	void MoveCPUMatrix( short longitude, short latitude );
+
 	const unsigned int cluster_size_[2];
 	const unsigned int cluster_matrix_size_[2];
 
 	std::vector< r_WorldVBOClusterPtr    > cpu_cluster_matrix_;
-	unsigned int cpu_cluster_matrix_coord_[2]; // longitude + latitude
+	short cpu_cluster_matrix_coord_[2]; // longitude + latitude
 
 	std::vector< r_WorldVBOClusterGPUPtr > gpu_cluster_matrix_;
-	unsigned int gpu_cluster_matrix_coord_[2];
+	short gpu_cluster_matrix_coord_[2];
 
 	GLuint index_buffer_;
 	const std::vector<unsigned short> indeces_;

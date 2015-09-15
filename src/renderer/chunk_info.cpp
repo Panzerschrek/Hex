@@ -46,7 +46,7 @@ void r_WaterQuadChunkInfo::BuildFinalMesh()
 r_ChunkInfo::r_ChunkInfo()
 	: chunk_front_(nullptr), chunk_right_(nullptr)
 	, chunk_back_right_(nullptr), chunk_back_(nullptr)
-	, chunk_mesh_rebuilded_(false), chunk_data_updated_(false)
+	, chunk_data_updated_(false)
 {
 }
 
@@ -640,7 +640,7 @@ void r_ChunkInfo::GetQuadCount()
 	}
 
 func_end:
-	chunk_vb_.new_vertex_count= quad_count * 4;
+	chunk_vb_.vertex_count= quad_count * 4;
 
 #undef ADD_QUADS
 }

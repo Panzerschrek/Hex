@@ -1,11 +1,23 @@
 #include "../math_lib/assert.hpp"
+#include "../math_lib/m_math.h"
 #include "wvb.hpp"
 
 #define H_BUFFER_OBJECT_NOT_CREATED 0xFFFFFFFF
 
-r_WorldVBOCluster::r_WorldVBOCluster( short longitude, short latitude )
-	: longitude_( longitude ), latitude_( latitude )
-	, buffer_reallocated_( true )
+r_WorldVBOCluster::r_WorldVBOCluster()
+	: buffer_reallocated_( true )
+{
+}
+
+/*
+----------------r_WorldVBOClusterSegment----------
+*/
+
+r_WorldVBOClusterSegment::r_WorldVBOClusterSegment()
+	: first_vertex_index(0)
+	, vertex_count(0)
+	, capacity(0)
+	, updated(false)
 {
 }
 
@@ -130,10 +142,19 @@ r_WVB::r_WVB(
 	std::vector<unsigned short> indeces )
 	: cluster_size_{ cluster_size_x, cluster_size_y }
 	, cluster_matrix_size_{ cluster_matrix_size_x, cluster_matrix_size_y }
+	, cpu_cluster_matrix_( cluster_matrix_size_x * cluster_matrix_size_y )
+	, cpu_cluster_matrix_coord_{ 0, 0 }
+	, gpu_cluster_matrix_( cluster_matrix_size_x * cluster_matrix_size_y )
+	, gpu_cluster_matrix_coord_{ 0, 0 }
 	, index_buffer_( H_BUFFER_OBJECT_NOT_CREATED )
 	, indeces_( std::move(indeces) )
 {
 	H_ASSERT( cluster_size_x <= H_MAX_CHUNKS_IN_CLUSTER && cluster_size_y <= H_MAX_CHUNKS_IN_CLUSTER );
+
+	for( unsigned int y= 0; y < cluster_matrix_size_[1]; y++ )
+		for( unsigned int x= 0; x < cluster_matrix_size_[0]; x++ )
+			cpu_cluster_matrix_[ x + y * cluster_matrix_size_[0] ]=
+				std::make_shared<r_WorldVBOCluster>();
 }
 
 GLuint r_WVB::GetIndexBuffer()
@@ -151,4 +172,42 @@ GLuint r_WVB::GetIndexBuffer()
 	}
 
 	return index_buffer_;
+}
+
+void r_WVB::MoveCPUMatrix( short longitude, short latitude )
+{
+	H_ASSERT( m_Math::ModNonNegativeRemainder( longitude, cluster_size_[0] ) == 0 );
+	H_ASSERT( m_Math::ModNonNegativeRemainder( latitude , cluster_size_[1] ) == 0 );
+
+	if( longitude == cpu_cluster_matrix_coord_[0] &&
+		latitude  == cpu_cluster_matrix_coord_[1] )
+		return;
+
+	int dx= ( longitude - cpu_cluster_matrix_coord_[0] ) / cluster_size_[0];
+	int dy= ( latitude  - cpu_cluster_matrix_coord_[1] ) / cluster_size_[1];
+
+	std::vector<r_WorldVBOClusterPtr> new_matrix( cluster_matrix_size_[0] * cluster_matrix_size_[1] );
+
+	for( unsigned int y= 0; y < cluster_matrix_size_[1]; y++ )
+		for( unsigned int x= 0; x < cluster_matrix_size_[0]; x++ )
+		{
+			int old_x= static_cast<int>(x) + dx;
+			int old_y= static_cast<int>(y) + dy;
+			if( old_x >= 0 && old_x < cluster_matrix_size_[0] &&
+				old_y >= 0 && old_y < cluster_matrix_size_[1] )
+			{
+				new_matrix[x + y * cluster_matrix_size_[0]]=
+					std::move(
+						cpu_cluster_matrix_[ old_x + old_y * cluster_matrix_size_[0] ] );
+			}
+			else
+			{
+				new_matrix[x + y * cluster_matrix_size_[0]]=
+					std::make_shared<r_WorldVBOCluster>();
+			}
+		}
+
+	cpu_cluster_matrix_= std::move(new_matrix);
+	cpu_cluster_matrix_coord_[0]= longitude;
+	cpu_cluster_matrix_coord_[1]= latitude ;
 }
