@@ -2,7 +2,6 @@
 #include <thread>
 
 #include "world_renderer.hpp"
-#include "world_vertex_buffer.hpp"
 #include "glcorearb.h"
 #include "rendering_constants.hpp"
 #include "../console.hpp"
@@ -76,64 +75,132 @@ void r_WorldRenderer::Update()
 {
 	const std::unique_lock<std::mutex> wb_lock( world_vertex_buffer_mutex_ );
 
+	r_WVB* wvb= world_vertex_buffer_.get();
+
 	// Move our chunk matrix.
 	MoveChunkMatrix( world_->Longitude(), world_->Latitude() );
 
 	// Calculate position of cluster matrix, move it.
 	unsigned int cluster_matrix_coord[2]=
 	{
-		world_vertex_buffer_->cluster_size_[0] *
+		wvb->cluster_size_[0] *
 		m_Math::DivNonNegativeRemainder(
 			world_->Longitude(),
-			world_vertex_buffer_->cluster_size_[0] ),
+			wvb->cluster_size_[0] ),
 
-		world_vertex_buffer_->cluster_size_[1] *
+		wvb->cluster_size_[1] *
 		m_Math::DivNonNegativeRemainder(
 			world_->Latitude (),
-			world_vertex_buffer_->cluster_size_[1] )
+			wvb->cluster_size_[1] )
 	};
 
-	world_vertex_buffer_->MoveCPUMatrix(
+	wvb->MoveCPUMatrix(
 		cluster_matrix_coord[0],
 		cluster_matrix_coord[1] );
 
 	// Scan chunks matrix, calculate quads count.
 	for( unsigned int y= 0; y < chunks_info_.matrix_size[1]; y++ )
-		for( unsigned int x= 0; x < chunks_info_.matrix_size[0]; x++ )
+	for( unsigned int x= 0; x < chunks_info_.matrix_size[0]; x++ )
+	{
+		r_ChunkInfoPtr& chunk_info_ptr= chunks_info_.chunk_matrix[ x + y * chunks_info_.matrix_size[0] ];
+		H_ASSERT( chunk_info_ptr );
+		if( chunk_info_ptr->updated_ )
 		{
-			r_ChunkInfoPtr& chunk_info_ptr= chunks_info_.chunk_matrix[ x + y * chunks_info_.matrix_size[0] ];
-			H_ASSERT( chunk_info_ptr );
-			if( chunk_info_ptr->updated_ )
-			{
-				chunk_info_ptr->GetQuadCount();
+			chunk_info_ptr->GetQuadCount();
 
-				r_WorldVBOClusterPtr cluster=
-					world_vertex_buffer_->GetCluster(
-						chunks_info_.matrix_position[0] + x,
-						chunks_info_.matrix_position[1] + y );
+			r_WorldVBOClusterPtr cluster=
+				wvb->GetCluster(
+					chunks_info_.matrix_position[0] + x,
+					chunks_info_.matrix_position[1] + y );
 
-				r_WorldVBOClusterSegment& segment=
-					world_vertex_buffer_->GetClusterSegment(
-						chunks_info_.matrix_position[0] + x,
-						chunks_info_.matrix_position[1] + y );
+			r_WorldVBOClusterSegment& segment=
+				wvb->GetClusterSegment(
+					chunks_info_.matrix_position[0] + x,
+					chunks_info_.matrix_position[1] + y );
 
-				segment.vertex_count= chunk_info_ptr->vertex_count_;
-				if( segment.vertex_count > segment.capacity )
-					cluster->buffer_reallocated_= true;
-			}
+			segment.vertex_count= chunk_info_ptr->vertex_count_;
+			if( segment.vertex_count > segment.capacity )
+				cluster->buffer_reallocated_= true;
 		}
+	}
 
 	// Scan cluster matrix, find fully-updated.
 	{
-		std::vector< r_WorldVBOClusterPtr >& cluster_matrix= world_vertex_buffer_->cpu_cluster_matrix_;
-		for( unsigned int y= 0; y < world_vertex_buffer_; y++ )
-		for( unsigned int x= 0; x < chunks_info_; x++ )
-		//for( r_WorldVBOClusterPtr& cluster : cluster_matrix )
+		std::vector< r_WorldVBOClusterPtr >& cluster_matrix= wvb->cpu_cluster_matrix_;
+		for( unsigned int cy= 0; cy < wvb->cluster_matrix_size_[1]; cy++ )
+		for( unsigned int cx= 0; cx < wvb->cluster_matrix_size_[0]; cx++ )
 		{
+			r_WorldVBOClusterPtr& cluster= cluster_matrix[ cx + cy * wvb->cluster_matrix_size_[0] ];
 			if( cluster->buffer_reallocated_ )
 			{
+				// Scan chunks in cluster, calculate capacity for vertices.
+				unsigned int vertex_count= 0;
+				for( unsigned int y= 0; y < wvb->cluster_size_[1]; y++ )
+				for( unsigned int x= 0; x < wvb->cluster_size_[0]; x++ )
+				{
+					r_WorldVBOClusterSegment& segment= cluster->segments_[ x + y * wvb->cluster_size_[0] ];
+
+					// Add 25% and round to 8up.
+					segment.capacity= ( segment.vertex_count * 5 / 4 + 7 ) & (~7);
+					vertex_count+= segment.capacity;
+				}
+
+				// Setup offsets and copy old data to new data.
+				std::vector<char> new_vertices( vertex_count * sizeof(r_WorldVertex) );
+				unsigned int offset= 0; // in vertices
+				for( unsigned int y= 0; y < wvb->cluster_size_[1]; y++ )
+				for( unsigned int x= 0; x < wvb->cluster_size_[0]; x++ )
+				{
+					r_WorldVBOClusterSegment& segment= cluster->segments_[ x + y * wvb->cluster_size_[0] ];
+					int longitude= x + cx * wvb->cluster_size_[0] + wvb->gpu_cluster_matrix_coord_[0];
+					int latitude = y + cy * wvb->cluster_size_[1] + wvb->gpu_cluster_matrix_coord_[1];
+
+					r_ChunkInfoPtr& chunk_info_ptr= chunks_info_.chunk_matrix[
+						(longitude - chunks_info_.matrix_position[0]) +
+						(latitude  - chunks_info_.matrix_position[1]) * chunks_info_.matrix_size[0] ];
+
+					if( !chunk_info_ptr->updated_ && chunk_info_ptr->vertex_data_ )
+					{
+						//TODO - copying, now - only set update flag.
+						chunk_info_ptr->updated_= true;
+						/*	memcpy(
+							new_vertices.data() + offset * sizeof(r_WorldVertex),
+							chunk_info_ptr->vertex_data_,
+							segment.vertex_count * sizeof(r_WorldVertex) );*/
+					}
+
+					segment.first_vertex_index= offset;
+					chunk_info_ptr->vertex_data_=
+						reinterpret_cast<r_WorldVertex*>( new_vertices.data() + offset * sizeof(r_WorldVertex) );
+					offset+= segment.capacity;
+				}
+
+				H_ASSERT( offset * sizeof(r_WorldVertex) == new_vertices.size() );
+				cluster->vertices_= std::move( new_vertices );
 			} // if cluster->buffer_reallocated_
 		} // for clusters
+	}
+
+	// Scan chunks matrix, rebuild updated chunks.
+	for( unsigned int y= 0; y < chunks_info_.matrix_size[1]; y++ )
+	for( unsigned int x= 0; x < chunks_info_.matrix_size[0]; x++ )
+	{
+		r_ChunkInfoPtr& chunk_info_ptr= chunks_info_.chunk_matrix[ x + y * chunks_info_.matrix_size[0] ];
+		H_ASSERT( chunk_info_ptr );
+		if( chunk_info_ptr->updated_ )
+		{
+			chunk_info_ptr->BuildChunkMesh();
+
+			r_WorldVBOClusterSegment& segment=
+				wvb->GetClusterSegment(
+					chunks_info_.matrix_position[0] + x,
+					chunks_info_.matrix_position[1] + y );
+
+			// Finally, reset updated flag.
+			chunk_info_ptr->updated_= false;
+			// And set it in segment.
+			segment.updated= true;
+		}
 	}
 }
 
