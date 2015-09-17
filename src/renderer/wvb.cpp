@@ -232,8 +232,8 @@ r_WorldVBOClusterSegment& r_WVB::GetClusterSegment( int longitude, int latitude 
 	int cluster_x= d_lon / cluster_size_[0];
 	int cluster_y= d_lat / cluster_size_[1];
 
-	H_ASSERT( x >= 0 && x < cluster_matrix_size_[0] );
-	H_ASSERT( y >= 0 && y < cluster_matrix_size_[1] );
+	H_ASSERT( cluster_x >= 0 && cluster_x < cluster_matrix_size_[0] );
+	H_ASSERT( cluster_y >= 0 && cluster_y < cluster_matrix_size_[1] );
 
 	int segment_x= d_lon - cluster_x * cluster_size_[0];
 	int segment_y= d_lat - cluster_y * cluster_size_[1];

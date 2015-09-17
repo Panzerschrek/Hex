@@ -25,7 +25,7 @@ r_WorldRenderer::r_WorldRenderer(
 	// Init chunk matrix
 	{
 		chunks_info_.matrix_size[0]= world->ChunkNumberX();
-		chunks_info_.matrix_size[1]= world->ChunkNumberX();
+		chunks_info_.matrix_size[1]= world->ChunkNumberY();
 		chunks_info_.matrix_position[0]= world->Longitude();
 		chunks_info_.matrix_position[1]= world->Latitude ();
 
@@ -152,14 +152,17 @@ void r_WorldRenderer::Update()
 				for( unsigned int x= 0; x < wvb->cluster_size_[0]; x++ )
 				{
 					r_WorldVBOClusterSegment& segment= cluster->segments_[ x + y * wvb->cluster_size_[0] ];
-					int longitude= x + cx * wvb->cluster_size_[0] + wvb->gpu_cluster_matrix_coord_[0];
-					int latitude = y + cy * wvb->cluster_size_[1] + wvb->gpu_cluster_matrix_coord_[1];
+					int longitude= x + cx * wvb->cluster_size_[0] + wvb->cpu_cluster_matrix_coord_[0];
+					int latitude = y + cy * wvb->cluster_size_[1] + wvb->cpu_cluster_matrix_coord_[1];
 
-					r_ChunkInfoPtr& chunk_info_ptr= chunks_info_.chunk_matrix[
-						(longitude - chunks_info_.matrix_position[0]) +
-						(latitude  - chunks_info_.matrix_position[1]) * chunks_info_.matrix_size[0] ];
+					int cm_x= longitude - chunks_info_.matrix_position[0];
+					int cm_y= latitude  - chunks_info_.matrix_position[1];
+					r_ChunkInfo* chunk_info_ptr= nullptr;
+					if( cm_x >= 0 && cm_x < chunks_info_.matrix_size[0] &&
+						cm_y >= 0 && cm_y < chunks_info_.matrix_size[1] )
+						chunk_info_ptr= chunks_info_.chunk_matrix[ cm_x + cm_y * chunks_info_.matrix_size[0] ].get();
 
-					if( !chunk_info_ptr->updated_ && chunk_info_ptr->vertex_data_ )
+					if( chunk_info_ptr && !chunk_info_ptr->updated_ && chunk_info_ptr->vertex_data_ )
 					{
 						//TODO - copying, now - only set update flag.
 						chunk_info_ptr->updated_= true;
@@ -168,10 +171,11 @@ void r_WorldRenderer::Update()
 							chunk_info_ptr->vertex_data_,
 							segment.vertex_count * sizeof(r_WorldVertex) );*/
 					}
+					if( chunk_info_ptr )
+						chunk_info_ptr->vertex_data_=
+							reinterpret_cast<r_WorldVertex*>( new_vertices.data() + offset * sizeof(r_WorldVertex) );
 
 					segment.first_vertex_index= offset;
-					chunk_info_ptr->vertex_data_=
-						reinterpret_cast<r_WorldVertex*>( new_vertices.data() + offset * sizeof(r_WorldVertex) );
 					offset+= segment.capacity;
 				}
 
@@ -627,26 +631,28 @@ void r_WorldRenderer::UpdateChunkMatrixPointers()
 	H_ASSERT( world_->Longitude() == chunks_info_.matrix_position[0] );
 	H_ASSERT( world_->Latitude () == chunks_info_.matrix_position[1] );
 
-	for( int y= 0; y <= (int)chunks_info_.matrix_size[1]; y++ )
-		for( int x= 0; x <= (int)chunks_info_.matrix_size[0]; x++ )
+	for( int y= 0; y < (int)chunks_info_.matrix_size[1]; y++ )
+		for( int x= 0; x < (int)chunks_info_.matrix_size[0]; x++ )
 		{
 			r_ChunkInfoPtr& chunk_info_ptr= chunks_info_.chunk_matrix[ x + y * chunks_info_.matrix_size[0] ];
 			H_ASSERT( chunk_info_ptr );
 
 			chunk_info_ptr->chunk_= world_->GetChunk( x, y );
-
+			H_ASSERT( chunk_info_ptr->chunk_ );
+			/* TODO - here are some problems, turn off neighbor, temporary.
 			if( x < chunks_info_.matrix_size[0] - 1 )
 				chunk_info_ptr->chunk_right_= world_->GetChunk( x + 1, y );
 			else chunk_info_ptr->chunk_right_= nullptr;
 			if( y < chunks_info_.matrix_size[1] - 1 )
 				chunk_info_ptr->chunk_front_= world_->GetChunk( x, y + 1 );
 			else chunk_info_ptr->chunk_front_= nullptr;
-			if( x > 0 )
+			if( y > 0 )
 				chunk_info_ptr->chunk_back_= world_->GetChunk( x, y - 1 );
 			else chunk_info_ptr->chunk_back_= nullptr;
-			if( x > 0 && y < chunks_info_.matrix_size[0] - 1 )
+			if( x > 0 && y < chunks_info_.matrix_size[1] - 1 )
 				chunk_info_ptr->chunk_back_right_= world_->GetChunk( x + 1, y - 1 );
 			else chunk_info_ptr->chunk_back_right_= nullptr;
+			*/
 		}
 }
 

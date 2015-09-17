@@ -181,7 +181,7 @@ private:
 		// same as world size
 		unsigned int matrix_size[2];
 		// Longitude + latitude
-		unsigned int matrix_position[2];
+		int matrix_position[2];
 	} chunks_info_;
 
 	std::unique_ptr<r_WVB> world_vertex_buffer_;
