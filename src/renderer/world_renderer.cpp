@@ -103,9 +103,38 @@ void r_WorldRenderer::Update()
 		{
 			r_ChunkInfoPtr& chunk_info_ptr= chunks_info_.chunk_matrix[ x + y * chunks_info_.matrix_size[0] ];
 			H_ASSERT( chunk_info_ptr );
+			if( chunk_info_ptr->updated_ )
+			{
+				chunk_info_ptr->GetQuadCount();
 
-			chunk_info_ptr->GetQuadCount();
+				r_WorldVBOClusterPtr cluster=
+					world_vertex_buffer_->GetCluster(
+						chunks_info_.matrix_position[0] + x,
+						chunks_info_.matrix_position[1] + y );
+
+				r_WorldVBOClusterSegment& segment=
+					world_vertex_buffer_->GetClusterSegment(
+						chunks_info_.matrix_position[0] + x,
+						chunks_info_.matrix_position[1] + y );
+
+				segment.vertex_count= chunk_info_ptr->vertex_count_;
+				if( segment.vertex_count > segment.capacity )
+					cluster->buffer_reallocated_= true;
+			}
 		}
+
+	// Scan cluster matrix, find fully-updated.
+	{
+		std::vector< r_WorldVBOClusterPtr >& cluster_matrix= world_vertex_buffer_->cpu_cluster_matrix_;
+		for( unsigned int y= 0; y < world_vertex_buffer_; y++ )
+		for( unsigned int x= 0; x < chunks_info_; x++ )
+		//for( r_WorldVBOClusterPtr& cluster : cluster_matrix )
+		{
+			if( cluster->buffer_reallocated_ )
+			{
+			} // if cluster->buffer_reallocated_
+		} // for clusters
+	}
 }
 
 void r_WorldRenderer::UpdateChunk(unsigned short X,  unsigned short Y )

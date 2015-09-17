@@ -51,12 +51,11 @@ public:
 	void BuildWaterSideMesh();
 	void BuildChunkMesh();
 
-	struct
-	{
-		// pointer to external storage for vertices
-		r_WorldVertex* vb_data= nullptr;
-		unsigned int vertex_count= 0;
-	} chunk_vb_;
+	// Pointer to external storage for vertices.
+	r_WorldVertex* vertex_data_= nullptr;
+	unsigned int vertex_count_= 0;
+	// ChunkInfo is always updated after creation.
+	bool updated_= true;
 
 	//geomentry up and down range borders. Used only for generation of center chunk blocks( not for border blocks )
 	int max_geometry_height_, min_geometry_height_;

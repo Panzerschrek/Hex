@@ -640,7 +640,7 @@ void r_ChunkInfo::GetQuadCount()
 	}
 
 func_end:
-	chunk_vb_.vertex_count= quad_count * 4;
+	vertex_count_= quad_count * 4;
 
 #undef ADD_QUADS
 }
@@ -719,7 +719,7 @@ void r_ChunkInfo::BuildChunkMesh()
 	unsigned char normal_id;
 	unsigned char tex_id, tex_scale, light[2];
 
-	r_WorldVertex* v= chunk_vb_.vb_data;
+	r_WorldVertex* v= vertex_data_;
 	r_WorldVertex tmp_vertex;
 
 	const h_Block* b;

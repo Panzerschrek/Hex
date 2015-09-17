@@ -211,3 +211,35 @@ void r_WVB::MoveCPUMatrix( short longitude, short latitude )
 	cpu_cluster_matrix_coord_[0]= longitude;
 	cpu_cluster_matrix_coord_[1]= latitude ;
 }
+
+
+r_WorldVBOClusterPtr r_WVB::GetCluster( int longitude, int latitude )
+{
+	int x= (longitude - cpu_cluster_matrix_coord_[0]) / cluster_size_[0];
+	int y= (latitude  - cpu_cluster_matrix_coord_[1]) / cluster_size_[1];
+
+	H_ASSERT( x >= 0 && x < cluster_matrix_size_[0] );
+	H_ASSERT( y >= 0 && y < cluster_matrix_size_[1] );
+
+	return cpu_cluster_matrix_[ x + y * cluster_matrix_size_[0] ];
+}
+
+r_WorldVBOClusterSegment& r_WVB::GetClusterSegment( int longitude, int latitude )
+{
+	int d_lon= (longitude - cpu_cluster_matrix_coord_[0]);
+	int d_lat= (latitude  - cpu_cluster_matrix_coord_[1]);
+
+	int cluster_x= d_lon / cluster_size_[0];
+	int cluster_y= d_lat / cluster_size_[1];
+
+	H_ASSERT( x >= 0 && x < cluster_matrix_size_[0] );
+	H_ASSERT( y >= 0 && y < cluster_matrix_size_[1] );
+
+	int segment_x= d_lon - cluster_x * cluster_size_[0];
+	int segment_y= d_lat - cluster_y * cluster_size_[1];
+
+	r_WorldVBOClusterPtr& cluster=
+		cpu_cluster_matrix_[ cluster_x + cluster_y * cluster_matrix_size_[0] ];
+
+	return cluster->segments_[ segment_x + segment_y * cluster_size_[0] ];
+}

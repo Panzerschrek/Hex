@@ -97,6 +97,11 @@ public:
 	// Call in GPU thread. Returns index buffer, and, maybe, create it, if it not exist.
 	GLuint GetIndexBuffer();
 
+	// Call in CPU thread. Returns cluster for longitude and latitude.
+	r_WorldVBOClusterPtr GetCluster( int longitude, int latitude );
+	// Call in CPU thread. Returns cluster segment for chunk with longitude and latitude.
+	r_WorldVBOClusterSegment& GetClusterSegment( int longitude, int latitude );
+
 	// Call in cpu matrix. Moves cpu matrix to position longitude, latitude.
 	void MoveCPUMatrix( short longitude, short latitude );
 
