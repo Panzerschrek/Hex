@@ -639,7 +639,7 @@ void r_WorldRenderer::UpdateChunkMatrixPointers()
 
 			chunk_info_ptr->chunk_= world_->GetChunk( x, y );
 			H_ASSERT( chunk_info_ptr->chunk_ );
-			/* TODO - here are some problems, turn off neighbor, temporary.
+
 			if( x < chunks_info_.matrix_size[0] - 1 )
 				chunk_info_ptr->chunk_right_= world_->GetChunk( x + 1, y );
 			else chunk_info_ptr->chunk_right_= nullptr;
@@ -649,10 +649,9 @@ void r_WorldRenderer::UpdateChunkMatrixPointers()
 			if( y > 0 )
 				chunk_info_ptr->chunk_back_= world_->GetChunk( x, y - 1 );
 			else chunk_info_ptr->chunk_back_= nullptr;
-			if( x > 0 && y < chunks_info_.matrix_size[1] - 1 )
+			if( y > 0 && x < chunks_info_.matrix_size[0] - 1 )
 				chunk_info_ptr->chunk_back_right_= world_->GetChunk( x + 1, y - 1 );
 			else chunk_info_ptr->chunk_back_right_= nullptr;
-			*/
 		}
 }
 
