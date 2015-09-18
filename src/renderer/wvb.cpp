@@ -37,8 +37,13 @@ r_WorldVBOClusterGPU::r_WorldVBOClusterGPU(
 	glGenVertexArrays( 1, &VAO_ );
 	glBindVertexArray( VAO_ );
 
+	glGenBuffers( 1, &VBO_ );
+	glBindBuffer( GL_ARRAY_BUFFER, VBO_ );
+
+	glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, index_buffer );
+
 	unsigned int i= 0;
-	for( const r_VertexFormat::Attribute& attribute : vertex_format.attrbutes )
+	for( const r_VertexFormat::Attribute& attribute : vertex_format.attributes )
 	{
 		glEnableVertexAttribArray(i);
 
@@ -55,11 +60,6 @@ r_WorldVBOClusterGPU::r_WorldVBOClusterGPU(
 
 		i++;
 	}
-
-	glGenBuffers( 1, &VBO_ );
-	glBindBuffer( GL_ARRAY_BUFFER, VBO_ );
-
-	glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, index_buffer );
 }
 
 r_WorldVBOClusterGPU::~r_WorldVBOClusterGPU()
@@ -100,14 +100,17 @@ void r_WorldVBOClusterGPU::UpdateVBO(
 	if( !cluster ) return;
 
 	glBindVertexArray( VAO_ );
+	glBindBuffer( GL_ARRAY_BUFFER, VBO_ ); // TODO - Does this need?
 
 	if( buffer_reallocated_ )
 	{
 		if( cluster->vertices_.size() > 0 )
+		{
 			glBufferData(
 				GL_ARRAY_BUFFER,
 				cluster->vertices_.size(), cluster->vertices_.data(),
 				GL_STATIC_DRAW );
+		}
 	}
 	else
 	{
@@ -132,6 +135,11 @@ void r_WorldVBOClusterGPU::UpdateVBO(
 		segments_[i].updated= false;
 }
 
+void r_WorldVBOClusterGPU::BindVBO()
+{
+	glBindVertexArray( VAO_ );
+}
+
 /*
 ---------------r_WVB-------------------
 */
@@ -139,7 +147,8 @@ void r_WorldVBOClusterGPU::UpdateVBO(
 r_WVB::r_WVB(
 	unsigned int cluster_size_x, unsigned int cluster_size_y,
 	unsigned int cluster_matrix_size_x, unsigned int cluster_matrix_size_y,
-	std::vector<unsigned short> indeces )
+	std::vector<unsigned short> indeces,
+	r_VertexFormat vertex_format )
 	: cluster_size_{ cluster_size_x, cluster_size_y }
 	, cluster_matrix_size_{ cluster_matrix_size_x, cluster_matrix_size_y }
 	, cpu_cluster_matrix_( cluster_matrix_size_x * cluster_matrix_size_y )
@@ -148,6 +157,7 @@ r_WVB::r_WVB(
 	, gpu_cluster_matrix_coord_{ 0, 0 }
 	, index_buffer_( H_BUFFER_OBJECT_NOT_CREATED )
 	, indeces_( std::move(indeces) )
+	, vertex_format_( std::move(vertex_format) )
 {
 	H_ASSERT( cluster_size_x <= H_MAX_CHUNKS_IN_CLUSTER && cluster_size_y <= H_MAX_CHUNKS_IN_CLUSTER );
 
@@ -189,29 +199,66 @@ void r_WVB::MoveCPUMatrix( short longitude, short latitude )
 	std::vector<r_WorldVBOClusterPtr> new_matrix( cluster_matrix_size_[0] * cluster_matrix_size_[1] );
 
 	for( unsigned int y= 0; y < cluster_matrix_size_[1]; y++ )
-		for( unsigned int x= 0; x < cluster_matrix_size_[0]; x++ )
+	for( unsigned int x= 0; x < cluster_matrix_size_[0]; x++ )
+	{
+		int old_x= static_cast<int>(x) + dx;
+		int old_y= static_cast<int>(y) + dy;
+		if( old_x >= 0 && old_x < cluster_matrix_size_[0] &&
+			old_y >= 0 && old_y < cluster_matrix_size_[1] )
 		{
-			int old_x= static_cast<int>(x) + dx;
-			int old_y= static_cast<int>(y) + dy;
-			if( old_x >= 0 && old_x < cluster_matrix_size_[0] &&
-				old_y >= 0 && old_y < cluster_matrix_size_[1] )
-			{
-				new_matrix[x + y * cluster_matrix_size_[0]]=
-					std::move(
-						cpu_cluster_matrix_[ old_x + old_y * cluster_matrix_size_[0] ] );
-			}
-			else
-			{
-				new_matrix[x + y * cluster_matrix_size_[0]]=
-					std::make_shared<r_WorldVBOCluster>();
-			}
+			new_matrix[x + y * cluster_matrix_size_[0]]=
+				std::move(
+					cpu_cluster_matrix_[ old_x + old_y * cluster_matrix_size_[0] ] );
 		}
+		else
+		{
+			new_matrix[x + y * cluster_matrix_size_[0]]=
+				std::make_shared<r_WorldVBOCluster>();
+		}
+	}
 
 	cpu_cluster_matrix_= std::move(new_matrix);
 	cpu_cluster_matrix_coord_[0]= longitude;
 	cpu_cluster_matrix_coord_[1]= latitude ;
 }
 
+void r_WVB::UpdateGPUMatrix( short longitude, short latitude )
+{
+	H_ASSERT( m_Math::ModNonNegativeRemainder( longitude, cluster_size_[0] ) == 0 );
+	H_ASSERT( m_Math::ModNonNegativeRemainder( latitude , cluster_size_[1] ) == 0 );
+
+	int dx= ( longitude - gpu_cluster_matrix_coord_[0] ) / cluster_size_[0];
+	int dy= ( latitude  - gpu_cluster_matrix_coord_[1] ) / cluster_size_[1];
+
+	std::vector<r_WorldVBOClusterGPUPtr> new_matrix( cluster_matrix_size_[0] * cluster_matrix_size_[1] );
+
+	for( unsigned int y= 0; y < cluster_matrix_size_[1]; y++ )
+	for( unsigned int x= 0; x < cluster_matrix_size_[0]; x++ )
+	{
+		int old_x= static_cast<int>(x) + dx;
+		int old_y= static_cast<int>(y) + dy;
+		if( old_x >= 0 && old_x < cluster_matrix_size_[0] &&
+			old_y >= 0 && old_y < cluster_matrix_size_[1] )
+		{
+			r_WorldVBOClusterGPUPtr& gpu_cluster= gpu_cluster_matrix_[ old_x + old_y * cluster_matrix_size_[0] ];
+			if( gpu_cluster )
+			{
+				new_matrix[ x + y * cluster_matrix_size_[0] ]= std::move(gpu_cluster);
+				continue;
+			}
+		}
+
+		new_matrix[ x + y * cluster_matrix_size_[0] ]=
+			std::make_shared<r_WorldVBOClusterGPU>(
+				cpu_cluster_matrix_[ x + y * cluster_matrix_size_[0] ],
+				vertex_format_,
+				GetIndexBuffer());
+	}
+
+	gpu_cluster_matrix_= std::move(new_matrix);
+	gpu_cluster_matrix_coord_[0]= longitude;
+	gpu_cluster_matrix_coord_[1]= latitude ;
+}
 
 r_WorldVBOClusterPtr r_WVB::GetCluster( int longitude, int latitude )
 {

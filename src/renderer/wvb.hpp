@@ -25,7 +25,7 @@ struct r_VertexFormat
 		bool normalized; // for real type
 	};
 
-	std::vector<Attribute> attrbutes;
+	std::vector<Attribute> attributes;
 	// Size of vertex structure, put sizeof(MyVertex) here.
 	unsigned int vertex_size;
 };
@@ -69,6 +69,7 @@ public:
 
 	void SynchroniseSegmentsInfo( unsigned int cluster_size_x, unsigned int cluster_size_y );
 	void UpdateVBO( unsigned int cluster_size_x, unsigned int cluster_size_y );
+	void BindVBO();
 
 private:
 	r_WorldVBOClusterGPU& operator=(const r_WorldVBOClusterGPU&)= delete;
@@ -92,7 +93,8 @@ public:
 	r_WVB(
 		unsigned int cluster_size_x, unsigned int cluster_size_y,
 		unsigned int cluster_matrix_size_x, unsigned int cluster_matrix_size_y,
-		std::vector<unsigned short> indeces );
+		std::vector<unsigned short> indeces,
+		r_VertexFormat vertex_format );
 
 	// Call in GPU thread. Returns index buffer, and, maybe, create it, if it not exist.
 	GLuint GetIndexBuffer();
@@ -102,8 +104,11 @@ public:
 	// Call in CPU thread. Returns cluster segment for chunk with longitude and latitude.
 	r_WorldVBOClusterSegment& GetClusterSegment( int longitude, int latitude );
 
-	// Call in cpu matrix. Moves cpu matrix to position longitude, latitude.
+	// Call in CPU thread. Moves cpu matrix to position longitude, latitude.
 	void MoveCPUMatrix( short longitude, short latitude );
+
+	// Call in GPU thread.
+	void UpdateGPUMatrix( short longitude, short latitude );
 
 	const unsigned int cluster_size_[2];
 	const unsigned int cluster_matrix_size_[2];
@@ -116,4 +121,6 @@ public:
 
 	GLuint index_buffer_;
 	const std::vector<unsigned short> indeces_;
+
+	r_VertexFormat vertex_format_;
 };

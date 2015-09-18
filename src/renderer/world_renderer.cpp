@@ -54,13 +54,48 @@ r_WorldRenderer::r_WorldRenderer(
 			indeces[i+5]= v + 3;
 		}
 
+		r_VertexFormat format;
+		format.vertex_size= sizeof(r_WorldVertex);
+
+		r_WorldVertex v;
+		r_VertexFormat::Attribute attrib;
+
+		attrib.type= r_VertexFormat::Attribute::TypeInShader::Real;
+		attrib.input_type= GL_SHORT;
+		attrib.components= 3;
+		attrib.offset= (char*)v.coord - (char*)&v;
+		attrib.normalized= false;
+		format.attributes.push_back(attrib);
+
+		attrib.type= r_VertexFormat::Attribute::TypeInShader::Real;
+		attrib.input_type= GL_SHORT;
+		attrib.components= 3;
+		attrib.offset= (char*)v.tex_coord - (char*)&v;
+		attrib.normalized= false;
+		format.attributes.push_back(attrib);
+
+		attrib.type= r_VertexFormat::Attribute::TypeInShader::Integer;
+		attrib.input_type= GL_UNSIGNED_BYTE;
+		attrib.components= 1;
+		attrib.offset= (char*)&v.normal_id - (char*)&v;
+		attrib.normalized= false;
+		format.attributes.push_back(attrib);
+
+		attrib.type= r_VertexFormat::Attribute::TypeInShader::Real;
+		attrib.input_type= GL_UNSIGNED_BYTE;
+		attrib.components= 2;
+		attrib.offset= (char*)v.light - (char*)&v;
+		attrib.normalized= false;
+		format.attributes.push_back(attrib);
+
 		world_vertex_buffer_.reset(
 			new r_WVB(
 				cluster_size[0],
 				cluster_size[1],
 				world_->ChunkNumberX() / cluster_size[0] + 2,
 				world_->ChunkNumberY() / cluster_size[1] + 2,
-				std::move(indeces) ));
+				std::move(indeces),
+				std::move(format) ));
 	}
 }
 
@@ -162,10 +197,11 @@ void r_WorldRenderer::Update()
 						cm_y >= 0 && cm_y < chunks_info_.matrix_size[1] )
 						chunk_info_ptr= chunks_info_.chunk_matrix[ cm_x + cm_y * chunks_info_.matrix_size[0] ].get();
 
-					if( chunk_info_ptr && !chunk_info_ptr->updated_ && chunk_info_ptr->vertex_data_ )
+					if( chunk_info_ptr && !chunk_info_ptr->updated_ )
 					{
 						//TODO - copying, now - only set update flag.
 						chunk_info_ptr->updated_= true;
+						if( chunk_info_ptr->vertex_data_ ) {}
 						/*	memcpy(
 							new_vertices.data() + offset * sizeof(r_WorldVertex),
 							chunk_info_ptr->vertex_data_,
@@ -185,6 +221,9 @@ void r_WorldRenderer::Update()
 		} // for clusters
 	}
 
+	// For statistics.
+	unsigned int chunks_rebuilded= 0;
+
 	// Scan chunks matrix, rebuild updated chunks.
 	for( unsigned int y= 0; y < chunks_info_.matrix_size[1]; y++ )
 	for( unsigned int x= 0; x < chunks_info_.matrix_size[0]; x++ )
@@ -194,6 +233,7 @@ void r_WorldRenderer::Update()
 		if( chunk_info_ptr->updated_ )
 		{
 			chunk_info_ptr->BuildChunkMesh();
+			chunks_rebuilded++;
 
 			r_WorldVBOClusterSegment& segment=
 				wvb->GetClusterSegment(
@@ -206,14 +246,18 @@ void r_WorldRenderer::Update()
 			segment.updated= true;
 		}
 	}
+
+	(void) chunks_rebuilded;
 }
 
 void r_WorldRenderer::UpdateChunk(unsigned short X,  unsigned short Y )
 {
-	/*if( frames_counter_.GetTotalTicks() == 0 )
-		return;
-	else
-		chunk_info_[ X + Y * world_->ChunkNumberX() ].chunk_data_updated_= true;*/
+	H_ASSERT( X >= 0 && X < chunks_info_.matrix_size[0] );
+	H_ASSERT( Y >= 0 && Y < chunks_info_.matrix_size[1] );
+	H_ASSERT( world_->Longitude() == chunks_info_.matrix_position[0] );
+	H_ASSERT( world_->Latitude () == chunks_info_.matrix_position[1] );
+
+	chunks_info_.chunk_matrix[ X + Y * chunks_info_.matrix_size[0] ]->updated_= true;
 }
 
 void r_WorldRenderer::UpdateChunkWater(unsigned short X,  unsigned short Y )
@@ -281,16 +325,16 @@ void r_WorldRenderer::Draw()
 	CalculateLight();
 
 	//supersampling_buffer.Bind();
-	//glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT );
+	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT );
 
 	BuildChunkList();
 	DrawWorld();
-	DrawSky();
-	DrawSun();
-	weather_effects_particle_manager_.Draw( view_matrix_, cam_pos_ );
+	//DrawSky();
+	//DrawSun();
+	//weather_effects_particle_manager_.Draw( view_matrix_, cam_pos_ );
 
 	DrawBuildPrism();
-	DrawWater();
+	//DrawWater();
 
 	/*r_Framebuffer::BindScreenFramebuffer();
 	r_OGLStateManager::DisableBlend();
@@ -389,6 +433,30 @@ void r_WorldRenderer::DrawWorld()
 						glDrawElementsBaseVertex( GL_TRIANGLES, ch->vertex_count_ * 6 / 4, GL_UNSIGNED_SHORT, nullptr, ch->vbo_offset_ );
 				}
 		}*/
+
+	r_WVB* wvb= world_vertex_buffer_.get();
+	for( unsigned int cy= 0; cy < wvb->cluster_matrix_size_[1]; cy++ )
+	for( unsigned int cx= 0; cx < wvb->cluster_matrix_size_[0]; cx++ )
+	{
+		r_WorldVBOClusterGPUPtr& cluster= wvb->gpu_cluster_matrix_[ cx + cy * wvb->cluster_matrix_size_[0] ];
+		if( !cluster ) continue;
+
+		cluster->BindVBO();
+
+		for( unsigned int y= 0; y < wvb->cluster_size_[1]; y++ )
+		for( unsigned int x= 0; x < wvb->cluster_size_[0]; x++ )
+		{
+			r_WorldVBOClusterSegment& segment= cluster->segments_[ x + y * wvb->cluster_size_[0] ];
+			if( segment.vertex_count > 0 )
+			{
+				glDrawElementsBaseVertex(
+					GL_TRIANGLES,
+					segment.vertex_count * 6 / 4,
+					GL_UNSIGNED_SHORT,
+					nullptr, segment.first_vertex_index );
+			}
+		}
+	}
 }
 
 void r_WorldRenderer::DrawSky()
@@ -688,6 +756,17 @@ void r_WorldRenderer::MoveChunkMatrix( int longitude, int latitude )
 
 void r_WorldRenderer::UpdateGPUData()
 {
+	std::unique_lock<std::mutex> lock(world_vertex_buffer_mutex_);
+
+	r_WVB* wvb= world_vertex_buffer_.get();
+
+	wvb->UpdateGPUMatrix( wvb->cpu_cluster_matrix_coord_[0], wvb->cpu_cluster_matrix_coord_[1] );
+
+	for( r_WorldVBOClusterGPUPtr& cluster : wvb->gpu_cluster_matrix_ )
+	{
+		cluster->SynchroniseSegmentsInfo( wvb->cluster_size_[0], wvb->cluster_size_[1] );
+		cluster->UpdateVBO( wvb->cluster_size_[0], wvb->cluster_size_[1] );
+	}
 }
 
 void r_WorldRenderer::InitGL()
