@@ -39,7 +39,8 @@ r_WorldRenderer::r_WorldRenderer(
 
 	// Create world vertex buffer
 	{
-		unsigned int cluster_size[2] { 4, 6 };
+		// TODO - profile this and select optimal cluster size.
+		unsigned int cluster_size[2] { 3, 3 };
 
 		// Quad indexation
 		unsigned int quad_count= 65536 / 6 - 1;
@@ -97,6 +98,9 @@ r_WorldRenderer::r_WorldRenderer(
 				std::move(indeces),
 				std::move(format) ));
 	}
+
+	// Set actual world position.
+	UpdateWorldPosition( world_->Longitude(), world_->Latitude() );
 }
 
 r_WorldRenderer::~r_WorldRenderer()
@@ -111,27 +115,6 @@ void r_WorldRenderer::Update()
 	const std::unique_lock<std::mutex> wb_lock( world_vertex_buffer_mutex_ );
 
 	r_WVB* wvb= world_vertex_buffer_.get();
-
-	// Move our chunk matrix.
-	MoveChunkMatrix( world_->Longitude(), world_->Latitude() );
-
-	// Calculate position of cluster matrix, move it.
-	unsigned int cluster_matrix_coord[2]=
-	{
-		wvb->cluster_size_[0] *
-		m_Math::DivNonNegativeRemainder(
-			world_->Longitude(),
-			wvb->cluster_size_[0] ),
-
-		wvb->cluster_size_[1] *
-		m_Math::DivNonNegativeRemainder(
-			world_->Latitude (),
-			wvb->cluster_size_[1] )
-	};
-
-	wvb->MoveCPUMatrix(
-		cluster_matrix_coord[0],
-		cluster_matrix_coord[1] );
 
 	// Scan chunks matrix, calculate quads count.
 	for( unsigned int y= 0; y < chunks_info_.matrix_size[1]; y++ )
@@ -247,7 +230,7 @@ void r_WorldRenderer::Update()
 		}
 	}
 
-	(void) chunks_rebuilded;
+	chunks_updates_counter_.Tick( chunks_rebuilded );
 }
 
 void r_WorldRenderer::UpdateChunk(unsigned short X,  unsigned short Y )
@@ -262,14 +245,32 @@ void r_WorldRenderer::UpdateChunk(unsigned short X,  unsigned short Y )
 
 void r_WorldRenderer::UpdateChunkWater(unsigned short X,  unsigned short Y )
 {
-	/*if( frames_counter_.GetTotalTicks() == 0 )
-		return;
-	else
-		chunk_info_[ X + Y * world_->ChunkNumberX() ].chunk_water_data_updated_= true;*/
 }
 
-void r_WorldRenderer::FullUpdate()
+void r_WorldRenderer::UpdateWorldPosition( int longitude, int latitude )
 {
+	r_WVB* wvb= world_vertex_buffer_.get();
+
+	// Move our chunk matrix.
+	MoveChunkMatrix( longitude, latitude );
+
+	// Calculate position of cluster matrix, move it.
+	unsigned int cluster_matrix_coord[2]=
+	{
+		wvb->cluster_size_[0] *
+		m_Math::DivNonNegativeRemainder(
+			world_->Longitude(),
+			wvb->cluster_size_[0] ),
+
+		wvb->cluster_size_[1] *
+		m_Math::DivNonNegativeRemainder(
+			world_->Latitude (),
+			wvb->cluster_size_[1] )
+	};
+
+	wvb->MoveCPUMatrix(
+		cluster_matrix_coord[0],
+		cluster_matrix_coord[1] );
 }
 
 void r_WorldRenderer::CalculateMatrices()
@@ -329,7 +330,7 @@ void r_WorldRenderer::Draw()
 
 	BuildChunkList();
 	DrawWorld();
-	//DrawSky();
+	DrawSky();
 	//DrawSun();
 	//weather_effects_particle_manager_.Draw( view_matrix_, cam_pos_ );
 
@@ -351,7 +352,7 @@ void r_WorldRenderer::Draw()
 	{
 		float text_scale= 0.25f;
 		text_manager_->AddMultiText( 0, 0, text_scale, r_Text::default_color, "fps: %d", frames_counter_.GetTicksFrequency() );
-		text_manager_->AddMultiText( 0, 1, text_scale, r_Text::default_color, "update ticks per second: %d",updates_counter_.GetTicksFrequency() );
+		text_manager_->AddMultiText( 0, 1, text_scale, r_Text::default_color, "chunk updates per second: %d", chunks_updates_counter_.GetTicksFrequency() );
 		text_manager_->AddMultiText( 0, 2, text_scale, r_Text::default_color, "cam pos: %4.1f %4.1f %4.1f",
 									cam_pos_.x, cam_pos_.y, cam_pos_.z );
 
@@ -728,7 +729,7 @@ void r_WorldRenderer::MoveChunkMatrix( int longitude, int latitude )
 	int dx= longitude - chunks_info_.matrix_position[0];
 	int dy= latitude  - chunks_info_.matrix_position[1];
 
-	if( dx && dy )
+	if( dx == 0 && dy == 0 )
 		return;
 
 	std::vector< r_ChunkInfoPtr > new_matrix( chunks_info_.matrix_size[0] * chunks_info_.matrix_size[1] );
@@ -740,8 +741,8 @@ void r_WorldRenderer::MoveChunkMatrix( int longitude, int latitude )
 
 			int old_x= x + dx;
 			int old_y= y + dy;
-			if( old_x >= 0 && old_x < chunks_info_.matrix_size[0] &&
-				old_y >= 0 && old_y < chunks_info_.matrix_size[1] )
+			if( old_x >= 0 && old_x < (int)chunks_info_.matrix_size[0] &&
+				old_y >= 0 && old_y < (int)chunks_info_.matrix_size[1] )
 				chunk_info_ptr= std::move( chunks_info_.chunk_matrix[ old_x + old_y * chunks_info_.matrix_size[0] ] );
 			else
 				chunk_info_ptr.reset( new r_ChunkInfo() );

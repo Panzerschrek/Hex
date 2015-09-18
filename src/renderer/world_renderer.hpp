@@ -99,7 +99,7 @@ public: // r_IWorldRenderer
 	virtual void Update() override;
 	virtual void UpdateChunk( unsigned short, unsigned short ) override;
 	virtual void UpdateChunkWater( unsigned short, unsigned short ) override;
-	virtual void FullUpdate() override;
+	virtual void UpdateWorldPosition( int longitude, int latitude ) override;
 
 public:
 	void Draw();
@@ -144,7 +144,7 @@ private:
 	const h_WorldConstPtr world_;
 
 	h_TicksCounter frames_counter_;
-	h_TicksCounter updates_counter_;
+	h_TicksCounter chunks_updates_counter_;
 
 	// Shaders
 	r_GLSLProgram world_shader_, build_prism_shader_, water_shader_, skybox_shader_, sun_shader_, console_bg_shader_, supersampling_final_shader_;

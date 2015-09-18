@@ -193,18 +193,18 @@ void r_WVB::MoveCPUMatrix( short longitude, short latitude )
 		latitude  == cpu_cluster_matrix_coord_[1] )
 		return;
 
-	int dx= ( longitude - cpu_cluster_matrix_coord_[0] ) / cluster_size_[0];
-	int dy= ( latitude  - cpu_cluster_matrix_coord_[1] ) / cluster_size_[1];
+	int dx= ( longitude - cpu_cluster_matrix_coord_[0] ) / (int)cluster_size_[0];
+	int dy= ( latitude  - cpu_cluster_matrix_coord_[1] ) / (int)cluster_size_[1];
 
 	std::vector<r_WorldVBOClusterPtr> new_matrix( cluster_matrix_size_[0] * cluster_matrix_size_[1] );
 
-	for( unsigned int y= 0; y < cluster_matrix_size_[1]; y++ )
-	for( unsigned int x= 0; x < cluster_matrix_size_[0]; x++ )
+	for( int y= 0; y < (int)cluster_matrix_size_[1]; y++ )
+	for( int x= 0; x < (int)cluster_matrix_size_[0]; x++ )
 	{
-		int old_x= static_cast<int>(x) + dx;
-		int old_y= static_cast<int>(y) + dy;
-		if( old_x >= 0 && old_x < cluster_matrix_size_[0] &&
-			old_y >= 0 && old_y < cluster_matrix_size_[1] )
+		int old_x= x + dx;
+		int old_y= y + dy;
+		if( old_x >= 0 && old_x < (int)cluster_matrix_size_[0] &&
+			old_y >= 0 && old_y < (int)cluster_matrix_size_[1] )
 		{
 			new_matrix[x + y * cluster_matrix_size_[0]]=
 				std::move(
@@ -227,18 +227,18 @@ void r_WVB::UpdateGPUMatrix( short longitude, short latitude )
 	H_ASSERT( m_Math::ModNonNegativeRemainder( longitude, cluster_size_[0] ) == 0 );
 	H_ASSERT( m_Math::ModNonNegativeRemainder( latitude , cluster_size_[1] ) == 0 );
 
-	int dx= ( longitude - gpu_cluster_matrix_coord_[0] ) / cluster_size_[0];
-	int dy= ( latitude  - gpu_cluster_matrix_coord_[1] ) / cluster_size_[1];
+	int dx= ( longitude - gpu_cluster_matrix_coord_[0] ) / (int)cluster_size_[0];
+	int dy= ( latitude  - gpu_cluster_matrix_coord_[1] ) / (int)cluster_size_[1];
 
 	std::vector<r_WorldVBOClusterGPUPtr> new_matrix( cluster_matrix_size_[0] * cluster_matrix_size_[1] );
 
-	for( unsigned int y= 0; y < cluster_matrix_size_[1]; y++ )
-	for( unsigned int x= 0; x < cluster_matrix_size_[0]; x++ )
+	for( int y= 0; y < (int)cluster_matrix_size_[1]; y++ )
+	for( int x= 0; x < (int)cluster_matrix_size_[0]; x++ )
 	{
-		int old_x= static_cast<int>(x) + dx;
-		int old_y= static_cast<int>(y) + dy;
-		if( old_x >= 0 && old_x < cluster_matrix_size_[0] &&
-			old_y >= 0 && old_y < cluster_matrix_size_[1] )
+		int old_x= x + dx;
+		int old_y= y + dy;
+		if( old_x >= 0 && old_x < (int)cluster_matrix_size_[0] &&
+			old_y >= 0 && old_y < (int)cluster_matrix_size_[1] )
 		{
 			r_WorldVBOClusterGPUPtr& gpu_cluster= gpu_cluster_matrix_[ old_x + old_y * cluster_matrix_size_[0] ];
 			if( gpu_cluster )

@@ -13,10 +13,10 @@ h_TicksCounter::~h_TicksCounter()
 {
 }
 
-void h_TicksCounter::Tick()
+void h_TicksCounter::Tick( unsigned int count )
 {
-	total_ticks_++;
-	current_sample_ticks_++;
+	total_ticks_+= count;
+	current_sample_ticks_+= count;
 
 	time_t current_time= std::clock();
 	time_t dt= current_time - last_update_time_;

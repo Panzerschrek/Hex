@@ -348,9 +348,31 @@ void h_World::MoveWorld( h_WorldMoveDirection dir )
 		break;
 	};
 
+	// Mark for renderer near-border chunks as updated.
 	r_IWorldRendererPtr renderer= renderer_.lock();
 	if( renderer != nullptr )
-		renderer->FullUpdate();
+	{
+		renderer->UpdateWorldPosition( longitude_, latitude_ );
+
+		switch( dir )
+		{
+		case NORTH:
+			for( i= 0; i< chunk_number_x_; i++ ) renderer->UpdateChunk( i, chunk_number_y_ - 2 );
+			break;
+
+		case SOUTH:
+			for( i= 0; i< chunk_number_x_; i++ ) renderer->UpdateChunk( i, 1 );
+			break;
+
+		case EAST:
+			for( j= 0; j< chunk_number_y_; j++ ) renderer->UpdateChunk( chunk_number_x_ - 2, j );
+			break;
+
+		case WEST:
+			for( j= 0; j< chunk_number_y_; j++ ) renderer->UpdateChunk( 1, j );
+			break;
+		};
+	}
 }
 
 void h_World::SaveChunk( h_Chunk* ch )
