@@ -119,8 +119,6 @@ private:
 	void LoadTextures();
 	void InitFrameBuffers();
 	void InitVertexBuffers();
-	void BuildWorld();
-	void BuildWorldWater();
 
 	// Recalc pointers to parent h_Chunk and his neighbors.
 	void UpdateChunkMatrixPointers();
@@ -130,7 +128,6 @@ private:
 
 	void CalculateMatrices();
 	void CalculateLight();
-	void BuildChunkList();
 
 	void DrawBuildPrism();
 	void DrawWorld();
