@@ -450,6 +450,14 @@ void r_WorldRenderer::DrawWorld()
 		for( unsigned int y= 0; y < wvb->cluster_size_[1]; y++ )
 		for( unsigned int x= 0; x < wvb->cluster_size_[0]; x++ )
 		{
+			// Reject invisible chunk in cluster.
+			// Not thread safe, because uses chunks_info_.matrix_position.
+			int cm_x= int(x + cx * wvb->cluster_size_[0]) + wvb->gpu_cluster_matrix_coord_[0] - chunks_info_.matrix_position[0];
+			int cm_y= int(y + cy * wvb->cluster_size_[1]) + wvb->gpu_cluster_matrix_coord_[1] - chunks_info_.matrix_position[1];
+			if( cm_x < 0 || cm_x >= (int)chunks_info_.matrix_size[0] ||
+				cm_y < 0 || cm_y >= (int)chunks_info_.matrix_size[1] )
+				continue;
+
 			r_WorldVBOClusterSegment& segment= cluster->segments_[ x + y * wvb->cluster_size_[0] ];
 			if( segment.vertex_count > 0 )
 			{
