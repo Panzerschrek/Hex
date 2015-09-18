@@ -170,8 +170,8 @@ void r_WorldRenderer::Update()
 				for( unsigned int x= 0; x < wvb->cluster_size_[0]; x++ )
 				{
 					r_WorldVBOClusterSegment& segment= cluster->segments_[ x + y * wvb->cluster_size_[0] ];
-					int longitude= x + cx * wvb->cluster_size_[0] + wvb->cpu_cluster_matrix_coord_[0];
-					int latitude = y + cy * wvb->cluster_size_[1] + wvb->cpu_cluster_matrix_coord_[1];
+					int longitude= int(x + cx * wvb->cluster_size_[0]) + wvb->cpu_cluster_matrix_coord_[0];
+					int latitude = int(y + cy * wvb->cluster_size_[1]) + wvb->cpu_cluster_matrix_coord_[1];
 
 					int cm_x= longitude - chunks_info_.matrix_position[0];
 					int cm_y= latitude  - chunks_info_.matrix_position[1];
@@ -190,9 +190,6 @@ void r_WorldRenderer::Update()
 							chunk_info_ptr->vertex_data_,
 							segment.vertex_count * sizeof(r_WorldVertex) );*/
 					}
-					if( chunk_info_ptr )
-						chunk_info_ptr->vertex_data_=
-							reinterpret_cast<r_WorldVertex*>( new_vertices.data() + offset * sizeof(r_WorldVertex) );
 
 					segment.first_vertex_index= offset;
 					offset+= segment.capacity;
@@ -215,13 +212,19 @@ void r_WorldRenderer::Update()
 		H_ASSERT( chunk_info_ptr );
 		if( chunk_info_ptr->updated_ )
 		{
-			chunk_info_ptr->BuildChunkMesh();
 			chunks_rebuilded++;
 
+			int longitude= chunks_info_.matrix_position[0] + (int)x;
+			int latitude = chunks_info_.matrix_position[1] + (int)y;
 			r_WorldVBOClusterSegment& segment=
-				wvb->GetClusterSegment(
-					chunks_info_.matrix_position[0] + x,
-					chunks_info_.matrix_position[1] + y );
+				wvb->GetClusterSegment( longitude, latitude );
+			r_WorldVBOClusterPtr cluster=
+				wvb->GetCluster( longitude, latitude );
+
+			chunk_info_ptr->vertex_data_=
+				reinterpret_cast<r_WorldVertex*>(
+				 cluster->vertices_.data() + segment.first_vertex_index * sizeof(r_WorldVertex) );
+			chunk_info_ptr->BuildChunkMesh();
 
 			// Finally, reset updated flag.
 			chunk_info_ptr->updated_= false;
