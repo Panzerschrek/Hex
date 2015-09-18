@@ -85,7 +85,7 @@ public:
 	r_WorldVBOClusterSegment segments_[ H_MAX_CHUNKS_IN_CLUSTER * H_MAX_CHUNKS_IN_CLUSTER ];
 };
 
-typedef std::shared_ptr<r_WorldVBOClusterGPU> r_WorldVBOClusterGPUPtr;
+typedef std::unique_ptr<r_WorldVBOClusterGPU> r_WorldVBOClusterGPUPtr;
 
 class r_WVB
 {
