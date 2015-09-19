@@ -29,17 +29,17 @@ void h_World::GetForwardVertexLight( short x, short y, short z, unsigned char* o
 	//current block
 	ch= GetChunk( x >> H_CHUNK_WIDTH_LOG2, y >> H_CHUNK_WIDTH_LOG2 );
 	addr= BlockAddr( x& (H_CHUNK_WIDTH-1), y&(H_CHUNK_WIDTH-1), z );
-	if( ch->transparency[addr] != TRANSPARENCY_SOLID )
+	if( ch->transparency_[addr] != TRANSPARENCY_SOLID )
 	{
-		light[0]+= ch->sun_light_map[ addr ];
-		light[1]+= ch->fire_light_map[ addr ];
+		light[0]+= ch->sun_light_map_ [ addr ];
+		light[1]+= ch->fire_light_map_[ addr ];
 		block_count++;
 	}
 	addr++;
-	if( ch->transparency[addr] != TRANSPARENCY_SOLID )
+	if( ch->transparency_[addr] != TRANSPARENCY_SOLID )
 	{
-		light[0]+= ch->sun_light_map[ addr ];
-		light[1]+= ch->fire_light_map[ addr ];
+		light[0]+= ch->sun_light_map_ [ addr ];
+		light[1]+= ch->fire_light_map_[ addr ];
 		block_count++;
 	}
 
@@ -47,17 +47,17 @@ void h_World::GetForwardVertexLight( short x, short y, short z, unsigned char* o
 	y1= y+1;
 	ch= GetChunk( x >> H_CHUNK_WIDTH_LOG2, y1 >> H_CHUNK_WIDTH_LOG2 );
 	addr= BlockAddr( x& (H_CHUNK_WIDTH-1), y1&(H_CHUNK_WIDTH-1), z );
-	if( ch->transparency[addr] != TRANSPARENCY_SOLID )
+	if( ch->transparency_[addr] != TRANSPARENCY_SOLID )
 	{
-		light[0]+= ch->sun_light_map[ addr ];
-		light[1]+= ch->fire_light_map[ addr ];
+		light[0]+= ch->sun_light_map_ [ addr ];
+		light[1]+= ch->fire_light_map_[ addr ];
 		block_count++;
 	}
 	addr++;
-	if( ch->transparency[addr] != TRANSPARENCY_SOLID )
+	if( ch->transparency_[addr] != TRANSPARENCY_SOLID )
 	{
-		light[0]+= ch->sun_light_map[ addr ];
-		light[1]+= ch->fire_light_map[ addr ];
+		light[0]+= ch->sun_light_map_ [ addr ];
+		light[1]+= ch->fire_light_map_[ addr ];
 		block_count++;
 	}
 
@@ -66,22 +66,20 @@ void h_World::GetForwardVertexLight( short x, short y, short z, unsigned char* o
 	y1= y + ((x+1)&1);
 	ch= GetChunk( x1 >> H_CHUNK_WIDTH_LOG2, y1 >> H_CHUNK_WIDTH_LOG2 );
 	addr= BlockAddr( x1& (H_CHUNK_WIDTH-1), y1&(H_CHUNK_WIDTH-1), z );
-	if( ch->transparency[addr] != TRANSPARENCY_SOLID )
+	if( ch->transparency_[addr] != TRANSPARENCY_SOLID )
 	{
-		light[0]+= ch->sun_light_map[ addr ];
-		light[1]+= ch->fire_light_map[ addr ];
+		light[0]+= ch->sun_light_map_ [ addr ];
+		light[1]+= ch->fire_light_map_[ addr ];
 		block_count++;
 	}
 	addr++;
-	if( ch->transparency[addr] != TRANSPARENCY_SOLID )
+	if( ch->transparency_[addr] != TRANSPARENCY_SOLID )
 	{
-		light[0]+= ch->sun_light_map[ addr ];
-		light[1]+= ch->fire_light_map[ addr ];
+		light[0]+= ch->sun_light_map_ [ addr ];
+		light[1]+= ch->fire_light_map_[ addr ];
 		block_count++;
 	}
 
-	// out_light[0]= (unsigned char)( ( ((unsigned short)(light[0])) * ( 13 + block_count ) ) / block_count  );
-	// out_light[1]= (unsigned char)( ( ((unsigned short)(light[1])) * ( 13 + block_count ) ) / block_count  );
 	out_light[0]= ( ( (unsigned int)light[0] ) * vertex_light_div_table[ block_count ] )>> 16;
 	out_light[1]= ( ( (unsigned int)light[1] ) * vertex_light_div_table[ block_count ] )>> 16;
 }
@@ -97,17 +95,17 @@ void h_World::GetBackVertexLight( short x, short y, short z, unsigned char* out_
 	//current block
 	ch= GetChunk( x >> H_CHUNK_WIDTH_LOG2, y >> H_CHUNK_WIDTH_LOG2 );
 	addr= BlockAddr( x& (H_CHUNK_WIDTH-1), y&(H_CHUNK_WIDTH-1), z );
-	if( ch->transparency[addr] != TRANSPARENCY_SOLID )
+	if( ch->transparency_[addr] != TRANSPARENCY_SOLID )
 	{
-		light[0]+= ch->sun_light_map[ addr ];
-		light[1]+= ch->fire_light_map[ addr ];
+		light[0]+= ch->sun_light_map_ [ addr ];
+		light[1]+= ch->fire_light_map_[ addr ];
 		block_count++;
 	}
 	addr++;
-	if( ch->transparency[addr] != TRANSPARENCY_SOLID )
+	if( ch->transparency_[addr] != TRANSPARENCY_SOLID )
 	{
-		light[0]+= ch->sun_light_map[ addr ];
-		light[1]+= ch->fire_light_map[ addr ];
+		light[0]+= ch->sun_light_map_ [ addr ];
+		light[1]+= ch->fire_light_map_[ addr ];
 		block_count++;
 	}
 
@@ -115,17 +113,17 @@ void h_World::GetBackVertexLight( short x, short y, short z, unsigned char* out_
 	y1= y-1;
 	ch= GetChunk( x >> H_CHUNK_WIDTH_LOG2, y1 >> H_CHUNK_WIDTH_LOG2 );
 	addr= BlockAddr( x& (H_CHUNK_WIDTH-1), y1&(H_CHUNK_WIDTH-1), z );
-	if( ch->transparency[addr] != TRANSPARENCY_SOLID )
+	if( ch->transparency_[addr] != TRANSPARENCY_SOLID )
 	{
-		light[0]+= ch->sun_light_map[ addr ];
-		light[1]+= ch->fire_light_map[ addr ];
+		light[0]+= ch->sun_light_map_ [ addr ];
+		light[1]+= ch->fire_light_map_[ addr ];
 		block_count++;
 	}
 	addr++;
-	if( ch->transparency[addr] != TRANSPARENCY_SOLID )
+	if( ch->transparency_[addr] != TRANSPARENCY_SOLID )
 	{
-		light[0]+= ch->sun_light_map[ addr ];
-		light[1]+= ch->fire_light_map[ addr ];
+		light[0]+= ch->sun_light_map_ [ addr ];
+		light[1]+= ch->fire_light_map_[ addr ];
 		block_count++;
 	}
 
@@ -134,22 +132,20 @@ void h_World::GetBackVertexLight( short x, short y, short z, unsigned char* out_
 	y1= y - (x&1);
 	ch= GetChunk( x1 >> H_CHUNK_WIDTH_LOG2, y1 >> H_CHUNK_WIDTH_LOG2 );
 	addr= BlockAddr( x1& (H_CHUNK_WIDTH-1), y1&(H_CHUNK_WIDTH-1), z );
-	if( ch->transparency[addr] != TRANSPARENCY_SOLID )
+	if( ch->transparency_[addr] != TRANSPARENCY_SOLID )
 	{
-		light[0]+= ch->sun_light_map[ addr ];
-		light[1]+= ch->fire_light_map[ addr ];
+		light[0]+= ch->sun_light_map_ [ addr ];
+		light[1]+= ch->fire_light_map_[ addr ];
 		block_count++;
 	}
 	addr++;
-	if( ch->transparency[addr] != TRANSPARENCY_SOLID )
+	if( ch->transparency_[addr] != TRANSPARENCY_SOLID )
 	{
-		light[0]+= ch->sun_light_map[ addr ];
-		light[1]+= ch->fire_light_map[ addr ];
+		light[0]+= ch->sun_light_map_ [ addr ];
+		light[1]+= ch->fire_light_map_[ addr ];
 		block_count++;
 	}
 
-	//out_light[0]= (unsigned char)( ( ((unsigned short)(light[0])) * ( 13 + block_count ) ) / block_count  );
-	//out_light[1]= (unsigned char)( ( ((unsigned short)(light[1])) * ( 13 + block_count ) ) / block_count  );
 	out_light[0]= ( ( (unsigned int)light[0] ) * vertex_light_div_table[ block_count ] )>> 16;
 	out_light[1]= ( ( (unsigned int)light[1] ) * vertex_light_div_table[ block_count ] )>> 16;
 }
@@ -157,13 +153,13 @@ void h_World::GetBackVertexLight( short x, short y, short z, unsigned char* out_
 void h_World::SetSunLightLevel( short x, short y, short z, unsigned char l )
 {
 	GetChunk( x >> H_CHUNK_WIDTH_LOG2, y>> H_CHUNK_WIDTH_LOG2 )->
-	sun_light_map[ BlockAddr(  x& (H_CHUNK_WIDTH-1), y& (H_CHUNK_WIDTH-1), z ) ]= l;
+	sun_light_map_[ BlockAddr(  x& (H_CHUNK_WIDTH-1), y& (H_CHUNK_WIDTH-1), z ) ]= l;
 }
 
 void h_World::SetFireLightLevel( short x, short y, short z, unsigned char l )
 {
 	GetChunk( x >> H_CHUNK_WIDTH_LOG2, y>> H_CHUNK_WIDTH_LOG2 )->
-	fire_light_map[ BlockAddr(  x& (H_CHUNK_WIDTH-1), y& (H_CHUNK_WIDTH-1), z ) ]= l;
+	fire_light_map_[ BlockAddr(  x& (H_CHUNK_WIDTH-1), y& (H_CHUNK_WIDTH-1), z ) ]= l;
 }
 
 void h_World::LightWorld()
@@ -254,7 +250,7 @@ short h_World::RelightBlockAdd( short x, short y, short z )
 		{
 			h_Chunk* ch= GetChunk( i>> H_CHUNK_WIDTH_LOG2, j>> H_CHUNK_WIDTH_LOG2 );
 			short local_i= i & ( H_CHUNK_WIDTH-1), local_j= j & ( H_CHUNK_WIDTH-1);
-			unsigned char* sun_light_map= ch->sun_light_map + BlockAddr( local_i, local_j, H_CHUNK_HEIGHT-2 );
+			unsigned char* sun_light_map= ch->sun_light_map_ + BlockAddr( local_i, local_j, H_CHUNK_HEIGHT-2 );
 			for( k= H_CHUNK_HEIGHT-2; k> 0; k--, sun_light_map-- )
 			{
 				if( ch->GetBlock( local_i, local_j, k )->Type() != AIR )
@@ -343,7 +339,7 @@ void h_World::RelightBlockRemove( short x, short y, short z )
 	h_Chunk* ch= GetChunk( x>> H_CHUNK_WIDTH_LOG2, y>> H_CHUNK_WIDTH_LOG2 );
 	x1= x& ( H_CHUNK_WIDTH-1);
 	y1= y& ( H_CHUNK_WIDTH-1);
-	unsigned char* lightmap= &ch->sun_light_map[ BlockAddr( x1, y1, H_CHUNK_HEIGHT-2 ) ];
+	unsigned char* lightmap= &ch->sun_light_map_[ BlockAddr( x1, y1, H_CHUNK_HEIGHT-2 ) ];
 	for( z1= H_CHUNK_HEIGHT-2; z1>0 ; z1--, lightmap-- )
 	{
 		if( ch->GetBlock( x1, y1, z1 )->Type() != AIR )
@@ -384,7 +380,7 @@ void h_World::AddSunLight_r( short x, short y, short z, unsigned char l )
 
 	addr= BlockAddr( x & ( H_CHUNK_WIDTH - 1 ), y & ( H_CHUNK_WIDTH - 1 ), z );
 	ch= GetChunk( x >> H_CHUNK_WIDTH_LOG2, y >> H_CHUNK_WIDTH_LOG2 );
-	ch->sun_light_map[ addr ]= l;
+	ch->sun_light_map_[ addr ]= l;
 
 	if( l <= 1 )
 		return;
@@ -392,51 +388,51 @@ void h_World::AddSunLight_r( short x, short y, short z, unsigned char l )
 
 	//upper block
 	addr++;
-	if( ch->sun_light_map[addr] < l1 && ch->transparency[addr] != TRANSPARENCY_SOLID )
+	if( ch->sun_light_map_[addr] < l1 && ch->transparency_[addr] != TRANSPARENCY_SOLID )
 		AddSunLight_r( x, y, z + 1, l1 );
 	//lower block
 	addr-= 2;
-	if( ch->sun_light_map[addr] < l1 && ch->transparency[addr] != TRANSPARENCY_SOLID )
+	if( ch->sun_light_map_[addr] < l1 && ch->transparency_[addr] != TRANSPARENCY_SOLID )
 		AddSunLight_r( x, y, z - 1, l1 );
 	//forward block
 	y1= y + 1;
 	ch= GetChunk( x >> H_CHUNK_WIDTH_LOG2, y1 >> H_CHUNK_WIDTH_LOG2 );
 	addr= BlockAddr( x & ( H_CHUNK_WIDTH - 1 ), y1 & ( H_CHUNK_WIDTH - 1 ), z );
-	if( ch->sun_light_map[addr] < l1 && ch->transparency[addr] != TRANSPARENCY_SOLID )
+	if( ch->sun_light_map_[addr] < l1 && ch->transparency_[addr] != TRANSPARENCY_SOLID )
 		AddSunLight_r( x, y1, z, l1 );
 	//back block
 	y1= y - 1;
 	ch= GetChunk( x >> H_CHUNK_WIDTH_LOG2, y1 >> H_CHUNK_WIDTH_LOG2 );
 	addr= BlockAddr( x & ( H_CHUNK_WIDTH - 1 ), y1 & ( H_CHUNK_WIDTH - 1 ), z );
-	if( ch->sun_light_map[addr] < l1 && ch->transparency[addr] != TRANSPARENCY_SOLID )
+	if( ch->sun_light_map_[addr] < l1 && ch->transparency_[addr] != TRANSPARENCY_SOLID )
 		AddSunLight_r( x, y1, z, l1 );
 	//forwad right
 	x1= x+1;
 	y1= y +((x+1)&1);
 	ch= GetChunk( x1 >> H_CHUNK_WIDTH_LOG2, y1 >> H_CHUNK_WIDTH_LOG2 );
 	addr= BlockAddr( x1 & ( H_CHUNK_WIDTH - 1 ), y1 & ( H_CHUNK_WIDTH - 1 ), z );
-	if( ch->sun_light_map[addr] < l1 && ch->transparency[addr] != TRANSPARENCY_SOLID )
+	if( ch->sun_light_map_[addr] < l1 && ch->transparency_[addr] != TRANSPARENCY_SOLID )
 		AddSunLight_r( x1, y1, z, l1 );
 	//back right
 	x1= x+1;
 	y1= y -(x&1);
 	ch= GetChunk( x1 >> H_CHUNK_WIDTH_LOG2, y1 >> H_CHUNK_WIDTH_LOG2 );
 	addr= BlockAddr( x1 & ( H_CHUNK_WIDTH - 1 ), y1 & ( H_CHUNK_WIDTH - 1 ), z );
-	if( ch->sun_light_map[addr] < l1 && ch->transparency[addr] != TRANSPARENCY_SOLID )
+	if( ch->sun_light_map_[addr] < l1 && ch->transparency_[addr] != TRANSPARENCY_SOLID )
 		AddSunLight_r( x1, y1, z, l1 );
 	//forwad left
 	x1= x-1;
 	y1= y +((x+1)&1);
 	ch= GetChunk( x1 >> H_CHUNK_WIDTH_LOG2, y1 >> H_CHUNK_WIDTH_LOG2 );
 	addr= BlockAddr( x1 & ( H_CHUNK_WIDTH - 1 ), y1 & ( H_CHUNK_WIDTH - 1 ), z );
-	if( ch->sun_light_map[addr] < l1 && ch->transparency[addr] != TRANSPARENCY_SOLID )
+	if( ch->sun_light_map_[addr] < l1 && ch->transparency_[addr] != TRANSPARENCY_SOLID )
 		AddSunLight_r( x1, y1, z, l1 );
 	//back left
 	x1= x-1;
 	y1= y -(x&1);
 	ch= GetChunk( x1 >> H_CHUNK_WIDTH_LOG2, y1 >> H_CHUNK_WIDTH_LOG2 );
 	addr= BlockAddr( x1 & ( H_CHUNK_WIDTH - 1 ), y1 & ( H_CHUNK_WIDTH - 1 ), z );
-	if( ch->sun_light_map[addr] < l1 && ch->transparency[addr] != TRANSPARENCY_SOLID )
+	if( ch->sun_light_map_[addr] < l1 && ch->transparency_[addr] != TRANSPARENCY_SOLID )
 		AddSunLight_r( x1, y1, z, l1 );
 }
 
@@ -448,7 +444,7 @@ void h_World::AddFireLight_r( short x, short y, short z, unsigned char l )
 
 	addr= BlockAddr( x & ( H_CHUNK_WIDTH - 1 ), y & ( H_CHUNK_WIDTH - 1 ), z );
 	ch= GetChunk( x >> H_CHUNK_WIDTH_LOG2, y >> H_CHUNK_WIDTH_LOG2 );
-	ch->fire_light_map[ addr ]= l;
+	ch->fire_light_map_[ addr ]= l;
 
 	if( l <= 1 )
 		return;
@@ -456,51 +452,51 @@ void h_World::AddFireLight_r( short x, short y, short z, unsigned char l )
 
 	//upper block
 	addr++;
-	if( ch->fire_light_map[addr] < l1 && ch->transparency[addr] != TRANSPARENCY_SOLID )
+	if( ch->fire_light_map_[addr] < l1 && ch->transparency_[addr] != TRANSPARENCY_SOLID )
 		AddFireLight_r( x, y, z + 1, l1 );
 	//lower block
 	addr-= 2;
-	if( ch->fire_light_map[addr] < l1 && ch->transparency[addr] != TRANSPARENCY_SOLID )
+	if( ch->fire_light_map_[addr] < l1 && ch->transparency_[addr] != TRANSPARENCY_SOLID )
 		AddFireLight_r( x, y, z - 1, l1 );
 	//forward block
 	y1= y + 1;
 	ch= GetChunk( x >> H_CHUNK_WIDTH_LOG2, y1 >> H_CHUNK_WIDTH_LOG2 );
 	addr= BlockAddr( x & ( H_CHUNK_WIDTH - 1 ), y1 & ( H_CHUNK_WIDTH - 1 ), z );
-	if( ch->fire_light_map[addr] < l1 && ch->transparency[addr] != TRANSPARENCY_SOLID )
+	if( ch->fire_light_map_[addr] < l1 && ch->transparency_[addr] != TRANSPARENCY_SOLID )
 		AddFireLight_r( x, y1, z, l1 );
 	//back block
 	y1= y - 1;
 	ch= GetChunk( x >> H_CHUNK_WIDTH_LOG2, y1 >> H_CHUNK_WIDTH_LOG2 );
 	addr= BlockAddr( x & ( H_CHUNK_WIDTH - 1 ), y1 & ( H_CHUNK_WIDTH - 1 ), z );
-	if( ch->fire_light_map[addr] < l1 && ch->transparency[addr] != TRANSPARENCY_SOLID )
+	if( ch->fire_light_map_[addr] < l1 && ch->transparency_[addr] != TRANSPARENCY_SOLID )
 		AddFireLight_r( x, y1, z, l1 );
 	//forwad right
 	x1= x+1;
 	y1= y +((x+1)&1);
 	ch= GetChunk( x1 >> H_CHUNK_WIDTH_LOG2, y1 >> H_CHUNK_WIDTH_LOG2 );
 	addr= BlockAddr( x1 & ( H_CHUNK_WIDTH - 1 ), y1 & ( H_CHUNK_WIDTH - 1 ), z );
-	if( ch->fire_light_map[addr] < l1 && ch->transparency[addr] != TRANSPARENCY_SOLID )
+	if( ch->fire_light_map_[addr] < l1 && ch->transparency_[addr] != TRANSPARENCY_SOLID )
 		AddFireLight_r( x1, y1, z, l1 );
 	//back right
 	x1= x+1;
 	y1= y -(x&1);
 	ch= GetChunk( x1 >> H_CHUNK_WIDTH_LOG2, y1 >> H_CHUNK_WIDTH_LOG2 );
 	addr= BlockAddr( x1 & ( H_CHUNK_WIDTH - 1 ), y1 & ( H_CHUNK_WIDTH - 1 ), z );
-	if( ch->fire_light_map[addr] < l1 && ch->transparency[addr] != TRANSPARENCY_SOLID )
+	if( ch->fire_light_map_[addr] < l1 && ch->transparency_[addr] != TRANSPARENCY_SOLID )
 		AddFireLight_r( x1, y1, z, l1 );
 	//forwad left
 	x1= x-1;
 	y1= y +((x+1)&1);
 	ch= GetChunk( x1 >> H_CHUNK_WIDTH_LOG2, y1 >> H_CHUNK_WIDTH_LOG2 );
 	addr= BlockAddr( x1 & ( H_CHUNK_WIDTH - 1 ), y1 & ( H_CHUNK_WIDTH - 1 ), z );
-	if( ch->fire_light_map[addr] < l1 && ch->transparency[addr] != TRANSPARENCY_SOLID )
+	if( ch->fire_light_map_[addr] < l1 && ch->transparency_[addr] != TRANSPARENCY_SOLID )
 		AddFireLight_r( x1, y1, z, l1 );
 	//back left
 	x1= x-1;
 	y1= y -(x&1);
 	ch= GetChunk( x1 >> H_CHUNK_WIDTH_LOG2, y1 >> H_CHUNK_WIDTH_LOG2 );
 	addr= BlockAddr( x1 & ( H_CHUNK_WIDTH - 1 ), y1 & ( H_CHUNK_WIDTH - 1 ), z );
-	if( ch->fire_light_map[addr] < l1 && ch->transparency[addr] != TRANSPARENCY_SOLID )
+	if( ch->fire_light_map_[addr] < l1 && ch->transparency_[addr] != TRANSPARENCY_SOLID )
 		AddFireLight_r( x1, y1, z, l1 );
 }
 
@@ -512,7 +508,7 @@ void h_World::AddSunLightSafe_r( short x, short y, short z, unsigned char l )
 
 	addr= BlockAddr( x & ( H_CHUNK_WIDTH - 1 ), y & ( H_CHUNK_WIDTH - 1 ), z );
 	ch= GetChunk( x >> H_CHUNK_WIDTH_LOG2, y >> H_CHUNK_WIDTH_LOG2 );
-	ch->sun_light_map[ addr ]= l;
+	ch->sun_light_map_[ addr ]= l;
 
 	if( l <= (unsigned char)1 )
 		return;
@@ -521,52 +517,52 @@ void h_World::AddSunLightSafe_r( short x, short y, short z, unsigned char l )
 	//upper block
 	z1= z+1;
 	addr= BlockAddr(  x & ( H_CHUNK_WIDTH - 1 ), y & ( H_CHUNK_WIDTH - 1 ), z1 );
-	if( ch->sun_light_map[addr] < l1 && ch->transparency[addr] != TRANSPARENCY_SOLID )
+	if( ch->sun_light_map_[addr] < l1 && ch->transparency_[addr] != TRANSPARENCY_SOLID )
 		AddSunLightSafe_r( x, y, z1, l1 );
 	//lower block
 	z1= z-1;
 	addr= BlockAddr(  x & ( H_CHUNK_WIDTH - 1 ), y & ( H_CHUNK_WIDTH - 1 ), z1 );
-	if( ch->sun_light_map[addr] < l1 && ch->transparency[addr] != TRANSPARENCY_SOLID )
+	if( ch->sun_light_map_[addr] < l1 && ch->transparency_[addr] != TRANSPARENCY_SOLID )
 		AddSunLightSafe_r( x, y, z1, l1 );
 	//forward block
 	y1= ClampY(y + 1);
 	ch= GetChunk( x >> H_CHUNK_WIDTH_LOG2, y1 >> H_CHUNK_WIDTH_LOG2 );
 	addr= BlockAddr( x & ( H_CHUNK_WIDTH - 1 ), y1 & ( H_CHUNK_WIDTH - 1 ), z );
-	if( ch->sun_light_map[addr] < l1 && ch->transparency[addr] != TRANSPARENCY_SOLID )
+	if( ch->sun_light_map_[addr] < l1 && ch->transparency_[addr] != TRANSPARENCY_SOLID )
 		AddSunLightSafe_r( x, y1, z, l1 );
 	//back block
 	y1= ClampY( y - 1 );
 	ch= GetChunk( x >> H_CHUNK_WIDTH_LOG2, y1 >> H_CHUNK_WIDTH_LOG2 );
 	addr= BlockAddr( x & ( H_CHUNK_WIDTH - 1 ), y1 & ( H_CHUNK_WIDTH - 1 ), z );
-	if( ch->sun_light_map[addr] < l1 && ch->transparency[addr] != TRANSPARENCY_SOLID )
+	if( ch->sun_light_map_[addr] < l1 && ch->transparency_[addr] != TRANSPARENCY_SOLID )
 		AddSunLightSafe_r( x, y1, z, l1 );
 	//forwad right
 	x1= ClampX( x+1 );
 	y1= ClampY( y +((x+1)&1) );
 	ch= GetChunk( x1 >> H_CHUNK_WIDTH_LOG2, y1 >> H_CHUNK_WIDTH_LOG2 );
 	addr= BlockAddr( x1 & ( H_CHUNK_WIDTH - 1 ), y1 & ( H_CHUNK_WIDTH - 1 ), z );
-	if( ch->sun_light_map[addr] < l1 && ch->transparency[addr] != TRANSPARENCY_SOLID )
+	if( ch->sun_light_map_[addr] < l1 && ch->transparency_[addr] != TRANSPARENCY_SOLID )
 		AddSunLightSafe_r( x1, y1, z, l1 );
 	//back right
 	x1= ClampX( x+1 );
 	y1= ClampY( y -(x&1) );
 	ch= GetChunk( x1 >> H_CHUNK_WIDTH_LOG2, y1 >> H_CHUNK_WIDTH_LOG2 );
 	addr= BlockAddr( x1 & ( H_CHUNK_WIDTH - 1 ), y1 & ( H_CHUNK_WIDTH - 1 ), z );
-	if( ch->sun_light_map[addr] < l1 && ch->transparency[addr] != TRANSPARENCY_SOLID )
+	if( ch->sun_light_map_[addr] < l1 && ch->transparency_[addr] != TRANSPARENCY_SOLID )
 		AddSunLightSafe_r( x1, y1, z, l1 );
 	//forwad left
 	x1= ClampX( x-1 );
 	y1= ClampY( y +((x+1)&1) );
 	ch= GetChunk( x1 >> H_CHUNK_WIDTH_LOG2, y1 >> H_CHUNK_WIDTH_LOG2 );
 	addr= BlockAddr( x1 & ( H_CHUNK_WIDTH - 1 ), y1 & ( H_CHUNK_WIDTH - 1 ), z );
-	if( ch->sun_light_map[addr] < l1 && ch->transparency[addr] != TRANSPARENCY_SOLID )
+	if( ch->sun_light_map_[addr] < l1 && ch->transparency_[addr] != TRANSPARENCY_SOLID )
 		AddSunLightSafe_r( x1, y1, z, l1 );
 	//back left
 	x1= ClampX( x-1 );
 	y1= ClampY( y -(x&1) );
 	ch= GetChunk( x1 >> H_CHUNK_WIDTH_LOG2, y1 >> H_CHUNK_WIDTH_LOG2 );
 	addr= BlockAddr( x1 & ( H_CHUNK_WIDTH - 1 ), y1 & ( H_CHUNK_WIDTH - 1 ), z );
-	if( ch->sun_light_map[addr] < l1 && ch->transparency[addr] != TRANSPARENCY_SOLID )
+	if( ch->sun_light_map_[addr] < l1 && ch->transparency_[addr] != TRANSPARENCY_SOLID )
 		AddSunLightSafe_r( x1, y1, z, l1 );
 }
 
@@ -578,7 +574,7 @@ void h_World::AddFireLightSafe_r( short x, short y, short z, unsigned char l )
 
 	addr= BlockAddr( x & ( H_CHUNK_WIDTH - 1 ), y & ( H_CHUNK_WIDTH - 1 ), z );
 	ch= GetChunk( x >> H_CHUNK_WIDTH_LOG2, y >> H_CHUNK_WIDTH_LOG2 );
-	ch->fire_light_map[ addr ]= l;
+	ch->fire_light_map_[ addr ]= l;
 
 	if( l <= 1 )
 		return;
@@ -587,52 +583,52 @@ void h_World::AddFireLightSafe_r( short x, short y, short z, unsigned char l )
 	//upper block
 	z1= z+1;
 	addr= BlockAddr(  x & ( H_CHUNK_WIDTH - 1 ), y & ( H_CHUNK_WIDTH - 1 ), z1 );
-	if( ch->fire_light_map[addr] < l1 && ch->transparency[addr] != TRANSPARENCY_SOLID )
+	if( ch->fire_light_map_[addr] < l1 && ch->transparency_[addr] != TRANSPARENCY_SOLID )
 		AddFireLightSafe_r( x, y, z1, l1 );
 	//lower block
 	z1= z-1;
 	addr= BlockAddr(  x & ( H_CHUNK_WIDTH - 1 ), y & ( H_CHUNK_WIDTH - 1 ), z1 );
-	if( ch->fire_light_map[addr] < l1 && ch->transparency[addr] != TRANSPARENCY_SOLID )
+	if( ch->fire_light_map_[addr] < l1 && ch->transparency_[addr] != TRANSPARENCY_SOLID )
 		AddFireLightSafe_r( x, y, z1, l1 );
 	//forward block
 	y1= ClampY(y + 1);
 	ch= GetChunk( x >> H_CHUNK_WIDTH_LOG2, y1 >> H_CHUNK_WIDTH_LOG2 );
 	addr= BlockAddr( x & ( H_CHUNK_WIDTH - 1 ), y1 & ( H_CHUNK_WIDTH - 1 ), z );
-	if( ch->fire_light_map[addr] < l1 && ch->transparency[addr] != TRANSPARENCY_SOLID )
+	if( ch->fire_light_map_[addr] < l1 && ch->transparency_[addr] != TRANSPARENCY_SOLID )
 		AddFireLightSafe_r( x, y1, z, l1 );
 	//back block
 	y1= ClampY( y - 1 );
 	ch= GetChunk( x >> H_CHUNK_WIDTH_LOG2, y1 >> H_CHUNK_WIDTH_LOG2 );
 	addr= BlockAddr( x & ( H_CHUNK_WIDTH - 1 ), y1 & ( H_CHUNK_WIDTH - 1 ), z );
-	if( ch->fire_light_map[addr] < l1 && ch->transparency[addr] != TRANSPARENCY_SOLID )
+	if( ch->fire_light_map_[addr] < l1 && ch->transparency_[addr] != TRANSPARENCY_SOLID )
 		AddFireLightSafe_r( x, y1, z, l1 );
 	//forwad right
 	x1= ClampX( x+1 );
 	y1= ClampY( y +((x+1)&1) );
 	ch= GetChunk( x1 >> H_CHUNK_WIDTH_LOG2, y1 >> H_CHUNK_WIDTH_LOG2 );
 	addr= BlockAddr( x1 & ( H_CHUNK_WIDTH - 1 ), y1 & ( H_CHUNK_WIDTH - 1 ), z );
-	if( ch->fire_light_map[addr] < l1 && ch->transparency[addr] != TRANSPARENCY_SOLID )
+	if( ch->fire_light_map_[addr] < l1 && ch->transparency_[addr] != TRANSPARENCY_SOLID )
 		AddFireLightSafe_r( x1, y1, z, l1 );
 	//back right
 	x1= ClampX( x+1 );
 	y1= ClampY( y -(x&1) );
 	ch= GetChunk( x1 >> H_CHUNK_WIDTH_LOG2, y1 >> H_CHUNK_WIDTH_LOG2 );
 	addr= BlockAddr( x1 & ( H_CHUNK_WIDTH - 1 ), y1 & ( H_CHUNK_WIDTH - 1 ), z );
-	if( ch->fire_light_map[addr] < l1 && ch->transparency[addr] != TRANSPARENCY_SOLID )
+	if( ch->fire_light_map_[addr] < l1 && ch->transparency_[addr] != TRANSPARENCY_SOLID )
 		AddFireLightSafe_r( x1, y1, z, l1 );
 	//forwad left
 	x1= ClampX( x-1 );
 	y1= ClampY( y +((x+1)&1) );
 	ch= GetChunk( x1 >> H_CHUNK_WIDTH_LOG2, y1 >> H_CHUNK_WIDTH_LOG2 );
 	addr= BlockAddr( x1 & ( H_CHUNK_WIDTH - 1 ), y1 & ( H_CHUNK_WIDTH - 1 ), z );
-	if( ch->fire_light_map[addr] < l1 && ch->transparency[addr] != TRANSPARENCY_SOLID )
+	if( ch->fire_light_map_[addr] < l1 && ch->transparency_[addr] != TRANSPARENCY_SOLID )
 		AddFireLightSafe_r( x1, y1, z, l1 );
 	//back left
 	x1= ClampX( x-1 );
 	y1= ClampY( y -(x&1) );
 	ch= GetChunk( x1 >> H_CHUNK_WIDTH_LOG2, y1 >> H_CHUNK_WIDTH_LOG2 );
 	addr= BlockAddr( x1 & ( H_CHUNK_WIDTH - 1 ), y1 & ( H_CHUNK_WIDTH - 1 ), z );
-	if( ch->fire_light_map[addr] < l1 && ch->transparency[addr] != TRANSPARENCY_SOLID )
+	if( ch->fire_light_map_[addr] < l1 && ch->transparency_[addr] != TRANSPARENCY_SOLID )
 		AddFireLightSafe_r( x1, y1, z, l1 );
 }
 
@@ -694,7 +690,7 @@ void h_World::RelightWaterModifedChunksLight()
 		for( unsigned int j= 1; j< ChunkNumberY()-1; j++ )
 		{
 			ch= GetChunk( i, j );
-			if( ch->need_update_light )
+			if( ch->need_update_light_ )
 				chunk_count++;
 		}
 
@@ -702,7 +698,7 @@ void h_World::RelightWaterModifedChunksLight()
 		for( unsigned int j= 1; j< ChunkNumberY()-1; j++ )
 		{
 			ch= GetChunk( i, j );
-			if( ch->need_update_light )
+			if( ch->need_update_light_ )
 			{
 				if(  phys_processes_rand_.Rand()  <= phys_processes_rand_.max_rand/ chunk_count )//chance of one chunk water updating per one phys tick
 				{
@@ -727,16 +723,10 @@ void h_World::RelightWaterModifedChunksLight()
 							AddSunLight_r( X-1, Y+y, z, SunLightLevel( X-1, Y+y, z) );
 							AddSunLight_r( X+H_CHUNK_WIDTH, Y+y, z, SunLightLevel( X+H_CHUNK_WIDTH, Y+y, z) );
 						}
-					ch->need_update_light= false;
+					ch->need_update_light_= false;
 
 					if( renderer != nullptr )
 					{
-						/*emit ChunkUpdated( i, j );
-						emit ChunkUpdated( i+1, j+1 );
-						emit ChunkUpdated( i+1, j-1 );
-						emit ChunkUpdated( i-1, j+1 );
-						emit ChunkUpdated( i-1, j-1 );
-						emit ChunkWaterUpdated( i, j );*/
 						renderer->UpdateChunk( i, j );
 						renderer->UpdateChunk( i+1, j+1 );
 						renderer->UpdateChunk( i+1, j-1 );
@@ -747,5 +737,4 @@ void h_World::RelightWaterModifedChunksLight()
 				}//if rand
 			}//if need update light
 		}
-
 }

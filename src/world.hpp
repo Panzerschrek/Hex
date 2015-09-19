@@ -27,13 +27,13 @@ public:
 
 	//really, returns longitude/2 and latitude/2
 	int ChunkCoordToQuadchunkX( int longitude ) const;
-	int ChunkCoordToQuadchunkY( int latitude ) const;
+	int ChunkCoordToQuadchunkY( int latitude  ) const;
 
 	int ChunkNumberX() const;
 	int ChunkNumberY() const;
 
 	short Longitude() const;
-	short Latitude() const;
+	short Latitude () const;
 
 	void AddBuildEvent( short x, short y, short z, h_BlockType block_type );//coordinates - relative
 	void AddDestroyEvent( short x, short y, short z );
@@ -158,7 +158,7 @@ inline short h_World::Longitude() const
 	return longitude_;
 }
 
-inline short h_World::Latitude() const
+inline short h_World::Latitude () const
 {
 	return latitude_;
 }
@@ -187,18 +187,13 @@ inline void h_World::SetRenderer( const r_IWorldRendererWeakPtr& renderer)
 	renderer_= renderer;
 }
 
-/*inline h_Block* h_World::WaterBlock( unsigned char water_level )
-{
-	return &water_blocks[ water_level ];
-}*/
-
 inline short h_World::ClampX( short x ) const
 {
 	if( x < 0 )
 		return 0;
-	short max_x= chunk_number_x_ * H_CHUNK_WIDTH - 1;
-	if ( x > max_x )
-		return max_x;
+	short max_x= chunk_number_x_ * H_CHUNK_WIDTH;
+	if ( x >= max_x )
+		return max_x - 1;
 	return x;
 }
 
@@ -206,11 +201,12 @@ inline short h_World::ClampY( short y ) const
 {
 	if( y < 0 )
 		return 0;
-	short max_y= chunk_number_y_ * H_CHUNK_WIDTH - 1;
-	if ( y > max_y )
-		return max_y;
+	short max_y= chunk_number_y_ * H_CHUNK_WIDTH;
+	if ( y >= max_y )
+		return max_y - 1;
 	return y;
 }
+
 inline short h_World::ClampZ( short z ) const
 {
 	if( z < 0 )

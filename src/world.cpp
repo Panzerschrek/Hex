@@ -550,11 +550,11 @@ void h_World::BlastBlock_r( short x, short y, short z, short blast_power )
 	unsigned int addr;
 
 	addr= BlockAddr( x&(H_CHUNK_WIDTH-1), y&(H_CHUNK_WIDTH-1), z );
-	if( ch->blocks[addr]->Type() != WATER )
+	if( ch->blocks_[addr]->Type() != WATER )
 	{
 		//ch->SetBlockAndTransparency( local_x, local_y, z, NormalBlock(AIR), TRANSPARENCY_AIR );
-		ch->blocks[ addr ]= NormalBlock(AIR);
-		ch->transparency[ addr ]= TRANSPARENCY_AIR;
+		ch->blocks_[ addr ]= NormalBlock(AIR);
+		ch->transparency_[ addr ]= TRANSPARENCY_AIR;
 	}
 
 	//BlastBlock_r( x, y, z + 1, blast_power-1 );
@@ -760,7 +760,7 @@ void h_World::WaterPhysTick()
 					renderer->UpdateChunkWater( i, j+1 );
 				}
 
-				ch->need_update_light= true;
+				ch->need_update_light_= true;
 			}
 		}//for chunks
 }

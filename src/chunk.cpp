@@ -36,7 +36,6 @@ fixed16_t InterpolatedNoise( int x, int y )
 	return ( interp_x[1] * dx + interp_x[0] * (63-dx) )>>12;
 }
 
-
 fixed16_t FinalNoise( int x, int y )
 {
 	fixed16_t r= InterpolatedNoise(x, y)>>1;
@@ -47,13 +46,12 @@ fixed16_t FinalNoise( int x, int y )
 
 }
 
-
 bool h_Chunk::IsEdgeChunk() const
 {
-	//return true;
-	return longitude == world->Longitude() || latitude == world->Latitude() ||
-		   longitude == ( world->Longitude() + world->ChunkNumberX() - 1 ) ||
-		   latitude == ( world->Latitude() + world->ChunkNumberY() - 1 );
+	return
+		longitude_ == world_->Longitude() || latitude_ == world_->Latitude() ||
+		longitude_ == ( world_->Longitude() + world_->ChunkNumberX() - 1 ) ||
+		latitude_  == ( world_->Latitude () + world_->ChunkNumberY() - 1 );
 }
 
 void h_Chunk::GenChunk()
@@ -63,50 +61,35 @@ void h_Chunk::GenChunk()
 	short addr;
 
 
-
 	for( x= 0; x< H_CHUNK_WIDTH; x++ )
 	{
 		for( y= 0; y< H_CHUNK_WIDTH; y++ )
 		{
-			h= (H_CHUNK_HEIGHT/2) + (( 2 * 24 * FinalNoise( short( float(x + longitude * H_CHUNK_WIDTH) * H_SPACE_SCALE_VECTOR_X  ),
-									   y + latitude * H_CHUNK_WIDTH ) ) >>16 ) ;
+			h= (H_CHUNK_HEIGHT/2) + (( 2 * 24 * FinalNoise( short( float(x + longitude_ * H_CHUNK_WIDTH) * H_SPACE_SCALE_VECTOR_X  ),
+									   y + latitude_ * H_CHUNK_WIDTH ) ) >>16 ) ;
 			//if( longitude == -1 &&  latitude == -1 )h= 3;
 
-			soil_h= 4 + (( 2 * FinalNoise( short( float( x + longitude * H_CHUNK_WIDTH ) * H_SPACE_SCALE_VECTOR_X ) * 4,
-										   ( y + latitude * H_CHUNK_WIDTH ) * 4  ) )>>16 );
+			soil_h= 4 + (( 2 * FinalNoise( short( float( x + longitude_ * H_CHUNK_WIDTH ) * H_SPACE_SCALE_VECTOR_X ) * 4,
+										   ( y + latitude_ * H_CHUNK_WIDTH ) * 4  ) )>>16 );
 
-			SetBlockAndTransparency( x, y, 0, world->NormalBlock( SPHERICAL_BLOCK), TRANSPARENCY_SOLID );
-			SetBlockAndTransparency( x, y, H_CHUNK_HEIGHT-1, world->NormalBlock( SPHERICAL_BLOCK), TRANSPARENCY_SOLID );
+			// TODO - optimize
+			SetBlockAndTransparency( x, y, 0, world_->NormalBlock( SPHERICAL_BLOCK), TRANSPARENCY_SOLID );
+			SetBlockAndTransparency( x, y, H_CHUNK_HEIGHT-1, world_->NormalBlock( SPHERICAL_BLOCK), TRANSPARENCY_SOLID );
 			for( z= 1; z< h - soil_h; z++ )
-			{
-				transparency[ addr=BlockAddr( x, y, z )  ]= TRANSPARENCY_SOLID;
-				blocks[ addr ]= world->NormalBlock( STONE );
-			}
+				SetBlockAndTransparency( x, y, z, world_->NormalBlock( STONE ), TRANSPARENCY_SOLID );
 
 			for( ; z< h; z++ )
-			{
-				transparency[ addr=BlockAddr( x, y, z ) ]= TRANSPARENCY_SOLID;
-				blocks[ addr ]= world->NormalBlock( SOIL );
-			}
+				SetBlockAndTransparency( x, y, z, world_->NormalBlock( SOIL ), TRANSPARENCY_SOLID );
 
 			//if( !( longitude == -1 && latitude == -1 ) )
 			for( ; z<= H_SEA_LEVEL; z++ )
-			{
-				transparency[ addr=BlockAddr( x, y, z )  ]= TRANSPARENCY_LIQUID;
-				blocks[ addr ]= world->NormalBlock( WATER );
-			}
+				SetBlockAndTransparency( x, y, z, world_->NormalBlock( WATER ), TRANSPARENCY_LIQUID );
 
 			for( ; z< H_CHUNK_HEIGHT-1; z++ )
-			{
-				transparency[ addr=BlockAddr( x, y, z )  ]= TRANSPARENCY_AIR;
-				blocks[ addr ]= world->NormalBlock( AIR );
-			}
-
+				SetBlockAndTransparency( x, y, z, world_->NormalBlock( AIR ), TRANSPARENCY_AIR );
 		}//for y
 	}//for x
-
 }
-
 
 void h_Chunk::GenChunkFromFile( const HEXCHUNK_header* header, QDataStream& stream )
 {
@@ -135,14 +118,14 @@ void h_Chunk::GenChunkFromFile( const HEXCHUNK_header* header, QDataStream& stre
 		case GRASS:
 		case SAND:
 		case FOLIAGE:
-			blocks[i]= b= world->NormalBlock(block_id);
-			transparency[i]= b->Transparency();
+			blocks_[i]= b= world_->NormalBlock(block_id);
+			transparency_[i]= b->Transparency();
 			break;
 
 		case FIRE_STONE:
-			blocks[i]= light_source= new h_LightSource( FIRE_STONE, H_MAX_FIRE_LIGHT );
-			light_source_list.Add( light_source );
-			transparency[i]= blocks[i]->Transparency();
+			blocks_[i]= light_source= new h_LightSource( FIRE_STONE, H_MAX_FIRE_LIGHT );
+			light_source_list_.Add( light_source );
+			transparency_[i]= blocks_[i]->Transparency();
 
 			light_source->x_= i >> (H_CHUNK_WIDTH_LOG2 + H_CHUNK_HEIGHT_LOG2);
 			light_source->y_= (i>>H_CHUNK_HEIGHT_LOG2) & (H_CHUNK_WIDTH-1);
@@ -150,8 +133,8 @@ void h_Chunk::GenChunkFromFile( const HEXCHUNK_header* header, QDataStream& stre
 			break;
 
 		case WATER:
-			blocks[i]= water_blocks;
-			transparency[i]= TRANSPARENCY_LIQUID;
+			blocks_[i]= water_blocks;
+			transparency_[i]= TRANSPARENCY_LIQUID;
 			stream >> water_level;
 
 			water_blocks->x_= i >> (H_CHUNK_WIDTH_LOG2 + H_CHUNK_HEIGHT_LOG2);
@@ -174,7 +157,7 @@ void h_Chunk::SaveChunkToFile( QDataStream& stream )
 {
 	for( int i= 0; i< H_CHUNK_WIDTH * H_CHUNK_WIDTH * H_CHUNK_HEIGHT; i++ )
 	{
-		h_Block* b= blocks[i];
+		h_Block* b= blocks_[i];
 
 		stream << ((unsigned short)b->Type());
 
@@ -242,30 +225,22 @@ void h_Chunk::PlantTrees()
 		for( h= tree_z; h< tree_z + 4; h++ )
 		{
 			SetTransparency( tree_x, tree_y, h, TRANSPARENCY_SOLID );
-			SetBlock( tree_x, tree_y, h, world->NormalBlock( WOOD ) );
+			SetBlock( tree_x, tree_y, h, world_->NormalBlock( WOOD ) );
 
 			if( h - tree_z > 1  )
 			{
-				SetTransparency( tree_x, tree_y + 1, h, TRANSPARENCY_GREENERY );
-				SetBlock( tree_x, tree_y + 1, h, world->NormalBlock( FOLIAGE ) );
+				SetBlockAndTransparency( tree_x, tree_y + 1, h, world_->NormalBlock( FOLIAGE ), TRANSPARENCY_GREENERY );
 
-				SetTransparency( tree_x, tree_y - 1, h, TRANSPARENCY_GREENERY );
-				SetBlock( tree_x, tree_y - 1, h, world->NormalBlock( FOLIAGE ) );
+				SetBlockAndTransparency( tree_x, tree_y - 1, h, world_->NormalBlock( FOLIAGE ), TRANSPARENCY_GREENERY );
 
-				SetTransparency( tree_x + 1, tree_y + ((tree_x+1)&1), h, TRANSPARENCY_GREENERY );
-				SetBlock( tree_x + 1, tree_y + ((tree_x+1)&1), h, world->NormalBlock( FOLIAGE ) );
-				SetTransparency( tree_x + 1, tree_y - (tree_x&1), h, TRANSPARENCY_GREENERY );
-				SetBlock( tree_x + 1, tree_y - (tree_x&1), h, world->NormalBlock( FOLIAGE ) );
+				SetBlockAndTransparency( tree_x + 1, tree_y + ((tree_x+1)&1), h, world_->NormalBlock( FOLIAGE ), TRANSPARENCY_GREENERY );
+				SetBlockAndTransparency( tree_x + 1, tree_y - (tree_x&1), h, world_->NormalBlock( FOLIAGE ), TRANSPARENCY_GREENERY );
 
-				SetTransparency( tree_x - 1, tree_y + ((tree_x+1)&1), h, TRANSPARENCY_GREENERY );
-				SetBlock( tree_x - 1, tree_y + ((tree_x+1)&1), h, world->NormalBlock( FOLIAGE ) );
-				SetTransparency( tree_x - 1, tree_y - (tree_x&1), h, TRANSPARENCY_GREENERY );
-				SetBlock( tree_x - 1, tree_y - (tree_x&1), h, world->NormalBlock( FOLIAGE ) );
+				SetBlockAndTransparency( tree_x - 1, tree_y + ((tree_x+1)&1), h, world_->NormalBlock( FOLIAGE ), TRANSPARENCY_GREENERY );
+				SetBlockAndTransparency( tree_x - 1, tree_y - (tree_x&1), h, world_->NormalBlock( FOLIAGE ), TRANSPARENCY_GREENERY );
 			}
 		}
-		SetTransparency( tree_x, tree_y, h, TRANSPARENCY_GREENERY );
-		SetBlock( tree_x, tree_y, h, world->NormalBlock( FOLIAGE ) );
-
+		SetBlockAndTransparency( tree_x, tree_y, h, world_->NormalBlock( FOLIAGE ), TRANSPARENCY_GREENERY );
 	}
 }
 
@@ -274,13 +249,13 @@ void h_Chunk::PlaneBigTree( short x, short y, short z )//local coordinates
 {
 	for( short zz= z; zz< z+7; zz++ )
 	{
-		SetBlockAndTransparency( x, y, zz, world->NormalBlock( WOOD ),  TRANSPARENCY_SOLID );
-		SetBlockAndTransparency( x+1, y+((x+1)&1), zz, world->NormalBlock( WOOD ),  TRANSPARENCY_SOLID );
-		SetBlockAndTransparency( x+1, y-(x&1), zz, world->NormalBlock( WOOD ),  TRANSPARENCY_SOLID );
+		SetBlockAndTransparency( x, y, zz, world_->NormalBlock( WOOD ),  TRANSPARENCY_SOLID );
+		SetBlockAndTransparency( x+1, y+((x+1)&1), zz, world_->NormalBlock( WOOD ),  TRANSPARENCY_SOLID );
+		SetBlockAndTransparency( x+1, y-(x&1), zz, world_->NormalBlock( WOOD ),  TRANSPARENCY_SOLID );
 	}
 	for( short zz= z+7; zz< z+9; zz++ )
 	{
-		h_Block* b= world->NormalBlock( FOLIAGE );
+		h_Block* b= world_->NormalBlock( FOLIAGE );
 		SetBlockAndTransparency( x, y, zz, b,  TRANSPARENCY_GREENERY );
 		SetBlockAndTransparency( x+1, y+((x+1)&1), zz, b,  TRANSPARENCY_GREENERY );
 		SetBlockAndTransparency( x+1, y-(x&1), zz, b,  TRANSPARENCY_GREENERY );
@@ -289,7 +264,7 @@ void h_Chunk::PlaneBigTree( short x, short y, short z )//local coordinates
 
 	for( short zz= z+2; zz< z+8; zz++ )
 	{
-		h_Block* b= world->NormalBlock( FOLIAGE );
+		h_Block* b= world_->NormalBlock( FOLIAGE );
 		SetBlockAndTransparency( x, y+1, zz, b,  TRANSPARENCY_GREENERY );
 		SetBlockAndTransparency( x, y-1, zz, b,  TRANSPARENCY_GREENERY );
 		SetBlockAndTransparency( x+2, y, zz, b,  TRANSPARENCY_GREENERY );
@@ -302,7 +277,7 @@ void h_Chunk::PlaneBigTree( short x, short y, short z )//local coordinates
 	}
 	for( short zz= z+3; zz< z+7; zz++ )
 	{
-		h_Block* b= world->NormalBlock( FOLIAGE );
+		h_Block* b= world_->NormalBlock( FOLIAGE );
 		SetBlockAndTransparency( x, y+2, zz, b,  TRANSPARENCY_GREENERY );
 		SetBlockAndTransparency( x, y-2, zz, b,  TRANSPARENCY_GREENERY );
 
@@ -315,7 +290,7 @@ void h_Chunk::PlaneBigTree( short x, short y, short z )//local coordinates
 
 	for( short zz= z+4; zz< z+6; zz++ )
 	{
-		h_Block* b= world->NormalBlock( FOLIAGE );
+		h_Block* b= world_->NormalBlock( FOLIAGE );
 		SetBlockAndTransparency( x-2, y, zz, b,  TRANSPARENCY_GREENERY );
 		SetBlockAndTransparency( x-2, y-1, zz, b,  TRANSPARENCY_GREENERY );
 		SetBlockAndTransparency( x-2, y+1, zz, b,  TRANSPARENCY_GREENERY );
@@ -334,6 +309,7 @@ void h_Chunk::PlaneBigTree( short x, short y, short z )//local coordinates
 
 void h_Chunk::PlantGrass()
 {
+	//TODO - optomize
 	short x, y, z, addr;
 	for( x= 0; x< H_CHUNK_WIDTH; x++ )
 	{
@@ -344,13 +320,7 @@ void h_Chunk::PlantGrass()
 					break;
 
 			if( GetBlock( x, y, z )->Type() == SOIL )
-			{
-				transparency[ addr= z |
-									( y << H_CHUNK_HEIGHT_LOG2 ) |
-									( x << ( H_CHUNK_HEIGHT_LOG2 + H_CHUNK_WIDTH_LOG2 ) ) ]= TRANSPARENCY_SOLID;
-				blocks[ addr ]= world->NormalBlock( GRASS );
-			}
-
+				SetBlockAndTransparency( x, y, z, world_->NormalBlock( GRASS ), TRANSPARENCY_SOLID );
 		}
 	}
 }
@@ -359,11 +329,10 @@ unsigned int h_Chunk::CalculateWaterBlockCount()
 {
 	unsigned int c= 0;
 	for( unsigned int i= 0; i< H_CHUNK_WIDTH * H_CHUNK_WIDTH * H_CHUNK_HEIGHT; i++ )
-		if( blocks[i]->Type() == WATER )
+		if( blocks_[i]->Type() == WATER )
 			c++;
 	return c;
 }
-
 
 void h_Chunk::PrepareWaterBlocksCache( int needed_block_count )
 {
@@ -394,12 +363,12 @@ void h_Chunk::GenWaterBlocks()
 		{
 			for( z= 0; z< H_CHUNK_HEIGHT; z++, addr++ )
 			{
-				if( blocks[ addr ]->Type() == WATER )
+				if( blocks_[ addr ]->Type() == WATER )
 				{
 					water_blocks->x_= x;
 					water_blocks->y_= y;
 					water_blocks->z_= z;
-					blocks[ addr ]= water_blocks;
+					blocks_[ addr ]= water_blocks;
 					water_blocks->SetLiquidLevel(
 						H_MAX_WATER_LEVEL + H_WATER_COMPRESSION_PER_BLOCK * ( H_SEA_LEVEL - water_blocks->z_ ) );
 					water_blocks++;
@@ -448,7 +417,7 @@ void h_Chunk::DeleteWaterBlock( h_LiquidBlock* b )
 h_LightSource* h_Chunk::NewLightSource( short x, short y, short z, h_BlockType type )
 {
 	h_LightSource* s;
-	light_source_list.Add( s= new h_LightSource( type ) );
+	light_source_list_.Add( s= new h_LightSource( type ) );
 	s->x_= x;
 	s->y_= y;
 	s->z_= z;
@@ -458,7 +427,7 @@ void h_Chunk::DeleteLightSource( short x, short y, short z )
 {
 	h_LightSource* s= (h_LightSource*) GetBlock( x, y, z );
 
-	m_Collection< h_LightSource* >::Iterator it( &light_source_list );
+	m_Collection< h_LightSource* >::Iterator it( &light_source_list_ );
 	for( it.Begin(); it.IsValid() ; it.Next() )
 		if( *it == s )
 		{
@@ -478,15 +447,15 @@ void h_Chunk::MakeLight()
 
 			for( z= H_CHUNK_HEIGHT-2; z> 0; z--, addr-- )
 			{
-				if( blocks[ addr ]->Type() != AIR )
+				if( blocks_[ addr ]->Type() != AIR )
 					break;
-				sun_light_map[ addr ]= H_MAX_SUN_LIGHT;
-				fire_light_map[ addr ]= 0;
+				sun_light_map_[ addr ]= H_MAX_SUN_LIGHT;
+				fire_light_map_[ addr ]= 0;
 			}
 			for( ; z > 0; z--, addr-- )
 			{
-				sun_light_map[ addr ]= 0;
-				fire_light_map[ addr ]= 0;
+				sun_light_map_[ addr ]= 0;
+				fire_light_map_[ addr ]= 0;
 			}
 		}
 }
@@ -501,21 +470,20 @@ void h_Chunk::SunRelight()
 
 			for( z= H_CHUNK_HEIGHT-2; z> 0; z--, addr-- )
 			{
-				if( blocks[ addr ]->Type() != AIR )
+				if( blocks_[ addr ]->Type() != AIR )
 					break;
-				sun_light_map[ addr ]= H_MAX_SUN_LIGHT;
+				sun_light_map_[ addr ]= H_MAX_SUN_LIGHT;
 			}
 			for( ; z > 0; z--, addr-- )
-				sun_light_map[ addr ]= 0;
+				sun_light_map_[ addr ]= 0;
 		}
 }
 
 h_Chunk::h_Chunk( h_World* world, int longitude, int latitude )
+	: world_(world)
+	, longitude_(longitude), latitude_(latitude)
+	, need_update_light_(false)
 {
-	need_update_light= false;
-	this->longitude= longitude, this->latitude= latitude;
-	this->world= world;
-
 	GenChunk();
 	PlantGrass();
 	PlantTrees();
@@ -524,12 +492,12 @@ h_Chunk::h_Chunk( h_World* world, int longitude, int latitude )
 
 }
 
-h_Chunk::h_Chunk( h_World* world, const HEXCHUNK_header* header, QDataStream& stream  )
+h_Chunk::h_Chunk( h_World* world, const HEXCHUNK_header* header, QDataStream& stream )
+	: world_(world)
+	, longitude_(header->longitude)
+	, latitude_ (header->latitude )
+	, need_update_light_(false)
 {
-	need_update_light= false;
-	this->longitude= header->longitude, this->latitude= header->latitude;
-	this->world= world;
-
 	GenChunkFromFile( header, stream );
 	MakeLight();
 }
@@ -553,9 +521,9 @@ unsigned int h_Chunk::GetWaterColumnHeight( short x, short y, short z )
 {
 	unsigned int h= (z-1) * H_MAX_WATER_LEVEL;
 	unsigned int addr= BlockAddr( x, y, z );
-	while(  blocks[addr]->Type() == WATER )
+	while(  blocks_[addr]->Type() == WATER )
 	{
-		unsigned int level= ((h_LiquidBlock*)blocks[addr])->LiquidLevel();
+		unsigned int level= ((h_LiquidBlock*)blocks_[addr])->LiquidLevel();
 		if( level > H_MAX_WATER_LEVEL )
 			level= H_MAX_WATER_LEVEL;
 		h+= level;
@@ -566,6 +534,8 @@ unsigned int h_Chunk::GetWaterColumnHeight( short x, short y, short z )
 
 void h_Chunk::ReCalculateHeightmap()
 {
+	//TODO - Does this need?
+	/*
 	for( short y= 0; y< H_CHUNK_WIDTH; y++ )
 		for( short x= 0; x< H_CHUNK_WIDTH; y++ )
 		{
@@ -574,9 +544,10 @@ void h_Chunk::ReCalculateHeightmap()
 			{
 				if( blocks[addr]->Type() != AIR )
 				{
-					height_map[ x | (y<<H_CHUNK_WIDTH_LOG2) ]= z;
+					height_map_[ x | (y<<H_CHUNK_WIDTH_LOG2) ]= z;
 					break;
 				}
 			}
 		}
+		*/
 }

@@ -41,11 +41,7 @@ public:
 	unsigned char SunLightLevel( short x, short y, short z ) const;
 	unsigned char FireLightLevel( short x, short y, short z ) const;
 
-
-
 private:
-	h_World* world;
-
 	void GenChunk();
 
 	//chunk save\load
@@ -79,17 +75,12 @@ private:
 	void SetBlockAndTransparency( short x, short y, short z, h_Block* b, h_TransparencyType t );
 	void SetTransparency( short x, short y, short z, h_TransparencyType t );
 
+private:
+	h_World* const world_;
+	const int longitude_;
+	const int latitude_ ;
 
-
-	unsigned char transparency	[ H_CHUNK_WIDTH * H_CHUNK_WIDTH * H_CHUNK_HEIGHT ];
-	h_Block* 	blocks	  		[ H_CHUNK_WIDTH * H_CHUNK_WIDTH * H_CHUNK_HEIGHT ];
-	unsigned char sun_light_map	[ H_CHUNK_WIDTH * H_CHUNK_WIDTH * H_CHUNK_HEIGHT ];
-	unsigned char fire_light_map[ H_CHUNK_WIDTH * H_CHUNK_WIDTH * H_CHUNK_HEIGHT ];
-	int longitude, latitude;
-
-	unsigned char height_map [ H_CHUNK_WIDTH * H_CHUNK_WIDTH ];//z coordinates of first nonair block
-
-	bool need_update_light;
+	bool need_update_light_;
 
 	//water management
 	struct
@@ -100,9 +91,16 @@ private:
 		m_Collection< h_LiquidBlock* > water_block_list;
 	} water_blocks_data;
 
-
 	//light management
-	m_Collection< h_LightSource* > light_source_list;
+	m_Collection< h_LightSource* > light_source_list_;
+
+	// Large arrays - put back.
+	h_Block* blocks_             [ H_CHUNK_WIDTH * H_CHUNK_WIDTH * H_CHUNK_HEIGHT ];
+	unsigned char transparency_  [ H_CHUNK_WIDTH * H_CHUNK_WIDTH * H_CHUNK_HEIGHT ];
+	unsigned char sun_light_map_ [ H_CHUNK_WIDTH * H_CHUNK_WIDTH * H_CHUNK_HEIGHT ];
+	unsigned char fire_light_map_[ H_CHUNK_WIDTH * H_CHUNK_WIDTH * H_CHUNK_HEIGHT ];
+
+	unsigned char height_map_    [ H_CHUNK_WIDTH * H_CHUNK_WIDTH ];//z coordinates of first nonair block
 };
 
 
@@ -113,105 +111,82 @@ inline const m_Collection< h_LiquidBlock* >* h_Chunk::GetWaterList() const
 
 inline const m_Collection< h_LightSource* >* h_Chunk::GetLightSourceList() const
 {
-	return & light_source_list;
+	return &light_source_list_;
 }
 
 inline unsigned char h_Chunk::Transparency( short x, short y, short z ) const
 {
-	return transparency[	 z |
-							 ( y << H_CHUNK_HEIGHT_LOG2 ) |
-							 ( x << ( H_CHUNK_HEIGHT_LOG2 + H_CHUNK_WIDTH_LOG2 ) )
-					   ];
+	return transparency_[ BlockAddr( x, y, z ) ];
 }
 
 inline h_Block* h_Chunk::GetBlock( short x, short y, short z )
 {
-	return blocks[	 z |
-					 ( y << H_CHUNK_HEIGHT_LOG2 ) |
-					 ( x << ( H_CHUNK_HEIGHT_LOG2 + H_CHUNK_WIDTH_LOG2 ) )
-				 ];
+	return blocks_[ BlockAddr( x, y, z ) ];
 }
 
 inline const h_Block* h_Chunk::GetBlock( short x, short y, short z ) const
 {
-	return blocks[	 z |
-					 ( y << H_CHUNK_HEIGHT_LOG2 ) |
-					 ( x << ( H_CHUNK_HEIGHT_LOG2 + H_CHUNK_WIDTH_LOG2 ) )
-				 ];
+	return blocks_[ BlockAddr( x, y, z ) ];
 }
 
 
 inline void h_Chunk::SetBlock( short x, short y, short z, h_Block* b )
 {
-	blocks[	 z |
-			 ( y << H_CHUNK_HEIGHT_LOG2 ) |
-			 ( x << ( H_CHUNK_HEIGHT_LOG2 + H_CHUNK_WIDTH_LOG2 ) )
-		  ] = b;
+	blocks_[ BlockAddr( x, y, z ) ]= b;
 }
 
 inline void h_Chunk::SetTransparency( short x, short y, short z, h_TransparencyType t )
 {
-	transparency[	 z |
-					 ( y << H_CHUNK_HEIGHT_LOG2 ) |
-					 ( x << ( H_CHUNK_HEIGHT_LOG2 + H_CHUNK_WIDTH_LOG2 ) )
-				]= t;
+	transparency_[ BlockAddr( x, y, z ) ]= t;
 }
 
 inline void h_Chunk::SetBlockAndTransparency( short x, short y, short z, h_Block* b, h_TransparencyType t )
 {
-	short addr= z |( y << H_CHUNK_HEIGHT_LOG2 ) |( x << ( H_CHUNK_HEIGHT_LOG2 + H_CHUNK_WIDTH_LOG2 ) );
+	short addr= BlockAddr( x, y, z );
 
-	transparency[addr]= t;
-	blocks[addr]=b;
+	transparency_[addr]= t;
+	blocks_[addr]= b;
 }
 
 inline unsigned char h_Chunk::SunLightLevel( short x, short y, short z ) const
 {
-	return sun_light_map[  z |
-						   ( y << H_CHUNK_HEIGHT_LOG2 ) |
-						   ( x << ( H_CHUNK_HEIGHT_LOG2 + H_CHUNK_WIDTH_LOG2 ) ) ];
+	return sun_light_map_[ BlockAddr( x, y, z ) ];
 }
 
 inline unsigned char h_Chunk::FireLightLevel( short x, short y, short z ) const
 {
-	return fire_light_map[  z |
-							( y << H_CHUNK_HEIGHT_LOG2 ) |
-							( x << ( H_CHUNK_HEIGHT_LOG2 + H_CHUNK_WIDTH_LOG2 ) ) ];
+	return fire_light_map_[ BlockAddr( x, y, z ) ];
 }
 
 inline void h_Chunk::SetSunLightLevel( short x, short y, short z, unsigned char l )
 {
-	sun_light_map[  z |
-					( y << H_CHUNK_HEIGHT_LOG2 ) |
-					( x << ( H_CHUNK_HEIGHT_LOG2 + H_CHUNK_WIDTH_LOG2 ) ) ]= l;
+	sun_light_map_[ BlockAddr( x, y, z ) ]= l;
 }
 inline void h_Chunk::SetFireLightLevel( short x, short y, short z, unsigned char l )
 {
-	fire_light_map[  z |
-					 ( y << H_CHUNK_HEIGHT_LOG2 ) |
-					 ( x << ( H_CHUNK_HEIGHT_LOG2 + H_CHUNK_WIDTH_LOG2 ) ) ]= l;
+	fire_light_map_[ BlockAddr( x, y, z ) ]= l;
 }
 
 inline const unsigned char* h_Chunk::GetTransparencyData() const
 {
-	return transparency;
+	return transparency_;
 }
 
 inline short h_Chunk::Longitude() const
 {
-	return longitude;
+	return longitude_;
 }
-inline short h_Chunk::Latitude() const
+inline short h_Chunk::Latitude () const
 {
-	return latitude;
+	return latitude_ ;
 }
 
 inline const h_World* h_Chunk::GetWorld() const
 {
-	return world;
+	return world_;
 }
 
 inline h_World* h_Chunk::GetWorld()
 {
-	return world;
+	return world_;
 }
