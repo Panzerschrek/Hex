@@ -463,12 +463,12 @@ void h_World::BuildPhysMesh( h_ChunkPhysMesh* phys_mesh, short x_min, short x_ma
 	short X= Longitude() * H_CHUNK_WIDTH;
 	short Y= Latitude() * H_CHUNK_WIDTH;
 
-	x_min= max( short(2), x_min );
-	y_min= max( short(2), y_min );
-	z_min= max( short(0), z_min );
-	x_max= min( x_max, short( chunk_number_x_ * H_CHUNK_WIDTH - 2 ) );
-	y_max= min( y_max, short( chunk_number_y_ * H_CHUNK_WIDTH - 2 ) );
-	z_max= min( z_max, short( H_CHUNK_HEIGHT - 1 ) );
+	x_min= std::max( short(2), x_min );
+	y_min= std::max( short(2), y_min );
+	z_min= std::max( short(0), z_min );
+	x_max= std::min( x_max, short( chunk_number_x_ * H_CHUNK_WIDTH - 2 ) );
+	y_max= std::min( y_max, short( chunk_number_y_ * H_CHUNK_WIDTH - 2 ) );
+	z_max= std::min( z_max, short( H_CHUNK_HEIGHT - 1 ) );
 
 	p_UpperBlockFace* block_face;
 	p_BlockSide* block_side;
@@ -681,14 +681,14 @@ void h_World::WaterPhysTick()
 						short level_delta= max_down_cell_water_level - b2->LiquidLevel();
 						if( level_delta > 0 )
 						{
-							level_delta= min( level_delta, (short) b->LiquidLevel() );
+							level_delta= std::min( level_delta, (short) b->LiquidLevel() );
 							b->DecreaseLiquidLevel( level_delta );
 							b2->IncreaseLiquidLevel( level_delta );
 							chunk_modifed= true;
 						}
 						else if( level_delta < 0 )
 						{
-							level_delta= min( (short)-level_delta, (short)b2->LiquidLevel() );
+							level_delta= std::min( (short)-level_delta, (short)b2->LiquidLevel() );
 							b->IncreaseLiquidLevel( level_delta );
 							b2->DecreaseLiquidLevel( level_delta );
 							chunk_modifed= true;

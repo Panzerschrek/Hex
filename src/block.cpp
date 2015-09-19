@@ -1,3 +1,6 @@
+#include <cctype>
+#include <cstring>
+
 #include "hex.hpp"
 #include "block.hpp"
 
@@ -46,7 +49,7 @@ static const char* block_names[NUM_BLOCK_TYPES]= {
 
 h_BlockType h_Block::GetGetBlockTypeByName( const char* name )
 {
-	if( name == NULL )
+	if( name == nullptr )
 		return BLOCK_UNKNOWN;
 
 	char buff[128];
@@ -80,7 +83,7 @@ static const char* direction_names[]= {
 
 h_Direction h_Block::GetDirectionByName( const char* name )
 {
-	if( name == NULL )
+	if( name == nullptr )
 		return DIRECTION_UNKNOWN;
 
 	char buff[128];

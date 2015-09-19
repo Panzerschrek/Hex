@@ -6,7 +6,7 @@
 
 ui_Painter::ui_Painter()
 {
-	ui_vbo.VertexData( NULL, sizeof(ui_Vertex)*4096, sizeof(ui_Vertex) );
+	ui_vbo.VertexData( nullptr, sizeof(ui_Vertex)*4096, sizeof(ui_Vertex) );
 
 	ui_Vertex vert;
 	int offset= ((char*)vert.coord) - ((char*)&vert);

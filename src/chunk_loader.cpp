@@ -103,7 +103,7 @@ void h_ChunkLoader::LoadRegion( int longitude, int latitude, h_RegionData* regio
 	QString file_name;
 	GetRegionFileName( file_name, longitude, latitude );
 	FILE* f= fopen( file_name.toLocal8Bit().constData(), "rb" );
-	if( f == NULL )
+	if( f == nullptr )
 	{
 		//make new region, with no chunks
 		region->header.longitude= longitude;
@@ -139,7 +139,7 @@ void h_ChunkLoader::SaveRegion( h_RegionData* region )
 	QString file_name;
 	GetRegionFileName( file_name, region->header.longitude, region->header.latitude );
 	FILE* f= fopen( file_name.toLocal8Bit().constData(), "wb" );
-	if( f == NULL )
+	if( f == nullptr )
 	{
 		//fail here
 	}

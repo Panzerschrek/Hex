@@ -10,7 +10,7 @@ void r_WaterQuadChunkInfo::GetVertexCount()
 	for( unsigned int i= 0; i< 2; i++ )
 		for( unsigned int j= 0; j< 2; j++ )
 		{
-			if( chunks_[i][j] != NULL )
+			if( chunks_[i][j] != nullptr )
 				new_vertex_count_+= chunks_[i][j]->water_surface_mesh_vertices_.Size();
 		}
 }
@@ -20,7 +20,7 @@ void r_WaterQuadChunkInfo::GetUpdatedState()
 	water_updated_= false;
 	for( unsigned int i= 0; i< 2; i++ )
 		for( unsigned int j= 0; j< 2; j++ )
-			if( chunks_[i][j] != NULL )
+			if( chunks_[i][j] != nullptr )
 				water_updated_= water_updated_ || chunks_[i][j]->chunk_water_data_updated_;
 }
 
@@ -32,7 +32,7 @@ void r_WaterQuadChunkInfo::BuildFinalMesh()
 	for( unsigned int i= 0; i< 2; i++ )
 		for( unsigned int j= 0; j< 2; j++ )
 		{
-			if( chunks_[i][j] != NULL )
+			if( chunks_[i][j] != nullptr )
 			{
 				s= chunks_[i][j]->water_surface_mesh_vertices_.Size();
 				memcpy( v, chunks_[i][j]->water_surface_mesh_vertices_.Data(), s * sizeof( r_WaterVertex ) );

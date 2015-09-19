@@ -1,10 +1,4 @@
 #pragma once
-// common C lybrary headers, without std::
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <ctype.h>
-#include <math.h>
 
 #define H_CHUNK_WIDTH 16
 #define H_CHUNK_WIDTH_LOG2 4
@@ -63,9 +57,6 @@
 #define H_MIN_SCREEN_WIDTH 320
 #define H_MAX_SCREEN_HEIGHT 4096
 #define H_MIN_SCREEN_HEIGHT 240
-
-#include "math_lib/minmax.hpp"
-
 
 enum h_BlockType:
 unsigned short

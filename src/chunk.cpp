@@ -337,7 +337,7 @@ unsigned int h_Chunk::CalculateWaterBlockCount()
 void h_Chunk::PrepareWaterBlocksCache( int needed_block_count )
 {
 	unsigned int final_buffer_size= needed_block_count * 5 / 4;
-	water_blocks_data.initial_water_block_buffer_size= max( final_buffer_size, H_CHUNK_INITIAL_WATER_BLOCK_COUNT );
+	water_blocks_data.initial_water_block_buffer_size= std::max( final_buffer_size, H_CHUNK_INITIAL_WATER_BLOCK_COUNT );
 	water_blocks_data.initial_water_blocks= new
 	h_LiquidBlock[ water_blocks_data.initial_water_block_buffer_size ];
 
@@ -348,7 +348,7 @@ void h_Chunk::GenWaterBlocks()
 {
 	unsigned int c= CalculateWaterBlockCount();
 
-	water_blocks_data.initial_water_block_buffer_size= max( c * 2, H_CHUNK_INITIAL_WATER_BLOCK_COUNT );
+	water_blocks_data.initial_water_block_buffer_size= std::max( c * 2, H_CHUNK_INITIAL_WATER_BLOCK_COUNT );
 	water_blocks_data.initial_water_blocks= new
 	h_LiquidBlock[ water_blocks_data.initial_water_block_buffer_size ];
 

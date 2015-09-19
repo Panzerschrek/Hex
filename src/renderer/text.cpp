@@ -180,7 +180,7 @@ void r_Text::Draw()
 		blend_func );
 	r_OGLStateManager::UpdateState( state );
 
-	glDrawElements( GL_TRIANGLES, vertex_buffer_pos * 6 / 4, GL_UNSIGNED_SHORT, NULL );
+	glDrawElements( GL_TRIANGLES, vertex_buffer_pos * 6 / 4, GL_UNSIGNED_SHORT, nullptr );
 
 	vertex_buffer_pos= 0;
 }
@@ -208,8 +208,7 @@ r_Text::r_Text( const char* font_file ):
 		quad_indeces[i + 5]= j;
 	}
 
-	text_vbo.VertexData( NULL, H_MAX_TEXT_BUFFER_SIZE * 4 * sizeof(r_TextVertex),
-						 sizeof(r_TextVertex) );
+	text_vbo.VertexData( nullptr, H_MAX_TEXT_BUFFER_SIZE * 4 * sizeof(r_TextVertex), sizeof(r_TextVertex) );
 	text_vbo.IndexData( quad_indeces, H_MAX_TEXT_BUFFER_SIZE * 6 * sizeof(short), GL_UNSIGNED_SHORT, GL_TRIANGLES );
 	delete[] quad_indeces;
 

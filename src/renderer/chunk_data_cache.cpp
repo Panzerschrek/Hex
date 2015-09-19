@@ -1,3 +1,5 @@
+#include <cstdio>
+
 #include "chunk_data_cache.hpp"
 
 r_ChunkDataCache::r_ChunkDataCache()
@@ -13,7 +15,7 @@ r_ChunkDataCache::~r_ChunkDataCache()
 void r_ChunkDataCache::SaveChunkMatrix( const char* file_name, const unsigned short* matrix ) const
 {
 	FILE* f= fopen( file_name, "wb" );
-	if( f == NULL )
+	if( f == nullptr )
 		return;
 
 	fwrite( matrix, 1, CHUNK_MATRIX_WIDTH_ * CHUNK_MATRIX_HEIGHT_, f );

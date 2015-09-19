@@ -45,7 +45,7 @@ QSize h_MainLoop::sizeHint() const
 h_MainLoop::h_MainLoop(
 	const h_SettingsPtr& settings,
 	const QGLFormat& format )
-	: QGLWidget( format, NULL )
+	: QGLWidget( format, nullptr )
 	, settings_(settings)
 	, startup_time_(0,0,0,0)
 	, prev_move_time_(QTime::currentTime())

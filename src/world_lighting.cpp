@@ -330,7 +330,7 @@ short h_World::RelightBlockAdd( short x, short y, short z )
 	//shining from kight sources in cube
 	ShineFireLight( x_min, y_min, z_min, x_max, y_max, z_max );
 
-	return (short)max( l, fire_l );
+	return (short)std::max( l, fire_l );
 }
 
 void h_World::RelightBlockRemove( short x, short y, short z )

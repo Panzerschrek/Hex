@@ -22,7 +22,7 @@ public:
 		if( size > memory_size )
 		{
 			memory_size= size + ( size >> 2 );
-			if( data != NULL )
+			if( data != nullptr )
 				delete[] data;
 			data= new T[ memory_size ];
 		}
