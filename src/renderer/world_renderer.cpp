@@ -19,7 +19,6 @@ r_WorldRenderer::r_WorldRenderer(
 	const h_WorldConstPtr& world )
 	: settings_(settings)
 	, world_(world)
-	, sun_vector_( 0.7f, 0.8f, 0.6f )
 	, startup_time_(clock())
 {
 	// Init chunk matrix
@@ -311,15 +310,11 @@ void r_WorldRenderer::CalculateLight()
 {
 	lighting_data_.current_sun_light= R_SUN_LIGHT_COLOR / float ( H_MAX_SUN_LIGHT * 16 );
 	lighting_data_.current_fire_light= R_FIRE_LIGHT_COLOR / float ( H_MAX_FIRE_LIGHT * 16 );
+	lighting_data_.sun_direction= m_Vec3( 0.7f, 0.8f, 0.6f );
 }
 
 void r_WorldRenderer::Draw()
 {
-	if( frames_counter_.GetTotalTicks() == 0 )
-	{
-
-	}
-
 	UpdateGPUData();
 	CalculateMatrices();
 	CalculateLight();
@@ -329,7 +324,7 @@ void r_WorldRenderer::Draw()
 
 	DrawWorld();
 	DrawSky();
-	//DrawSun();
+	DrawSun();
 	//weather_effects_particle_manager_.Draw( view_matrix_, cam_pos_ );
 
 	DrawBuildPrism();
@@ -349,10 +344,19 @@ void r_WorldRenderer::Draw()
 	if( settings_->GetBool( h_SettingsKeys::show_debug_info, false ) && h_Console::GetPosition() == 0.0f )
 	{
 		float text_scale= 0.25f;
-		text_manager_->AddMultiText( 0, 0, text_scale, r_Text::default_color, "fps: %d", frames_counter_.GetTicksFrequency() );
-		text_manager_->AddMultiText( 0, 1, text_scale, r_Text::default_color, "chunk updates per second: %d", chunks_updates_counter_.GetTicksFrequency() );
-		text_manager_->AddMultiText( 0, 2, text_scale, r_Text::default_color, "cam pos: %4.1f %4.1f %4.1f",
-									cam_pos_.x, cam_pos_.y, cam_pos_.z );
+		int i= 0;
+		text_manager_->AddMultiText( 0, i++, text_scale, r_Text::default_color,
+			"fps: %d", frames_counter_.GetTicksFrequency() );
+		text_manager_->AddMultiText( 0, i++, text_scale, r_Text::default_color,
+			"chunk updates per second: %d", chunks_updates_counter_.GetTicksFrequency() );
+		text_manager_->AddMultiText( 0, i++, text_scale, r_Text::default_color,
+			"chunks: %dx%d\n", chunks_info_.matrix_size[0], chunks_info_.matrix_size[1] );
+		text_manager_->AddMultiText( 0, i++, text_scale, r_Text::default_color,
+			"quads: %d; per chunk: %d\n",
+			world_quads_in_frame_,
+			world_quads_in_frame_ / (chunks_info_.matrix_size[0] * chunks_info_.matrix_size[1]) );
+		text_manager_->AddMultiText( 0, i++, text_scale, r_Text::default_color,
+			"cam pos: %4.1f %4.1f %4.1f", cam_pos_.x, cam_pos_.y, cam_pos_.z );
 
 		//text_manager->AddMultiText( 0, 11, text_scale, r_Text::default_color, "quick brown fox jumps over the lazy dog\nQUICK BROWN FOX JUMPS OVER THE LAZY DOG\n9876543210-+/\\" );
 		//text_manager->AddMultiText( 0, 0, 8.0f, r_Text::default_color, "#A@Kli\nO01-eN" );
@@ -410,12 +414,14 @@ void r_WorldRenderer::DrawWorld()
 
 	world_shader_.Bind();
 	world_shader_.Uniform( "tex", 0 );
-	world_shader_.Uniform( "sun_vector", sun_vector_ );
+	world_shader_.Uniform( "sun_vector", lighting_data_.sun_direction );
 	world_shader_.Uniform( "view_matrix", block_final_matrix_ );
 
 	world_shader_.Uniform( "sun_light_color", lighting_data_.current_sun_light );
 	world_shader_.Uniform( "fire_light_color", lighting_data_.current_fire_light );
 	world_shader_.Uniform( "ambient_light_color", R_AMBIENT_LIGHT_COLOR );
+
+	world_quads_in_frame_= 0;
 
 	r_WVB* wvb= world_vertex_buffer_.get();
 	for( unsigned int cy= 0; cy < wvb->cluster_matrix_size_[1]; cy++ )
@@ -445,6 +451,8 @@ void r_WorldRenderer::DrawWorld()
 					segment.vertex_count * 6 / 4,
 					GL_UNSIGNED_SHORT,
 					nullptr, segment.first_vertex_index );
+
+				world_quads_in_frame_+= segment.vertex_count / 4;
 			}
 		}
 	}
@@ -484,7 +492,7 @@ void r_WorldRenderer::DrawSun()
 
 	sun_shader_.Bind();
 	sun_shader_.Uniform( "view_matrix", view_matrix_ );
-	sun_shader_.Uniform( "sun_vector", sun_vector_ );
+	sun_shader_.Uniform( "sun_vector", lighting_data_.sun_direction );
 	sun_shader_.Uniform( "cam_pos", cam_pos_ );
 	sun_shader_.Uniform( "tex", 0 );
 
@@ -502,7 +510,6 @@ void r_WorldRenderer::DrawWater()
 		1.0f, GL_FRONT, GL_TRUE );
 	r_OGLStateManager::UpdateState( state );
 
-	//water_texture.BindTexture( 0 );
 	water_texture_.Bind(0);
 
 	water_shader_.Bind();
@@ -527,10 +534,10 @@ void r_WorldRenderer::DrawWater()
 		water_vb_.chunk_meshes_index_count, GL_UNSIGNED_SHORT,//index count in every draw
 		(void**)water_vb_.multi_indeces,// pointers to index data, must be 0
 		water_vb_.quadchunks_to_draw,//number of draws
-		water_vb_.base_vertices );//base vbertices*/
+		water_vb_.base_vertices );//base vbertices
 
 	glPolygonOffset( 0.0f, 0.0f );
-	glDisable( GL_POLYGON_OFFSET_FILL );
+	glDisable( GL_POLYGON_OFFSET_FILL );*/
 }
 
 void r_WorldRenderer::DrawBuildPrism()
@@ -691,7 +698,7 @@ void r_WorldRenderer::LoadShaders()
 	if( !sun_shader_.Load( "shaders/sun_frag.glsl",  "shaders/sun_vert.glsl", nullptr ) )
 		h_Console::Error( "sun shader not found" );
 
-	sprintf( define_str, "SUN_SIZE %3.0f", float( viewport_width_ ) * 0.1f );
+	sprintf( define_str, "SUN_SIZE %3.0f", float( viewport_height_ ) * 0.1f );
 	sun_shader_.Define( define_str );
 	sun_shader_.Create();
 

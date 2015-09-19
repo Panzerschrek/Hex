@@ -140,8 +140,10 @@ private:
 	const h_SettingsPtr settings_;
 	const h_WorldConstPtr world_;
 
+	// Counters
 	h_TicksCounter frames_counter_;
 	h_TicksCounter chunks_updates_counter_;
+	unsigned int world_quads_in_frame_;
 
 	// Shaders
 	r_GLSLProgram world_shader_, build_prism_shader_, water_shader_, skybox_shader_, sun_shader_, console_bg_shader_, supersampling_final_shader_;
@@ -169,7 +171,7 @@ private:
 
 	//matrices and vectors
 	m_Mat4 view_matrix_, block_scale_matrix_, block_final_matrix_, water_final_matrix_;
-	m_Vec3 cam_ang_, cam_pos_, build_pos_, sun_vector_;
+	m_Vec3 cam_ang_, cam_pos_, build_pos_;
 
 	//unsigned int chunk_num_x_, chunk_num_y_;
 	struct
