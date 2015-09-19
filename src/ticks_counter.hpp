@@ -7,7 +7,7 @@ public:
 	h_TicksCounter(unsigned int frequency_calc_interval= 1000);
 	~h_TicksCounter();
 
-	void Tick();
+	void Tick( unsigned int count = 1);
 	unsigned int GetTicksFrequency() const;
 	unsigned int GetTotalTicks() const;
 
