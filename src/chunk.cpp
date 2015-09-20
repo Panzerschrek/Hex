@@ -1,5 +1,6 @@
 #include "chunk.hpp"
 #include "world.hpp"
+#include "math_lib/assert.hpp"
 #include "math_lib/rand.h"
 
 #define H_SEA_LEVEL (H_CHUNK_HEIGHT/2)
@@ -93,8 +94,7 @@ void h_Chunk::GenChunk()
 
 void h_Chunk::GenChunkFromFile( const HEXCHUNK_header* header, QDataStream& stream )
 {
-	PrepareWaterBlocksCache( header->water_block_count );
-	h_LiquidBlock* water_blocks= water_blocks_data.initial_water_blocks;
+	h_LiquidBlock* liquid_block;
 
 	for( int i= 0; i< H_CHUNK_WIDTH * H_CHUNK_WIDTH * H_CHUNK_HEIGHT; i++ )
 	{
@@ -133,17 +133,17 @@ void h_Chunk::GenChunkFromFile( const HEXCHUNK_header* header, QDataStream& stre
 			break;
 
 		case WATER:
-			blocks_[i]= water_blocks;
+			liquid_block= water_blocks_allocator_.New();
+			blocks_[i]= liquid_block;
 			transparency_[i]= TRANSPARENCY_LIQUID;
 			stream >> water_level;
 
-			water_blocks->x_= i >> (H_CHUNK_WIDTH_LOG2 + H_CHUNK_HEIGHT_LOG2);
-			water_blocks->y_= (i>>H_CHUNK_HEIGHT_LOG2) & (H_CHUNK_WIDTH-1);
-			water_blocks->z_= i & (H_CHUNK_HEIGHT-1);
+			liquid_block->x_= i >> (H_CHUNK_WIDTH_LOG2 + H_CHUNK_HEIGHT_LOG2);
+			liquid_block->y_= (i>>H_CHUNK_HEIGHT_LOG2) & (H_CHUNK_WIDTH-1);
+			liquid_block->z_= i & (H_CHUNK_HEIGHT-1);
 
-			water_blocks->SetLiquidLevel( water_level );
-			water_blocks_data.water_block_list.Add( water_blocks );
-			water_blocks++;
+			liquid_block->SetLiquidLevel( water_level );
+			water_blocks_data.water_block_list.Add( liquid_block );
 			break;
 
 		default:
@@ -334,85 +334,41 @@ unsigned int h_Chunk::CalculateWaterBlockCount()
 	return c;
 }
 
-void h_Chunk::PrepareWaterBlocksCache( int needed_block_count )
-{
-	unsigned int final_buffer_size= needed_block_count * 5 / 4;
-	water_blocks_data.initial_water_block_buffer_size= std::max( final_buffer_size, H_CHUNK_INITIAL_WATER_BLOCK_COUNT );
-	water_blocks_data.initial_water_blocks= new
-	h_LiquidBlock[ water_blocks_data.initial_water_block_buffer_size ];
-
-	water_blocks_data.free_blocks_position= needed_block_count;
-}
-
 void h_Chunk::GenWaterBlocks()
 {
-	unsigned int c= CalculateWaterBlockCount();
-
-	water_blocks_data.initial_water_block_buffer_size= std::max( c * 2, H_CHUNK_INITIAL_WATER_BLOCK_COUNT );
-	water_blocks_data.initial_water_blocks= new
-	h_LiquidBlock[ water_blocks_data.initial_water_block_buffer_size ];
-
-	water_blocks_data.free_blocks_position= c;
-
-	h_LiquidBlock* water_blocks= water_blocks_data.initial_water_blocks;
-
 	short x, y, z, addr = 0;
 	for( x= 0; x< H_CHUNK_WIDTH; x++ )
+	for( y= 0; y< H_CHUNK_WIDTH; y++ )
+	for( z= 0; z< H_CHUNK_HEIGHT; z++, addr++ )
 	{
-		for( y= 0; y< H_CHUNK_WIDTH; y++ )
+		if( blocks_[ addr ]->Type() == WATER )
 		{
-			for( z= 0; z< H_CHUNK_HEIGHT; z++, addr++ )
-			{
-				if( blocks_[ addr ]->Type() == WATER )
-				{
-					water_blocks->x_= x;
-					water_blocks->y_= y;
-					water_blocks->z_= z;
-					blocks_[ addr ]= water_blocks;
-					water_blocks->SetLiquidLevel(
-						H_MAX_WATER_LEVEL + H_WATER_COMPRESSION_PER_BLOCK * ( H_SEA_LEVEL - water_blocks->z_ ) );
-					water_blocks++;
-				}
-			}
+			h_LiquidBlock* block= water_blocks_allocator_.New();
+			block->x_= x;
+			block->y_= y;
+			block->z_= z;
+			blocks_[ addr ]= block;
+			block->SetLiquidLevel(
+				H_MAX_WATER_LEVEL + H_WATER_COMPRESSION_PER_BLOCK * ( H_SEA_LEVEL - block->z_ ) );
+			water_blocks_data.water_block_list.Add( block );
 		}
 	}
-
-	for( unsigned int i= 0; i< c; i++ )
-		water_blocks_data.water_block_list.Add( water_blocks_data.initial_water_blocks + i );
 }
 
 h_LiquidBlock* h_Chunk::NewWaterBlock()
 {
-	h_LiquidBlock* b;
-	if( water_blocks_data.free_blocks_position< water_blocks_data.initial_water_block_buffer_size )
-	{
-		water_blocks_data.free_blocks_position++;
-		b= water_blocks_data.initial_water_blocks + water_blocks_data.free_blocks_position - 1;
-		water_blocks_data.water_block_list.Add( b );
-		return b;
-	}
-	else
-	{
-		water_blocks_data.water_block_list.Add( b= new h_LiquidBlock() );
-		return b;
-	}
+	h_LiquidBlock* b= water_blocks_allocator_.New();
+	water_blocks_data.water_block_list.Add( b );
+	return b;
 }
 
 void h_Chunk::DeleteWaterBlock( h_LiquidBlock* b )
 {
-	/*for( unsigned int i= 0; i <  water_blocks_data.water_block_list.Size(); i++ )
-		if( water_blocks_data.water_block_list.Data()[i] == b )
-		{
-			water_blocks_data.water_block_list.Remove(i);
-			break;
-		}*/
-	if( b > water_blocks_data.initial_water_blocks + water_blocks_data.initial_water_block_buffer_size ||
-			b < water_blocks_data.initial_water_blocks )//if block outside of initial buffer
-	{
-		delete b;
-	}
-}
+	// Do not remove block from list here.
+	//This must did outer code.
 
+	water_blocks_allocator_.Delete(b);
+}
 
 h_LightSource* h_Chunk::NewLightSource( short x, short y, short z, h_BlockType type )
 {
@@ -504,17 +460,6 @@ h_Chunk::h_Chunk( h_World* world, const HEXCHUNK_header* header, QDataStream& st
 
 h_Chunk::~h_Chunk()
 {
-	//delete water blocks outside water_blocks_data.initial_water_blocks
-	h_LiquidBlock* last_liquid_block_in_initial_buffer=
-		water_blocks_data.initial_water_blocks + water_blocks_data.initial_water_block_buffer_size - 1;
-	for( unsigned int i= 0; i< water_blocks_data.water_block_list.Size(); i++ )
-	{
-		h_LiquidBlock* b= water_blocks_data.water_block_list.Data()[i];
-		if( b < water_blocks_data.initial_water_blocks || b > last_liquid_block_in_initial_buffer )
-			delete b;
-	}
-
-	delete[] water_blocks_data.initial_water_blocks;
 }
 
 unsigned int h_Chunk::GetWaterColumnHeight( short x, short y, short z )

@@ -4,6 +4,7 @@
 #include "block.hpp"
 #include "math_lib/collection.hpp"
 #include "world_loading.hpp"
+#include "math_lib/small_objects_allocator.hpp"
 
 #define BlockAddr( x, y, z ) ( (z) |\
 	( (y) << H_CHUNK_HEIGHT_LOG2 ) |\
@@ -59,9 +60,6 @@ private:
 	void MakeLight();
 	void SunRelight();
 
-	void PrepareWaterBlocksCache( int needed_block_count );
-
-
 	void ReCalculateHeightmap();
 
 //water management
@@ -86,13 +84,11 @@ private:
 	bool need_update_light_;
 
 	//water management
+	SmallObjectsAllocator< h_LiquidBlock, 256, unsigned char > water_blocks_allocator_;
 	struct
 	{
-		h_LiquidBlock* initial_water_blocks;
-		unsigned int initial_water_block_buffer_size;
-		unsigned int free_blocks_position;//offset from 'initial_water_blocks', where is free space for new water blocks
 		m_Collection< h_LiquidBlock* > water_block_list;
-	} water_blocks_data;
+	}water_blocks_data;
 
 	//light management
 	m_Collection< h_LightSource* > light_source_list_;
