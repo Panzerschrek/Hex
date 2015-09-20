@@ -249,7 +249,9 @@ void r_WorldRenderer::Update()
 		}
 	}
 
+	// Not thread safe. writes here, reads in GPU thread.
 	chunks_updates_counter_.Tick( chunks_rebuilded );
+	updates_counter_.Tick();
 }
 
 void r_WorldRenderer::UpdateChunk(unsigned short X,  unsigned short Y )
@@ -363,6 +365,8 @@ void r_WorldRenderer::Draw()
 		int i= 0;
 		text_manager_->AddMultiText( 0, i++, text_scale, r_Text::default_color,
 			"fps: %d", frames_counter_.GetTicksFrequency() );
+		text_manager_->AddMultiText( 0, i++, text_scale, r_Text::default_color,
+			"world ticks per second: %d", updates_counter_.GetTicksFrequency() );
 		text_manager_->AddMultiText( 0, i++, text_scale, r_Text::default_color,
 			"chunk updates per second: %d", chunks_updates_counter_.GetTicksFrequency() );
 		text_manager_->AddMultiText( 0, i++, text_scale, r_Text::default_color,
