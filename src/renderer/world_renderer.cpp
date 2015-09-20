@@ -684,7 +684,7 @@ void r_WorldRenderer::DrawBuildPrism()
 		true, false, true, false,
 		state_blend_mode,
 		state_clear_color,
-		1.0f, GL_FRONT, GL_TRUE );
+		1.0f, GL_FRONT, GL_FALSE );
 
 	if( build_pos_.z < 0.0f )
 		return;
