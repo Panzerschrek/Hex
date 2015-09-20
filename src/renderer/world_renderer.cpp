@@ -61,22 +61,18 @@ r_WorldRenderer::r_WorldRenderer(
 		UpdateChunkMatrixPointers();
 	}
 
+	// TODO - profile this and select optimal cluster size.
+	unsigned int world_cluster_size[2] { 3, 3 };
+	unsigned int world_water_cluster_size[2] { 5, 4 };
 	// Create world vertex buffer
 	{
-		// TODO - profile this and select optimal cluster size.
-		unsigned int cluster_size[2] { 3, 3 };
-
 		// Quad indexation
 		unsigned int quad_count= 65536 / 6 - 1;
 		std::vector<unsigned short> indeces( quad_count * 6 );
 		for( unsigned int i= 0, v= 0; i< quad_count * 6; i+= 6, v+= 4 )
 		{
-			indeces[i  ]= v;
-			indeces[i+1]= v + 1;
-			indeces[i+2]= v + 2;
-			indeces[i+3]= v;
-			indeces[i+4]= v + 2;
-			indeces[i+5]= v + 3;
+			indeces[i+0]= v + 0; indeces[i+1]= v + 1; indeces[i+2]= v + 2;
+			indeces[i+3]= v + 0; indeces[i+4]= v + 2; indeces[i+5]= v + 3;
 		}
 
 		r_VertexFormat format;
@@ -115,10 +111,53 @@ r_WorldRenderer::r_WorldRenderer(
 
 		world_vertex_buffer_.reset(
 			new r_WVB(
-				cluster_size[0],
-				cluster_size[1],
-				world_->ChunkNumberX() / cluster_size[0] + 2,
-				world_->ChunkNumberY() / cluster_size[1] + 2,
+				world_cluster_size[0],
+				world_cluster_size[1],
+				world_->ChunkNumberX() / world_cluster_size[0] + 2,
+				world_->ChunkNumberY() / world_cluster_size[1] + 2,
+				std::move(indeces),
+				std::move(format) ));
+	}
+
+	// Create World water vertex buffr
+	{
+		// Hex indexation
+		unsigned int hex_count= 65536 / 12 - 1;
+		std::vector<unsigned short> indeces( hex_count * 12 );
+		for( unsigned int i= 0, v= 0; i< hex_count * 6; i+= 12, v+= 6 )
+		{
+			indeces[i+ 0]= v + 0; indeces[i+ 1]= v + 1; indeces[i+ 2]= v + 2;
+			indeces[i+ 3]= v + 2; indeces[i+ 4]= v + 3; indeces[i+ 5]= v + 4;
+			indeces[i+ 6]= v + 4; indeces[i+ 7]= v + 5; indeces[i+ 8]= v + 0;
+			indeces[i+ 9]= v + 0; indeces[i+10]= v + 2; indeces[i+11]= v + 4;
+		}
+
+		r_VertexFormat format;
+		format.vertex_size= sizeof(r_WaterVertex);
+
+		r_WaterVertex v;
+		r_VertexFormat::Attribute attrib;
+
+		attrib.type= r_VertexFormat::Attribute::TypeInShader::Real;
+		attrib.input_type= GL_SHORT;
+		attrib.components= 3;
+		attrib.offset= (char*)v.coord - (char*)&v;
+		attrib.normalized= false;
+		format.attributes.push_back(attrib);
+
+		attrib.type= r_VertexFormat::Attribute::TypeInShader::Real;
+		attrib.input_type= GL_UNSIGNED_BYTE;
+		attrib.components= 2;
+		attrib.offset= (char*)v.light - (char*)&v;
+		attrib.normalized= false;
+		format.attributes.push_back(attrib);
+
+		world_water_vertex_buffer_.reset(
+			new r_WVB(
+				world_water_cluster_size[0],
+				world_water_cluster_size[1],
+				world_->ChunkNumberX() / world_water_cluster_size[0] + 2,
+				world_->ChunkNumberY() / world_water_cluster_size[1] + 2,
 				std::move(indeces),
 				std::move(format) ));
 	}
@@ -274,32 +313,41 @@ void r_WorldRenderer::UpdateChunk(unsigned short X,  unsigned short Y )
 
 void r_WorldRenderer::UpdateChunkWater(unsigned short X,  unsigned short Y )
 {
+	H_ASSERT( X >= 0 && X < chunks_info_.matrix_size[0] );
+	H_ASSERT( Y >= 0 && Y < chunks_info_.matrix_size[1] );
+	H_ASSERT( world_->Longitude() == chunks_info_.matrix_position[0] );
+	H_ASSERT( world_->Latitude () == chunks_info_.matrix_position[1] );
+
+	chunks_info_.chunk_matrix[ X + Y * chunks_info_.matrix_size[0] ]->water_updated_= true;
 }
 
 void r_WorldRenderer::UpdateWorldPosition( int longitude, int latitude )
 {
-	r_WVB* wvb= world_vertex_buffer_.get();
-
 	// Move our chunk matrix.
 	MoveChunkMatrix( longitude, latitude );
 
-	// Calculate position of cluster matrix, move it.
-	unsigned int cluster_matrix_coord[2]=
+	for( unsigned int i= 0; i< 2; i++ )
 	{
-		wvb->cluster_size_[0] *
-		m_Math::DivNonNegativeRemainder(
-			world_->Longitude(),
-			wvb->cluster_size_[0] ),
+		r_WVB* wvb= i == 0 ? world_vertex_buffer_.get() : world_water_vertex_buffer_.get();
 
-		wvb->cluster_size_[1] *
-		m_Math::DivNonNegativeRemainder(
-			world_->Latitude (),
-			wvb->cluster_size_[1] )
+		// Calculate position of cluster matrix, move it.
+		unsigned int cluster_matrix_coord[2]=
+		{
+			wvb->cluster_size_[0] *
+			m_Math::DivNonNegativeRemainder(
+				world_->Longitude(),
+				wvb->cluster_size_[0] ),
+
+			wvb->cluster_size_[1] *
+			m_Math::DivNonNegativeRemainder(
+				world_->Latitude (),
+				wvb->cluster_size_[1] )
+		};
+
+		wvb->MoveCPUMatrix(
+			cluster_matrix_coord[0],
+			cluster_matrix_coord[1] );
 	};
-
-	wvb->MoveCPUMatrix(
-		cluster_matrix_coord[0],
-		cluster_matrix_coord[1] );
 }
 
 void r_WorldRenderer::CalculateMatrices()

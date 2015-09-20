@@ -44,11 +44,12 @@ struct r_WaterVertex
 class r_ChunkInfo
 {
 public:
-
 	r_ChunkInfo();
-	void GetQuadCount();
+
+	void GetWaterHexCount();
 	void BuildWaterSurfaceMesh();
-	void BuildWaterSideMesh();
+
+	void GetQuadCount();
 	void BuildChunkMesh();
 
 	// Pointer to external storage for vertices.
@@ -57,21 +58,19 @@ public:
 	// ChunkInfo is always updated after creation.
 	bool updated_= true;
 
+	r_WaterVertex* water_vertex_data_= nullptr;
+	unsigned int water_vertex_count_= 0;
+	bool water_updated_= true;
+
 	//geomentry up and down range borders. Used only for generation of center chunk blocks( not for border blocks )
 	int max_geometry_height_, min_geometry_height_;
-
-	m_Collection< r_WaterVertex > water_surface_mesh_vertices_;
-	m_Collection< r_WaterVertex > water_side_mesh_vertices_;
-
-	bool chunk_data_updated_, chunk_water_data_updated_;
-	//bool chunk_mesh_rebuilded_;
 
 	const h_Chunk* chunk_;
 	const h_Chunk* chunk_front_, *chunk_right_, *chunk_back_right_, *chunk_back_;
 };
 
 typedef std::unique_ptr<r_ChunkInfo> r_ChunkInfoPtr;
-
+/*
 class r_WaterQuadChunkInfo
 {
 public:
@@ -87,7 +86,7 @@ public:
 	bool water_mesh_rebuilded_;
 
 	r_ChunkInfo* chunks_[2][2];
-};
+};*/
 
 class r_WorldRenderer final : public r_IWorldRenderer
 {
@@ -179,7 +178,6 @@ private:
 	m_Vec3 build_pos_;
 	h_Direction build_direction_;
 
-	//unsigned int chunk_num_x_, chunk_num_y_;
 	struct
 	{
 		std::vector< r_ChunkInfoPtr > chunk_matrix;
@@ -190,6 +188,7 @@ private:
 	} chunks_info_;
 
 	std::unique_ptr<r_WVB> world_vertex_buffer_;
+	std::unique_ptr<r_WVB> world_water_vertex_buffer_;
 	std::mutex world_vertex_buffer_mutex_;
 
 	//text out
