@@ -70,23 +70,6 @@ public:
 };
 
 typedef std::unique_ptr<r_ChunkInfo> r_ChunkInfoPtr;
-/*
-class r_WaterQuadChunkInfo
-{
-public:
-	void GetVertexCount();
-	void BuildFinalMesh();
-	void GetUpdatedState();// set up water_updated= true, if any of h_ChunkInfo::chunk_water_data_updated= true
-
-	r_WaterVertex* vb_data_;// pointer in array in r_WorldRenderer::water_vb_::vb_data
-	unsigned int allocated_vertex_count_, real_vertex_count_;
-	unsigned int new_vertex_count_;
-
-	bool water_updated_;
-	bool water_mesh_rebuilded_;
-
-	r_ChunkInfo* chunks_[2][2];
-};*/
 
 class r_WorldRenderer final : public r_IWorldRenderer
 {
@@ -129,8 +112,12 @@ private:
 	void CalculateLight();
 
 	void DrawBuildPrism();
+
+	// helper. returns vertex count
+	unsigned int DrawClusterMatrix( r_WVB* wvb, unsigned int indeces_per_vertex_num, unsigned int indeces_per_vertex_den );
 	void DrawWorld();
 	void DrawWater();
+
 	void DrawSky();
 	void DrawSun();
 	void DrawConsole();
@@ -144,6 +131,7 @@ private:
 	h_TicksCounter chunks_updates_counter_;
 	h_TicksCounter updates_counter_;
 	unsigned int world_quads_in_frame_;
+	unsigned int water_hexagons_in_frame_;
 
 	// Shaders
 	r_GLSLProgram world_shader_, build_prism_shader_, water_shader_, skybox_shader_, sun_shader_, console_bg_shader_, supersampling_final_shader_;
