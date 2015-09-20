@@ -163,6 +163,8 @@ private:
 	//framebuffers
 	unsigned viewport_width_, viewport_height_;
 	r_Framebuffer supersampling_buffer_;
+	bool use_supersampling_;
+	unsigned int pixel_size_;
 
 	//textures
 	r_TextureManager texture_manager_;

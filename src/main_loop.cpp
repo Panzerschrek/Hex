@@ -27,7 +27,9 @@ void h_MainLoop::Start()
 
 	format.setVersion( 3, 3 );
 	format.setProfile( QGLFormat::CoreProfile );
-	format.setSwapInterval(1);
+
+	bool vsync= settings->GetBool( h_SettingsKeys::vsync, true );
+	format.setSwapInterval( vsync ? 1 : 0 );
 
 	new h_MainLoop( settings, format );
 }

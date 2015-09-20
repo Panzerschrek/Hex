@@ -3,6 +3,7 @@
 namespace h_SettingsKeys
 {
 
+const char* const vsync= "vsync";
 const char* const antialiasing= "antialiasing";
 const char* const screen_width = "screen_width" ;
 const char* const screen_height= "screen_height";

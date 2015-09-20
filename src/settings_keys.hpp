@@ -4,6 +4,7 @@ namespace h_SettingsKeys
 {
 
 // Main Loop keys
+extern const char* const vsync;
 extern const char* const antialiasing;
 extern const char* const screen_width ;
 extern const char* const screen_height;

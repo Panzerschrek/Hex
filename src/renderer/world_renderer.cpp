@@ -31,6 +31,8 @@ static const unsigned short g_build_prism_indeces[]=
 // 0,7, 1,8, 2,9, 3,10, 4,11, 5,6//additional lines
 // 0,3, 1,4, 2,5, 6,9, 7,10, 8,11  };
 
+static const char* const g_supersampling_antialiasing_key_value= "ss";
+
 r_WorldRenderer::r_WorldRenderer(
 	const h_SettingsPtr& settings,
 	const h_WorldConstPtr& world )
@@ -38,6 +40,12 @@ r_WorldRenderer::r_WorldRenderer(
 	, world_(world)
 	, startup_time_(clock())
 {
+	use_supersampling_=
+		!strcmp(
+			settings_->GetString( h_SettingsKeys::antialiasing ),
+			g_supersampling_antialiasing_key_value );
+	pixel_size_= use_supersampling_ ? 2 : 1;
+
 	// Init chunk matrix
 	{
 		chunks_info_.matrix_size[0]= world->ChunkNumberX();
@@ -338,24 +346,36 @@ void r_WorldRenderer::Draw()
 	CalculateMatrices();
 	CalculateLight();
 
-	//supersampling_buffer.Bind();
+	if( use_supersampling_ )
+	{
+		supersampling_buffer_.Bind();
+		glClear( GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT );
+	}
 
 	DrawWorld();
 	DrawSky();
 	DrawSun();
 	//weather_effects_particle_manager_.Draw( view_matrix_, cam_pos_ );
 
+
 	DrawBuildPrism();
 	//DrawWater();
 
-	/*r_Framebuffer::BindScreenFramebuffer();
-	r_OGLStateManager::DisableBlend();
-	r_OGLStateManager::DisableDepthTest();
-	r_OGLStateManager::DepthMask(false);
-	supersampling_final_shader.Bind();
-	(*supersampling_buffer.GetTextures())[0].Bind(0);
-	supersampling_final_shader.Uniform( "frame_buffer", 0 );
-	glDrawArrays( GL_TRIANGLES, 0, 6 );*/
+	if( use_supersampling_ )
+	{
+		r_Framebuffer::BindScreenFramebuffer();
+
+		static const GLenum state_blend_mode[]= { GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA };
+		static const r_OGLState state(
+			false, false, false, false,
+			state_blend_mode );
+		r_OGLStateManager::SetState( state );
+
+		supersampling_final_shader_.Bind();
+		(*supersampling_buffer_.GetTextures())[0].Bind(0);
+		supersampling_final_shader_.Uniform( "frame_buffer", 0 );
+		glDrawArrays( GL_TRIANGLES, 0, 6 );
+	}
 
 	DrawConsole();
 
@@ -698,7 +718,7 @@ void r_WorldRenderer::UpdateGPUData()
 
 void r_WorldRenderer::InitGL()
 {
-	if( settings_->GetInt( h_SettingsKeys::antialiasing )!= 0 )
+	if( settings_->GetInt( h_SettingsKeys::antialiasing ) != 0 )
 		glEnable( GL_MULTISAMPLE );
 	//glEnable( GL_SAMPLE_ALPHA_TO_COVERAGE );
 
@@ -752,7 +772,7 @@ void r_WorldRenderer::LoadShaders()
 	if( !sun_shader_.Load( "shaders/sun_frag.glsl",  "shaders/sun_vert.glsl", nullptr ) )
 		h_Console::Error( "sun shader not found" );
 
-	sprintf( define_str, "SUN_SIZE %3.0f", float( viewport_height_ ) * 0.1f );
+	sprintf( define_str, "SUN_SIZE %3.0f", float( viewport_height_ * pixel_size_ ) * 0.1f );
 	sun_shader_.Define( define_str );
 	sun_shader_.Create();
 
@@ -768,11 +788,14 @@ void r_WorldRenderer::LoadShaders()
 
 void r_WorldRenderer::InitFrameBuffers()
 {
-	supersampling_buffer_.Create(
-		std::vector<r_FramebufferTexture::TextureFormat>{ r_FramebufferTexture::FORMAT_RGBA8 },
-		r_FramebufferTexture::FORMAT_DEPTH24_STENCIL8,
-		viewport_width_ * 2,
-		viewport_height_ * 2 );
+	if( use_supersampling_ )
+	{
+		supersampling_buffer_.Create(
+			std::vector<r_FramebufferTexture::TextureFormat>{ r_FramebufferTexture::FORMAT_RGBA8 },
+			r_FramebufferTexture::FORMAT_DEPTH24_STENCIL8,
+			viewport_width_ * 2,
+			viewport_height_ * 2 );
+	}
 }
 
 void r_WorldRenderer::InitVertexBuffers()
