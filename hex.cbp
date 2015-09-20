@@ -75,7 +75,6 @@
 		<Unit filename="src\math_lib\collection.hpp" />
 		<Unit filename="src\math_lib\m_math.cpp" />
 		<Unit filename="src\math_lib\m_math.h" />
-		<Unit filename="src\math_lib\minmax.hpp" />
 		<Unit filename="src\math_lib\rand.cpp" />
 		<Unit filename="src\math_lib\rand.h" />
 		<Unit filename="src\math_lib\small_objects_allocator.hpp" />

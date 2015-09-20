@@ -4,50 +4,28 @@
 #include "texture_manager.hpp"
 #include "rendering_constants.hpp"
 
-void r_WaterQuadChunkInfo::GetVertexCount()
-{
-	new_vertex_count_= 0;
-	for( unsigned int i= 0; i< 2; i++ )
-		for( unsigned int j= 0; j< 2; j++ )
-		{
-			if( chunks_[i][j] != nullptr )
-				new_vertex_count_+= chunks_[i][j]->water_surface_mesh_vertices_.Size();
-		}
-}
-
-void r_WaterQuadChunkInfo::GetUpdatedState()
-{
-	water_updated_= false;
-	for( unsigned int i= 0; i< 2; i++ )
-		for( unsigned int j= 0; j< 2; j++ )
-			if( chunks_[i][j] != nullptr )
-				water_updated_= water_updated_ || chunks_[i][j]->chunk_water_data_updated_;
-}
-
-void r_WaterQuadChunkInfo::BuildFinalMesh()
-{
-	r_WaterVertex* v= vb_data_;
-	unsigned int s;
-
-	for( unsigned int i= 0; i< 2; i++ )
-		for( unsigned int j= 0; j< 2; j++ )
-		{
-			if( chunks_[i][j] != nullptr )
-			{
-				s= chunks_[i][j]->water_surface_mesh_vertices_.Size();
-				memcpy( v, chunks_[i][j]->water_surface_mesh_vertices_.Data(), s * sizeof( r_WaterVertex ) );
-				v+= s;
-			}
-		}
-
-	real_vertex_count_= new_vertex_count_;
-}
-
 r_ChunkInfo::r_ChunkInfo()
 	: chunk_front_(nullptr), chunk_right_(nullptr)
 	, chunk_back_right_(nullptr), chunk_back_(nullptr)
-	, chunk_data_updated_(false)
 {
+}
+
+void r_ChunkInfo::GetWaterHexCount()
+{
+	auto water_block_list= chunk_->GetWaterList();
+	m_Collection< h_LiquidBlock* >::ConstIterator iter( water_block_list );
+
+	unsigned int hex_count= 0;
+
+	for( iter.Begin(); iter.IsValid(); iter.Next() )
+	{
+		const h_LiquidBlock* b= *iter;
+		h_BlockType type= chunk_->GetBlock( b->x_, b->y_, b->z_ + 1 )->Type();
+		if( type == AIR || ( b->LiquidLevel() < H_MAX_WATER_LEVEL && type != WATER ) )
+			hex_count++;
+	}
+
+	water_vertex_count_= hex_count * 6;
 }
 
 void r_ChunkInfo::BuildWaterSurfaceMesh()
@@ -59,8 +37,7 @@ void r_ChunkInfo::BuildWaterSurfaceMesh()
 	short h;
 	const h_Chunk* ch;
 
-	water_surface_mesh_vertices_.Resize(0);
-	water_side_mesh_vertices_.Resize(0);
+	v= water_vertex_data_;
 
 	short X= chunk_->Longitude() * H_CHUNK_WIDTH;
 	short Y= chunk_->Latitude() * H_CHUNK_WIDTH;
@@ -84,9 +61,6 @@ void r_ChunkInfo::BuildWaterSurfaceMesh()
 			h_BlockType type= chunk_->GetBlock( b->x_, b->y_, b->z_ + 1 )->Type();
 			if( type == AIR || ( b->LiquidLevel() < H_MAX_WATER_LEVEL && type != WATER ) )
 			{
-				// water_surface_mesh_vertices.Resize( water_surface_mesh_vertices.Size() + 6 );
-				water_surface_mesh_vertices_.AddToSize(6);
-				v= water_surface_mesh_vertices_.Last() - 5;//water_surface_mesh_vertices.Data() + water_surface_mesh_vertices.Size() - 6;
 				v[0].coord[0]= 3 * ( b->x_ + X );
 				v[1].coord[0]= v[5].coord[0]= v[0].coord[0] + 1;
 				v[2].coord[0]= v[4].coord[0]= v[0].coord[0] + 3;
@@ -96,15 +70,14 @@ void r_ChunkInfo::BuildWaterSurfaceMesh()
 				v[1].coord[1]= v[2].coord[1]= v[0].coord[1] + 1;
 				v[4].coord[1]= v[5].coord[1]= v[0].coord[1] - 1;
 
-
 				//calculate height of vertices
 				const h_Block* b2, *b3;
 				bool upper_block_is_water[6]= { false, false, false, false, false, false };
 				bool nearby_block_is_air[6]= { false, false, false, false, false, false };
 				vertex_water_level[0]= vertex_water_level[1]= vertex_water_level[2]=
-										   vertex_water_level[3]= vertex_water_level[4]= vertex_water_level[5]= b->LiquidLevel();
+				vertex_water_level[3]= vertex_water_level[4]= vertex_water_level[5]= b->LiquidLevel();
 				vertex_water_block_count[0]= vertex_water_block_count[1]= vertex_water_block_count[2]=
-												 vertex_water_block_count[3]= vertex_water_block_count[4]= vertex_water_block_count[5]= 1;
+				vertex_water_block_count[3]= vertex_water_block_count[4]= vertex_water_block_count[5]= 1;
 
 				//forward
 				global_x= b->x_ + chunk_loaded_zone_X;
@@ -242,8 +215,9 @@ void r_ChunkInfo::BuildWaterSurfaceMesh()
 						v[k].coord[2]= (b->z_-1)<<R_WATER_VERTICES_Z_SCALER_LOG2;
 					else
 					{
-						v[k].coord[2]= ((b->z_-1)<<R_WATER_VERTICES_Z_SCALER_LOG2) +
-									   ( ( vertex_water_level[k] * div_table[vertex_water_block_count[k]] ) >> (  H_MAX_WATER_LEVEL_LOG2 + DIV_TABLE_SCALER_LOG2 - R_WATER_VERTICES_Z_SCALER_LOG2 ) );
+						v[k].coord[2]=
+							((b->z_-1)<<R_WATER_VERTICES_Z_SCALER_LOG2) +
+							( ( vertex_water_level[k] * div_table[vertex_water_block_count[k]] ) >> (  H_MAX_WATER_LEVEL_LOG2 + DIV_TABLE_SCALER_LOG2 - R_WATER_VERTICES_Z_SCALER_LOG2 ) );
 					}
 				}
 				world->GetForwardVertexLight( b->x_ + chunk_loaded_zone_X - 1, b->y_ + chunk_loaded_zone_Y - (b->x_&1), b->z_, v[0].light );
@@ -252,6 +226,8 @@ void r_ChunkInfo::BuildWaterSurfaceMesh()
 				world->GetBackVertexLight( b->x_ + chunk_loaded_zone_X + 1, b->y_ + chunk_loaded_zone_Y + ((1+b->x_)&1), b->z_, v[3].light );
 				world->GetForwardVertexLight( b->x_ + chunk_loaded_zone_X, b->y_ + chunk_loaded_zone_Y - 1, b->z_, v[4].light );
 				world->GetBackVertexLight(  b->x_ + chunk_loaded_zone_X, b->y_ + chunk_loaded_zone_Y, b->z_, v[5].light );
+
+				v+= 6;
 			}
 		}
 
@@ -265,9 +241,6 @@ void r_ChunkInfo::BuildWaterSurfaceMesh()
 			h_BlockType type= chunk_->GetBlock( b->x_, b->y_, b->z_ + 1 )->Type();
 			if( type  == AIR || ( b->LiquidLevel() < H_MAX_WATER_LEVEL && type != WATER ) )
 			{
-				water_surface_mesh_vertices_.AddToSize(6);
-				v= water_surface_mesh_vertices_.Last() - 5;
-
 				v[0].coord[0]= 3 * ( b->x_ + X );
 				v[1].coord[0]= v[5].coord[0]= v[0].coord[0] + 1;
 				v[2].coord[0]= v[4].coord[0]= v[0].coord[0] + 3;
@@ -278,106 +251,21 @@ void r_ChunkInfo::BuildWaterSurfaceMesh()
 				v[4].coord[1]= v[5].coord[1]= v[0].coord[1] - 1;
 
 				h= ( (b->z_ -1) << R_WATER_VERTICES_Z_SCALER_LOG2 )
-				   + ( b->LiquidLevel() >> ( H_MAX_WATER_LEVEL_LOG2 - R_WATER_VERTICES_Z_SCALER_LOG2 ) );
+					+ ( b->LiquidLevel() >> ( H_MAX_WATER_LEVEL_LOG2 - R_WATER_VERTICES_Z_SCALER_LOG2 ) );
 				v[0].coord[2]= v[1].coord[2]= v[2].coord[2]= v[3].coord[2]= v[4].coord[2]= v[5].coord[2]= h;
 
-				unsigned char light= chunk_->SunLightLevel( b->x_, b->y_, b->z_ + 1 );
-				v[0].light[0]= v[1].light[0]= v[2].light[0]= v[3].light[0]= v[4].light[0]= v[5].light[0]= light << 4;
+				v[0].light[0]= v[1].light[0]= v[2].light[0]=
+				v[3].light[0]= v[4].light[0]= v[5].light[0]=
+					chunk_->SunLightLevel( b->x_, b->y_, b->z_ + 1 ) << 4;
 
-				v[0].light[1]= v[1].light[1]= v[2].light[1]= v[3].light[1]= v[4].light[1]= v[5].light[1]=
-												  chunk_->FireLightLevel( b->x_, b->y_, b->z_ + 1 ) << 4;
+				v[0].light[1]= v[1].light[1]= v[2].light[1]=
+				v[3].light[1]= v[4].light[1]= v[5].light[1]=
+					chunk_->FireLightLevel( b->x_, b->y_, b->z_ + 1 ) << 4;
+				v+= 6;
 			}// if water surface
 		}//for
 	}
-
 }
-
-#if 0
-void r_ChunkInfo::BuildWaterSideMesh()
-{
-	//WARNING! This Function UNFINISHED!
-
-	if( chunk->IsEdgeChunk() )
-		return;
-
-	auto water_block_list= chunk->GetWaterList();
-	m_Collection< h_LiquidBlock* >::ConstIterator iter( water_block_list );
-	const h_LiquidBlock* b;
-	h_Block* b2;
-	h_Chunk* ch;
-	r_WaterVertex* v, *sv;
-	short h;
-
-	short X= chunk->Longitude() * H_CHUNK_WIDTH;
-	short Y= chunk->Latitude() * H_CHUNK_WIDTH;
-	short chunk_loaded_zone_X;
-	short chunk_loaded_zone_Y;
-
-
-	unsigned int vertex_water_level[6];
-	unsigned short vertex_water_block_count[6];
-	h_World* world= chunk->GetWorld();
-	short global_x, global_y;
-	short nearby_block_x, nearby_block_y;
-
-
-	chunk_loaded_zone_X= ( chunk->Longitude() - world->Longitude() ) * H_CHUNK_WIDTH;
-	chunk_loaded_zone_Y= ( chunk->Latitude() - world->Latitude() ) * H_CHUNK_WIDTH;
-
-	for( iter.Begin(); iter.IsValid(); iter.Next() )
-	{
-		b= *iter;
-		global_x= chunk_loaded_zone_X + b->x;
-		global_y= chunk_loaded_zone_Y + b->y + 1;
-		ch= world->GetChunk( global_x >> H_CHUNK_WIDTH_LOG2, global_y >> H_CHUNK_WIDTH_LOG2 );
-		b2= ch->GetBlock( global_x & (H_CHUNK_WIDTH-1), global_y & (H_CHUNK_WIDTH-1), b->z );
-		if( b2->Type() == AIR )
-		{
-			water_surface_mesh_vertices.AddToSize(6);
-			v= water_surface_mesh_vertices.Last() - 5;
-
-			v[0].coord[0]= v[1].coord[0]= 3 * ( b->x + X ) + 1;
-			v[2].coord[0]= v[3].coord[0]= v[1].coord[0] + 2;
-
-			v[0].coord[1]= v[1].coord[1]= v[2].coord[1]= v[3].coord[1]= 2 * ( b->y + Y ) - ((b->x)&1) + 3;
-
-			v[0].coord[2]= v[3].coord[2]=  (b->z-1)<<7;
-			v[1].coord[2]= v[2].coord[2]= v[0].coord[2] +  b->LiquidLevel() * 128 / H_MAX_WATER_LEVEL;
-			v[0].light[0]= v[1].light[0]= v[2].light[0]= v[3].light[0]=
-											  world->SunLightLevel(chunk_loaded_zone_X + b->x, chunk_loaded_zone_Y + b->y, b->z ) << 4;
-			v[0].light[1]= v[1].light[1]= v[2].light[1]= v[3].light[1]=
-											  world->FireLightLevel( chunk_loaded_zone_X + b->x, chunk_loaded_zone_Y + b->y, b->z ) << 4;
-
-			v[4]= v[5]= v[3];
-		}
-
-		global_x= chunk_loaded_zone_X + b->x;
-		global_y= chunk_loaded_zone_Y + b->y - 1;
-		ch= world->GetChunk( global_x >> H_CHUNK_WIDTH_LOG2, global_y >> H_CHUNK_WIDTH_LOG2 );
-		b2= ch->GetBlock( global_x & (H_CHUNK_WIDTH-1), global_y & (H_CHUNK_WIDTH-1), b->z );
-		if( b2->Type() == AIR )
-		{
-			water_surface_mesh_vertices.AddToSize(6);
-			v= water_surface_mesh_vertices.Last() - 5;
-
-			v[0].coord[0]= v[1].coord[0]= 3 * ( b->x + X ) + 1;
-			v[2].coord[0]= v[3].coord[0]= v[1].coord[0] + 2;
-
-			v[0].coord[1]= v[1].coord[1]= v[2].coord[1]= v[3].coord[1]= 2 * ( b->y + Y ) - ((b->x)&1) + 1;
-
-			v[0].coord[2]= v[3].coord[2]=  (b->z-1)<<7;
-			v[1].coord[2]= v[2].coord[2]= v[0].coord[2] +  b->LiquidLevel() * 128 / H_MAX_WATER_LEVEL;
-			v[0].light[0]= v[1].light[0]= v[2].light[0]= v[3].light[0]=
-											  world->SunLightLevel(chunk_loaded_zone_X + b->x, chunk_loaded_zone_Y + b->y, b->z ) << 4;
-			v[0].light[1]= v[1].light[1]= v[2].light[1]= v[3].light[1]=
-											  world->FireLightLevel( chunk_loaded_zone_X + b->x, chunk_loaded_zone_Y + b->y, b->z ) << 4;
-
-			v[4]= v[5]= v[3];
-		}
-
-	}
-}
-#endif
 
 /*
  __    __

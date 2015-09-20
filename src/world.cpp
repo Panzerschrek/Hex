@@ -357,19 +357,35 @@ void h_World::MoveWorld( h_WorldMoveDirection dir )
 		switch( dir )
 		{
 		case NORTH:
-			for( i= 0; i< chunk_number_x_; i++ ) renderer->UpdateChunk( i, chunk_number_y_ - 2 );
+			for( i= 0; i< chunk_number_x_; i++ )
+			{
+				renderer->UpdateChunk( i, chunk_number_y_ - 2 );
+				renderer->UpdateChunkWater( i, chunk_number_y_ - 2 );
+			}
 			break;
 
 		case SOUTH:
-			for( i= 0; i< chunk_number_x_; i++ ) renderer->UpdateChunk( i, 1 );
+			for( i= 0; i< chunk_number_x_; i++ )
+			{
+				renderer->UpdateChunk( i, 1 );
+				renderer->UpdateChunkWater( i, 1 );
+			}
 			break;
 
 		case EAST:
-			for( j= 0; j< chunk_number_y_; j++ ) renderer->UpdateChunk( chunk_number_x_ - 2, j );
+			for( j= 0; j< chunk_number_y_; j++ )
+			{
+				renderer->UpdateChunk( chunk_number_x_ - 2, j );
+				renderer->UpdateChunkWater( chunk_number_x_ - 2, j );
+			}
 			break;
 
 		case WEST:
-			for( j= 0; j< chunk_number_y_; j++ ) renderer->UpdateChunk( 1, j );
+			for( j= 0; j< chunk_number_y_; j++ )
+			{
+				renderer->UpdateChunk( 1, j );
+				renderer->UpdateChunkWater( 1, j );
+			}
 			break;
 		};
 	}
