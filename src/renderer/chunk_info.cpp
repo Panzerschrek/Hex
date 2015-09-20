@@ -254,13 +254,15 @@ void r_ChunkInfo::BuildWaterSurfaceMesh()
 					+ ( b->LiquidLevel() >> ( H_MAX_WATER_LEVEL_LOG2 - R_WATER_VERTICES_Z_SCALER_LOG2 ) );
 				v[0].coord[2]= v[1].coord[2]= v[2].coord[2]= v[3].coord[2]= v[4].coord[2]= v[5].coord[2]= h;
 
+				unsigned char light[2];
+				chunk_->GetLightsLevel( b->x_, b->y_, b->z_ + 1, light );
 				v[0].light[0]= v[1].light[0]= v[2].light[0]=
 				v[3].light[0]= v[4].light[0]= v[5].light[0]=
-					chunk_->SunLightLevel( b->x_, b->y_, b->z_ + 1 ) << 4;
+					light[0] << 4;
 
 				v[0].light[1]= v[1].light[1]= v[2].light[1]=
 				v[3].light[1]= v[4].light[1]= v[5].light[1]=
-					chunk_->FireLightLevel( b->x_, b->y_, b->z_ + 1 ) << 4;
+					light[1] << 4;
 				v+= 6;
 			}// if water surface
 		}//for
@@ -647,15 +649,13 @@ void r_ChunkInfo::BuildChunkMesh()
                     {\
                         normal_id= DOWN;\
                         b= chunk_->GetBlock( x, y, z  + 1 );\
-                        light[0]= chunk_->SunLightLevel( x, y, z );\
-                        light[1]= chunk_->FireLightLevel( x, y, z );\
+                        chunk_->GetLightsLevel( x, y, z, light );\
                     }\
                     else\
                     {\
                         normal_id= UP;\
                         b= chunk_->GetBlock( x, y, z  );\
-                        light[0]= chunk_->SunLightLevel( x, y, z + 1 );\
-                        light[1]= chunk_->FireLightLevel( x, y, z + 1 );\
+                        chunk_->GetLightsLevel( x, y, z + 1, light );\
                     }\
 \
 					\
@@ -786,15 +786,13 @@ void r_ChunkInfo::BuildChunkMesh()
 					{
 						normal_id= BACK_LEFT;
 						b= chunk_->GetBlock( x + 1, y + ((x+1)&1), z );
-						light[0]= chunk_->SunLightLevel( x, y, z );
-						light[1]= chunk_->FireLightLevel( x, y, z );
+						chunk_->GetLightsLevel( x, y, z, light );
 					}
 					else
 					{
 						normal_id= FORWARD_RIGHT;
 						b= chunk_->GetBlock( x, y, z );
-						light[0]= chunk_->SunLightLevel( x + 1, y + ((x+1)&1), z );
-						light[1]= chunk_->FireLightLevel( x + 1, y + ((x+1)&1), z );
+						chunk_->GetLightsLevel( x + 1, y + ((x+1)&1), z, light );
 					}
 					BUILD_QUADS_FORWARD_RIGHT
 				}
@@ -848,15 +846,13 @@ void r_ChunkInfo::BuildChunkMesh()
 					{
 						normal_id= FORWARD_LEFT;
 						b= chunk_->GetBlock( x + 1, y - (x&1), z );
-						light[0]= chunk_->SunLightLevel( x, y, z );
-						light[1]= chunk_->FireLightLevel( x, y, z );
+						chunk_->GetLightsLevel( x, y, z, light );
 					}
 					else
 					{
 						normal_id= BACK_RIGHT;
 						b= chunk_->GetBlock( x, y, z );
-						light[0]= chunk_->SunLightLevel( x + 1, y - (x&1), z );
-						light[1]= chunk_->FireLightLevel( x + 1, y - (x&1), z );
+						chunk_->GetLightsLevel(x + 1, y - (x&1), z, light );
 					}
 					BUILD_QUADS_BACK_RIGHT
 				}
@@ -909,15 +905,13 @@ void r_ChunkInfo::BuildChunkMesh()
 					{
 						normal_id= BACK;
 						b= chunk_->GetBlock( x, y + 1, z );
-						light[0]= chunk_->SunLightLevel( x, y, z );
-						light[1]= chunk_->FireLightLevel( x, y, z );
+						chunk_->GetLightsLevel( x, y, z, light );
 					}
 					else
 					{
 						normal_id= FORWARD;
 						b= chunk_->GetBlock( x, y, z );
-						light[0]= chunk_->SunLightLevel( x, y+1, z );
-						light[1]= chunk_->FireLightLevel( x, y+1, z );
+						chunk_->GetLightsLevel( x, y+1, z, light );
 					}
 					BUILD_QUADS_FORWARD
 				}//forward quad
@@ -959,15 +953,13 @@ void r_ChunkInfo::BuildChunkMesh()
 				{
 					normal_id= BACK_LEFT;
 					b= chunk_->GetBlock( x + 1, y + ((x+1)&1), z );
-					light[0]= chunk_->SunLightLevel( x, y, z );
-					light[1]= chunk_->FireLightLevel( x, y, z );
+					chunk_->GetLightsLevel( x, y, z, light );
 				}
 				else
 				{
 					normal_id= FORWARD_RIGHT;
 					b= chunk_->GetBlock( x, y, z );
-					light[0]= chunk_->SunLightLevel( x + 1, y + ((x+1)&1), z );
-					light[1]= chunk_->FireLightLevel( x + 1, y + ((x+1)&1), z );
+					chunk_->GetLightsLevel( x + 1, y + ((x+1)&1), z, light );
 				}
 				BUILD_QUADS_FORWARD_RIGHT
 			}
@@ -978,18 +970,14 @@ void r_ChunkInfo::BuildChunkMesh()
 					normal_id= FORWARD_LEFT;
 					b= (x&1) ? chunk_back_->GetBlock( x + 1, H_CHUNK_WIDTH - 1, z ) :
 					   chunk_->GetBlock( x + 1, 0, z );
-					light[0]= chunk_->SunLightLevel( x, y, z );
-					light[1]= chunk_->FireLightLevel( x, y, z );
+					chunk_->GetLightsLevel( x, y, z, light );
 				}
 				else
 				{
 					normal_id= BACK_RIGHT;
 					b= chunk_->GetBlock( x, y, z );
-					light[0]= (x&1) ? chunk_back_->SunLightLevel( x + 1, H_CHUNK_WIDTH - 1, z ) :
-							  chunk_->SunLightLevel( x + 1, 0, z );
-
-					light[1]= (x&1) ? chunk_back_->FireLightLevel( x + 1, H_CHUNK_WIDTH - 1, z ) :
-							  chunk_->FireLightLevel( x + 1, 0, z );
+					(x&1) ? chunk_back_->GetLightsLevel( x + 1, H_CHUNK_WIDTH - 1, z, light ) :
+							chunk_->GetLightsLevel( x + 1, 0, z, light );
 				}
 				BUILD_QUADS_BACK_RIGHT
 			}
@@ -999,15 +987,13 @@ void r_ChunkInfo::BuildChunkMesh()
 				{
 					normal_id= BACK;
 					b= chunk_->GetBlock( x, y + 1, z );
-					light[0]= chunk_->SunLightLevel( x, y, z );
-					light[1]= chunk_->FireLightLevel( x, y, z );
+					chunk_->GetLightsLevel( x, y, z, light );
 				}
 				else
 				{
 					normal_id= FORWARD;
 					b= chunk_->GetBlock( x, y, z );
-					light[0]= chunk_->SunLightLevel( x, y + 1, z );
-					light[1]= chunk_->FireLightLevel( x, y + 1, z );
+					chunk_->GetLightsLevel( x, y + 1, z, light );
 				}
 				BUILD_QUADS_FORWARD
 			}
@@ -1044,15 +1030,13 @@ void r_ChunkInfo::BuildChunkMesh()
 				{
 					normal_id= BACK_LEFT;
 					b= chunk_right_->GetBlock( 0, y + ((x+1)&1), z );
-					light[0]= chunk_->SunLightLevel( x, y, z );
-					light[1]= chunk_->FireLightLevel( x, y, z );
+					chunk_->GetLightsLevel( x, y, z, light );
 				}
 				else
 				{
 					normal_id= FORWARD_RIGHT;
 					b= chunk_->GetBlock( x, y, z );
-					light[0]= chunk_right_->SunLightLevel( 0, y + ((x+1)&1), z );
-					light[1]= chunk_right_->FireLightLevel( 0, y + ((x+1)&1), z );
+					chunk_right_->GetLightsLevel( 0, y + ((x+1)&1), z, light );
 				}
 				BUILD_QUADS_FORWARD_RIGHT
 			}
@@ -1061,16 +1045,14 @@ void r_ChunkInfo::BuildChunkMesh()
 				if( t > t_br )
 				{
 					normal_id= FORWARD_LEFT;
-					b= chunk_right_->GetBlock( 0, y - (x&1), z ) ;
-					light[0]= chunk_->SunLightLevel( x, y, z );
-					light[1]= chunk_->FireLightLevel( x, y, z );
+					b= chunk_right_->GetBlock( 0, y - (x&1), z );
+					chunk_->GetLightsLevel( x, y, z, light );
 				}
 				else
 				{
 					normal_id= BACK_RIGHT;
 					b= chunk_->GetBlock( x, y, z );
-					light[0]= chunk_right_->SunLightLevel( 0, y - (x&1), z ) ;
-					light[1]= chunk_right_->FireLightLevel( 0, y - (x&1), z ) ;
+					chunk_right_->GetLightsLevel( 0, y - (x&1), z, light );
 				}
 				BUILD_QUADS_BACK_RIGHT
 			}
@@ -1080,15 +1062,13 @@ void r_ChunkInfo::BuildChunkMesh()
 				{
 					normal_id= BACK;
 					b= chunk_->GetBlock( x, y + 1, z );
-					light[0]= chunk_->SunLightLevel( x, y, z );
-					light[1]= chunk_->FireLightLevel( x, y, z );
+					chunk_->GetLightsLevel( x, y, z, light );
 				}
 				else
 				{
 					normal_id= FORWARD;
 					b= chunk_->GetBlock( x, y, z );
-					light[0]= chunk_->SunLightLevel( x, y + 1, z );
-					light[1]= chunk_->FireLightLevel( x, y + 1, z );
+					chunk_->GetLightsLevel( x, y + 1, z, light );
 				}
 				BUILD_QUADS_FORWARD
 			}
@@ -1129,17 +1109,14 @@ void r_ChunkInfo::BuildChunkMesh()
 					normal_id= BACK_LEFT;
 					b= ( x&1) ? chunk_->GetBlock( x + 1, H_CHUNK_WIDTH - 1, z ) :
 					   chunk_front_->GetBlock( x + 1, 0, z );
-					light[0]= chunk_->SunLightLevel( x, y, z );
-					light[1]= chunk_->FireLightLevel( x, y, z );
+					chunk_->GetLightsLevel( x, y, z, light );
 				}
 				else
 				{
 					normal_id= FORWARD_RIGHT;
 					b= chunk_->GetBlock( x, y, z );
-					light[0]= ( x&1) ? chunk_->SunLightLevel( x + 1, H_CHUNK_WIDTH - 1, z ) :
-							  chunk_front_->SunLightLevel( x + 1, 0, z );
-					light[1]= ( x&1) ? chunk_->FireLightLevel( x + 1, H_CHUNK_WIDTH - 1, z ) :
-							  chunk_front_->FireLightLevel( x + 1, 0, z );
+					( x&1) ? chunk_->GetLightsLevel( x + 1, H_CHUNK_WIDTH - 1, z, light ) :
+							chunk_front_->GetLightsLevel( x + 1, 0, z, light );
 				}
 				BUILD_QUADS_FORWARD_RIGHT
 			}
@@ -1149,15 +1126,13 @@ void r_ChunkInfo::BuildChunkMesh()
 				{
 					normal_id= FORWARD_LEFT;
 					b= chunk_->GetBlock( x + 1, y - (x&1), z );
-					light[0]= chunk_->SunLightLevel( x, y, z );
-					light[1]= chunk_->FireLightLevel( x, y, z );
+					chunk_->GetLightsLevel( x, y, z, light );
 				}
 				else
 				{
 					normal_id= BACK_RIGHT;
 					b= chunk_->GetBlock( x, y, z );
-					light[0]= chunk_->SunLightLevel( x + 1, y - (x&1), z );
-					light[1]= chunk_->FireLightLevel( x + 1, y - (x&1), z );
+					chunk_->GetLightsLevel( x + 1, y - (x&1), z, light );
 				}
 				BUILD_QUADS_BACK_RIGHT
 			}
@@ -1167,15 +1142,13 @@ void r_ChunkInfo::BuildChunkMesh()
 				{
 					normal_id= BACK;
 					b= chunk_front_->GetBlock( x, 0, z );
-					light[0]= chunk_->SunLightLevel( x, y, z );
-					light[1]= chunk_->FireLightLevel( x, y, z );
+					chunk_->GetLightsLevel( x, y, z, light );
 				}
 				else
 				{
 					normal_id= FORWARD;
 					b= chunk_->GetBlock( x, y, z );
-					light[0]= chunk_front_->SunLightLevel( x, 0, z );
-					light[1]= chunk_front_->FireLightLevel( x, 0, z );
+					chunk_front_->GetLightsLevel( x, 0, z, light );
 				}
 				BUILD_QUADS_FORWARD
 			}
@@ -1213,15 +1186,13 @@ void r_ChunkInfo::BuildChunkMesh()
 			{
 				normal_id= BACK_LEFT;
 				b= chunk_right_->GetBlock( 0, H_CHUNK_WIDTH  - 1, z );
-				light[0]= chunk_->SunLightLevel( x, y, z );
-				light[1]= chunk_->FireLightLevel( x, y, z );
+				chunk_->GetLightsLevel( x, y, z, light );
 			}
 			else
 			{
 				normal_id= FORWARD_RIGHT;
 				b= chunk_->GetBlock( x, y, z );
-				light[0]= chunk_right_->SunLightLevel( 0, H_CHUNK_WIDTH  - 1, z );
-				light[1]= chunk_right_->FireLightLevel( 0, H_CHUNK_WIDTH  - 1, z );
+				chunk_right_->GetLightsLevel( 0, H_CHUNK_WIDTH  - 1, z, light );
 			}
 			BUILD_QUADS_FORWARD_RIGHT
 		}
@@ -1231,15 +1202,13 @@ void r_ChunkInfo::BuildChunkMesh()
 			{
 				normal_id= FORWARD_LEFT;
 				b= chunk_right_->GetBlock( 0, H_CHUNK_WIDTH  - 2, z );
-				light[0]= chunk_->SunLightLevel( x, y, z );
-				light[1]= chunk_->FireLightLevel( x, y, z );
+				chunk_->GetLightsLevel( x, y, z, light );
 			}
 			else
 			{
 				normal_id= BACK_RIGHT;
 				b= chunk_->GetBlock( x, y, z );
-				light[0]= chunk_right_->SunLightLevel( 0, H_CHUNK_WIDTH  - 2, z );
-				light[1]= chunk_right_->FireLightLevel( 0, H_CHUNK_WIDTH  - 2, z );
+				chunk_right_->GetLightsLevel( 0, H_CHUNK_WIDTH  - 2, z, light );
 			}
 			BUILD_QUADS_BACK_RIGHT
 		}
@@ -1249,15 +1218,13 @@ void r_ChunkInfo::BuildChunkMesh()
 			{
 				normal_id= BACK;
 				b= chunk_front_->GetBlock( x, 0, z );
-				light[0]= chunk_->SunLightLevel( x, y, z );
-				light[1]= chunk_->FireLightLevel( x, y, z );
+				chunk_->GetLightsLevel( x, y, z, light );
 			}
 			else
 			{
 				normal_id= FORWARD;
 				b= chunk_->GetBlock( x, y, z );
-				light[0]= chunk_front_->SunLightLevel( x, 0, z );
-				light[1]= chunk_front_->FireLightLevel( x, 0, z );
+				chunk_front_->GetLightsLevel( x, 0, z, light );
 			}
 			BUILD_QUADS_FORWARD
 		}
@@ -1293,15 +1260,13 @@ void r_ChunkInfo::BuildChunkMesh()
 			{
 				normal_id= BACK_LEFT;
 				b= chunk_right_->GetBlock( 0, 0, z );
-				light[0]= chunk_->SunLightLevel( x, y, z );
-				light[1]= chunk_->FireLightLevel( x, y, z );
+				chunk_->GetLightsLevel( x, y, z, light );
 			}
 			else
 			{
 				normal_id= FORWARD_RIGHT;
 				b= chunk_->GetBlock( x, y, z );
-				light[0]= chunk_right_->SunLightLevel( 0, 0, z );
-				light[1]= chunk_right_->FireLightLevel( 0, 0, z );
+				chunk_right_->GetLightsLevel( 0, 0, z, light );
 			}
 			BUILD_QUADS_FORWARD_RIGHT
 		}
@@ -1311,15 +1276,13 @@ void r_ChunkInfo::BuildChunkMesh()
 			{
 				normal_id= FORWARD_LEFT;
 				b= chunk_back_right_->GetBlock( 0, H_CHUNK_WIDTH  - 1, z );
-				light[0]= chunk_->SunLightLevel( x, y, z );
-				light[1]= chunk_->FireLightLevel( x, y, z );
+				chunk_->GetLightsLevel( x, y, z, light );
 			}
 			else
 			{
 				normal_id= BACK_RIGHT;
 				b= chunk_->GetBlock( x, y, z );
-				light[0]= chunk_back_right_->SunLightLevel( 0, H_CHUNK_WIDTH  - 1, z );
-				light[1]= chunk_back_right_->FireLightLevel( 0, H_CHUNK_WIDTH  - 1, z );
+				chunk_back_right_->GetLightsLevel( 0, H_CHUNK_WIDTH  - 1, z, light );
 			}
 			BUILD_QUADS_BACK_RIGHT
 		}
@@ -1329,15 +1292,13 @@ void r_ChunkInfo::BuildChunkMesh()
 			{
 				normal_id= BACK;
 				b= chunk_->GetBlock( x, y + 1, z );
-				light[0]= chunk_->SunLightLevel( x, y, z );
-				light[1]= chunk_->FireLightLevel( x, y, z );
+				chunk_->GetLightsLevel( x, y, z, light );
 			}
 			else
 			{
 				normal_id= FORWARD;
 				b= chunk_->GetBlock( x, y, z );
-				light[0]= chunk_->SunLightLevel( x, y + 1, z );
-				light[1]= chunk_->FireLightLevel( x, y + 1, z );
+				chunk_->GetLightsLevel( x, y + 1, z, light );
 			}
 			BUILD_QUADS_FORWARD
 		}

@@ -41,6 +41,9 @@ public:
 	unsigned char SunLightLevel( short x, short y, short z ) const;
 	unsigned char FireLightLevel( short x, short y, short z ) const;
 
+	// Get sun and fire light levels. out_lights[0]= sun, out_lights[1]= fire
+	void GetLightsLevel( short x, short y, short z, unsigned char* out_lights ) const;
+
 private:
 	void GenChunk();
 
@@ -156,6 +159,13 @@ inline unsigned char h_Chunk::SunLightLevel( short x, short y, short z ) const
 inline unsigned char h_Chunk::FireLightLevel( short x, short y, short z ) const
 {
 	return fire_light_map_[ BlockAddr( x, y, z ) ];
+}
+
+inline void h_Chunk::GetLightsLevel( short x, short y, short z, unsigned char* out_lights ) const
+{
+	int addr= BlockAddr( x, y, z );
+	out_lights[0]= sun_light_map_ [addr];
+	out_lights[1]= fire_light_map_[addr];
 }
 
 inline void h_Chunk::SetSunLightLevel( short x, short y, short z, unsigned char l )
