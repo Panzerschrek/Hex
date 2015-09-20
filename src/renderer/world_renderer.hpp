@@ -109,7 +109,7 @@ public:
 
 	void SetCamPos( const m_Vec3& p );
 	void SetCamAng( const m_Vec3& a );
-	void SetBuildPos( const m_Vec3& p );
+	void SetBuildPos( const m_Vec3& p, h_Direction direction );
 	void SetViewportSize( unsigned int viewport_width, unsigned int viewport_height );
 
 private:
@@ -171,7 +171,10 @@ private:
 
 	//matrices and vectors
 	m_Mat4 view_matrix_, block_scale_matrix_, block_final_matrix_, water_final_matrix_;
-	m_Vec3 cam_ang_, cam_pos_, build_pos_;
+	m_Vec3 cam_ang_, cam_pos_;
+
+	m_Vec3 build_pos_;
+	h_Direction build_direction_;
 
 	//unsigned int chunk_num_x_, chunk_num_y_;
 	struct
@@ -204,9 +207,10 @@ inline void r_WorldRenderer::SetCamAng( const m_Vec3& a )
 	cam_ang_= a;
 }
 
-inline void r_WorldRenderer::SetBuildPos( const m_Vec3& p )
+inline void r_WorldRenderer::SetBuildPos( const m_Vec3& p, h_Direction direction )
 {
 	build_pos_= p;
+	build_direction_= direction;
 }
 
 inline void r_WorldRenderer::SetViewportSize( unsigned int viewport_width, unsigned int viewport_height )

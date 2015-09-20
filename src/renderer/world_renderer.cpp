@@ -14,6 +14,23 @@
 
 #include "../world.hpp"
 
+static const float g_build_prism_vertices[]=
+{
+	0.0f, 0.0f, 0.0f,  2.0f, 0.0f, 0.0f,   3.0f, 1.0f, 0.0f,
+	2.0f, 2.0f, 0.0f,  0.0f, 2.0f, 0.0f,  -1.0f, 1.0f, 0.0f,
+	0.0f, 0.0f, 1.0f,  2.0f, 0.0f, 1.0f,   3.0f, 1.0f, 1.0f,
+	2.0f, 2.0f, 1.0f,  0.0f, 2.0f, 1.0f,  -1.0f, 1.0f, 1.0f
+};
+
+static const unsigned short g_build_prism_indeces[]=
+{
+	0,1, 1,2, 2,3, 3, 4,  4, 5,  5,0,
+	6,7, 7,8, 8,9, 9,10, 10,11, 11,6,
+	0,6, 1,7, 2,8, 3, 9,  4,10,  5,11
+};
+// 0,7, 1,8, 2,9, 3,10, 4,11, 5,6//additional lines
+// 0,3, 1,4, 2,5, 6,9, 7,10, 8,11  };
+
 r_WorldRenderer::r_WorldRenderer(
 	const h_SettingsPtr& settings,
 	const h_WorldConstPtr& world )
@@ -545,7 +562,7 @@ void r_WorldRenderer::DrawBuildPrism()
 	static const GLenum state_blend_mode[]= { GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA };
 	static const float state_clear_color[]= { 0.0f, 0.0f, 0.0f, 0.0f };
 	static const r_OGLState state(
-		false, false, true, false,
+		true, false, true, false,
 		state_blend_mode,
 		state_clear_color,
 		1.0f, GL_FRONT, GL_TRUE );
@@ -560,7 +577,41 @@ void r_WorldRenderer::DrawBuildPrism()
 
 	build_prism_shader_.Uniform( "build_prism_pos", build_pos_ );
 
-	// m_Vec3 sh_cam_pos( cam_pos.x * H_SPACE_SCALE_VECTOR_X, cam_pos.y * H_SPACE_SCALE_VECTOR_Y
+	// Setup active build side alpha.
+	float alpha[12];
+	for( int i= 0; i < 12; i++ ) alpha[i]= 0.15f;
+	switch( build_direction_ )
+	{
+		case DOWN:
+			alpha[6]= alpha[7]= alpha[8]= alpha[9]= alpha[10]= alpha[11]= 1.0f;
+			break;
+		case UP:
+			alpha[0]= alpha[1]= alpha[2]= alpha[3]= alpha[ 4]= alpha[ 5]= 1.0f;
+			break;
+		case BACK:
+			alpha[4]= alpha[3]= alpha[ 9]= alpha[10]= 1.0f;
+			break;
+		case FORWARD:
+			alpha[0]= alpha[1]= alpha[ 6]= alpha[ 7]= 1.0f;
+			break;
+		case BACK_LEFT:
+			alpha[2]= alpha[3]= alpha[ 8]= alpha[ 9]= 1.0f;
+			break;
+		case FORWARD_LEFT:
+			alpha[1]= alpha[2]= alpha[ 7]= alpha[ 8]= 1.0f;
+			break;
+		case BACK_RIGHT:
+			alpha[4]= alpha[5]= alpha[10]= alpha[11]= 1.0f;
+			break;
+		case FORWARD_RIGHT:
+			alpha[0]= alpha[5]= alpha[ 6]= alpha[11]= 1.0f;
+			break;
+		case DIRECTION_UNKNOWN:
+			break;
+	};
+
+	build_prism_shader_.Uniform( "active_vertices", alpha, 12 );
+
 	build_prism_shader_.Uniform( "cam_pos", cam_pos_ );
 
 	build_prism_vbo_.Bind();
@@ -723,26 +774,10 @@ void r_WorldRenderer::InitFrameBuffers()
 
 void r_WorldRenderer::InitVertexBuffers()
 {
-	static const float build_prism[]=
-	{
-		0.0f, 0.0f, 0.0f,  2.0f, 0.0f, 0.0f,   3.0f, 1.0f, 0.0f,
-		2.0f, 2.0f, 0.0f,  0.0f, 2.0f, 0.0f,  -1.0f, 1.0f, 0.0f,
-		0.0f, 0.0f, 1.0f,  2.0f, 0.0f, 1.0f,   3.0f, 1.0f, 1.0f,
-		2.0f, 2.0f, 1.0f,  0.0f, 2.0f, 1.0f,  -1.0f, 1.0f, 1.0f
-	};
-	static const unsigned short build_prism_indeces[]=
-	{
-		0,1, 1,2, 2,3, 3,4,  4,5,   5,0,
-		6,7, 7,8, 8,9, 9,10, 10,11, 11,6,
-		0,6, 1,7, 2,8, 3,9,  4,10,  5,11
-	};
-	// 0,7, 1,8, 2,9, 3,10, 4,11, 5,6//additional lines
-	// 0,3, 1,4, 2,5, 6,9, 7,10, 8,11  };
-
-	build_prism_vbo_.VertexData( build_prism, sizeof( build_prism ), 12 );
+	build_prism_vbo_.VertexData( g_build_prism_vertices, sizeof( g_build_prism_vertices ), sizeof(float) * 3 );
 	build_prism_vbo_.IndexData(
-		(unsigned int*)(build_prism_indeces),
-		sizeof(build_prism_indeces),
+		g_build_prism_indeces,
+		sizeof(g_build_prism_indeces),
 		GL_UNSIGNED_SHORT, GL_LINES );
 	build_prism_vbo_.VertexAttribPointer( 0, 3, GL_FLOAT, false, 0 );
 

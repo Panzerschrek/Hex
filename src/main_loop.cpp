@@ -174,7 +174,7 @@ void h_MainLoop::GetBuildPos()
 	if( build_dir_ == DIRECTION_UNKNOWN )
 		discret_build_pos.z= -1.0f;
 
-	world_renderer_->SetBuildPos( discret_build_pos );
+	world_renderer_->SetBuildPos( discret_build_pos, build_dir_ );
 }
 
 void h_MainLoop::Input()
