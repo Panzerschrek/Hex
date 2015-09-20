@@ -1,9 +1,9 @@
 #pragma once
-#include <vector>
+#include <array>
 #include <functional>
+#include <vector>
 
 #define H_UI_MAX_ELEMENTS 128
-#define H_UI_MAX_INSCRIPTION_LEN 64
 #define H_UI_MAX_MENUS 32
 
 class ui_Painter;
@@ -25,34 +25,63 @@ private:
 	static void AddUIElement( ui_Base* element );
 	static void RemoveUIElement( ui_Base* element );
 
-	static int ui_elements_count_;
-	static ui_Base* ui_elements_[ H_UI_MAX_ELEMENTS ];
-	static int ui_menu_count_;
-	static ui_MenuBase* ui_menus_[ H_UI_MAX_MENUS ];
+	static unsigned int ui_elements_count_;
+	static std::array<ui_Base*, H_UI_MAX_ELEMENTS> ui_elements_;
+	static unsigned int ui_menu_count_;
+	static std::array<ui_MenuBase*, H_UI_MAX_MENUS> ui_menus_;
+};
+
+
+struct ui_Style
+{
+	enum class TextAlignment
+	{
+		Left,
+		Center,
+		Right
+	};
+
+	static const unsigned char c_default_color[4];
+	static const unsigned char c_hover_default_color[4];
+	static const unsigned char c_text_default_color[4];
+	static const unsigned char c_text_hover_default_color[4];
+
+	ui_Style(
+		const unsigned char* in_color= c_default_color,
+		const unsigned char* in_hover_color= c_hover_default_color,
+		TextAlignment in_text_alignment = TextAlignment::Left,
+		const unsigned char* in_text_color= c_text_default_color,
+		const unsigned char* in_text_hover_color= c_text_hover_default_color );
+
+	unsigned char color[4];
+	unsigned char hover_color[4];
+	unsigned char text_color[4];
+	unsigned char text_hover_color[4];
+
+	TextAlignment text_alignment;
 };
 
 class ui_Base
 {
 public:
 	ui_Base();
-	ui_Base( int x, int y, int in_size_x, int in_size_y );
-	ui_Base( int x, int y, int in_size_x, int in_size_y,
-			 const unsigned char* normal_color, const unsigned char* in_cursor_over_color );
+	ui_Base( int x, int y, int in_size_x, int in_size_y, const ui_Style& style= ui_Style() );
+
 	virtual ~ui_Base();
 
-	int X()const
+	int X() const
 	{
 		return pos_x_;
 	};
-	int Y()const
+	int Y() const
 	{
 		return pos_y_;
 	};
-	int SizeX()const
+	int SizeX() const
 	{
 		return size_x_;
 	};
-	int SizeY()const
+	int SizeY() const
 	{
 		return size_y_;
 	};
@@ -104,13 +133,14 @@ protected:
 	//draw helpers. returns number of vertices
 	int GenElementFraming( ui_Vertex* vertices, int trim_size ) const;
 	int GenRectangle( ui_Vertex* vertices, int x, int y, int sx, int sy ) const;
+	void TextDraw( ui_Painter* painter, const char* text ) const;
 
 protected:
 	int pos_x_, pos_y_, size_x_, size_y_;
 
-	unsigned char color_[4];
-	unsigned char cursor_over_color_[4];
+	ui_Style style_;
 	unsigned char current_color_[4];
+	unsigned char current_text_color_[4];
 
 	bool is_active_, is_visible_;
 
@@ -120,9 +150,7 @@ protected:
 class ui_Button : public ui_Base
 {
 public:
-	ui_Button( const char* text, int cell_x, int cell_y, int cell_size_x, int cell_size_y );
-	ui_Button(const char* text, int cell_x, int cell_y, int cell_size_x, int cell_size_y,
-			const unsigned char* normal_color, const unsigned char* in_cursor_over_color );
+	ui_Button( const char* text, int cell_x, int cell_y, int cell_size_x, int cell_size_y, const ui_Style& style= ui_Style() );
 	virtual ~ui_Button() override;
 
 	void SetCallback( const ui_Callback& callback )
@@ -134,14 +162,13 @@ public:
 
 private:
 	ui_Callback callback_;
-	char button_text_[ H_UI_MAX_INSCRIPTION_LEN ];
+	std::string button_text_;
 };
 
 class ui_Checkbox : public ui_Base
 {
 public:
-	ui_Checkbox( int cell_x, int cell_y, bool state= false );
-	ui_Checkbox( int cell_x, int cell_y, bool state, const unsigned char* normal_color, const unsigned char* over_cursor_color );
+	ui_Checkbox( int cell_x, int cell_y, bool state, const ui_Style& style= ui_Style() );
 	virtual ~ui_Checkbox() override;
 
 	void SetCallback( const ui_Callback& callback )
@@ -168,30 +195,27 @@ private:
 class ui_Text : public ui_Base
 {
 public:
-	enum Alignment
-	{
-		Left,
-		Center,
-		Right
-	};
-
-	ui_Text( const char* text, Alignment alignent_, int cell_x, int cell_y, int cell_width, int cell_height );
-	ui_Text( const char* text, Alignment alignent_, int cell_x, int cell_y, int cell_width, int cell_height, const unsigned char* color );
+	ui_Text(
+		const char* text,
+		int cell_x, int cell_y,
+		int cell_width, int cell_height,
+		const ui_Style& style= ui_Style() );
 	virtual ~ui_Text() override;
 
 	void SetText( const char* text );
 	virtual void Draw( ui_Painter* painter )const override;
 
 private:
-	char text_[ H_UI_MAX_INSCRIPTION_LEN ];
-	Alignment alignment_;
+	std::string text_;
 };
 
 class ui_ProgressBar : public ui_Base
 {
 public:
-	ui_ProgressBar( int cell_x, int cell_y, int cell_size_x, int cell_size_y, float progress= 0.0f );
-	ui_ProgressBar( int cell_x, int cell_y, int cell_size_x, int cell_size_y, float progress, const unsigned char* normal_color, const unsigned char* cursor_over_color_ );
+	ui_ProgressBar(
+		int cell_x, int cell_y,
+		int cell_size_x, int cell_size_y,
+		float progress, const ui_Style& style= ui_Style() );
 	virtual ~ui_ProgressBar() override;
 
 	void SetProgress( float p );
@@ -211,7 +235,7 @@ class ui_ListBox : public ui_Base
 
 /*
  Horizontal slider. Length int cells - 2 or more. Height in cells - 1
-				 _
+                 _
    /|           | |              |\
   / |  +________+_+___________+  | \
  /  |  |        | |           |  |  \
@@ -222,8 +246,7 @@ class ui_ListBox : public ui_Base
 class ui_Slider : public ui_Base
 {
 public:
-	ui_Slider( int cell_x, int cell_y, int cell_size_x, float slider_pos_= 0.0f );
-	ui_Slider( int cell_x, int cell_y, int cell_size_x, float slider_pos_, const unsigned char* normal_color, const unsigned char* cursor_over_color_ );
+	ui_Slider( int cell_x, int cell_y, int cell_size_x, float slider_pos, const ui_Style& style= ui_Style() );
 	virtual ~ui_Slider() override;
 
 	void SetCallback( const ui_Callback callback )
@@ -274,10 +297,12 @@ public:
 	void SetActive( bool active );
 	void SetVisible( bool visible );
 
-	void Kill() {
+	void Kill()
+	{
 		marked_for_killing_= true;
 	};
-	bool IsMarkedForKilling() const {
+	bool IsMarkedForKilling() const
+	{
 		return marked_for_killing_;
 	};
 

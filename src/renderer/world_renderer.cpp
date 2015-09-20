@@ -337,7 +337,6 @@ void r_WorldRenderer::Draw()
 	CalculateLight();
 
 	//supersampling_buffer.Bind();
-	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT );
 
 	DrawWorld();
 	DrawSky();

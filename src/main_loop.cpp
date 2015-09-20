@@ -388,6 +388,9 @@ void h_MainLoop::StartGame()
 		world_->StartUpdates();
 
 		game_started_= true;
+
+		main_menu_->SetActive( false );
+		main_menu_->SetVisible( false );
 	}
 
 }

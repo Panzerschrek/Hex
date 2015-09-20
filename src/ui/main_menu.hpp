@@ -37,14 +37,13 @@ private:
 	void OnPlayButton();
 	void OnSettingsButton();
 	void OnQuitButton();
+
 private:
 	ui_Button* button_play_;
 	ui_Button* button_settings_;
 	ui_Button* button_quit_;
-	ui_Checkbox* checkbox_;
 	ui_Text* game_title_;
 	ui_Text* game_subtitle_;
-	ui_ProgressBar* progress_bar_;
 
 	h_MainLoop * const main_loop_;
 };

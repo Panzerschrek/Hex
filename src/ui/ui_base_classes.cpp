@@ -1,4 +1,5 @@
 #include "../hex.hpp"
+#include "../math_lib/assert.hpp"
 
 #include "ui_base_classes.hpp"
 #include "ui_painter.hpp"
@@ -15,59 +16,90 @@ inline void ColorCopy( unsigned char* dst, const unsigned char* src )
 ----------ui_CursorHandler-------------
 */
 
-int ui_CursorHandler::ui_elements_count_= 0;
-ui_Base* ui_CursorHandler::ui_elements_[ H_UI_MAX_ELEMENTS ];
-int ui_CursorHandler::ui_menu_count_= 0;
-ui_MenuBase* ui_CursorHandler::ui_menus_[ H_UI_MAX_MENUS ];
+unsigned int ui_CursorHandler::ui_elements_count_= 0;
+std::array<ui_Base*, H_UI_MAX_ELEMENTS> ui_CursorHandler::ui_elements_;
+unsigned int ui_CursorHandler::ui_menu_count_= 0;
+std::array<ui_MenuBase*, H_UI_MAX_MENUS> ui_CursorHandler::ui_menus_;
 
 void ui_CursorHandler::AddUIElement( ui_Base* element )
 {
+	H_ASSERT( ui_elements_count_ <= ui_elements_.size() );
+
 	ui_elements_[ ui_elements_count_ ]= element;
 	ui_elements_count_++;
 }
 
 void ui_CursorHandler::RemoveUIElement( ui_Base* element )
 {
-	for( int i= 0; i< ui_elements_count_; i++ )
+	for( unsigned int i= 0; i< ui_elements_count_; i++ )
 	{
 		if( ui_elements_[i] == element )
 		{
-			if( i != ui_elements_count_-1 )
-				ui_elements_[i]= ui_elements_[ui_elements_count_-1];
+			if( i != ui_elements_count_ - 1 )
+				ui_elements_[i]= ui_elements_[ ui_elements_count_ - 1 ];
 			ui_elements_count_--;
-			break;
+			return;
 		}
 	}
+
+	H_ASSERT( false );
 }
 
 void ui_CursorHandler::CursorPress( int x, int y, bool pressed )
 {
-	for( int i= 0; i< ui_elements_count_; i++ )
+	for( unsigned int i= 0; i< ui_elements_count_; i++ )
 	{
 		ui_Base* el= ui_elements_[i];
 		if( !el->IsActive() )
 			continue;
 		//if inside element
 		if( el->X() <= x && el->X()+el->SizeX() > x &&
-				el->Y() <= y && el->Y()+el->SizeY() > y )
+			el->Y() <= y && el->Y()+el->SizeY() > y )
 			el->CursorPress( x, y, pressed );
 	}
 }
 
 void ui_CursorHandler::UpdateCursorPos( int x, int y )
 {
-	for( int i= 0; i< ui_elements_count_; i++ )
+	for( unsigned int i= 0; i< ui_elements_count_; i++ )
 	{
 		ui_Base* el= ui_elements_[i];
 		if( !el->IsActive() )
 			continue;
 		//if inside element
 		if( el->X() <= x && el->X()+el->SizeX() > x &&
-				el->Y() <= y && el->Y()+el->SizeY() > y )
+			el->Y() <= y && el->Y()+el->SizeY() > y )
 			el->CursorOver( true );
 		else
 			el->CursorOver( false );
 	}
+}
+
+/*
+-------------ui_Style----------------
+*/
+
+const unsigned char ui_Style::c_default_color[4]=
+	{ 200, 200, 200, 128 };
+const unsigned char ui_Style::c_hover_default_color[4]=
+	{ 255, 255, 255,  64 };
+const unsigned char ui_Style::c_text_default_color[4]=
+	{ 100, 100, 100,  64 };
+const unsigned char ui_Style::c_text_hover_default_color[4]=
+	{ 128, 128, 128,  32 };
+
+ui_Style::ui_Style(
+	const unsigned char* in_color,
+	const unsigned char* in_hover_color,
+	TextAlignment in_text_alignment,
+	const unsigned char* in_text_color,
+	const unsigned char* in_text_hover_color )
+	: color{ in_color[0], in_color[1], in_color[2], in_color[3] }
+	, hover_color{ in_hover_color[0], in_hover_color[1], in_hover_color[2], in_hover_color[3] }
+	, text_color{ in_text_color[0], in_text_color[1], in_text_color[2], in_text_color[3] }
+	, text_hover_color{ in_text_hover_color[0], in_text_hover_color[1], in_text_hover_color[2], in_text_hover_color[3] }
+	, text_alignment( in_text_alignment )
+{
 }
 
 /*
@@ -76,28 +108,17 @@ void ui_CursorHandler::UpdateCursorPos( int x, int y )
 
 int ui_Base::ui_cell_size_= 32;
 
-ui_Base::ui_Base()
-	: is_active_(true), is_visible_(true)
-	, color_ { 200, 200, 200, 128 }, cursor_over_color_ { 255, 255, 255, 64 }
-{
-	ui_CursorHandler::AddUIElement(this);
-}
 
-ui_Base::ui_Base( int x, int y, int in_size_x, int in_size_y,
-				  const unsigned char* normal_color, const unsigned char* in_cursor_over_color )
+ui_Base::ui_Base(
+	int x, int y, int in_size_x, int in_size_y,
+	const ui_Style& style )
 	: pos_x_(x), pos_y_(y), size_x_(in_size_x), size_y_(in_size_y)
-	, color_ { normal_color[0], normal_color[1], normal_color[2], normal_color[3] }
-	, cursor_over_color_ { in_cursor_over_color[0], in_cursor_over_color[1], in_cursor_over_color[2], in_cursor_over_color[3] }
+	, style_( style )
 	, is_active_(true), is_visible_(true)
 {
-	ui_CursorHandler::AddUIElement(this);
-}
+	ColorCopy( current_color_, style_.color );
+	ColorCopy( current_text_color_, style_.text_color );
 
-ui_Base::ui_Base( int x, int y, int in_size_x, int in_size_y )
-	: pos_x_(x), pos_y_(y), size_x_(in_size_x), size_y_(in_size_y)
-	, color_ { 200, 200, 200, 128 }, cursor_over_color_ { 255, 255, 255, 64 }
-	, is_active_(true),  is_visible_(true)
-{
 	ui_CursorHandler::AddUIElement(this);
 }
 
@@ -109,16 +130,22 @@ ui_Base::~ui_Base()
 void ui_Base::CursorOver( bool is_over )
 {
 	if( !is_over )
-		ColorCopy( current_color_, color_ );
+	{
+		ColorCopy( current_color_, style_.color );
+		ColorCopy( current_text_color_, style_.text_color );
+	}
 	else
-		ColorCopy( current_color_, cursor_over_color_ );
+	{
+		ColorCopy( current_color_, style_.hover_color );
+		ColorCopy( current_text_color_, style_.text_hover_color );
+	}
 }
 
 void ui_Base::CursorPress( int x, int y, bool pressed )
 {
 }
 
-void ui_Base::Draw( ui_Painter* painter )const
+void ui_Base::Draw( ui_Painter* painter ) const
 {
 }
 
@@ -199,6 +226,24 @@ int ui_Base::GenRectangle( ui_Vertex* triangles, int x, int y, int sx, int sy ) 
 	triangles[5].coord[1]= y;
 	return 6;
 }
+
+void ui_Base::TextDraw( ui_Painter* painter, const char* text ) const
+{
+	switch( style_.text_alignment )
+	{
+	case ui_Style::TextAlignment::Right:
+		painter->DrawUITextPixelCoordsRight( text, float(X()+SizeX()), float(Y()), float(SizeY()), current_text_color_ );
+		break;
+	case ui_Style::TextAlignment::Center:
+		painter->DrawUITextPixelCoordsCenter( text, float(X()+SizeX()/2), float(Y()), float(SizeY()), current_text_color_ );
+		break;
+	case ui_Style::TextAlignment::Left:
+	default:
+		painter->DrawUITextPixelCoordsLeft( text, float(X()), float(Y()), float(SizeY()), current_text_color_ );
+		break;
+	}
+}
+
 /*
 ---------------ui_MenuBase---------
 */
@@ -236,34 +281,16 @@ for( ui_Base* el : elements_ )
 ---------------ui_Button-------------
 */
 
-ui_Button::ui_Button( const char* text, int cell_x, int cell_y, int cell_size_x, int cell_size_y )
-	: ui_Base(
-		cell_x * ui_Base::CellSize() + ui_Base::CellOffset(),
-		cell_y * ui_Base::CellSize() + ui_Base::CellOffset(),
-		cell_size_x * ui_Base::CellSize() - ui_Base::CellOffset()*2,
-		cell_size_y * ui_Base::CellSize() - ui_Base::CellOffset()*2 )
-	, callback_(nullptr)
-{
-	if( text != nullptr )
-		strcpy( button_text_, text );
-	else
-		button_text_[0]= 0;
-}
-
-ui_Button::ui_Button( const char* text, int cell_x, int cell_y, int cell_size_x, int cell_size_y,
-					  const unsigned char* normal_color, const unsigned char* in_cursor_over_color )
+ui_Button::ui_Button( const char* text, int cell_x, int cell_y, int cell_size_x, int cell_size_y, const ui_Style& style )
 	: ui_Base(
 		cell_x * ui_Base::CellSize() + ui_Base::CellOffset(),
 		cell_y * ui_Base::CellSize() + ui_Base::CellOffset(),
 		cell_size_x * ui_Base::CellSize() - ui_Base::CellOffset()*2,
 		cell_size_y * ui_Base::CellSize() - ui_Base::CellOffset()*2,
-		normal_color, in_cursor_over_color )
+		style )
 	, callback_(nullptr)
+	, button_text_(text ? text : "")
 {
-	if( text != nullptr )
-		strcpy( button_text_, text );
-	else
-		button_text_[0]= 0;
 }
 
 ui_Button::~ui_Button()
@@ -292,7 +319,7 @@ void ui_Button::Draw( ui_Painter* painter )const
 	font_color[2]= current_color_[2]/2;
 	font_color[3]= current_color_[3];
 
-	painter->DrawUITextPixelCoordsCenter( button_text_, float(X()+ SizeX()/2), float(Y()), float(SizeY()), font_color );
+	ui_Base::TextDraw( painter, button_text_.data() );
 }
 
 void ui_Checkbox::CursorPress( int x, int y, bool pressed )
@@ -308,20 +335,11 @@ void ui_Checkbox::CursorPress( int x, int y, bool pressed )
 ---------ui_Checkbox-------
 */
 
-ui_Checkbox::ui_Checkbox( int cell_x, int cell_y, bool state )
+ui_Checkbox::ui_Checkbox( int cell_x, int cell_y, bool state, const ui_Style& style )
 	: ui_Base(
 		cell_x * ui_Base::CellSize() + ui_Base::CellOffset(), cell_y * ui_Base::CellSize() + ui_Base::CellOffset(),
-		(cell_x+1) * ui_Base::CellSize() + ui_Base::CellOffset(), (cell_y+1) * ui_Base::CellSize() + ui_Base::CellOffset() )
-	, flag_(state)
-	, callback_()
-{
-}
-
-ui_Checkbox::ui_Checkbox( int cell_x, int cell_y, bool state, const unsigned char* normal_color, const unsigned char* over_cursor_color )
-	: ui_Base(
-		cell_x * ui_Base::CellSize() + ui_Base::CellOffset(), cell_y * ui_Base::CellSize() + ui_Base::CellOffset(),
-		ui_Base::CellSize() + ui_Base::CellOffset(), ui_Base::CellSize() + ui_Base::CellOffset(),
-		normal_color, over_cursor_color )
+		(cell_x+1) * ui_Base::CellSize() + ui_Base::CellOffset(), (cell_y+1) * ui_Base::CellSize() + ui_Base::CellOffset(),
+		style )
 	, flag_(state)
 	, callback_()
 {
@@ -331,7 +349,7 @@ ui_Checkbox::~ui_Checkbox()
 {
 }
 
-void ui_Checkbox::Draw( ui_Painter* painter )const
+void ui_Checkbox::Draw( ui_Painter* painter ) const
 {
 	ui_Vertex triangles[ 64 ];
 
@@ -350,24 +368,13 @@ void ui_Checkbox::Draw( ui_Painter* painter )const
 -------------ui_Text---------------
 */
 
-ui_Text::ui_Text( const char* text, Alignment alignment, int cell_x, int cell_y , int cell_width, int cell_height)
+ui_Text::ui_Text( const char* text, int cell_x, int cell_y , int cell_width, int cell_height, const ui_Style& style )
 	: ui_Base(
 		cell_x * ui_Base::CellSize() + ui_Base::CellOffset(), cell_y * ui_Base::CellSize() + ui_Base::CellOffset(),
-		ui_Base::CellSize() * cell_width - 2*ui_Base::CellOffset(), ui_Base::CellSize() * cell_height - 2*ui_Base::CellOffset() )
-	, alignment_(alignment)
+		ui_Base::CellSize() * cell_width - 2*ui_Base::CellOffset(), ui_Base::CellSize() * cell_height - 2*ui_Base::CellOffset(),
+		style )
+	, text_(text ? text : "")
 {
-	if( text != nullptr )
-		strcpy( text_, text );
-}
-
-ui_Text::ui_Text( const char* text, Alignment alignment, int cell_x, int cell_y, int cell_width, int cell_height, const unsigned char* color )
-	: ui_Base(
-		cell_x * ui_Base::CellSize() + ui_Base::CellOffset(), cell_y * ui_Base::CellSize() + ui_Base::CellOffset(),
-		ui_Base::CellSize() * cell_width - 2*ui_Base::CellOffset(), ui_Base::CellSize() * cell_height - 2*ui_Base::CellOffset(), color, color )
-	, alignment_(alignment)
-{
-	if( text != nullptr )
-		strcpy( text_, text );
 }
 
 ui_Text::~ui_Text()
@@ -376,49 +383,25 @@ ui_Text::~ui_Text()
 
 void ui_Text::SetText( const char* text )
 {
-	if( text != nullptr )
-		strcpy( text_, text );
+	text_= text ? text : "";
 }
 
 void ui_Text::Draw( ui_Painter* painter )const
 {
-	switch(alignment_)
-	{
-	case Alignment::Right:
-		painter->DrawUITextPixelCoordsRight( text_, float(X()+SizeX()), float(Y()), float(SizeY()), ui_Base::color_ );
-		break;
-	case Alignment::Center:
-		painter->DrawUITextPixelCoordsCenter( text_, float(X()+SizeX()/2), float(Y()), float(SizeY()), ui_Base::color_ );
-		break;
-	case Alignment::Left:
-	default:
-		painter->DrawUITextPixelCoordsLeft( text_, float(X()), float(Y()), float(SizeY()), ui_Base::color_ );
-		break;
-	}
+	ui_Base::TextDraw( painter, text_.data() );
 }
 
 /*
 -------ui_PorgressBar-----------
 */
 
-ui_ProgressBar::ui_ProgressBar( int cell_x, int cell_y, int cell_size_x, int cell_size_y, float progress )
-	: ui_Base(
-		cell_x * ui_Base::CellSize() + ui_Base::CellOffset(),
-		cell_y * ui_Base::CellSize() + ui_Base::CellOffset(),
-		cell_size_x * ui_Base::CellSize() - ui_Base::CellOffset()*2,
-		cell_size_y * ui_Base::CellSize() - ui_Base::CellOffset()*2 )
-{
-	SetProgress(progress);
-}
-
-ui_ProgressBar::ui_ProgressBar( int cell_x, int cell_y, int cell_size_x, int cell_size_y, float progress,
-								const unsigned char* normal_color, const unsigned char* cursor_over_color )
+ui_ProgressBar::ui_ProgressBar( int cell_x, int cell_y, int cell_size_x, int cell_size_y, float progress, const ui_Style& style )
 	: ui_Base(
 		cell_x * ui_Base::CellSize() + ui_Base::CellOffset(),
 		cell_y * ui_Base::CellSize() + ui_Base::CellOffset(),
 		cell_size_x * ui_Base::CellSize() - ui_Base::CellOffset()*2,
 		cell_size_y * ui_Base::CellSize() - ui_Base::CellOffset()*2,
-		normal_color, cursor_over_color )
+		style )
 {
 	SetProgress(progress);
 }
@@ -450,7 +433,7 @@ void ui_ProgressBar::Draw( ui_Painter* painter ) const
 	ui_Base::GenRectangle( triangles, progress_bar_begin, Y()+co, progress_bar_len, SizeY()-co*2 );
 	int vertex_count= GenElementFraming( triangles + 6, ui_Base::CellOffset() );
 
-	painter->DrawUITriangles( triangles, vertex_count + 6, color_ );
+	painter->DrawUITriangles( triangles, vertex_count + 6, style_.color );
 
 	unsigned char font_color[4];
 	font_color[0]= current_color_[0]/2;
@@ -468,26 +451,17 @@ void ui_ProgressBar::Draw( ui_Painter* painter ) const
 ---------ui_Slider------------
 */
 
-ui_Slider::ui_Slider( int cell_x, int cell_y, int cell_size_x, float slider_pos )
-	: ui_Base(
-		cell_x * ui_Base::CellSize() + ui_Base::CellOffset(),
-		cell_y * ui_Base::CellSize() + ui_Base::CellOffset(),
-		cell_size_x * ui_Base::CellSize() - ui_Base::CellOffset()*2,
-		1 * ui_Base::CellSize() - ui_Base::CellOffset()*2 )
-	, slider_pos_(slider_pos), slider_inv_step_(16), callback_()
-{
-}
-
-ui_Slider::ui_Slider( int cell_x, int cell_y, int cell_size_x, float slider_pos, const unsigned char* normal_color, const unsigned char* cursor_over_color )
+ui_Slider::ui_Slider( int cell_x, int cell_y, int cell_size_x, float slider_pos, const ui_Style& style )
 	: ui_Base(
 		cell_x * ui_Base::CellSize() + ui_Base::CellOffset(),
 		cell_y * ui_Base::CellSize() + ui_Base::CellOffset(),
 		cell_size_x * ui_Base::CellSize() - ui_Base::CellOffset()*2,
 		1 * ui_Base::CellSize() - ui_Base::CellOffset()*2,
-		normal_color, cursor_over_color )
+		style )
 	, slider_pos_(slider_pos), slider_inv_step_(16), callback_()
 {
 }
+
 ui_Slider::~ui_Slider()
 {
 }
