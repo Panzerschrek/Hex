@@ -533,7 +533,6 @@ void h_World::BuildPhysMesh( h_ChunkPhysMesh* phys_mesh, short x_min, short x_ma
 						block_side->Gen( x + X + 1, y + Y + ((x+1)&1), z-1, BACK_LEFT );
 					else
 						block_side->Gen( x + X, y + Y, z-1, FORWARD_RIGHT );
-					\
 				}
 				if( t != t_br )
 				{

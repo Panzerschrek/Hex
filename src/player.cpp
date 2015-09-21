@@ -172,33 +172,35 @@ h_Direction h_Player::GetBuildPos( short* x, short* y, short* z )  const
 
 void h_Player::Move( const m_Vec3& delta )
 {
+	const float c_eps= 0.00001f;
+	const float c_vertical_collision_eps= 0.001f;
+
 	m_Vec3 new_pos= pos_ + delta;
 
-	p_UpperBlockFace* face;
-	p_BlockSide* side;
+	const p_UpperBlockFace* face;
+	const p_BlockSide* side;
 	unsigned int count;
 
 	face= phys_mesh_.upper_block_faces.Data();
 	count= phys_mesh_.upper_block_faces.Size();
 	for( unsigned int k= 0; k< count; k++, face++ )
 	{
-		if( delta.z > 0.00001f )
+		if( delta.z > c_eps )
 		{
 			if( face->dir == DOWN )
-				if( face->z > (pos_.z+H_PLAYER_HEIGHT) && face->z < (new_pos.z+H_PLAYER_HEIGHT) )
-				{
-					if(  face->HasCollisionWithCircle( new_pos.xy(), H_PLAYER_RADIUS ) )
-						//new_pos.z= face->z  - 0.0625f * delta.z;
-						new_pos.z= face->z- H_PLAYER_HEIGHT - 0.001f;
-				}
-		}
-		else if( delta.z < -0.000001f )
-		{
-			if( face->dir == UP )
-				if( face->z < pos_.z && face->z > new_pos.z )
+				if( face->z >= (pos_.z + H_PLAYER_HEIGHT) && face->z < (new_pos.z + H_PLAYER_HEIGHT) )
 				{
 					if( face->HasCollisionWithCircle( new_pos.xy(), H_PLAYER_RADIUS ) )
-						new_pos.z= face->z  + 0.0001f;
+						new_pos.z= face->z - H_PLAYER_HEIGHT - c_vertical_collision_eps;
+				}
+		}
+		else if( delta.z < -c_eps )
+		{
+			if( face->dir == UP )
+				if( face->z <= pos_.z && face->z > new_pos.z )
+				{
+					if( face->HasCollisionWithCircle( new_pos.xy(), H_PLAYER_RADIUS ) )
+						new_pos.z= face->z + c_vertical_collision_eps;
 				}
 		}
 	}// upeer faces
@@ -208,7 +210,7 @@ void h_Player::Move( const m_Vec3& delta )
 	for( unsigned int k= 0; k< count; k++, side++ )
 	{
 		if( ( side->z > new_pos.z && side->z < new_pos.z + H_PLAYER_HEIGHT ) ||
-				( side->z + 1.0f > new_pos.z && side->z + 1.0f < new_pos.z + H_PLAYER_HEIGHT ) )
+			( side->z + 1.0f > new_pos.z && side->z + 1.0f < new_pos.z + H_PLAYER_HEIGHT ) )
 		{
 			m_Vec2 collide_pos= side->CollideWithCirlce( new_pos.xy(), H_PLAYER_RADIUS );
 			new_pos.x= collide_pos.x;
