@@ -104,7 +104,7 @@ void r_WorldVBOClusterGPU::UpdateVBO(
 
 	if( buffer_reallocated_ )
 	{
-		if( cluster->vertices_.size() > 0 )
+		if( cluster->vertices_.size() >= 0 )
 		{
 			glBufferData(
 				GL_ARRAY_BUFFER,
@@ -171,6 +171,9 @@ GLuint r_WVB::GetIndexBuffer()
 {
 	if( index_buffer_ == H_BUFFER_OBJECT_NOT_CREATED )
 	{
+		// Clear VAO, if we can not hit it by binding of this index buffer.
+		glBindVertexArray( 0 );
+
 		glGenBuffers( 1, &index_buffer_ );
 		glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, index_buffer_ );
 
