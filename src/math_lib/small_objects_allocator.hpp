@@ -2,6 +2,7 @@
 
 #include <limits>
 #include <new>
+#include <type_traits>
 
 #include "allocation_free_list.hpp"
 #include "allocation_free_set.hpp"
@@ -93,11 +94,7 @@ private:
 
 	StoredType* GetDataPointer()
 	{
-		uintptr_t ptr= reinterpret_cast<uintptr_t>(raw_data_);
-		size_t alignment= alignof(StoredType);
-
-		ptr= ( (ptr + alignment - 1) / alignment ) * alignment;
-		return reinterpret_cast<StoredType*>(ptr);
+		return reinterpret_cast<StoredType*>(&storage_);
 	}
 
 private:
@@ -110,7 +107,7 @@ private:
 	IndexType index_list_[block_size];
 	// Store data in raw format.
 	// Convert data to StoredType and perform alignment.
-	unsigned char raw_data_[sizeof(StoredType) * block_size + alignof(StoredType)];
+	typename std::aligned_storage< block_size * sizeof(StoredType), alignof(StoredType) >::type storage_;
 };
 
 /*
