@@ -6,8 +6,8 @@
 #define H_CHUNK_HEIGHT 128
 #define H_CHUNK_HEIGHT_LOG2 7
 
-#define H_MIN_CHUNKS 4
-#define H_MIN_CHUNKS_LOG2 2
+#define H_MIN_CHUNKS 8
+#define H_MIN_CHUNKS_LOG2 3
 #define H_MAX_CHUNKS 64
 #define H_MAX_CHUNKS_LOG2 6
 #define H_MIN_CHUNKS_IN_CLUSTER 2

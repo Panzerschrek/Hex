@@ -114,6 +114,7 @@ private:
 	void DrawBuildPrism();
 
 	// helper. returns vertex count
+	void CalculateChunksVisibility();
 	unsigned int DrawClusterMatrix( r_WVB* wvb, unsigned int indeces_per_vertex_num, unsigned int indeces_per_vertex_den );
 	void DrawWorld();
 	void DrawWater();
@@ -132,6 +133,7 @@ private:
 	h_TicksCounter updates_counter_;
 	unsigned int world_quads_in_frame_;
 	unsigned int water_hexagons_in_frame_;
+	unsigned int chunks_visible_;
 
 	// Shaders
 	r_GLSLProgram world_shader_, build_prism_shader_, water_shader_, skybox_shader_, sun_shader_, console_bg_shader_, supersampling_final_shader_;
@@ -160,6 +162,7 @@ private:
 	r_FramebufferTexture console_bg_texture_;
 
 	//matrices and vectors
+	float fov_x_, fov_y_;
 	m_Mat4 view_matrix_, block_scale_matrix_, block_final_matrix_, water_final_matrix_;
 	m_Vec3 cam_ang_, cam_pos_;
 
@@ -174,6 +177,14 @@ private:
 		// Longitude + latitude
 		int matrix_position[2];
 	} chunks_info_;
+
+	// Read in GPU thread
+	struct
+	{
+		std::vector<bool> chunks_visibility_matrix;
+		// Longitude + latitude
+		int matrix_position[2];
+	} chunks_info_for_drawing_;
 
 	std::unique_ptr<r_WVB> world_vertex_buffer_;
 	std::unique_ptr<r_WVB> world_water_vertex_buffer_;

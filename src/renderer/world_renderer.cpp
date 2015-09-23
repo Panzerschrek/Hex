@@ -14,6 +14,12 @@
 
 #include "../world.hpp"
 
+struct r_ClipPlane
+{
+	m_Vec3 n;
+	float dist;
+};
+
 static const float g_build_prism_vertices[]=
 {
 	0.0f, 0.0f, 0.0f,  2.0f, 0.0f, 0.0f,   3.0f, 1.0f, 0.0f,
@@ -59,6 +65,8 @@ r_WorldRenderer::r_WorldRenderer(
 			chunk_info_ptr.reset( new r_ChunkInfo() );
 
 		UpdateChunkMatrixPointers();
+
+		chunks_info_for_drawing_.chunks_visibility_matrix.resize( chunk_count );
 	}
 
 	// TODO - profile this and select optimal cluster size.
@@ -168,9 +176,6 @@ r_WorldRenderer::r_WorldRenderer(
 
 r_WorldRenderer::~r_WorldRenderer()
 {
-	//update_thread.killTimer(
-	//update_thread.wait();
-	//update_thread.exit();
 }
 
 void r_WorldRenderer::Update()
@@ -373,6 +378,8 @@ void r_WorldRenderer::UpdateChunkWater(unsigned short X,  unsigned short Y )
 
 void r_WorldRenderer::UpdateWorldPosition( int longitude, int latitude )
 {
+	const std::unique_lock<std::mutex> wb_lock( world_vertex_buffer_mutex_ );
+
 	// Move our chunk matrix.
 	MoveChunkMatrix( longitude, latitude );
 
@@ -404,6 +411,9 @@ void r_WorldRenderer::CalculateMatrices()
 {
 	m_Mat4 scale, translate, result, perspective, rotate_x, rotate_z, basis_change;
 
+	fov_y_= 1.57f;
+	fov_x_= 2.0f * std::atan( float(viewport_width_) / float(viewport_height_) * std::tan( fov_y_ * 0.5f ) );
+
 	translate.Translate( -cam_pos_ );
 
 	static const m_Vec3 s_vector(
@@ -413,7 +423,7 @@ void r_WorldRenderer::CalculateMatrices()
 	scale.Scale( s_vector );
 
 	perspective.PerspectiveProjection(
-		float(viewport_width_)/float(viewport_height_), 1.57f,
+		float(viewport_width_)/float(viewport_height_), fov_y_,
 		0.5f*(H_PLAYER_HEIGHT - H_PLAYER_EYE_LEVEL),//znear
 		1024.0f );
 
@@ -443,6 +453,7 @@ void r_WorldRenderer::Draw()
 	UpdateGPUData();
 	CalculateMatrices();
 	CalculateLight();
+	CalculateChunksVisibility();
 
 	if( use_supersampling_ )
 	{
@@ -488,6 +499,8 @@ void r_WorldRenderer::Draw()
 		text_manager_->AddMultiText( 0, i++, text_scale, r_Text::default_color,
 			"chunks: %dx%d\n", chunks_info_.matrix_size[0], chunks_info_.matrix_size[1] );
 		text_manager_->AddMultiText( 0, i++, text_scale, r_Text::default_color,
+			"chunks visible: %d / %d", chunks_visible_, chunks_info_.matrix_size[0] * chunks_info_.matrix_size[1] );
+		text_manager_->AddMultiText( 0, i++, text_scale, r_Text::default_color,
 			"quads: %d; per chunk: %d\n",
 			world_quads_in_frame_,
 			world_quads_in_frame_ / (chunks_info_.matrix_size[0] * chunks_info_.matrix_size[1]) );
@@ -496,7 +509,9 @@ void r_WorldRenderer::Draw()
 			water_hexagons_in_frame_,
 			water_hexagons_in_frame_ / (chunks_info_.matrix_size[0] * chunks_info_.matrix_size[1]) );
 		text_manager_->AddMultiText( 0, i++, text_scale, r_Text::default_color,
-			"cam pos: %4.1f %4.1f %4.1f", cam_pos_.x, cam_pos_.y, cam_pos_.z );
+			"cam pos: %4.1f %4.1f %4.1f cam ang: %1.2f %1.2f %1.2f",
+			cam_pos_.x, cam_pos_.y, cam_pos_.z,
+			cam_ang_.x, cam_ang_.y, cam_ang_.z );
 
 		//text_manager->AddMultiText( 0, 11, text_scale, r_Text::default_color, "quick brown fox jumps over the lazy dog\nQUICK BROWN FOX JUMPS OVER THE LAZY DOG\n9876543210-+/\\" );
 		//text_manager->AddMultiText( 0, 0, 8.0f, r_Text::default_color, "#A@Kli\nO01-eN" );
@@ -539,6 +554,109 @@ void r_WorldRenderer::DrawConsole()
 	text_manager_->Draw();
 }
 
+void r_WorldRenderer::CalculateChunksVisibility()
+{
+	m_Vec3 rel_cam_pos=
+		cam_pos_ -
+		m_Vec3(
+			float(chunks_info_for_drawing_.matrix_position[0] * H_CHUNK_WIDTH) * H_SPACE_SCALE_VECTOR_X,
+			float(chunks_info_for_drawing_.matrix_position[1] * H_CHUNK_WIDTH),
+			0.0f);
+
+	m_Mat4 normals_mat, rotate_x_mat, rotate_z_mat;
+	rotate_x_mat.RotateX( cam_ang_.x );
+	rotate_z_mat.RotateZ( cam_ang_.z );
+	normals_mat= rotate_x_mat * rotate_z_mat;
+
+	r_ClipPlane clip_planes[5];
+	r_ClipPlane* plane;
+
+	// near clip plane
+	plane= &clip_planes[0];
+	plane->n.x= 0.0f;
+	plane->n.y= 1.0f;
+	plane->n.z= 0.0f;
+	plane->n= plane->n * normals_mat;
+	plane->dist= -( plane->n * rel_cam_pos );
+	// upper
+	plane= &clip_planes[1];
+	plane->n.x= 0.0f;
+	plane->n.y= +std::sin( fov_y_ * 0.5f );
+	plane->n.z= -std::cos( fov_y_ * 0.5f );
+	plane->n= plane->n * normals_mat;
+	plane->dist= -( plane->n * rel_cam_pos );
+	// lower
+	plane= &clip_planes[2];
+	plane->n.x= 0.0f;
+	plane->n.y= +std::sin( fov_y_ * 0.5f );
+	plane->n.z= +std::cos( fov_y_ * 0.5f );
+	plane->n= plane->n * normals_mat;
+	plane->dist= -( plane->n * rel_cam_pos );
+	// left
+	plane= &clip_planes[3];
+	plane->n.x= +std::cos( fov_x_ * 0.5f );
+	plane->n.y= +std::sin( fov_x_ * 0.5f );
+	plane->n.z= 0.0f;
+	plane->n= plane->n * normals_mat;
+	plane->dist= -( plane->n * rel_cam_pos );
+	// right
+	plane= &clip_planes[4];
+	plane->n.x= -std::cos( fov_x_ * 0.5f );
+	plane->n.y= +std::sin( fov_x_ * 0.5f );
+	plane->n.z= 0.0f;
+	plane->n= plane->n * normals_mat;
+	plane->dist= -( plane->n * rel_cam_pos );
+
+	chunks_visible_= 0;
+
+	// TODO - optimize this.
+	// Check bounding box of each chunk using 5 clip planes may b too expensive.
+	for( unsigned int y= 0; y < chunks_info_.matrix_size[1]; y++ )
+	for( unsigned int x= 0; x < chunks_info_.matrix_size[0]; x++ )
+	{
+		m_Vec3 pos[2]=
+		{
+			m_Vec3(
+				float(x * H_CHUNK_WIDTH) * H_SPACE_SCALE_VECTOR_X - 1.0f,
+				float(y * H_CHUNK_WIDTH) - 1.0f,
+				0.0f ),
+			m_Vec3(
+				float((x+1) * H_CHUNK_WIDTH) * H_SPACE_SCALE_VECTOR_X + 1.0f,
+				float((y+1) * H_CHUNK_WIDTH) + 1.0f,
+				float(H_CHUNK_HEIGHT) )
+		};
+
+		bool is_visible= true;
+		for( unsigned int p= 0; p < sizeof(clip_planes) / sizeof(clip_planes[0]); p++ )
+		{
+			plane= &clip_planes[p];
+
+			bool ahead_plane= false;
+			for( unsigned int i= 0; i < 8; i++ )
+			{
+				m_Vec3 vertex_pos;
+				vertex_pos.x= pos[ (i >> 0) & 1 ].x;
+				vertex_pos.y= pos[ (i >> 1) & 1 ].y;
+				vertex_pos.z= pos[ (i >> 2) & 1 ].z;
+
+				if( plane->n * vertex_pos + plane->dist > 0.0f )
+				{
+					ahead_plane= true;
+					break;
+				}
+			}
+			if( !ahead_plane )
+			{
+				is_visible= false;
+				break;
+			}
+		}
+
+		chunks_visible_+= int(is_visible);
+		chunks_info_for_drawing_.chunks_visibility_matrix[ x + y * chunks_info_.matrix_size[0] ]= is_visible;
+	} // for chunks
+}
+
 unsigned int r_WorldRenderer::DrawClusterMatrix( r_WVB* wvb, unsigned int indeces_per_vertex_num, unsigned int indeces_per_vertex_den )
 {
 	unsigned int vertex_count;
@@ -555,11 +673,16 @@ unsigned int r_WorldRenderer::DrawClusterMatrix( r_WVB* wvb, unsigned int indece
 		for( unsigned int x= 0; x < wvb->cluster_size_[0]; x++ )
 		{
 			// Reject invisible chunk in cluster.
-			// Not thread safe, because uses chunks_info_.matrix_position.
-			int cm_x= int(x + cx * wvb->cluster_size_[0]) + wvb->gpu_cluster_matrix_coord_[0] - chunks_info_.matrix_position[0];
-			int cm_y= int(y + cy * wvb->cluster_size_[1]) + wvb->gpu_cluster_matrix_coord_[1] - chunks_info_.matrix_position[1];
+			int cm_x=
+				int(x + cx * wvb->cluster_size_[0]) + wvb->gpu_cluster_matrix_coord_[0] -
+				chunks_info_for_drawing_.matrix_position[0];
+			int cm_y=
+				int(y + cy * wvb->cluster_size_[1]) + wvb->gpu_cluster_matrix_coord_[1] -
+				chunks_info_for_drawing_.matrix_position[1];
 			if( cm_x < 0 || cm_x >= (int)chunks_info_.matrix_size[0] ||
 				cm_y < 0 || cm_y >= (int)chunks_info_.matrix_size[1] )
+				continue;
+			if ( !chunks_info_for_drawing_.chunks_visibility_matrix[ cm_x + cm_y * chunks_info_.matrix_size[0] ] )
 				continue;
 
 			r_WorldVBOClusterSegment& segment= cluster->segments_[ x + y * wvb->cluster_size_[0] ];
@@ -800,6 +923,9 @@ void r_WorldRenderer::MoveChunkMatrix( int longitude, int latitude )
 void r_WorldRenderer::UpdateGPUData()
 {
 	std::unique_lock<std::mutex> lock(world_vertex_buffer_mutex_);
+
+	chunks_info_for_drawing_.matrix_position[0]= chunks_info_.matrix_position[0];
+	chunks_info_for_drawing_.matrix_position[1]= chunks_info_.matrix_position[1];
 
 	for( unsigned int i= 0; i < 2; i++ )
 	{
