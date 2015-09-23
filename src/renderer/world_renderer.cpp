@@ -503,7 +503,7 @@ void r_WorldRenderer::Draw()
 		text_manager_->AddMultiText( 0, i++, text_scale, r_Text::default_color,
 			"quads: %d; per chunk: %d\n",
 			world_quads_in_frame_,
-			world_quads_in_frame_ / (chunks_info_.matrix_size[0] * chunks_info_.matrix_size[1]) );
+			world_quads_in_frame_ / (chunks_visible_ > 0 ? chunks_visible_ : 1) );
 		text_manager_->AddMultiText( 0, i++, text_scale, r_Text::default_color,
 			"water hexagons: %d; per chunk: %d\n",
 			water_hexagons_in_frame_,
