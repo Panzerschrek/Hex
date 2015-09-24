@@ -14,5 +14,7 @@ const char* const filter_textures= "filter_textures";
 
 const char* const chunk_number_x= "chunk_number_x";
 const char* const chunk_number_y= "chunk_number_y";
+const char* const active_area_margins_x= "active_area_margins_x";
+const char* const active_area_margins_y= "active_area_margins_y";
 
 } // namespace h_SettingsKeys

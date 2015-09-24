@@ -119,10 +119,13 @@ private:
 
 	h_ChunkLoader chunk_loader_;
 
+	// Active area margins. Active area is centred rect of chunks, where world physics works.
+	// Outside active area chunks unactive.
+	unsigned int active_area_margins_[2];
+	// Dimensions of chunks matrix.
 	unsigned int chunk_number_x_, chunk_number_y_;
-	unsigned int chunk_matrix_size_x_, chunk_matrix_size_x_log2_;
-	h_Chunk* chunks_[ H_MAX_CHUNKS * H_MAX_CHUNKS ];//matrix of pointers
-	int longitude_, latitude_;//loaded zone beginning longitude and latitude
+	// Loaded zone beginning longitude and latitude.
+	int longitude_, latitude_;
 
 	m_Rand phys_processes_rand_;
 
@@ -141,6 +144,9 @@ private:
 	//queue 0 - for enqueue, queue 1 - for dequeue
 	std::queue< h_WorldAction > action_queue_[2];
 	std::mutex action_queue_mutex_;
+
+	// Chunks matrix. chunk(x, y)= chunks_[ x + y * H_MAX_CHUNKS ]
+	h_Chunk* chunks_[ H_MAX_CHUNKS * H_MAX_CHUNKS ];
 };
 
 inline int h_World::ChunkNumberX() const

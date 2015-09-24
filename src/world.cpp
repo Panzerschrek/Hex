@@ -18,22 +18,26 @@ h_World::h_World(
 	chunk_number_y_= std::max( std::min( settings_->GetInt( h_SettingsKeys::chunk_number_y, 12 ), H_MAX_CHUNKS ), H_MIN_CHUNKS );
 	longitude_= -(chunk_number_x_/2);
 	latitude_= -(chunk_number_y_/2);
-	//chunk_matrix_size_x_log2= m_Math::NearestPOTLog2( chunk_number_x );
-	//chunk_matrix_size_x= 1 << chunk_matrix_size_x_log2;
 
-	// chunks= new h_Chunk*[ chunk_matrix_size_x * chunk_number_y ];
-	// for( int i=0; i< chunk_number_x * chunk_number_y; i++ )
-	//    chunks[i]= new h_Chunk( this, (i%chunk_number_x) + longitude, (i/chunk_number_x) + latitude );
+	// Active area margins. Minimal active area have size 5.
+	active_area_margins_[0]=
+		std::max(
+			2,
+			std::min(
+				settings_->GetInt( h_SettingsKeys::active_area_margins_x, 2 ),
+				int(chunk_number_x_ / 2 - 2) ) );
+	active_area_margins_[1]=
+		std::max(
+			2,
+			std::min(
+				settings_->GetInt( h_SettingsKeys::active_area_margins_y, 2 ),
+				int(chunk_number_y_ / 2 - 2) ) );
+
 	for( unsigned int i= 0; i< chunk_number_x_; i++ )
-		for( unsigned int j= 0; j< chunk_number_y_; j++ )
-		{
-			chunks_[ i + j * H_MAX_CHUNKS ]= LoadChunk( i+longitude_, j+latitude_);
-			//new h_Chunk( this, i + longitude, j + latitude );
-		}
+	for( unsigned int j= 0; j< chunk_number_y_; j++ )
+		chunks_[ i + j * H_MAX_CHUNKS ]= LoadChunk( i+longitude_, j+latitude_);
 
 	LightWorld();
-
-	//phys_thread_.setStackSize( 16 * 1024 * 1024 );//inrease stack for recursive methods( lighting, blasts, etc )
 }
 
 h_World::~h_World()
@@ -654,8 +658,8 @@ void h_World::PhysTick()
 void h_World::WaterPhysTick()
 {
 	h_Chunk* ch;
-	for( unsigned int i= 1; i< ChunkNumberX()-1; i++ )
-		for( unsigned int j= 1; j< ChunkNumberY()-1; j++ )
+	for( unsigned int i= active_area_margins_[0]; i< ChunkNumberX() - active_area_margins_[0]; i++ )
+		for( unsigned int j= active_area_margins_[1]; j< ChunkNumberY() - active_area_margins_[1]; j++ )
 		{
 			bool chunk_modifed= false;
 			ch= GetChunk( i, j );

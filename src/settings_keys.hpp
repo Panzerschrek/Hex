@@ -17,5 +17,7 @@ extern const char* const filter_textures;
 // World keys
 extern const char* const chunk_number_x;
 extern const char* const chunk_number_y;
+extern const char* const active_area_margins_x;
+extern const char* const active_area_margins_y;
 
 } // namespace h_SettingsKeys
