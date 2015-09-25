@@ -130,6 +130,7 @@ private:
 	// Counters
 	h_TicksCounter frames_counter_;
 	h_TicksCounter chunks_updates_counter_;
+	h_TicksCounter chunks_water_updates_counter_;
 	h_TicksCounter updates_counter_;
 	unsigned int world_quads_in_frame_;
 	unsigned int water_hexagons_in_frame_;

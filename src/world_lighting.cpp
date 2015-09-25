@@ -679,6 +679,8 @@ void h_World::AddLightToBorderChunk( unsigned int X, unsigned int Y )
 
 void h_World::RelightWaterModifedChunksLight()
 {
+	const unsigned int c_inv_desiret_chunk_update_chance = 2;
+
 	r_IWorldRendererPtr renderer= renderer_.lock();
 	if( renderer == nullptr )
 		return;
@@ -700,7 +702,9 @@ void h_World::RelightWaterModifedChunksLight()
 			ch= GetChunk( i, j );
 			if( ch->need_update_light_ )
 			{
-				if(  phys_processes_rand_.Rand()  <= phys_processes_rand_.max_rand/ chunk_count )//chance of one chunk water updating per one phys tick
+				// Chance of one chunk water updating per one phys tick.
+				if( phys_processes_rand_.Rand() <=
+					phys_processes_rand_.max_rand / ( chunk_count * c_inv_desiret_chunk_update_chance ) )
 				{
 					X= i<<H_CHUNK_WIDTH_LOG2;
 					Y= j<<H_CHUNK_WIDTH_LOG2;

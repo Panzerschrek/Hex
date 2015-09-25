@@ -5,6 +5,9 @@
 #include "settings.hpp"
 #include "settings_keys.hpp"
 
+static const unsigned int g_updates_frequency= 15;
+static const unsigned int g_update_inrerval_ms= 1000 / g_updates_frequency;
+
 h_World::h_World(
 	const h_SettingsPtr& settings )
 	: settings_( settings )
@@ -650,8 +653,8 @@ void h_World::PhysTick()
 
 		int64_t t1_ms= clock() * 1000 / CLOCKS_PER_SEC;
 		unsigned int dt_ms= (unsigned int)(t1_ms - t0_ms);
-		if (dt_ms < 50)
-			std::this_thread::sleep_for(std::chrono::milliseconds(50 - dt_ms));
+		if (dt_ms < g_update_inrerval_ms)
+			std::this_thread::sleep_for(std::chrono::milliseconds(g_update_inrerval_ms - dt_ms));
 	}
 }
 
@@ -768,15 +771,11 @@ void h_World::WaterPhysTick()
 			{
 				if( r_IWorldRendererPtr renderer= renderer_.lock() )
 				{
-					renderer->UpdateChunk( i, j );
-					if( i > 0 )
-						renderer->UpdateChunkWater( i-1, j );
-					if( i < ChunkNumberX() - 1 );
-					renderer->UpdateChunkWater( i+1, j );
-					if( j > 0 )
-						renderer->UpdateChunkWater( i, j-1 );
-					if( j < ChunkNumberY() - 1 );
-					renderer->UpdateChunkWater( i, j+1 );
+					renderer->UpdateChunkWater( i  , j   );
+					renderer->UpdateChunkWater( i-1, j   );
+					renderer->UpdateChunkWater( i+1, j   );
+					renderer->UpdateChunkWater( i  , j-1 );
+					renderer->UpdateChunkWater( i  , j+1 );
 				}
 
 				ch->need_update_light_= true;

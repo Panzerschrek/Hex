@@ -303,6 +303,7 @@ void r_WorldRenderer::Update()
 
 	// For statistics.
 	unsigned int chunks_rebuilded= 0;
+	unsigned int chunks_water_meshes_rebuilded= 0;
 
 	// Scan chunks matrix, rebuild updated chunks.
 	for( unsigned int y= 0; y < chunks_info_.matrix_size[1]; y++ )
@@ -334,6 +335,8 @@ void r_WorldRenderer::Update()
 		}
 		if( chunk_info_ptr->water_updated_ )
 		{
+			chunks_water_meshes_rebuilded++;
+
 			r_WorldVBOClusterSegment& segment=
 				wvb_water->GetClusterSegment( longitude, latitude );
 			r_WorldVBOClusterPtr cluster=
@@ -353,6 +356,7 @@ void r_WorldRenderer::Update()
 
 	// Not thread safe. writes here, reads in GPU thread.
 	chunks_updates_counter_.Tick( chunks_rebuilded );
+	chunks_water_updates_counter_.Tick( chunks_water_meshes_rebuilded );
 	updates_counter_.Tick();
 }
 
@@ -492,22 +496,32 @@ void r_WorldRenderer::Draw()
 		int i= 0;
 		text_manager_->AddMultiText( 0, i++, text_scale, r_Text::default_color,
 			"fps: %d", frames_counter_.GetTicksFrequency() );
+
 		text_manager_->AddMultiText( 0, i++, text_scale, r_Text::default_color,
 			"world ticks per second: %d", updates_counter_.GetTicksFrequency() );
+
 		text_manager_->AddMultiText( 0, i++, text_scale, r_Text::default_color,
 			"chunk updates per second: %d", chunks_updates_counter_.GetTicksFrequency() );
+
+		text_manager_->AddMultiText( 0, i++, text_scale, r_Text::default_color,
+			"chunk water updates per second: %d", chunks_water_updates_counter_.GetTicksFrequency() );
+
 		text_manager_->AddMultiText( 0, i++, text_scale, r_Text::default_color,
 			"chunks: %dx%d\n", chunks_info_.matrix_size[0], chunks_info_.matrix_size[1] );
+
 		text_manager_->AddMultiText( 0, i++, text_scale, r_Text::default_color,
 			"chunks visible: %d / %d", chunks_visible_, chunks_info_.matrix_size[0] * chunks_info_.matrix_size[1] );
+
 		text_manager_->AddMultiText( 0, i++, text_scale, r_Text::default_color,
 			"quads: %d; per chunk: %d\n",
 			world_quads_in_frame_,
 			world_quads_in_frame_ / (chunks_visible_ > 0 ? chunks_visible_ : 1) );
+
 		text_manager_->AddMultiText( 0, i++, text_scale, r_Text::default_color,
 			"water hexagons: %d; per chunk: %d\n",
 			water_hexagons_in_frame_,
 			water_hexagons_in_frame_ / (chunks_info_.matrix_size[0] * chunks_info_.matrix_size[1]) );
+
 		text_manager_->AddMultiText( 0, i++, text_scale, r_Text::default_color,
 			"cam pos: %4.1f %4.1f %4.1f cam ang: %1.2f %1.2f %1.2f",
 			cam_pos_.x, cam_pos_.y, cam_pos_.z,
