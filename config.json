@@ -4,10 +4,10 @@
     "screen_width": "1024",
     "show_debug_info": "1",
     "texture_size": "32",
-    "chunk_number_x": "28",
-    "chunk_number_y": "33",
-    "active_area_margins_x" : "4",
-    "active_area_margins_y" : "5",
+    "chunk_number_x": "33",
+    "chunk_number_y": "28",
+    "active_area_margins_x" : "5",
+    "active_area_margins_y" : "4",
     "antialiasing" : "4",
     "vsync" : "1"
 }
