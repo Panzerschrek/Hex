@@ -1,0 +1,13 @@
+{
+    "filter_textures": "0",
+    "screen_height": "768",
+    "screen_width": "1024",
+    "show_debug_info": "1",
+    "texture_size": "32",
+    "chunk_number_x": "28",
+    "chunk_number_y": "33",
+    "active_area_margins_x" : "4",
+    "active_area_margins_y" : "5",
+    "antialiasing" : "4",
+    "vsync" : "1"
+}
