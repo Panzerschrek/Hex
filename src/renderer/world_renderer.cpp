@@ -192,6 +192,19 @@ void r_WorldRenderer::Update()
 		r_ChunkInfoPtr& chunk_info_ptr= chunks_info_.chunk_matrix[ x + y * chunks_info_.matrix_size[0] ];
 		H_ASSERT( chunk_info_ptr );
 
+		if( chunk_info_ptr->update_requested_ || chunk_info_ptr->water_update_requested_ )
+		{
+			bool need_update_in_this_tick= NeedRebuildChunkInThisTick( x, y );
+			if( need_update_in_this_tick )
+			{
+				chunk_info_ptr->updated_= chunk_info_ptr->updated_ || chunk_info_ptr->update_requested_;
+				chunk_info_ptr->water_updated_= chunk_info_ptr->water_updated_ || chunk_info_ptr->water_update_requested_;
+
+				chunk_info_ptr->update_requested_= false;
+				chunk_info_ptr->water_update_requested_= false;
+			}
+		}
+
 		if( chunk_info_ptr->updated_ )
 		{
 			chunk_info_ptr->GetQuadCount();
@@ -367,7 +380,7 @@ void r_WorldRenderer::UpdateChunk(unsigned short X,  unsigned short Y )
 	H_ASSERT( world_->Longitude() == chunks_info_.matrix_position[0] );
 	H_ASSERT( world_->Latitude () == chunks_info_.matrix_position[1] );
 
-	chunks_info_.chunk_matrix[ X + Y * chunks_info_.matrix_size[0] ]->updated_= true;
+	chunks_info_.chunk_matrix[ X + Y * chunks_info_.matrix_size[0] ]->update_requested_= true;
 }
 
 void r_WorldRenderer::UpdateChunkWater(unsigned short X,  unsigned short Y )
@@ -377,7 +390,7 @@ void r_WorldRenderer::UpdateChunkWater(unsigned short X,  unsigned short Y )
 	H_ASSERT( world_->Longitude() == chunks_info_.matrix_position[0] );
 	H_ASSERT( world_->Latitude () == chunks_info_.matrix_position[1] );
 
-	chunks_info_.chunk_matrix[ X + Y * chunks_info_.matrix_size[0] ]->water_updated_= true;
+	chunks_info_.chunk_matrix[ X + Y * chunks_info_.matrix_size[0] ]->water_update_requested_= true;
 }
 
 void r_WorldRenderer::UpdateWorldPosition( int longitude, int latitude )
@@ -932,6 +945,34 @@ void r_WorldRenderer::MoveChunkMatrix( int longitude, int latitude )
 	chunks_info_.matrix_position[1]= latitude ;
 
 	UpdateChunkMatrixPointers();
+}
+
+bool r_WorldRenderer::NeedRebuildChunkInThisTick( unsigned int x, unsigned int y )
+{
+	// Quad 9x9 - update every tick.
+	const int c_full_update_radius= 4;
+	// Quad 15x15 - update every 2 ticks.
+	const int c_half_update_radius= 7;
+
+	int dx= int(x) - int(chunks_info_.matrix_size[0] / 2);
+	int dy= int(y) - int(chunks_info_.matrix_size[1] / 2);
+	int r= std::max( std::abs(dx), std::abs(dy) );
+
+	if( r <= c_full_update_radius ) return true;
+
+	int longitude= int(x) + chunks_info_.matrix_position[0];
+	int latitude = int(y) + chunks_info_.matrix_position[1];
+	int ticks= (int) updates_counter_.GetTotalTicks();
+	int b;
+
+	if( r <= c_half_update_radius )
+	{
+		b= (longitude ^ latitude) & 1;
+		return b == (ticks & 1);
+	}
+
+	b= (longitude&1) | ( (latitude &1) << 1 );
+	return b == (ticks & 3);
 }
 
 void r_WorldRenderer::UpdateGPUData()

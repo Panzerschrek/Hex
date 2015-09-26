@@ -62,6 +62,11 @@ public:
 	unsigned int water_vertex_count_= 0;
 	bool water_updated_= true;
 
+	// Flags, setted by world.
+	// Chunk can really updates later, after this flags setted.
+	bool update_requested_= false;
+	bool water_update_requested_= false;
+
 	//geomentry up and down range borders. Used only for generation of center chunk blocks( not for border blocks )
 	int max_geometry_height_, min_geometry_height_;
 
@@ -105,6 +110,8 @@ private:
 	// Recalc pointers to parent h_Chunk and his neighbors.
 	void UpdateChunkMatrixPointers();
 	void MoveChunkMatrix( int longitude, int latitude );
+	// Coordinates - in chunks matrix.
+	bool NeedRebuildChunkInThisTick( unsigned int x, unsigned int y );
 
 	void UpdateGPUData();
 
