@@ -33,7 +33,7 @@ void r_ChunkInfo::BuildWaterSurfaceMesh()
 	auto water_block_list= chunk_->GetWaterList();
 	m_Collection< h_LiquidBlock* >::ConstIterator iter( water_block_list );
 	const h_LiquidBlock* b;
-	r_WaterVertex* v, *sv;
+	r_WaterVertex* v;
 	short h;
 	const h_Chunk* ch;
 
@@ -675,10 +675,6 @@ void r_ChunkInfo::BuildChunkMesh()
 \
 					if( r_TextureManager::TexturePerBlock( tex_id ) )\
 					{\
-						static const short hex_tex_coord[]=\
-						{ 0, H_MAX_TEXTURE_SCALE,  1, H_MAX_TEXTURE_SCALE*2,   3, H_MAX_TEXTURE_SCALE*2,\
-						4, H_MAX_TEXTURE_SCALE,   3, 0,   1,0 };\
-						unsigned int hex_rotation= 0;\
                     	v[0].tex_coord[0]= 0;\
                     	v[1].tex_coord[0]= v[4].tex_coord[0]= 1*H_MAX_TEXTURE_SCALE;\
                     	v[2].tex_coord[0]= v[7].tex_coord[0]= 3*H_MAX_TEXTURE_SCALE;\

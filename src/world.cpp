@@ -265,7 +265,7 @@ void h_World::UpdateWaterInRadius( short x, short y, short r )
 
 void h_World::MoveWorld( h_WorldMoveDirection dir )
 {
-	int i, j;
+	unsigned int i, j;
 	switch ( dir )
 	{
 	case NORTH:
@@ -591,9 +591,10 @@ void h_World::BlastBlock_r( short x, short y, short z, short blast_power )
 
 bool h_World::InBorders( short x, short y, short z ) const
 {
-	bool outside= x < 0 || y < 0 ||
-				  x > H_CHUNK_WIDTH * ChunkNumberX() || y > H_CHUNK_WIDTH * ChunkNumberY() ||
-				  z < 0 || z >= H_CHUNK_HEIGHT;
+	bool outside=
+		x < 0 || y < 0 ||
+		x > int(H_CHUNK_WIDTH * ChunkNumberX()) || y > int(H_CHUNK_WIDTH * ChunkNumberY()) ||
+		z < 0 || z >= H_CHUNK_HEIGHT;
 	return !outside;
 }
 
@@ -618,29 +619,29 @@ void h_World::PhysTick()
 		if( player )
 		{
 			player->Lock();
-			player_coord_[2]= short( player->Pos().z );
-			GetHexogonCoord( player->Pos().xy(), &player_coord_[0], &player_coord_[1] );
+			short player_coord_global[2];
+			GetHexogonCoord( player->Pos().xy(), &player_coord_global[0], &player_coord_global[1] );
 			player->Unlock();
-		}
 
-		player_coord_[0]-= Longitude() * H_CHUNK_WIDTH;
-		player_coord_[1]-= Latitude() * H_CHUNK_WIDTH;
-		BuildPhysMesh( &player_phys_mesh_,
-					   player_coord_[0] - 4, player_coord_[0] + 4,
-					   player_coord_[1] - 5, player_coord_[1] + 5,
-					   player_coord_[2] - 5, player_coord_[2] + 5 );
+			int player_coord[3];
+			player_coord[0]= player_coord_global[0] - Longitude() * H_CHUNK_WIDTH;
+			player_coord[1]= player_coord_global[1] - Latitude () * H_CHUNK_WIDTH;
+			player_coord[2]= int(player->Pos().z + H_PLAYER_EYE_LEVEL);
+			BuildPhysMesh(
+				&player_phys_mesh_,
+				player_coord[0] - 4, player_coord[0] + 4,
+				player_coord[1] - 5, player_coord[1] + 5,
+				player_coord[2] - 5, player_coord[2] + 5 );
 
-		if( player_coord_[1]/H_CHUNK_WIDTH > chunk_number_y_/2+2 )
-			MoveWorld( NORTH );
-		else if( player_coord_[1]/H_CHUNK_WIDTH < chunk_number_y_/2-2 )
-			MoveWorld( SOUTH );
-		if( player_coord_[0]/H_CHUNK_WIDTH > chunk_number_x_/2+2 )
-			MoveWorld( EAST );
-		else if( player_coord_[0]/H_CHUNK_WIDTH < chunk_number_x_/2-2 )
-			MoveWorld( WEST );
+			if( player_coord[1]/H_CHUNK_WIDTH > int(chunk_number_y_/2+2) )
+				MoveWorld( NORTH );
+			else if( player_coord[1]/H_CHUNK_WIDTH < int(chunk_number_y_/2-2) )
+				MoveWorld( SOUTH );
+			if( player_coord[0]/H_CHUNK_WIDTH > int(chunk_number_x_/2+2) )
+				MoveWorld( EAST );
+			else if( player_coord[0]/H_CHUNK_WIDTH < int(chunk_number_x_/2-2) )
+				MoveWorld( WEST );
 
-		if( player )
-		{
 			player->Lock();
 			player->SetCollisionMesh( &player_phys_mesh_ );
 			player->Unlock();

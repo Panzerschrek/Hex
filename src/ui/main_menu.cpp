@@ -96,7 +96,6 @@ ui_MainMenu::ui_MainMenu( h_MainLoop* main_loop, int sx, int sy )
 	: ui_MenuBase( nullptr, 0, 0, sx, sy )
 	, main_loop_(main_loop)
 {
-	const int menu_buttons= 3;
 	const int button_size= 10;
 	int button_shift_x= ui_MenuBase::size_x_/(ui_Base::CellSize()*2) - button_size/2;
 	int button_shift_y= ui_MenuBase::size_y_/(ui_Base::CellSize()*2) - (2*3 + 2)/2;

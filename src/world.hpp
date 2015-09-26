@@ -29,8 +29,8 @@ public:
 	int ChunkCoordToQuadchunkX( int longitude ) const;
 	int ChunkCoordToQuadchunkY( int latitude  ) const;
 
-	int ChunkNumberX() const;
-	int ChunkNumberY() const;
+	unsigned int ChunkNumberX() const;
+	unsigned int ChunkNumberY() const;
 
 	short Longitude() const;
 	short Latitude () const;
@@ -131,7 +131,6 @@ private:
 
 	r_IWorldRendererWeakPtr renderer_;
 	h_PlayerWeakPtr player_;
-	short player_coord_[3];//global coordinate of player hexagon
 
 	h_ChunkPhysMesh player_phys_mesh_;
 
@@ -149,12 +148,12 @@ private:
 	h_Chunk* chunks_[ H_MAX_CHUNKS * H_MAX_CHUNKS ];
 };
 
-inline int h_World::ChunkNumberX() const
+inline unsigned int h_World::ChunkNumberX() const
 {
 	return chunk_number_x_;
 }
 
-inline int h_World::ChunkNumberY() const
+inline unsigned int h_World::ChunkNumberY() const
 {
 	return chunk_number_y_;
 }
@@ -224,10 +223,10 @@ inline short h_World::ClampZ( short z ) const
 
 inline int h_World::ChunkCoordToQuadchunkX( int longitude ) const
 {
-	return longitude_>>1;
+	return longitude>>1;
 }
 
 inline int h_World::ChunkCoordToQuadchunkY( int latitude ) const
 {
-	return latitude_>>1;
+	return latitude>>1;
 }

@@ -4,7 +4,7 @@
 
 h_RegionData::h_RegionData()
 {
-	for( int i= 0; i< sizeof(chunks_used_flags); i++ )
+	for( unsigned int i= 0; i< sizeof(chunks_used_flags) / sizeof(bool); i++ )
 		chunks_used_flags[i]= false;
 	chunks_used= 0;
 }
@@ -53,7 +53,7 @@ void h_ChunkLoader::FreeChunkData( int longitude, int latitude )
 	if( reg->chunks_used == 0 )
 	{
 		//free region here
-		for( int i= 0; i< regions.size(); i++ )
+		for( unsigned int i= 0; i< regions.size(); i++ )
 		{
 			if( regions[i] == reg )
 			{
@@ -166,7 +166,7 @@ void h_ChunkLoader::SaveRegion( h_RegionData* region )
 
 void h_ChunkLoader::ForceSaveAllChunks()
 {
-	for( int i= 0; i< regions.size(); i++ )
+	for( unsigned int i= 0; i< regions.size(); i++ )
 		SaveRegion( regions[i] );
 }
 

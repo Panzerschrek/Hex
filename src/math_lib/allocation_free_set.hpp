@@ -43,6 +43,7 @@ typedef T StoredType;
 		iterator& operator=(const iterator& other)
 		{
 			p= other.p;
+			return *this;
 		}
 
 		bool operator==(const iterator& other)

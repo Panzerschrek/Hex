@@ -249,7 +249,10 @@ void ui_Base::TextDraw( ui_Painter* painter, const char* text ) const
 */
 
 ui_MenuBase::ui_MenuBase( ui_MenuBase* parent, int x, int y, int sx, int sy )
-	: pos_x_(x), pos_y_(y), size_x_(sx), size_y_(sy), parent_menu_(parent), child_menu_(nullptr), marked_for_killing_(false)
+	: parent_menu_(parent), child_menu_(nullptr)
+	, pos_x_(x), pos_y_(y)
+	, size_x_(sx), size_y_(sy)
+	, marked_for_killing_(false)
 {
 }
 
@@ -312,12 +315,6 @@ void ui_Button::Draw( ui_Painter* painter )const
 	ui_Base::GenRectangle( triangles, X(), Y(), SizeX(), SizeY() );
 
 	painter->DrawUITriangles( triangles, 6, current_color_ );
-
-	unsigned char font_color[4];
-	font_color[0]= current_color_[0]/2;
-	font_color[1]= current_color_[1]/2;
-	font_color[2]= current_color_[2]/2;
-	font_color[3]= current_color_[3];
 
 	ui_Base::TextDraw( painter, button_text_.data() );
 }

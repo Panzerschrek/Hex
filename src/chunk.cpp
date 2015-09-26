@@ -51,16 +51,14 @@ bool h_Chunk::IsEdgeChunk() const
 {
 	return
 		longitude_ == world_->Longitude() || latitude_ == world_->Latitude() ||
-		longitude_ == ( world_->Longitude() + world_->ChunkNumberX() - 1 ) ||
-		latitude_  == ( world_->Latitude () + world_->ChunkNumberY() - 1 );
+		longitude_ == ( world_->Longitude() + int(world_->ChunkNumberX()) - 1 ) ||
+		latitude_  == ( world_->Latitude () + int(world_->ChunkNumberY()) - 1 );
 }
 
 void h_Chunk::GenChunk()
 {
 	short x, y, z;
 	short h, soil_h;
-	short addr;
-
 
 	for( x= 0; x< H_CHUNK_WIDTH; x++ )
 	{
@@ -92,7 +90,7 @@ void h_Chunk::GenChunk()
 	}//for x
 }
 
-void h_Chunk::GenChunkFromFile( const HEXCHUNK_header* header, QDataStream& stream )
+void h_Chunk::GenChunkFromFile( QDataStream& stream )
 {
 	h_LiquidBlock* liquid_block;
 
@@ -161,7 +159,6 @@ void h_Chunk::SaveChunkToFile( QDataStream& stream )
 
 		stream << ((unsigned short)b->Type());
 
-		unsigned short water_level;
 		switch(b->Type())
 		{
 		case AIR:
@@ -176,7 +173,7 @@ void h_Chunk::SaveChunkToFile( QDataStream& stream )
 			break;
 
 		case WATER:
-			stream  << ( (unsigned short) ( ((h_LiquidBlock*)b)->LiquidLevel() ) );
+			stream << ((h_LiquidBlock*)b)->LiquidLevel();
 			break;
 
 		default:
@@ -310,7 +307,7 @@ void h_Chunk::PlaneBigTree( short x, short y, short z )//local coordinates
 void h_Chunk::PlantGrass()
 {
 	//TODO - optomize
-	short x, y, z, addr;
+	short x, y, z;
 	for( x= 0; x< H_CHUNK_WIDTH; x++ )
 	{
 		for( y= 0; y< H_CHUNK_WIDTH; y++ )
@@ -454,7 +451,7 @@ h_Chunk::h_Chunk( h_World* world, const HEXCHUNK_header* header, QDataStream& st
 	, latitude_ (header->latitude )
 	, need_update_light_(false)
 {
-	GenChunkFromFile( header, stream );
+	GenChunkFromFile( stream );
 	MakeLight();
 }
 

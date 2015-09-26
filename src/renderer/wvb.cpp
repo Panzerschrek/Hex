@@ -104,7 +104,7 @@ void r_WorldVBOClusterGPU::UpdateVBO(
 
 	if( buffer_reallocated_ )
 	{
-		if( cluster->vertices_.size() >= 0 )
+		if( cluster->vertices_.size() > 0 )
 		{
 			glBufferData(
 				GL_ARRAY_BUFFER,

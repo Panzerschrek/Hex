@@ -356,7 +356,7 @@ void h_MainLoop::focusOutEvent( QFocusEvent *)
 	use_mouse_= false;
 }
 
-void h_MainLoop::closeEvent(QCloseEvent* e) {}
+void h_MainLoop::closeEvent(QCloseEvent* ) {}
 
 void h_MainLoop::initializeOverlayGL() {}
 

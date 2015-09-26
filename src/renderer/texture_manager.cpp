@@ -75,11 +75,15 @@ void r_TextureManager::LoadTextures()
 	tex_data_pointers[0]= (unsigned char*) img.constBits();
 	tex_data_pointers[1]= tmp_data;
 	int s= 0, d= 1;
-	for( int i= R_MAX_TEXTURE_RESOLUTION; i > texture_size; i>>=1, s^=1, d^=1 )
+	for( unsigned int i= R_MAX_TEXTURE_RESOLUTION; i > texture_size; i>>=1, s^=1, d^=1 )
 		r_ImgUtils::RGBA8_GetMip( tex_data_pointers[s], tex_data_pointers[d], i, i );
 	r_ImgUtils::RGBA8_MirrorVerticalAndSwapRB( tex_data_pointers[s], texture_size, texture_size );
-	glTexSubImage3D( GL_TEXTURE_2D_ARRAY, 0, 0, 0, tex_id, texture_size, texture_size,
-					 1, GL_RGBA, GL_UNSIGNED_BYTE, tex_data_pointers[s] );
+	glTexSubImage3D(
+		GL_TEXTURE_2D_ARRAY,
+		0, 0, 0,
+		tex_id,
+		texture_size, texture_size,
+		1, GL_RGBA, GL_UNSIGNED_BYTE, tex_data_pointers[s] );
 
 
 	const char* config_file_name=  "textures/textures.json";
@@ -116,11 +120,15 @@ void r_TextureManager::LoadTextures()
 				tex_data_pointers[0]= (unsigned char*) img.constBits();
 				tex_data_pointers[1]= tmp_data;
 				s= 0, d= 1;
-				for( int i= R_MAX_TEXTURE_RESOLUTION; i > texture_size; i>>=1, s^=1, d^=1 )
+				for( unsigned int i= R_MAX_TEXTURE_RESOLUTION; i > texture_size; i>>=1, s^=1, d^=1 )
 					r_ImgUtils::RGBA8_GetMip( tex_data_pointers[s], tex_data_pointers[d], i, i );
 				r_ImgUtils::RGBA8_MirrorVerticalAndSwapRB( tex_data_pointers[s], texture_size, texture_size );
-				glTexSubImage3D( GL_TEXTURE_2D_ARRAY, 0, 0, 0, tex_id, texture_size, texture_size,
-								 1, GL_RGBA, GL_UNSIGNED_BYTE, tex_data_pointers[s] );
+				glTexSubImage3D(
+					GL_TEXTURE_2D_ARRAY,
+					0, 0, 0,
+					tex_id,
+					texture_size, texture_size,
+					1, GL_RGBA, GL_UNSIGNED_BYTE, tex_data_pointers[s] );
 			}
 
 			val= obj[ "scale" ];

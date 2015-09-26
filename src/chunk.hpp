@@ -49,7 +49,7 @@ private:
 	void GenChunk();
 
 	//chunk save\load
-	void GenChunkFromFile( const HEXCHUNK_header* header, QDataStream& stream );
+	void GenChunkFromFile(QDataStream& stream );
 	void SaveChunkToFile( QDataStream& stream );
 
 	void PlantTrees();

@@ -281,8 +281,8 @@ void r_WorldRenderer::Update()
 					int cm_x= longitude - chunks_info_.matrix_position[0];
 					int cm_y= latitude  - chunks_info_.matrix_position[1];
 					r_ChunkInfo* chunk_info_ptr= nullptr;
-					if( cm_x >= 0 && cm_x < chunks_info_.matrix_size[0] &&
-						cm_y >= 0 && cm_y < chunks_info_.matrix_size[1] )
+					if( cm_x >= 0 && cm_x < int(chunks_info_.matrix_size[0]) &&
+						cm_y >= 0 && cm_y < int(chunks_info_.matrix_size[1]) )
 						chunk_info_ptr= chunks_info_.chunk_matrix[ cm_x + cm_y * chunks_info_.matrix_size[0] ].get();
 
 					if( i == 0 )
@@ -694,7 +694,7 @@ void r_WorldRenderer::CalculateChunksVisibility()
 
 unsigned int r_WorldRenderer::DrawClusterMatrix( r_WVB* wvb, unsigned int indeces_per_vertex_num, unsigned int indeces_per_vertex_den )
 {
-	unsigned int vertex_count;
+	unsigned int vertex_count= 0;
 
 	for( unsigned int cy= 0; cy < wvb->cluster_matrix_size_[1]; cy++ )
 	for( unsigned int cx= 0; cx < wvb->cluster_matrix_size_[0]; cx++ )
@@ -909,16 +909,16 @@ void r_WorldRenderer::UpdateChunkMatrixPointers()
 			chunk_info_ptr->chunk_= world_->GetChunk( x, y );
 			H_ASSERT( chunk_info_ptr->chunk_ );
 
-			if( x < chunks_info_.matrix_size[0] - 1 )
+			if( x < int(chunks_info_.matrix_size[0] - 1) )
 				chunk_info_ptr->chunk_right_= world_->GetChunk( x + 1, y );
 			else chunk_info_ptr->chunk_right_= nullptr;
-			if( y < chunks_info_.matrix_size[1] - 1 )
+			if( y < int(chunks_info_.matrix_size[1] - 1) )
 				chunk_info_ptr->chunk_front_= world_->GetChunk( x, y + 1 );
 			else chunk_info_ptr->chunk_front_= nullptr;
 			if( y > 0 )
 				chunk_info_ptr->chunk_back_= world_->GetChunk( x, y - 1 );
 			else chunk_info_ptr->chunk_back_= nullptr;
-			if( y > 0 && x < chunks_info_.matrix_size[0] - 1 )
+			if( y > 0 && x < int(chunks_info_.matrix_size[0] - 1) )
 				chunk_info_ptr->chunk_back_right_= world_->GetChunk( x + 1, y - 1 );
 			else chunk_info_ptr->chunk_back_right_= nullptr;
 		}

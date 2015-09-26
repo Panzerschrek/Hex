@@ -136,17 +136,17 @@ void r_ImgUtils::LoadTexture( r_FramebufferTexture* texture, const char* filenam
 		const constexpr unsigned int stub_tex_size= 32;
 		unsigned char data[ stub_tex_size * stub_tex_size * 4 ];
 
-		for( int y= 0; y< stub_tex_size; y++ )
-			for( int x= 0; x< stub_tex_size; x++ )
+		for( unsigned int y= 0; y< stub_tex_size; y++ )
+			for( unsigned int x= 0; x< stub_tex_size; x++ )
 			{
 				int ind= 4 * (x + y*stub_tex_size);
 				data[ind  ]=
-					data[ind+1]=
-						data[ind+2]= 0;
+				data[ind+1]=
+				data[ind+2]= 0;
 				data[ind+3]= 255;
 			}
-		for( int y= 0; y< stub_tex_size/2; y++ )
-			for( int x= 0; x< stub_tex_size/2; x++ )
+		for( unsigned int y= 0; y< stub_tex_size/2; y++ )
+			for( unsigned int x= 0; x< stub_tex_size/2; x++ )
 			{
 				int ind= 4 * (x + y*stub_tex_size);
 				data[ind  ]= 240;
