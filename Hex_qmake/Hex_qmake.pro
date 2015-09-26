@@ -1,6 +1,3 @@
-OTHER_FILES += \
-    ../src/res.rc
-
 HEADERS += \
     ../src/block.hpp \
     ../src/block_collision.hpp \
@@ -89,5 +86,9 @@ SOURCES += \
 
 QT += widgets opengl
 INCLUDEPATH = ../../panzer_ogl_lib
-OBJECTS_DIR = ../obj
-QMAKE_CXXFLAGS += -std=c++11
+QMAKE_CXXFLAGS += -std=c++11 -fno-exceptions
+
+debug {
+} else {
+	QMAKE_CXXFLAGS  += -O2 -s
+}
