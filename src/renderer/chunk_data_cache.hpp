@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../hex.hpp"
-#include "ph.h"
+#include "panzer_ogl_lib.hpp"
 
 class r_ChunkDataCache
 {

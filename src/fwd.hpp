@@ -21,8 +21,15 @@ typedef std::weak_ptr<r_IWorldRenderer> r_IWorldRendererWeakPtr;
 class r_WorldRenderer;
 typedef std::shared_ptr<r_WorldRenderer> r_WorldRendererPtr;
 
-class r_IWorldRenderer;
 class r_ChunkInfo;
+typedef std::unique_ptr<r_ChunkInfo> r_ChunkInfoPtr;
+
+class r_WorldVBOCluster;
+typedef std::shared_ptr<r_WorldVBOCluster> r_WorldVBOClusterPtr;
+class r_WorldVBOClusterGPU;
+typedef std::unique_ptr<r_WorldVBOClusterGPU> r_WorldVBOClusterGPUPtr;
+class r_WVB;
+
 class r_Text;
 
 class ui_Painter;

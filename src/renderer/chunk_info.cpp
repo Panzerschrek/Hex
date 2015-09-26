@@ -1,6 +1,6 @@
 #include "../world.hpp"
 
-#include "world_renderer.hpp"
+#include "chunk_info.hpp"
 #include "texture_manager.hpp"
 #include "rendering_constants.hpp"
 

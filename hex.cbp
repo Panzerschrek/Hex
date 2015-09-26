@@ -85,10 +85,10 @@
 		<Unit filename="src\renderer\chunk_data_cache.cpp" />
 		<Unit filename="src\renderer\chunk_data_cache.hpp" />
 		<Unit filename="src\renderer\chunk_info.cpp" />
+		<Unit filename="src\renderer\chunk_info.hpp" />
 		<Unit filename="src\renderer\i_world_renderer.hpp" />
 		<Unit filename="src\renderer\img_utils.cpp" />
 		<Unit filename="src\renderer\img_utils.hpp" />
-		<Unit filename="src\renderer\ph.h" />
 		<Unit filename="src\renderer\rendering_constants.hpp" />
 		<Unit filename="src\renderer\text.cpp" />
 		<Unit filename="src\renderer\text.hpp" />

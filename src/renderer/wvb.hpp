@@ -4,7 +4,8 @@
 #include <vector>
 
 #include "../hex.hpp"
-#include "ph.h"
+#include "../fwd.hpp"
+#include "panzer_ogl_lib.hpp"
 
 struct r_VertexFormat
 {
@@ -55,8 +56,6 @@ public:
 	r_WorldVBOClusterSegment segments_[ H_MAX_CHUNKS_IN_CLUSTER * H_MAX_CHUNKS_IN_CLUSTER ];
 };
 
-typedef std::shared_ptr<r_WorldVBOCluster> r_WorldVBOClusterPtr;
-
 class r_WorldVBOClusterGPU
 {
 public:
@@ -84,8 +83,6 @@ public:
 	bool buffer_reallocated_;
 	r_WorldVBOClusterSegment segments_[ H_MAX_CHUNKS_IN_CLUSTER * H_MAX_CHUNKS_IN_CLUSTER ];
 };
-
-typedef std::unique_ptr<r_WorldVBOClusterGPU> r_WorldVBOClusterGPUPtr;
 
 class r_WVB
 {

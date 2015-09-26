@@ -25,7 +25,6 @@ HEADERS += \
     ../src/renderer/chunk_data_cache.hpp \
     ../src/renderer/i_world_renderer.hpp \
     ../src/renderer/img_utils.hpp \
-    ../src/renderer/ph.h \
     ../src/renderer/rendering_constants.hpp \
     ../src/renderer/text.hpp \
     ../src/renderer/texture_manager.hpp \
@@ -44,7 +43,8 @@ HEADERS += \
     ../../panzer_ogl_lib/ogl_state_manager.hpp \
     ../../panzer_ogl_lib/panzer_ogl_lib.hpp \
     ../../panzer_ogl_lib/polygon_buffer.hpp \
-    ../../panzer_ogl_lib/vec.hpp
+    ../../panzer_ogl_lib/vec.hpp \
+    ../src/renderer/chunk_info.hpp
 
 SOURCES += \
     ../src/block.cpp \

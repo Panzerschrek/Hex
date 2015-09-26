@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ph.h"
+#include "panzer_ogl_lib.hpp"
 #include "framebuffer_texture.hpp"
 #include "glsl_program.hpp"
 #include "polygon_buffer.hpp"
