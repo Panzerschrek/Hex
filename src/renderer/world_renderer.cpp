@@ -541,7 +541,7 @@ void r_WorldRenderer::Draw()
 		text_manager_->AddMultiText( 0, i++, text_scale, r_Text::default_color,
 			"water hexagons: %d; per chunk: %d\n",
 			water_hexagons_in_frame_,
-			water_hexagons_in_frame_ / (chunks_info_.matrix_size[0] * chunks_info_.matrix_size[1]) );
+			water_hexagons_in_frame_ / (chunks_visible_ > 0 ? chunks_visible_ : 1) );
 
 		text_manager_->AddMultiText( 0, i++, text_scale, r_Text::default_color,
 			"cam pos: %4.1f %4.1f %4.1f cam ang: %1.2f %1.2f %1.2f",
@@ -760,7 +760,7 @@ void r_WorldRenderer::DrawWorld()
 	world_shader_.Uniform( "ambient_light_color", R_AMBIENT_LIGHT_COLOR );
 
 	unsigned int vertex_count= DrawClusterMatrix( world_vertex_buffer_.get(), 3, 2 );
-	world_quads_in_frame_= vertex_count / 6;
+	world_quads_in_frame_= vertex_count / 4;
 }
 
 void r_WorldRenderer::DrawSky()
