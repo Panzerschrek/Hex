@@ -366,32 +366,32 @@ void h_World::MoveWorld( h_WorldMoveDirection dir )
 		case NORTH:
 			for( i= 0; i< chunk_number_x_; i++ )
 			{
-				renderer->UpdateChunk( i, chunk_number_y_ - 2 );
-				renderer->UpdateChunkWater( i, chunk_number_y_ - 2 );
+				renderer->UpdateChunk( i, chunk_number_y_ - 2, true );
+				renderer->UpdateChunkWater( i, chunk_number_y_ - 2, true );
 			}
 			break;
 
 		case SOUTH:
 			for( i= 0; i< chunk_number_x_; i++ )
 			{
-				renderer->UpdateChunk( i, 1 );
-				renderer->UpdateChunkWater( i, 1 );
+				renderer->UpdateChunk( i, 1, true );
+				renderer->UpdateChunkWater( i, 1, true );
 			}
 			break;
 
 		case EAST:
 			for( j= 0; j< chunk_number_y_; j++ )
 			{
-				renderer->UpdateChunk( chunk_number_x_ - 2, j );
-				renderer->UpdateChunkWater( chunk_number_x_ - 2, j );
+				renderer->UpdateChunk( chunk_number_x_ - 2, j, true );
+				renderer->UpdateChunkWater( chunk_number_x_ - 2, j, true );
 			}
 			break;
 
 		case WEST:
 			for( j= 0; j< chunk_number_y_; j++ )
 			{
-				renderer->UpdateChunk( 1, j );
-				renderer->UpdateChunkWater( 1, j );
+				renderer->UpdateChunk( 1, j, true );
+				renderer->UpdateChunkWater( 1, j, true );
 			}
 			break;
 		};

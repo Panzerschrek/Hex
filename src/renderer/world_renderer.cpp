@@ -373,24 +373,32 @@ void r_WorldRenderer::Update()
 	updates_counter_.Tick();
 }
 
-void r_WorldRenderer::UpdateChunk(unsigned short X,  unsigned short Y )
+void r_WorldRenderer::UpdateChunk(unsigned short X,  unsigned short Y, bool immediately )
 {
 	H_ASSERT( X >= 0 && X < chunks_info_.matrix_size[0] );
 	H_ASSERT( Y >= 0 && Y < chunks_info_.matrix_size[1] );
 	H_ASSERT( world_->Longitude() == chunks_info_.matrix_position[0] );
 	H_ASSERT( world_->Latitude () == chunks_info_.matrix_position[1] );
 
-	chunks_info_.chunk_matrix[ X + Y * chunks_info_.matrix_size[0] ]->update_requested_= true;
+	unsigned int ind= X + Y * chunks_info_.matrix_size[0];
+	if( immediately )
+		chunks_info_.chunk_matrix[ ind ]->updated_= true;
+	else
+		chunks_info_.chunk_matrix[ ind ]->update_requested_= true;
 }
 
-void r_WorldRenderer::UpdateChunkWater(unsigned short X,  unsigned short Y )
+void r_WorldRenderer::UpdateChunkWater(unsigned short X,  unsigned short Y, bool immediately )
 {
 	H_ASSERT( X >= 0 && X < chunks_info_.matrix_size[0] );
 	H_ASSERT( Y >= 0 && Y < chunks_info_.matrix_size[1] );
 	H_ASSERT( world_->Longitude() == chunks_info_.matrix_position[0] );
 	H_ASSERT( world_->Latitude () == chunks_info_.matrix_position[1] );
 
-	chunks_info_.chunk_matrix[ X + Y * chunks_info_.matrix_size[0] ]->water_update_requested_= true;
+	unsigned int ind= X + Y * chunks_info_.matrix_size[0];
+	if( immediately )
+		chunks_info_.chunk_matrix[ ind ]->water_updated_= true;
+	else
+		chunks_info_.chunk_matrix[ ind ]->water_update_requested_= true;
 }
 
 void r_WorldRenderer::UpdateWorldPosition( int longitude, int latitude )

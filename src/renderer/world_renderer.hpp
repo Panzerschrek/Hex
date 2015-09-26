@@ -84,8 +84,8 @@ public:
 
 public: // r_IWorldRenderer
 	virtual void Update() override;
-	virtual void UpdateChunk( unsigned short, unsigned short ) override;
-	virtual void UpdateChunkWater( unsigned short, unsigned short ) override;
+	virtual void UpdateChunk( unsigned short X, unsigned short Y, bool immediately ) override;
+	virtual void UpdateChunkWater( unsigned short X, unsigned short Y, bool immediately ) override;
 	virtual void UpdateWorldPosition( int longitude, int latitude ) override;
 
 public:
