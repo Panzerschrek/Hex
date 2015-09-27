@@ -44,7 +44,7 @@
 	"blocks":
 	[
 		{
-			"blockname": "fire",
+			"blockname": "fire_stone",
 			"blockside": "universal"
 		}
 	]

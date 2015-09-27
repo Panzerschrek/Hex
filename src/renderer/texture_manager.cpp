@@ -156,13 +156,14 @@ void r_TextureManager::LoadTextures()
 
 
 				h_BlockType t= h_Block::GetGetBlockTypeByName( blockname.toLocal8Bit().data() );
+				if( t == BLOCK_UNKNOWN ) continue;
 
 				if( ! strcmp( blockside.toLocal8Bit().data(), "universal" )  )
 					for( int k= 0; k< 8; k++ )
 						texture_table[ (t<<3) | k ]= tex_id;
 
 				h_Direction d= h_Block::GetDirectionByName( blockside.toLocal8Bit().data() );
-				if( d != DIRECTION_UNKNOWN && t!= BLOCK_UNKNOWN  )
+				if( d != DIRECTION_UNKNOWN )
 					texture_table[ (t<<3) |d ]= tex_id;
 
 			}//for blocks

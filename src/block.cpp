@@ -34,7 +34,7 @@ h_TransparencyType h_Block::Transparency() const
 
 #define MACRO_TO_STR(X) #X
 
-static const char* block_names[NUM_BLOCK_TYPES]= {
+static const char* const  block_names[NUM_BLOCK_TYPES]= {
 	MACRO_TO_STR(AIR),
 	MACRO_TO_STR(SPHERICAL_BLOCK),
 	MACRO_TO_STR(STONE),
@@ -44,8 +44,10 @@ static const char* block_names[NUM_BLOCK_TYPES]= {
 	MACRO_TO_STR(WATER),
 	MACRO_TO_STR(SAND),
 	MACRO_TO_STR(FOLIAGE),
-	MACRO_TO_STR(FIRE)
+	MACRO_TO_STR(FIRE_STONE)
 };
+
+static const char* const block_type_unknown= "BLOCK_UNKNOWN";
 
 h_BlockType h_Block::GetGetBlockTypeByName( const char* name )
 {
@@ -68,6 +70,14 @@ h_BlockType h_Block::GetGetBlockTypeByName( const char* name )
 	}
 
 	return BLOCK_UNKNOWN;
+}
+
+const char* h_Block::GetBlockName( h_BlockType type )
+{
+	if( type < NUM_BLOCK_TYPES )
+		return block_names[ type ];
+
+	return block_type_unknown;
 }
 
 static const char* direction_names[]= {

@@ -6,6 +6,7 @@ class h_Block
 public:
 
 	static h_BlockType GetGetBlockTypeByName( const char* name );
+	static const char* GetBlockName( h_BlockType type );
 	static h_Direction GetDirectionByName( const char* name );
 
 	h_Block( h_BlockType type= AIR, unsigned short additional_data= 0 );
