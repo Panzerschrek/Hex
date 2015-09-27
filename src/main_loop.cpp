@@ -14,6 +14,7 @@
 #include "framebuffer.hpp"
 
 #include "ui/main_menu.hpp"
+#include "ui/ingame_menu.hpp"
 
 void h_MainLoop::Start()
 {
@@ -55,6 +56,7 @@ h_MainLoop::h_MainLoop(
 	, game_started_(false)
 	, cam_pos_( 0.0f, 0.0f, 67.0f )
 	, cam_ang_( 0.0f, 0.0f, 0.0f )
+	, root_menu_(nullptr)
 {
 	window_= new QMainWindow( nullptr );
 
@@ -136,10 +138,10 @@ void h_MainLoop::paintGL()
 	if( frame_count_ == 0 )
 	{
 		ui_painter_= new ui_Painter();
-		main_menu_= new ui_MainMenu( this, screen_width_, screen_height_ );
+		root_menu_= new ui_MainMenu( this, screen_width_, screen_height_ );
 	}
 
-	main_menu_->Tick();
+	if(root_menu_) root_menu_->Tick();
 
 	m_Mat4 mat;
 	mat.Identity();
@@ -156,7 +158,7 @@ void h_MainLoop::paintGL()
 		blend_func );
 	r_OGLStateManager::UpdateState( state );
 
-	main_menu_->Draw( ui_painter_ );
+	if(root_menu_) root_menu_->Draw( ui_painter_ );
 
 	glFlush();
 	update();
@@ -237,6 +239,60 @@ void h_MainLoop::Input()
 	cam_pos_= player_->Pos();
 	cam_pos_.z+= H_PLAYER_EYE_LEVEL;
 
+}
+
+void h_MainLoop::ProcessMenuKeyPress( QKeyEvent* e )
+{
+	if( !root_menu_) return;
+
+	int key= e->key();
+	ui_Key ui_key;
+
+	if( key >= Qt::Key_A && key <= Qt::Key_Z )
+		ui_key= ui_Key( int(ui_Key::A) + (key - Qt::Key_A) );
+	else if( key >= Qt::Key_0 && key <= Qt::Key_9 )
+		ui_key= ui_Key( int(ui_Key::Zero) + (key - Qt::Key_0) );
+	else
+	{
+		switch( key )
+		{
+		case Qt::Key_Escape: ui_key= ui_Key::Escape; break;
+		case Qt::Key_Tab: ui_key= ui_Key::Tab; break;
+		case Qt::Key_Backspace : ui_key= ui_Key::Back; break;
+		case Qt::Key_Enter:
+		case Qt::Key_Return:
+			ui_key= ui_Key::Enter; break;
+
+		case Qt::Key_Up   : ui_key= ui_Key::Up   ; break;
+		case Qt::Key_Down : ui_key= ui_Key::Down ; break;
+		case Qt::Key_Left : ui_key= ui_Key::Left ; break;
+		case Qt::Key_Right: ui_key= ui_Key::Right; break;
+
+		case Qt::Key_Shift: ui_key= ui_Key::Shift; break;
+		case Qt::Key_Control: ui_key= ui_Key::Control; break;
+		case Qt::Key_Alt: ui_key= ui_Key::Alt; break;
+
+		case Qt::Key_Space: ui_key= ui_Key::Space; break;
+
+		case Qt::Key_Minus: ui_key= ui_Key::Minus; break;
+		case Qt::Key_Equal: ui_key= ui_Key::Equal; break;
+		case Qt::Key_Backslash: ui_key= ui_Key::Backslash; break;
+
+		case Qt::Key_BracketLeft : ui_key= ui_Key::BracketLeft ; break;
+		case Qt::Key_BracketRight: ui_key= ui_Key::BracketRight; break;
+
+		case Qt::Key_Semicolon: ui_key= ui_Key::Semicolon; break;
+		case Qt::Key_Apostrophe: ui_key= ui_Key::Apostrophe; break;
+
+		case Qt::Key_Comma: ui_key= ui_Key::Comma; break;
+		case Qt::Key_Period: ui_key= ui_Key::Dot; break;
+		case Qt::Key_Slash: ui_key= ui_Key::Slash; break;
+
+		default: ui_key= ui_Key::Unknown; break;
+		};
+	}
+
+	root_menu_->KeyPress( ui_key );
 }
 
 void h_MainLoop::mouseReleaseEvent(QMouseEvent* e)
@@ -340,6 +396,7 @@ void h_MainLoop::keyPressEvent(QKeyEvent* e)
 		break;
 
 	default:
+		ProcessMenuKeyPress( e );
 		break;
 	};
 }
@@ -391,8 +448,8 @@ void h_MainLoop::StartGame()
 
 		game_started_= true;
 
-		main_menu_->SetActive( false );
-		main_menu_->SetVisible( false );
+		delete root_menu_;
+		root_menu_= new ui_IngameMenu( screen_width_, screen_height_ );
 	}
 
 }

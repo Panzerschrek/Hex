@@ -33,7 +33,7 @@ class r_WVB;
 class r_Text;
 
 class ui_Painter;
-class ui_MainMenu;
+class ui_MenuBase;
 
 // Blocks classes
 class h_Block;

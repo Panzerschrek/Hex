@@ -31,6 +31,7 @@ public:
 	ui_MainMenu( h_MainLoop* main_loop, int sx, int sy );
 	virtual ~ui_MainMenu() override;
 
+	virtual void KeyPress( ui_Key key ) override;
 	virtual void Tick() override;
 
 private:

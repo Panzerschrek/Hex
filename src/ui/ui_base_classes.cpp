@@ -45,6 +45,30 @@ void ui_CursorHandler::RemoveUIElement( ui_Base* element )
 	H_ASSERT( false );
 }
 
+void ui_CursorHandler::AddMenu(ui_MenuBase *menu )
+{
+	H_ASSERT( ui_menu_count_ <= ui_menus_.size() );
+
+	ui_menus_[ ui_menu_count_ ]= menu;
+	ui_menu_count_++;
+}
+
+void ui_CursorHandler::RemoveMenu( ui_MenuBase* menu )
+{
+	for( unsigned int i= 0; i< ui_menu_count_; i++ )
+	{
+		if( ui_menus_[i] == menu )
+		{
+			if( i != ui_menu_count_ - 1 )
+				ui_menus_[i]= ui_menus_[ ui_menu_count_ - 1 ];
+			ui_menu_count_--;
+			return;
+		}
+	}
+
+	H_ASSERT( false );
+}
+
 void ui_CursorHandler::CursorPress( int x, int y, bool pressed )
 {
 	for( unsigned int i= 0; i< ui_elements_count_; i++ )
@@ -250,10 +274,17 @@ void ui_Base::TextDraw( ui_Painter* painter, const char* text ) const
 
 ui_MenuBase::ui_MenuBase( ui_MenuBase* parent, int x, int y, int sx, int sy )
 	: parent_menu_(parent), child_menu_(nullptr)
+	, active_(true), visible_(true)
 	, pos_x_(x), pos_y_(y)
 	, size_x_(sx), size_y_(sy)
 	, marked_for_killing_(false)
 {
+	ui_CursorHandler::AddMenu( this );
+}
+
+ui_MenuBase::~ui_MenuBase()
+{
+	ui_CursorHandler::RemoveMenu( this );
 }
 
 void ui_MenuBase::Draw( ui_Painter* painter )
@@ -270,13 +301,15 @@ for( auto el : elements_ )
 
 void ui_MenuBase::SetActive( bool active )
 {
-for( ui_Base* el : elements_ )
+	active_= active;
+	for( ui_Base* el : elements_ )
 		el->SetActive( active );
 }
 
 void ui_MenuBase::SetVisible( bool visible )
 {
-for( ui_Base* el : elements_ )
+	visible_= visible;
+	for( ui_Base* el : elements_ )
 		el->SetVisible( visible );
 }
 

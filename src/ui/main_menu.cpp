@@ -2,28 +2,9 @@
 
 #include "../main_loop.hpp"
 #include "ui_painter.hpp"
+#include "styles.hpp"
 
 #include "main_menu.hpp"
-
-//main menu colors
-static const unsigned char normal_color[]= { 128, 128, 128, 255 };
-static const unsigned char active_color[]= { 200, 48, 48, 255 };
-static const unsigned char text_color[]= { 96, 96, 96, 255 };
-static const unsigned char active_text_color[]= { 150, 32, 32, 255 };
-
-static const ui_Style g_main_style(
-	normal_color,
-	active_color,
-	ui_Style::TextAlignment::Center,
-	text_color,
-	active_text_color );
-
-static const ui_Style g_text_style(
-	normal_color,
-	active_color,
-	ui_Style::TextAlignment::Center,
-	text_color,
-	text_color );
 
 /*
 ------------ui_SettingsMenu---------------
@@ -33,7 +14,7 @@ ui_SettingsMenu::ui_SettingsMenu( ui_MenuBase* parent, int x, int y, int sx, int
 {
 	int button_shift_y= ui_MenuBase::size_y_/(ui_Base::CellSize()) - 2;
 
-	button_back_= new ui_Button( "< Back", 1, button_shift_y, 4, 1, g_main_style );
+	button_back_= new ui_Button( "< Back", 1, button_shift_y, 4, 1, c_ui_main_style );
 	button_back_->SetCallback( [this]{ OnBackButton(); } );
 
 	int center_cell_x= ui_MenuBase::size_x_ / (2*ui_Base::CellSize());
@@ -41,15 +22,15 @@ ui_SettingsMenu::ui_SettingsMenu( ui_MenuBase* parent, int x, int y, int sx, int
 
 	int punkt_row= center_cell_y-4;
 
-	text_textures_size_= new ui_Text( "Textures size: 1", center_cell_x-10, punkt_row, 10, 1, g_text_style );
-	slider_textures_size_= new ui_Slider( center_cell_x, punkt_row, 8, 1.0f, g_main_style );
+	text_textures_size_= new ui_Text( "Textures size: 1", center_cell_x-10, punkt_row, 10, 1, c_ui_texts_style );
+	slider_textures_size_= new ui_Slider( center_cell_x, punkt_row, 8, 1.0f, c_ui_main_style );
 	slider_textures_size_->SetInvStep( 3 );
 	slider_textures_size_->SetCallback( [this] { OnTexturesSizeSlider(); } );
 
 	punkt_row++;
 
-	text_textures_filtration_= new ui_Text( "Textures filter:", center_cell_x-10, punkt_row, 10, 1, g_text_style );
-	button_textures_fitration_= new ui_Button( "linear", center_cell_x, punkt_row, 8, 1, g_main_style );
+	text_textures_filtration_= new ui_Text( "Textures filter:", center_cell_x-10, punkt_row, 10, 1, c_ui_texts_style );
+	button_textures_fitration_= new ui_Button( "linear", center_cell_x, punkt_row, 8, 1, c_ui_main_style );
 
 	ui_MenuBase::elements_.push_back( button_back_ );
 	ui_MenuBase::elements_.push_back( text_textures_size_ );
@@ -100,15 +81,15 @@ ui_MainMenu::ui_MainMenu( h_MainLoop* main_loop, int sx, int sy )
 	int button_shift_x= ui_MenuBase::size_x_/(ui_Base::CellSize()*2) - button_size/2;
 	int button_shift_y= ui_MenuBase::size_y_/(ui_Base::CellSize()*2) - (2*3 + 2)/2;
 
-	button_play_= new ui_Button( "Play", 		button_shift_x, button_shift_y+0, button_size, 2, g_main_style );
+	button_play_= new ui_Button( "Play", 		button_shift_x, button_shift_y+0, button_size, 2, c_ui_main_style );
 	button_play_->SetCallback( [this]{ OnPlayButton(); } );
-	button_settings_= new ui_Button( "Settings", button_shift_x, button_shift_y+3, button_size, 2, g_main_style );
+	button_settings_= new ui_Button( "Settings", button_shift_x, button_shift_y+3, button_size, 2, c_ui_main_style );
 	button_settings_->SetCallback( [this]{ OnSettingsButton(); } );
-	button_quit_= new ui_Button( "Quit", 		button_shift_x, button_shift_y+6, button_size, 2, g_main_style );
+	button_quit_= new ui_Button( "Quit", 		button_shift_x, button_shift_y+6, button_size, 2, c_ui_main_style );
 	button_quit_->SetCallback( [this]{ OnQuitButton(); } );
 
-	game_title_= new ui_Text( "H E X", button_shift_x, button_shift_y-5, 10, 2, g_text_style );
-	game_subtitle_ = new ui_Text( "a game in world of hexogonal prisms", button_shift_x, button_shift_y-3, 10, 1, g_text_style );
+	game_title_= new ui_Text( "H E X", button_shift_x, button_shift_y-5, 10, 2, c_ui_texts_style );
+	game_subtitle_ = new ui_Text( "a game in world of hexogonal prisms", button_shift_x, button_shift_y-3, 10, 1, c_ui_texts_style );
 
 	ui_MenuBase::elements_.push_back( button_play_ );
 	ui_MenuBase::elements_.push_back( button_settings_ );
@@ -144,6 +125,11 @@ void ui_MainMenu::OnSettingsButton()
 void ui_MainMenu::OnQuitButton()
 {
 	main_loop_->Quit();
+}
+
+void ui_MainMenu::KeyPress( ui_Key key )
+{
+	if( key == ui_Key::Escape ) OnQuitButton();
 }
 
 void ui_MainMenu::Tick()

@@ -48,6 +48,7 @@ public://main menu interface logic
 private:
 	void Input();
 	void GetBuildPos();
+	void ProcessMenuKeyPress( QKeyEvent* e );
 
 private:
 	h_SettingsPtr settings_;
@@ -73,7 +74,7 @@ private:
 	h_Direction build_dir_;
 
 	ui_Painter* ui_painter_;
-	ui_MainMenu* main_menu_;
+	ui_MenuBase* root_menu_;
 
 	int frame_count_;
 };

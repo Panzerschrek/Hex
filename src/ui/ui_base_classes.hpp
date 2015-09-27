@@ -13,6 +13,77 @@ class ui_MenuBase;
 
 typedef std::function<void()> ui_Callback;
 
+enum class ui_Key : unsigned char
+{
+	Unknown= 0,
+
+	Tab= '\t',
+	Enter= '\n',
+
+	Zero=  '0',
+	One=   '1',
+	Two=   '2',
+	Three= '3',
+	Four=  '4',
+	Five=  '5',
+	Six=   '6',
+	Seven= '7',
+	Eight= '8',
+	Nine=  '9',
+	Minus= '-',
+	Equal= '=',
+	Backslash= '\\',
+	Back= '\b',
+
+	BracketLeft= '[',
+	BracketRight=']',
+	Semicolon= ';',
+	Apostrophe= '\'',
+
+	A= 'A',
+	B,
+	C,
+	D,
+	E,
+	F,
+	G,
+	H,
+	I,
+	J,
+	K,
+	L,
+	M,
+	N,
+	O,
+	P,
+	Q,
+	R,
+	S,
+	T,
+	U,
+	V,
+	W,
+	X,
+	Y,
+	Z,
+
+	Comma= ',',
+	Dot= '.',
+	Slash= '/',
+	Space= ' ',
+
+	// Unnamed keys - put it back.
+	Escape,
+	Shift,
+	Control,
+	Alt,
+
+	Up,
+	Down,
+	Left,
+	Right,
+};
+
 class ui_CursorHandler
 {
 public:
@@ -21,9 +92,13 @@ public:
 
 private:
 	friend class ui_Base;
+	friend class ui_MenuBase;
 
 	static void AddUIElement( ui_Base* element );
 	static void RemoveUIElement( ui_Base* element );
+
+	static void AddMenu( ui_MenuBase* menu );
+	static void RemoveMenu( ui_MenuBase* menu );
 
 	static unsigned int ui_elements_count_;
 	static std::array<ui_Base*, H_UI_MAX_ELEMENTS> ui_elements_;
@@ -72,24 +147,24 @@ public:
 	int X() const
 	{
 		return pos_x_;
-	};
+	}
 	int Y() const
 	{
 		return pos_y_;
-	};
+	}
 	int SizeX() const
 	{
 		return size_x_;
-	};
+	}
 	int SizeY() const
 	{
 		return size_y_;
-	};
+	}
 	void SetPos( int x, int y )
 	{
 		pos_x_= x;
 		pos_y_= y;
-	};
+	}
 
 	//cursor reaction methods. Coirdinates - absolute
 
@@ -119,15 +194,15 @@ public:
 	static void SetCellSize( int size )
 	{
 		ui_cell_size_= size;
-	};
+	}
 	static int CellSize()
 	{
 		return ui_cell_size_;
-	};
+	}
 	static int CellOffset()
 	{
 		return ui_cell_size_/8;
-	};
+	}
 
 protected:
 	//draw helpers. returns number of vertices
@@ -292,19 +367,26 @@ class ui_MenuBase
 {
 public:
 	ui_MenuBase( ui_MenuBase* parent, int x, int y, int sx , int sy );
-	virtual ~ui_MenuBase() {};
+	virtual ~ui_MenuBase();
+
 	void Draw( ui_Painter* painter );
 	void SetActive( bool active );
 	void SetVisible( bool visible );
 
+	bool IsActive() const { return active_; }
+	bool IsVisible() const { return visible_; }
+
+	virtual void KeyPress( ui_Key key ){}
+
 	void Kill()
 	{
 		marked_for_killing_= true;
-	};
+	}
+
 	bool IsMarkedForKilling() const
 	{
 		return marked_for_killing_;
-	};
+	}
 
 	virtual void Tick()= 0;
 
@@ -312,6 +394,9 @@ protected:
 	std::vector<ui_Base*> elements_;//container for all elements. All elements of menu must be here
 	ui_MenuBase * const parent_menu_;
 	ui_MenuBase* child_menu_;
+
+	bool active_;
+	bool visible_;
 
 	int pos_x_, pos_y_, size_x_, size_y_;//size of menu viewport
 
