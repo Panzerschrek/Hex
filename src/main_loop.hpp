@@ -72,9 +72,11 @@ private:
 
 	short build_pos_x_, build_pos_y_, build_pos_z_;
 	h_Direction build_dir_;
+	h_BlockType build_block_;
 
 	ui_Painter* ui_painter_;
 	ui_MenuBase* root_menu_;
+
 
 	int frame_count_;
 };

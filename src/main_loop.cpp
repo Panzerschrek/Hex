@@ -56,6 +56,7 @@ h_MainLoop::h_MainLoop(
 	, game_started_(false)
 	, cam_pos_( 0.0f, 0.0f, 67.0f )
 	, cam_ang_( 0.0f, 0.0f, 0.0f )
+	, build_block_(BLOCK_UNKNOWN)
 	, root_menu_(nullptr)
 {
 	window_= new QMainWindow( nullptr );
@@ -306,11 +307,11 @@ void h_MainLoop::mousePressEvent(QMouseEvent* e)
 	if( !game_started_ )
 		return;
 
-	if( e->button() == Qt::RightButton )
+	if( e->button() == Qt::RightButton && build_block_ != BLOCK_UNKNOWN )
 		world_->AddBuildEvent(
 			build_pos_x_ - world_->Longitude() * H_CHUNK_WIDTH,
 			build_pos_y_ - world_->Latitude () * H_CHUNK_WIDTH,
-			build_pos_z_, FIRE_STONE );
+			build_pos_z_, build_block_ );
 	else if( e->button() == Qt::LeftButton )
 	{
 		short new_build_pos[]= { build_pos_x_, build_pos_y_, build_pos_z_ };
@@ -361,13 +362,6 @@ void h_MainLoop::mousePressEvent(QMouseEvent* e)
 				new_build_pos[0] - world_->Longitude() * H_CHUNK_WIDTH,
 				new_build_pos[1] - world_->Latitude() * H_CHUNK_WIDTH,
 				new_build_pos[2] );
-	}
-	else if( e->button() == Qt::MiddleButton )
-	{
-		world_->AddBuildEvent(
-			build_pos_x_ - world_->Longitude() * H_CHUNK_WIDTH,
-			build_pos_y_ - world_->Latitude() * H_CHUNK_WIDTH,
-			build_pos_z_, SPHERICAL_BLOCK );
 	}
 }
 
@@ -449,7 +443,13 @@ void h_MainLoop::StartGame()
 		game_started_= true;
 
 		delete root_menu_;
-		root_menu_= new ui_IngameMenu( screen_width_, screen_height_ );
+		root_menu_=
+			new ui_IngameMenu(
+				screen_width_, screen_height_,
+				[this](h_BlockType block_type)
+				{
+					build_block_= block_type;
+				});
 	}
 
 }
