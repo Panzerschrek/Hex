@@ -1,4 +1,5 @@
 #include <cmath>
+#include <limits>
 #include <vector>
 
 #include <QImage>
@@ -153,6 +154,111 @@ void PoissonDiskPoints(
 	} // for y
 }
 
+static void DrawLine(
+	int x0, int y0, int x1, int y1,
+	unsigned char* framebuffer, unsigned int framebuffer_width )
+{
+	int dx= x1 - x0;
+	int dy= y1 - y0;
+
+	if( std::abs(dx) > std::abs(dy) )
+	{
+		if( dx < 0 )
+		{
+			std::swap( x0, x1 );
+			std::swap( y0, y1 );
+		}
+
+		int y_step_f= (dy<<16) / dx;
+		int y_f= y0 << 16;
+		for( int x= x0; x < x1; x++, y_f+= y_step_f )
+			framebuffer[ x + (y_f >> 16) * framebuffer_width ]= 255;
+	}
+	else
+	{
+		if( dy < 0 )
+		{
+			std::swap( x0, x1 );
+			std::swap( y0, y1 );
+		}
+
+		int x_step_f= (dx<<16) / dy;
+		int x_f= x0 << 16;
+		for( int y= y0; y < y1; y++, x_f+= x_step_f )
+			framebuffer[ (x_f >> 16) + y * framebuffer_width ]= 255;
+	}
+}
+
+static void GenDistanceFiled(
+	const unsigned int* size,
+	unsigned char* in_data,
+	unsigned char* out_data )
+{
+	const int c_radius= 48;
+
+	for( int y= 0; y < int(size[1]); y++ )
+	{
+		int yy_min= std::max( y - c_radius, 0 );
+		int yy_max= std::min( y + c_radius, int(size[1] - 1) );
+
+		for( int x= 0; x < int(size[0]); x++ )
+		{
+			int xx_min= std::max( x - c_radius, 0 );
+			int xx_max= std::min( x + c_radius, int(size[0] - 1) );
+
+			int min_dist2= c_radius * c_radius;
+			for( int yy= yy_min; yy <= yy_max; yy++ )
+			for( int xx= xx_min; xx <= xx_max; xx++ )
+			{
+				if( in_data[ xx + yy * int(size[0]) ] )
+				{
+					int dist2= (x - xx) * (x - xx) + (y - yy) * (y - yy);
+					if( dist2 < min_dist2 ) min_dist2= dist2;
+				}
+			}
+
+			out_data[ x + y * int(size[0]) ]=
+				std::min(
+					int( std::sqrt(float(min_dist2)) ) * 255 / c_radius,
+					255 );
+		} // for x
+	} // for y
+}
+
+static void GenHeightmap(
+	const unsigned int* size,
+	unsigned char* out_data )
+{
+	m_Rand randomizer;
+
+	std::vector<unsigned char> lines_data( size[0] * size[1], 0 );
+
+	unsigned char* lines_data_ptr= lines_data.data();
+	for( unsigned int x= 0; x < size[0]; x++ )
+	{
+		lines_data_ptr[ x ]= 1;
+		lines_data_ptr[ x + (size[1] - 1) * size[0] ]= 1;
+	}
+	for( unsigned int y= 0; y < size[1]; y++ )
+	{
+		lines_data_ptr[ y * size[0] ]= 1;
+		lines_data_ptr[ size[0] - 1 + y * size[0] ]= 1;
+	}
+
+	for( unsigned int i= 0; i < 16; i++ )
+	{
+		DrawLine(
+			randomizer.RandI( 1, size[0] - 1 ),
+			randomizer.RandI( 1, size[1] - 1 ),
+			randomizer.RandI( 1, size[0] - 1 ),
+			randomizer.RandI( 1, size[1] - 1 ),
+			lines_data.data(), size[0] );
+	}
+
+	GenDistanceFiled( size, lines_data.data(), out_data );
+
+}
+
 g_WorldGenerator::g_WorldGenerator(const g_WorldGenerationParameters& parameters)
 	: parameters_(parameters)
 {
@@ -160,14 +266,23 @@ g_WorldGenerator::g_WorldGenerator(const g_WorldGenerationParameters& parameters
 
 void g_WorldGenerator::Generate()
 {
-	unsigned int size[2]= { 1024, 1024 };
+	unsigned int size[2]= { 512, 512 };
 	std::vector<unsigned char> data( size[0] * size[1] * 4 );
-	PoissonDiskPoints( size, data.data(), 73 );
+	//PoissonDiskPoints( size, data.data(), 73 );
+
+	GenHeightmap( size, data.data() );
 
 	QImage img( size[0], size[1], QImage::Format_RGBX8888 );
 	img.fill(Qt::black);
 
-	memcpy( img.bits(), data.data(), size[0] * size[1] * 4 );
+	unsigned char* bits= img.bits();
+	for( unsigned int i= 0; i < size[0] * size[1]; i++ )
+	{
+		bits[i*4  ]=
+		bits[i*4+1]=
+		bits[i*4+2]= data[i];
+		bits[i*4+3]= 0;
+	}
 	img.save( "heightmap.png" );
 }
 
