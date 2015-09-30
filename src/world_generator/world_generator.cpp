@@ -10,8 +10,51 @@
 
 #include "world_generator.hpp"
 
+// returns value in range [0; 65536)
+inline int Noise2( int x, int y )
+{
+	int n = x + y * 57;
+	n = (n << 13) ^ n;
 
-void PoissonDiskPoints(
+	return ( (n * (n * n * 15731 + 789221) + 1376312589) & 0x7fffffff ) >> 15;
+}
+
+inline int InterpolatedNoise( int x, int y, int shift )
+{
+	int X= x>>shift, Y= y>>shift;
+	int shift_pow2= 1 << shift;
+	int mask= shift_pow2 - 1;
+
+	int dx= x & mask, dy= y & mask;
+	int dy1= shift_pow2 - dy;
+
+	int noise[]=
+	{
+		Noise2(X    , Y    ),
+		Noise2(X + 1, Y    ),
+		Noise2(X + 1, Y + 1),
+		Noise2(X    , Y + 1)
+	};
+
+	int interp_x[]=
+	{
+		noise[3] * dy + noise[0] * dy1,
+		noise[2] * dy + noise[1] * dy1
+	};
+
+	return ( interp_x[1] * dx + interp_x[0] * (shift_pow2 - dx) ) >> (shift + shift);
+}
+
+static int OctaveNoise( int x, int y, int octaves )
+{
+	int r= 0;
+	for( int i= 0; i < octaves; i++ )
+		r += InterpolatedNoise( x, y, octaves - i - 1 ) >> i;
+
+	return r >> 1;
+}
+
+static void PoissonDiskPoints(
 	const unsigned int* size,
 	unsigned char* out_data,
 	unsigned int min_distanse_div_sqrt2)
@@ -89,7 +132,6 @@ void PoissonDiskPoints(
 			H_ASSERT( cell[0] == -1 );
 			cell[0]= pos[0];
 			cell[1]= pos[1];
-			H_ASSERT( processing_stack_pos < max_point_count );
 			processing_stack.push_back( cell );
 
 			xy_loop_break:;
@@ -168,6 +210,7 @@ static void DrawLine(
 			std::swap( x0, x1 );
 			std::swap( y0, y1 );
 		}
+		else if( dx == 0 ) return;
 
 		int y_step_f= (dy<<16) / dx;
 		int y_f= y0 << 16;
@@ -181,6 +224,7 @@ static void DrawLine(
 			std::swap( x0, x1 );
 			std::swap( y0, y1 );
 		}
+		else if( dy == 0 ) return;
 
 		int x_step_f= (dx<<16) / dy;
 		int x_f= x0 << 16;
@@ -194,7 +238,7 @@ static void GenDistanceFiled(
 	unsigned char* in_data,
 	unsigned char* out_data )
 {
-	const int c_radius= 48;
+	const int c_radius= 128;
 
 	for( int y= 0; y < int(size[1]); y++ )
 	{
@@ -245,18 +289,51 @@ static void GenHeightmap(
 		lines_data_ptr[ size[0] - 1 + y * size[0] ]= 1;
 	}
 
-	for( unsigned int i= 0; i < 16; i++ )
+	float step_radius= float(size[0] + size[1]) * 0.5f * 0.15f;
+	for( unsigned int i= 0; i < 64; i++ )
 	{
-		DrawLine(
-			randomizer.RandI( 1, size[0] - 1 ),
-			randomizer.RandI( 1, size[1] - 1 ),
-			randomizer.RandI( 1, size[0] - 1 ),
-			randomizer.RandI( 1, size[1] - 1 ),
-			lines_data.data(), size[0] );
+		int x, y;
+		if( randomizer() & 1 )
+		{
+			x= 1 + int(size[0] - 2) * (randomizer() & 1);
+			y= randomizer.RandI( 1, size[1] - 1 );
+		}
+		else
+		{
+			x= randomizer.RandI( 1, size[0] - 1 );
+			y= 1 + int(size[1] - 2) * (randomizer() & 1);
+		}
+
+		while(1)
+		{
+			float r= randomizer.RandF( step_radius );
+			float a= randomizer.RandF( 2.0f * 3.1415926535f );
+			int new_x= int( float(x) + r * std::cos(a) );
+			int new_y= int( float(y) + r * std::sin(a) );
+			if( new_x <= 0 || new_x >= int( size[0] - 1 ) ||
+				new_y <= 0 || new_y >= int( size[1] - 1 ) )
+				break;
+
+			DrawLine( x, y, new_x, new_y, lines_data.data(), size[0] );
+			if( (randomizer() & 3 )== 0 ) break;
+
+			x= new_x;
+			y= new_y;
+		}
 	}
 
 	GenDistanceFiled( size, lines_data.data(), out_data );
+}
 
+
+static void GenNoise(
+	const unsigned int* size,
+	unsigned char* out_data )
+{
+	unsigned char* dst= out_data;
+	for( unsigned int y= 0; y < int(size[1]); y++ )
+	for( unsigned int x= 0; x < int(size[0]); x++, dst++ )
+		*dst= OctaveNoise( x, y, 7 ) >> 8;
 }
 
 g_WorldGenerator::g_WorldGenerator(const g_WorldGenerationParameters& parameters)
@@ -267,10 +344,16 @@ g_WorldGenerator::g_WorldGenerator(const g_WorldGenerationParameters& parameters
 void g_WorldGenerator::Generate()
 {
 	unsigned int size[2]= { 512, 512 };
-	std::vector<unsigned char> data( size[0] * size[1] * 4 );
+	std::vector<unsigned char> data( size[0] * size[1] );
 	//PoissonDiskPoints( size, data.data(), 73 );
 
 	GenHeightmap( size, data.data() );
+
+	std::vector<unsigned char> white_noise( size[0] * size[1] );
+	GenNoise( size, white_noise.data() );
+
+	for( unsigned int i= 0; i < size[0] * size[1]; i++ )
+		data[i]= ( data[i] * white_noise[i] ) >> 8;
 
 	QImage img( size[0], size[1], QImage::Format_RGBX8888 );
 	img.fill(Qt::black);
