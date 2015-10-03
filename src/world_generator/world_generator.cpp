@@ -10,8 +10,11 @@
 
 #include "world_generator.hpp"
 
+static const float c_pi= 3.1415926535f;
+static const float c_2pi= 2.0f * c_pi;
+
 // returns value in range [0; 65536)
-inline int Noise2( int x, int y )
+inline static int Noise2( int x, int y )
 {
 	int n = x + y * 57;
 	n = (n << 13) ^ n;
@@ -19,7 +22,7 @@ inline int Noise2( int x, int y )
 	return ( (n * (n * n * 15731 + 789221) + 1376312589) & 0x7fffffff ) >> 15;
 }
 
-inline int InterpolatedNoise( int x, int y, int shift )
+inline static int InterpolatedNoise( int x, int y, int shift )
 {
 	int X= x>>shift, Y= y>>shift;
 	int shift_pow2= 1 << shift;
@@ -61,7 +64,6 @@ static void PoissonDiskPoints(
 {
 	m_Rand randomizer;
 
-	const float c_pi= 3.1415926535f;
 	const int neighbor_k= 20;
 	const float min_dst= float(min_distanse_div_sqrt2) * std::sqrt(2.0f) + 0.01f;
 	const float min_dst2= min_dst * min_dst;
@@ -271,38 +273,55 @@ static void GenDistanceFiled(
 
 static void GenHeightmap(
 	const unsigned int* size,
-	unsigned char* out_data )
+	unsigned char* out_data,
+	unsigned int seed )
 {
-	m_Rand randomizer;
+	m_Rand randomizer(seed);
 
 	std::vector<unsigned char> lines_data( size[0] * size[1], 0 );
 
 	unsigned char* lines_data_ptr= lines_data.data();
-	for( unsigned int x= 0; x < size[0]; x++ )
+
+	float r= float( std::min( size[0], size[1] ) / 2 - 2 );
+	int r2= int(r * r);
+	int center[2]=
 	{
-		lines_data_ptr[ x ]= 1;
-		lines_data_ptr[ x + (size[1] - 1) * size[0] ]= 1;
-	}
-	for( unsigned int y= 0; y < size[1]; y++ )
+		int(size[0]) / 2, int(size[1]) / 2
+	};
+
+	// draw circle
+	/*const unsigned int c_circle_segments= 32;
+	for( unsigned int i= 0; i < c_circle_segments; i++ )
 	{
-		lines_data_ptr[ y * size[0] ]= 1;
-		lines_data_ptr[ size[0] - 1 + y * size[0] ]= 1;
+		float a0= float(i  ) / float(c_circle_segments) * c_2pi;
+		float a1= float(i+1) / float(c_circle_segments) * c_2pi;
+
+		int x0= center[0] + int( std::cos(a0) * r );
+		int y0= center[1] + int( std::sin(a0) * r );
+
+		int x1= center[0] + int( std::cos(a1) * r );
+		int y1= center[1] + int( std::sin(a1) * r );
+
+		DrawLine( x0, y0, x1, y1, lines_data.data(), size[0] );
+	}*/
+
+	for( int y= 0; y < int(size[1]); y++ )
+	for( int x= 0; x < int(size[0]); x++ )
+	{
+		int dx= x - center[0];
+		int dy= y - center[1];
+		if( dx * dx + dy * dy >= r2 )
+			lines_data_ptr[ x + y * size[0] ]= 1;
 	}
 
+	// draw lines from circle
 	float step_radius= float(size[0] + size[1]) * 0.5f * 0.15f;
 	for( unsigned int i= 0; i < 64; i++ )
 	{
 		int x, y;
-		if( randomizer() & 1 )
-		{
-			x= 1 + int(size[0] - 2) * (randomizer() & 1);
-			y= randomizer.RandI( 1, size[1] - 1 );
-		}
-		else
-		{
-			x= randomizer.RandI( 1, size[0] - 1 );
-			y= 1 + int(size[1] - 2) * (randomizer() & 1);
-		}
+		float a= randomizer.RandF( c_2pi );
+		x = center[0] + int( r * std::cos(a) );
+		y = center[1] + int( r * std::sin(a) );
 
 		while(1)
 		{
@@ -343,17 +362,20 @@ g_WorldGenerator::g_WorldGenerator(const g_WorldGenerationParameters& parameters
 
 void g_WorldGenerator::Generate()
 {
-	unsigned int size[2]= { 512, 512 };
+	unsigned int size[2]= { 1024, 1024 };
 	std::vector<unsigned char> data( size[0] * size[1] );
 	//PoissonDiskPoints( size, data.data(), 73 );
 
-	GenHeightmap( size, data.data() );
+	GenHeightmap( size, data.data(), 42 );
 
 	std::vector<unsigned char> white_noise( size[0] * size[1] );
 	GenNoise( size, white_noise.data() );
 
 	for( unsigned int i= 0; i < size[0] * size[1]; i++ )
+	{
 		data[i]= ( data[i] * white_noise[i] ) >> 8;
+		data[i]= data[i] > 44 ? 255 : 0;
+	}
 
 	QImage img( size[0], size[1], QImage::Format_RGBX8888 );
 	img.fill(Qt::black);
