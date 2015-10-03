@@ -235,40 +235,114 @@ static void DrawLine(
 	}
 }
 
+// Size must be power of 2
+static void GenBitmapLod(
+	const unsigned int* size, // input size
+	const unsigned char* in_data,
+	unsigned char* out_data )
+{
+	unsigned char* dst= out_data;
+
+	for( unsigned int y= 0; y < size[1] / 2; y++ )
+	{
+		const unsigned char* src0= in_data + y * 2 * size[0];
+		const unsigned char* src1= src0 + size[0];
+		for( unsigned int x= 0; x < size[0] / 2; x++, src0+=2, src1+=2, dst++ )
+		{
+			if( src0[0] || src0[1] || src1[0] || src1[1])
+				*dst= 255;
+			else *dst= 0;
+		}
+	}
+}
+
+// Fast approach to calculate distance field.
+// Reject empty pixels use LODs and reject pixel areas, which is too far.
+static void FindMinDist_r(
+	const unsigned int* size,
+	const unsigned int cur_x, const unsigned int cur_y,
+	const unsigned int r_x, const unsigned int r_y,
+	const unsigned int lod,
+	const std::vector< std::vector<unsigned char> >& lods,
+	int& nearest_square_dist )
+{
+	if( lod == 0 )
+	{
+		if( lods[0][ r_x + r_y * size[0] ] )
+		{
+			int dx= int(cur_x) - int(r_x);
+			int dy= int(cur_y) - int(r_y);
+			int dist2= dx * dx + dy * dy;
+			if( dist2 < nearest_square_dist )
+				nearest_square_dist= dist2;
+		}
+	}
+	else
+	{
+		if( lods[lod][ r_x + r_y * (size[0] >> lod) ] )
+		{
+			int dx = std::max( std::abs( int(r_x << lod) - int(cur_x) ) - (1<<lod), 0 );
+			int dy = std::max( std::abs( int(r_y << lod) - int(cur_y) ) - (1<<lod), 0 );
+			int approx_square_distance= dx * dx + dy * dy;
+
+			if( approx_square_distance <= nearest_square_dist )
+				FindMinDist_r( size, cur_x, cur_y, r_x * 2    , r_y * 2    , lod - 1, lods, nearest_square_dist );
+			if( approx_square_distance <= nearest_square_dist )
+				FindMinDist_r( size, cur_x, cur_y, r_x * 2    , r_y * 2 + 1, lod - 1, lods, nearest_square_dist );
+			if( approx_square_distance <= nearest_square_dist )
+				FindMinDist_r( size, cur_x, cur_y, r_x * 2 + 1, r_y * 2    , lod - 1, lods, nearest_square_dist );
+			if( approx_square_distance <= nearest_square_dist )
+				FindMinDist_r( size, cur_x, cur_y, r_x * 2 + 1, r_y * 2 + 1, lod - 1, lods, nearest_square_dist );
+		}
+	}
+}
+
 static void GenDistanceFiled(
 	const unsigned int* size,
 	unsigned char* in_data,
 	unsigned char* out_data )
 {
+	std::vector< std::vector<unsigned char> > in_data_lods;
+	{
+		unsigned int xy[2] = { size[0], size[1] };
+		while(xy[0] > 0 && xy[1] > 0)
+		{
+			in_data_lods.push_back( std::vector<unsigned char>() );
+			xy[0]>>= 1;
+			xy[1]>>= 1;
+		}
+
+		in_data_lods[0].resize( size[0] * size[1] );
+		memcpy( in_data_lods[0].data(), in_data, size[0] * size[1] );
+
+		for( unsigned int lod= 1; lod < in_data_lods.size(); lod++ )
+		{
+			in_data_lods[lod].resize( (size[0] >> lod) * (size[1] >> lod) );
+			xy[0]= size[0] >> (lod-1);
+			xy[1]= size[1] >> (lod-1);
+			GenBitmapLod( xy, in_data_lods[lod-1].data(), in_data_lods[lod].data() );
+		}
+	}
+
 	const int c_radius= 128;
 
-	for( int y= 0; y < int(size[1]); y++ )
+	for( unsigned int y= 0; y < size[1]; y++ )
+	for( unsigned int x= 0; x < size[0]; x++ )
 	{
-		int yy_min= std::max( y - c_radius, 0 );
-		int yy_max= std::min( y + c_radius, int(size[1] - 1) );
+		int min_square_distance= c_radius * c_radius;
 
-		for( int x= 0; x < int(size[0]); x++ )
-		{
-			int xx_min= std::max( x - c_radius, 0 );
-			int xx_max= std::min( x + c_radius, int(size[0] - 1) );
+		FindMinDist_r(
+			size,
+			x, y,
+			0, 0,
+			in_data_lods.size() - 1, in_data_lods,
+			min_square_distance );
 
-			int min_dist2= c_radius * c_radius;
-			for( int yy= yy_min; yy <= yy_max; yy++ )
-			for( int xx= xx_min; xx <= xx_max; xx++ )
-			{
-				if( in_data[ xx + yy * int(size[0]) ] )
-				{
-					int dist2= (x - xx) * (x - xx) + (y - yy) * (y - yy);
-					if( dist2 < min_dist2 ) min_dist2= dist2;
-				}
-			}
-
-			out_data[ x + y * int(size[0]) ]=
-				std::min(
-					int( std::sqrt(float(min_dist2)) ) * 255 / c_radius,
-					255 );
-		} // for x
-	} // for y
+		out_data[ x + y * size[0] ]=
+			std::min(
+				int( std::sqrt(float(min_square_distance)) ) * 255 / c_radius,
+				255 );
+	}
 }
 
 static void GenHeightmap(
@@ -289,29 +363,13 @@ static void GenHeightmap(
 		int(size[0]) / 2, int(size[1]) / 2
 	};
 
-	// draw circle
-	/*const unsigned int c_circle_segments= 32;
-	for( unsigned int i= 0; i < c_circle_segments; i++ )
-	{
-		float a0= float(i  ) / float(c_circle_segments) * c_2pi;
-		float a1= float(i+1) / float(c_circle_segments) * c_2pi;
-
-		int x0= center[0] + int( std::cos(a0) * r );
-		int y0= center[1] + int( std::sin(a0) * r );
-
-		int x1= center[0] + int( std::cos(a1) * r );
-		int y1= center[1] + int( std::sin(a1) * r );
-
-		DrawLine( x0, y0, x1, y1, lines_data.data(), size[0] );
-	}*/
-
 	for( int y= 0; y < int(size[1]); y++ )
 	for( int x= 0; x < int(size[0]); x++ )
 	{
 		int dx= x - center[0];
 		int dy= y - center[1];
 		if( dx * dx + dy * dy >= r2 )
-			lines_data_ptr[ x + y * size[0] ]= 1;
+			lines_data_ptr[ x + y * size[0] ]= 255;
 	}
 
 	// draw lines from circle
@@ -344,7 +402,6 @@ static void GenHeightmap(
 	GenDistanceFiled( size, lines_data.data(), out_data );
 }
 
-
 static void GenNoise(
 	const unsigned int* size,
 	unsigned char* out_data )
@@ -362,7 +419,7 @@ g_WorldGenerator::g_WorldGenerator(const g_WorldGenerationParameters& parameters
 
 void g_WorldGenerator::Generate()
 {
-	unsigned int size[2]= { 1024, 1024 };
+	unsigned int size[2]= {1024, 1024 };
 	std::vector<unsigned char> data( size[0] * size[1] );
 	//PoissonDiskPoints( size, data.data(), 73 );
 
