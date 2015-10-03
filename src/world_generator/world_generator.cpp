@@ -4,6 +4,7 @@
 
 #include <QImage>
 
+#include "../hex.hpp"
 #include "../math_lib/assert.hpp"
 #include "../math_lib/m_math.h"
 #include "../math_lib/rand.h"
@@ -12,6 +13,9 @@
 
 static const float c_pi= 3.1415926535f;
 static const float c_2pi= 2.0f * c_pi;
+
+// fixed8_t
+static const int c_world_x_scaler= int(H_SPACE_SCALE_VECTOR_X * 256.0f);
 
 // returns value in range [0; 65536)
 inline static int Noise2( int x, int y )
@@ -22,6 +26,7 @@ inline static int Noise2( int x, int y )
 	return ( (n * (n * n * 15731 + 789221) + 1376312589) & 0x7fffffff ) >> 15;
 }
 
+// returns value in range [0; 65536)
 inline static int InterpolatedNoise( int x, int y, int shift )
 {
 	int X= x>>shift, Y= y>>shift;
@@ -48,13 +53,14 @@ inline static int InterpolatedNoise( int x, int y, int shift )
 	return ( interp_x[1] * dx + interp_x[0] * (shift_pow2 - dx) ) >> (shift + shift);
 }
 
+// returns value in range [0; 65536 + 65536/2 + 65536/4 + ... + 65536/(2^(octaves - 1)) )
 static int OctaveNoise( int x, int y, int octaves )
 {
 	int r= 0;
 	for( int i= 0; i < octaves; i++ )
 		r += InterpolatedNoise( x, y, octaves - i - 1 ) >> i;
 
-	return r >> 1;
+	return r;
 }
 
 static void PoissonDiskPoints(
@@ -406,48 +412,137 @@ static void GenNoise(
 	const unsigned int* size,
 	unsigned char* out_data )
 {
+	const unsigned int c_octaves= 7;
+
+	unsigned int mul = 0;
+	// calc 256 + 256/2 + 256 / 4
+	for( unsigned int i= 0; i < c_octaves; i++ )
+		mul+= 1 << ( 8 - i );
+	mul = 65536 / mul;
+
 	unsigned char* dst= out_data;
 	for( unsigned int y= 0; y < int(size[1]); y++ )
 	for( unsigned int x= 0; x < int(size[0]); x++, dst++ )
-		*dst= OctaveNoise( x, y, 7 ) >> 8;
+		*dst= ( OctaveNoise( x, y, c_octaves ) * mul) >> (8 + 8);
 }
 
 g_WorldGenerator::g_WorldGenerator(const g_WorldGenerationParameters& parameters)
 	: parameters_(parameters)
+	, primary_heightmap_  ( parameters.size[0] * parameters.size[1] )
+	, secondary_heightmap_( parameters.size[0] * parameters.size[1] )
 {
 }
 
 void g_WorldGenerator::Generate()
 {
-	unsigned int size[2]= {1024, 1024 };
-	std::vector<unsigned char> data( size[0] * size[1] );
-	//PoissonDiskPoints( size, data.data(), 73 );
+	BuildPrimaryHeightmap();
+	BuildSecondaryHeightmap();
+}
 
-	GenHeightmap( size, data.data(), 42 );
-
-	std::vector<unsigned char> white_noise( size[0] * size[1] );
-	GenNoise( size, white_noise.data() );
-
-	for( unsigned int i= 0; i < size[0] * size[1]; i++ )
-	{
-		data[i]= ( data[i] * white_noise[i] ) >> 8;
-		data[i]= data[i] > 44 ? 255 : 0;
-	}
-
-	QImage img( size[0], size[1], QImage::Format_RGBX8888 );
+void g_WorldGenerator::DumpDebugResult()
+{
+	QImage img( parameters_.size[0], parameters_.size[1], QImage::Format_RGBX8888 );
 	img.fill(Qt::black);
 
 	unsigned char* bits= img.bits();
-	for( unsigned int i= 0; i < size[0] * size[1]; i++ )
+	for( unsigned int i= 0; i < parameters_.size[0] * parameters_.size[1]; i++ )
 	{
-		bits[i*4  ]=
-		bits[i*4+1]=
-		bits[i*4+2]= data[i];
+		bits[i*4  ]= secondary_heightmap_[i];//primary_heightmap_[i];
+		bits[i*4+1]= 0;//primary_heightmap_[i] > primary_heightmap_sea_level_ ? 255 : 0;
+		bits[i*4+2]= 0;
 		bits[i*4+3]= 0;
 	}
 	img.save( "heightmap.png" );
 }
 
-void g_WorldGenerator::DumpDebugResult()
+unsigned char g_WorldGenerator::GetGroundLevel( int x, int y ) const
 {
+	x= ( x * c_world_x_scaler) >> 8;
+
+	unsigned int noise=
+		InterpolatedNoise( x, y, 5 ) +
+		InterpolatedNoise( x, y, 4 ) / 2 +
+		InterpolatedNoise( x, y, 3 ) / 4;
+
+	x+= int(parameters_.size[0] / 2) << 2;
+	y+= int(parameters_.size[1] / 2) << 2;
+
+	return ( HeightmapValueInterpolated( x, y ) + ( (noise * 8) >> 8 ) ) >> 8;
+}
+
+unsigned char g_WorldGenerator::GetSeaLevel() const
+{
+	return secondary_heightmap_sea_level_;
+}
+
+void g_WorldGenerator::BuildPrimaryHeightmap()
+{
+	GenHeightmap( parameters_.size, primary_heightmap_.data(), parameters_.seed );
+
+	std::vector<unsigned char> white_noise( parameters_.size[0] * parameters_.size[1] );
+	GenNoise( parameters_.size, white_noise.data() );
+
+	for( unsigned int i= 0; i < parameters_.size[0] * parameters_.size[1]; i++ )
+	{
+		primary_heightmap_[i]= ( primary_heightmap_[i] * white_noise[i] ) >> 8;
+	}
+}
+
+void g_WorldGenerator::BuildSecondaryHeightmap()
+{
+	for( unsigned int i= 0; i < parameters_.size[0] * parameters_.size[1]; i++ )
+	{
+		if( primary_heightmap_[i] >= primary_heightmap_sea_level_ )
+		{
+			unsigned int in_range= 255 - primary_heightmap_sea_level_;
+			unsigned int out_range= secondary_heightmap_mountain_top_level_ - secondary_heightmap_sea_level_;
+
+			secondary_heightmap_[i]=
+				( primary_heightmap_[i] - primary_heightmap_sea_level_ ) *
+				out_range /
+				in_range +
+				secondary_heightmap_sea_level_;
+		}
+		else
+		{
+			unsigned int in_range= primary_heightmap_sea_level_ - 0;
+			unsigned int out_range= secondary_heightmap_sea_level_ - secondary_heightmap_sea_bottom_level_;
+
+			secondary_heightmap_[i]=
+				( primary_heightmap_[i] - 0 ) *
+				out_range /
+				in_range +
+				secondary_heightmap_sea_bottom_level_;
+		}
+	}
+}
+
+unsigned int g_WorldGenerator::HeightmapValueInterpolated( int x, int y ) const
+{
+	const int shift= 2;
+	const int step= 1 << shift;
+	const int mask= step - 1;
+
+	int X= x >> shift;
+	int Y= y >> shift;
+	int dy= y & mask;
+	int dy1= step - dy;
+	int dx= x & mask;
+	int dx1= step - dx;
+
+	int val[4]=
+	{
+		secondary_heightmap_[ X +      Y    * int(parameters_.size[0]) ],
+		secondary_heightmap_[ X + 1 +  Y    * int(parameters_.size[0]) ],
+		secondary_heightmap_[ X + 1 + (Y+1) * int(parameters_.size[0]) ],
+		secondary_heightmap_[ X +     (Y+1) * int(parameters_.size[0]) ]
+	};
+
+	int interp_x[]=
+	{
+		val[3] * dy + val[0] * dy1,
+		val[2] * dy + val[1] * dy1
+	};
+
+	return ( interp_x[1] * dx + interp_x[0] * dx1 ) << ( 8 - (shift + shift) );
 }

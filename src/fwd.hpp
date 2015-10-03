@@ -15,6 +15,8 @@ typedef std::shared_ptr<const h_World> h_WorldConstPtr;
 class h_Chunk;
 class h_ChunkLoader;
 
+class g_WorldGenerator;
+
 class r_IWorldRenderer;
 typedef std::shared_ptr<r_IWorldRenderer> r_IWorldRendererPtr;
 typedef std::weak_ptr<r_IWorldRenderer> r_IWorldRendererWeakPtr;

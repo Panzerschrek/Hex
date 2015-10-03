@@ -2,8 +2,9 @@
 #include "world.hpp"
 #include "math_lib/assert.hpp"
 #include "math_lib/rand.h"
+#include "world_generator/world_generator.hpp"
 
-#define H_SEA_LEVEL (H_CHUNK_HEIGHT/2)
+//#define H_SEA_LEVEL (H_CHUNK_HEIGHT/2)
 
 typedef int fixed16_t;
 
@@ -55,17 +56,23 @@ bool h_Chunk::IsEdgeChunk() const
 		latitude_  == ( world_->Latitude () + int(world_->ChunkNumberY()) - 1 );
 }
 
-void h_Chunk::GenChunk()
+void h_Chunk::GenChunk( const g_WorldGenerator* generator )
 {
 	short x, y, z;
 	short h, soil_h;
+
+	unsigned char sea_level= generator->GetSeaLevel();
 
 	for( x= 0; x< H_CHUNK_WIDTH; x++ )
 	{
 		for( y= 0; y< H_CHUNK_WIDTH; y++ )
 		{
-			h= (H_CHUNK_HEIGHT/2) + (( 2 * 24 * FinalNoise( short( float(x + longitude_ * H_CHUNK_WIDTH) * H_SPACE_SCALE_VECTOR_X  ),
-									   y + latitude_ * H_CHUNK_WIDTH ) ) >>16 ) ;
+			//h= (H_CHUNK_HEIGHT/2) + (( 2 * 24 * FinalNoise( short( float(x + longitude_ * H_CHUNK_WIDTH) * H_SPACE_SCALE_VECTOR_X  ),
+			//						   y + latitude_ * H_CHUNK_WIDTH ) ) >>16 ) ;
+			h=
+				generator->GetGroundLevel(
+					(longitude_ << H_CHUNK_WIDTH_LOG2) + x,
+					(latitude_  << H_CHUNK_WIDTH_LOG2) + y );
 			//if( longitude == -1 &&  latitude == -1 )h= 3;
 
 			soil_h= 4 + (( 2 * FinalNoise( short( float( x + longitude_ * H_CHUNK_WIDTH ) * H_SPACE_SCALE_VECTOR_X ) * 4,
@@ -81,7 +88,7 @@ void h_Chunk::GenChunk()
 				SetBlockAndTransparency( x, y, z, world_->NormalBlock( SOIL ), TRANSPARENCY_SOLID );
 
 			//if( !( longitude == -1 && latitude == -1 ) )
-			for( ; z<= H_SEA_LEVEL; z++ )
+			for( ; z<= sea_level; z++ )
 				SetBlockAndTransparency( x, y, z, world_->NormalBlock( WATER ), TRANSPARENCY_LIQUID );
 
 			for( ; z< H_CHUNK_HEIGHT-1; z++ )
@@ -331,7 +338,7 @@ unsigned int h_Chunk::CalculateWaterBlockCount()
 	return c;
 }
 
-void h_Chunk::GenWaterBlocks()
+void h_Chunk::GenWaterBlocks( unsigned char sea_level )
 {
 	short x, y, z, addr = 0;
 	for( x= 0; x< H_CHUNK_WIDTH; x++ )
@@ -346,7 +353,7 @@ void h_Chunk::GenWaterBlocks()
 			block->z_= z;
 			blocks_[ addr ]= block;
 			block->SetLiquidLevel(
-				H_MAX_WATER_LEVEL + H_WATER_COMPRESSION_PER_BLOCK * ( H_SEA_LEVEL - block->z_ ) );
+				H_MAX_WATER_LEVEL + H_WATER_COMPRESSION_PER_BLOCK * ( sea_level - block->z_ ) );
 			water_blocks_data.water_block_list.Add( block );
 		}
 	}
@@ -432,15 +439,15 @@ void h_Chunk::SunRelight()
 		}
 }
 
-h_Chunk::h_Chunk( h_World* world, int longitude, int latitude )
+h_Chunk::h_Chunk( h_World* world, int longitude, int latitude, const g_WorldGenerator* generator )
 	: world_(world)
 	, longitude_(longitude), latitude_(latitude)
 	, need_update_light_(false)
 {
-	GenChunk();
+	GenChunk( generator );
 	PlantGrass();
 	PlantTrees();
-	GenWaterBlocks();
+	GenWaterBlocks( generator->GetSeaLevel() );
 	MakeLight();
 
 }
