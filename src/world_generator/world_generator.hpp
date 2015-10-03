@@ -23,8 +23,23 @@ public:
 	unsigned char GetSeaLevel() const;
 
 private:
+
+	enum class Biome
+	{
+		Sea= 0,
+		ContinentalShelf,
+		SeaBeach,
+		Plains,
+		Mountains,
+		LastBiome,
+	};
+
+	// For debugging.
+	static const unsigned char c_biomes_colors_[ size_t(Biome::LastBiome) * 4 ];
+
 	void BuildPrimaryHeightmap();
 	void BuildSecondaryHeightmap();
+	void BuildBiomesMap();
 
 	// returns interpolated heightmap value * 256
 	unsigned int HeightmapValueInterpolated( int x, int y ) const;
@@ -39,4 +54,6 @@ private:
 	const unsigned char secondary_heightmap_sea_level_= 48;
 	const unsigned char secondary_heightmap_sea_bottom_level_= 20;
 	const unsigned char secondary_heightmap_mountain_top_level_= 110;
+
+	std::vector<Biome> biomes_map_;
 };

@@ -306,7 +306,8 @@ static void FindMinDist_r(
 static void GenDistanceFiled(
 	const unsigned int* size,
 	unsigned char* in_data,
-	unsigned char* out_data )
+	unsigned char* out_data,
+	int radius )
 {
 	std::vector< std::vector<unsigned char> > in_data_lods;
 	{
@@ -330,12 +331,10 @@ static void GenDistanceFiled(
 		}
 	}
 
-	const int c_radius= 128;
-
 	for( unsigned int y= 0; y < size[1]; y++ )
 	for( unsigned int x= 0; x < size[0]; x++ )
 	{
-		int min_square_distance= c_radius * c_radius;
+		int min_square_distance= radius * radius;
 
 		FindMinDist_r(
 			size,
@@ -346,7 +345,7 @@ static void GenDistanceFiled(
 
 		out_data[ x + y * size[0] ]=
 			std::min(
-				int( std::sqrt(float(min_square_distance)) ) * 255 / c_radius,
+				int( std::sqrt(float(min_square_distance)) ) * 255 / radius,
 				255 );
 	}
 }
@@ -405,7 +404,8 @@ static void GenHeightmap(
 		}
 	}
 
-	GenDistanceFiled( size, lines_data.data(), out_data );
+	unsigned int c_radius= 128;
+	GenDistanceFiled( size, lines_data.data(), out_data, c_radius );
 }
 
 static void GenNoise(
@@ -426,10 +426,25 @@ static void GenNoise(
 		*dst= ( OctaveNoise( x, y, c_octaves ) * mul) >> (8 + 8);
 }
 
+
+/*
+-------------------g_WorldGenerator---------------
+*/
+
+const unsigned char g_WorldGenerator::c_biomes_colors_[ size_t(g_WorldGenerator::Biome::LastBiome) * 4 ]=
+{
+	 32,  32, 240, 0, // Sea
+	128, 128, 240, 0, // Shelf
+	200, 200, 100, 0, // Beach
+	 32, 240,  32, 0, // Plains
+	 64,  48,  20, 0, // Mountains
+};
+
 g_WorldGenerator::g_WorldGenerator(const g_WorldGenerationParameters& parameters)
 	: parameters_(parameters)
 	, primary_heightmap_  ( parameters.size[0] * parameters.size[1] )
-	, secondary_heightmap_( parameters.size[0] * parameters.size[1] )
+	, secondary_heightmap_( primary_heightmap_.size() )
+	, biomes_map_         ( primary_heightmap_.size() )
 {
 }
 
@@ -437,6 +452,7 @@ void g_WorldGenerator::Generate()
 {
 	BuildPrimaryHeightmap();
 	BuildSecondaryHeightmap();
+	BuildBiomesMap();
 }
 
 void g_WorldGenerator::DumpDebugResult()
@@ -447,12 +463,13 @@ void g_WorldGenerator::DumpDebugResult()
 	unsigned char* bits= img.bits();
 	for( unsigned int i= 0; i < parameters_.size[0] * parameters_.size[1]; i++ )
 	{
-		bits[i*4  ]= secondary_heightmap_[i];//primary_heightmap_[i];
-		bits[i*4+1]= 0;//primary_heightmap_[i] > primary_heightmap_sea_level_ ? 255 : 0;
-		bits[i*4+2]= 0;
+		unsigned int biome= (unsigned int)biomes_map_[i];
+		bits[i*4  ]= c_biomes_colors_[biome*4+0];
+		bits[i*4+1]= c_biomes_colors_[biome*4+1];
+		bits[i*4+2]= c_biomes_colors_[biome*4+2];
 		bits[i*4+3]= 0;
 	}
-	img.save( "heightmap.png" );
+	img.save( "biomes_map.png" );
 }
 
 unsigned char g_WorldGenerator::GetGroundLevel( int x, int y ) const
@@ -515,6 +532,55 @@ void g_WorldGenerator::BuildSecondaryHeightmap()
 				secondary_heightmap_sea_bottom_level_;
 		}
 	}
+}
+
+void g_WorldGenerator::BuildBiomesMap()
+{
+	unsigned int size= parameters_.size[0] * parameters_.size[1];
+
+
+	std::vector<unsigned char> continent_mask_( size );
+	std::vector<unsigned char> distance_filed_( size );
+
+	// Build continental mask, build Primary biomes map. Zero - sea.
+	for( unsigned int i= 0; i < size; i++ )
+	{
+		if( secondary_heightmap_[i] >= primary_heightmap_sea_level_ )
+		{
+			continent_mask_[i]= 255;
+			biomes_map_[i]= Biome::Plains;
+		}
+		else
+		{
+			continent_mask_[i]= 0;
+			biomes_map_[i]= Biome::Sea;
+		}
+	}
+
+	// Shelfs.
+	const unsigned int c_shelf_radius= 6;
+	GenDistanceFiled( parameters_.size, continent_mask_.data(), distance_filed_.data(), c_shelf_radius );
+	for( unsigned int i= 0; i < size; i++ )
+		if( distance_filed_[i] > 0 && distance_filed_[i] < 255 )
+			biomes_map_[i]= Biome::ContinentalShelf;
+
+	// Invert continental mask.
+	for( unsigned int i= 0; i < size; i++ )
+		continent_mask_[i]= ~continent_mask_[i];
+
+	// Beaches.
+	const unsigned int c_beach_radius= 3;
+	GenDistanceFiled( parameters_.size, continent_mask_.data(), distance_filed_.data(), c_beach_radius );
+	for( unsigned int i= 0; i < size; i++ )
+		if( distance_filed_[i] > 0 && distance_filed_[i] < 255 )
+			biomes_map_[i]= Biome::SeaBeach;
+
+	// Search mountains.
+	// TODO - use primary heightmap.
+	const unsigned char c_mountains_altitude= 84;
+	for( unsigned int i= 0; i < size; i++ )
+		if( secondary_heightmap_[i] >= c_mountains_altitude )
+			biomes_map_[i]= Biome::Mountains;
 }
 
 unsigned int g_WorldGenerator::HeightmapValueInterpolated( int x, int y ) const
