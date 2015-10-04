@@ -16,6 +16,7 @@ static const float c_2pi= 2.0f * c_pi;
 
 // fixed8_t
 static const int c_world_x_scaler= int(H_SPACE_SCALE_VECTOR_X * 256.0f);
+static const int c_world_x_inv_scaler= int(256.0f / H_SPACE_SCALE_VECTOR_X);
 
 /*static int Noise2( int x, int y )
 {
@@ -26,7 +27,7 @@ static const int c_world_x_scaler= int(H_SPACE_SCALE_VECTOR_X * 256.0f);
 }*/
 
 // returns value in range [0; 65536)
-static const int Noise2( int x, int y, int seed )
+static int Noise2( int x, int y, int seed )
 {
 	const int X_NOISE_GEN   =  1619;
 	const int Y_NOISE_GEN   = 31337;
@@ -42,7 +43,7 @@ static const int Noise2( int x, int y, int seed )
 
 	n= ( n >> 13 ) ^ n;
 	return ( ( n * ( n * n * 60493 + 19990303 ) + 1376312589 ) & 0x7fffffff ) >> 15;
-};
+}
 
 // returns value in range [0; 65536)
 static int InterpolatedNoise( int x, int y, int seed, int shift )
@@ -81,145 +82,116 @@ int OctaveNoise( int x, int y, int seed, int octaves )
 	return r;
 }
 
-static void PoissonDiskPoints(
+// returns vector of coordinates. (x + y )
+static std::vector<g_TreePlantingPoint> PoissonDiskPoints(
 	const unsigned int* size,
-	unsigned char* out_data,
-	unsigned int min_distanse_div_sqrt2)
+	unsigned int min_distanse_div_sqrt2,
+	unsigned int seed,
+	unsigned int* out_grid_size )
 {
-	m_Rand randomizer;
+	m_Rand randomizer( seed );
 
 	const int neighbor_k= 20;
 	const float min_dst= float(min_distanse_div_sqrt2) * std::sqrt(2.0f) + 0.01f;
 	const float min_dst2= min_dst * min_dst;
 
-	unsigned int grid_size[2];
+	int size_minus_1[2];
+	size_minus_1[0]= size[0] - 1;
+	size_minus_1[1]= size[1] - 1;
+
+	int grid_size[2];
+	int grid_cell_size_to_tex_size_k[2];
 	for( unsigned int i= 0; i< 2; i++ )
 	{
 		grid_size[i]= size[i] / min_distanse_div_sqrt2;
 		if( grid_size[i] * min_distanse_div_sqrt2 < size[i] ) grid_size[i]++;
+		grid_cell_size_to_tex_size_k[i]= grid_size[i] * min_distanse_div_sqrt2 - size[i];
 	}
 
-	unsigned int max_point_count= grid_size[0] * grid_size[1];
-	std::vector<int> grid( max_point_count * 2, -1 );
+	// coord int grid - in pixels
+	int max_point_count= grid_size[0] * grid_size[1];
+	std::vector<int> grid( max_point_count * 2 );
+	for( int i= 0; i< max_point_count; i++ )
+		grid[i*2]= grid[i*2+1]= -1;
 
 	std::vector<int*> processing_stack;
-	processing_stack.reserve(max_point_count);
 
 	int init_pos[2];
-	init_pos[0]= randomizer.RandI( size[0] );
-	init_pos[1]= randomizer.RandI( size[1] );
-
+	init_pos[0]= randomizer.RandI( size[0] - 1 );
+	init_pos[1]= randomizer.RandI( size[1] - 1 );
 	int init_pos_grid_pos[2];
 	init_pos_grid_pos[0]= init_pos[0] / min_distanse_div_sqrt2;
 	init_pos_grid_pos[1]= init_pos[1] / min_distanse_div_sqrt2;
-
-	processing_stack.push_back( &grid[ (init_pos_grid_pos[0] + init_pos_grid_pos[1] * grid_size[0]) * 2 ] );
+	processing_stack.resize(1);
+	processing_stack[0]= &grid[ (init_pos_grid_pos[0] + init_pos_grid_pos[1] * grid_size[0]) * 2 ];
 	processing_stack[0][0]= init_pos[0];
 	processing_stack[0][1]= init_pos[1];
 
 	while( !processing_stack.empty() )
 	{
 		int* current_point= processing_stack.back();
+		H_ASSERT( current_point[0] != -1 );
 		processing_stack.pop_back();
 
 		for( int n= 0; n< neighbor_k; n++ )
 		{
-			int* cell;
 			int pos[2];
 			int grid_pos[2];
+			int* cell;
 
-			float angle= randomizer.RandF( c_pi * 2.0f );
-			float r= randomizer.RandF( min_dst, min_dst * 2.0f );
+			float angle= randomizer.RandF( c_2pi );
+			float r= randomizer.RandF( min_dst, min_dst*2.0f );
 
 			pos[0]= current_point[0] + int(r * std::cos(angle));
 			pos[1]= current_point[1] + int(r * std::sin(angle));
-			if( pos[0] < 0 || pos[0] >= int(size[0]) ||
-				pos[1] < 0 || pos[1] >= int(size[1]) )
-				continue;
+			pos[0]= (pos[0] + size[0]) & size_minus_1[0];
+			pos[1]= (pos[1] + size[1]) & size_minus_1[1];
 			grid_pos[0]= pos[0] / min_distanse_div_sqrt2;
 			grid_pos[1]= pos[1] / min_distanse_div_sqrt2;
 
-			for( int y= std::max( grid_pos[1] - 4, 0 ); y< std::min( grid_pos[1] + 4, int(grid_size[1]) ); y++ )
-			for( int x= std::max( grid_pos[0] - 4, 0 ); x< std::min( grid_pos[0] + 4, int(grid_size[1]) ); x++ )
-			{
-				int* cell= &grid[ (x + y * grid_size[0]) * 2 ];
-				if( cell[0] != -1 )
+			for( int y= grid_pos[1] - 4; y< grid_pos[1] + 4; y++ )
+				for( int x= grid_pos[0] - 4; x< grid_pos[0] + 4; x++ )
 				{
-					int d_dst[2];
-					d_dst[0]= pos[0] - cell[0];
-					d_dst[1]= pos[1] - cell[1];
+					int wrap_xy[2];
+					wrap_xy[0]= (x + grid_size[0] ) % grid_size[0];
+					wrap_xy[1]= (y + grid_size[1] ) % grid_size[1];
 
-					if( float( d_dst[0] * d_dst[0] + d_dst[1] * d_dst[1] ) < min_dst2 )
-						goto xy_loop_break;
+					int* cell= &grid[ (wrap_xy[0] + wrap_xy[1] * grid_size[0]) * 2 ];
+					if( cell[0] != -1 )
+					{
+						int d_dst[2];
+						d_dst[0]= pos[0] - cell[0] + ( wrap_xy[0] - x ) * min_distanse_div_sqrt2;
+						d_dst[1]= pos[1] - cell[1] + ( wrap_xy[1] - y ) * min_distanse_div_sqrt2;
+
+						if( wrap_xy[0] < x ) d_dst[0]+= grid_cell_size_to_tex_size_k[0];
+						else if( wrap_xy[0] > x ) d_dst[0]-= grid_cell_size_to_tex_size_k[0];
+						if( wrap_xy[1] < y ) d_dst[1]+= grid_cell_size_to_tex_size_k[1];
+						else if( wrap_xy[1] > y ) d_dst[1]-= grid_cell_size_to_tex_size_k[1];
+
+						if( float( d_dst[0] * d_dst[0] + d_dst[1] * d_dst[1] ) < min_dst2 )
+							goto xy_loop_break;
+					}
 				}
-			} // search points in nearby grid cells
 
 			cell= &grid[ (grid_pos[0] + grid_pos[1] * grid_size[0]) * 2 ];
 			H_ASSERT( cell[0] == -1 );
 			cell[0]= pos[0];
 			cell[1]= pos[1];
+			H_ASSERT( processing_stack.size() < max_point_count );
 			processing_stack.push_back( cell );
 
 			xy_loop_break:;
 		} // try place points near
-	} // for points in stack
+	} // while 1
 
-	float intencity_multipler= 255.0f / float(min_distanse_div_sqrt2 * 3);
+	out_grid_size[0]= grid_size[0];
+	out_grid_size[1]= grid_size[1];
 
-	// Draw Voronoy diagramm.
-	unsigned char* d= out_data;
-	for( int y= 0; y< int(size[1]); y++ )
-	{
-		int grid_pos[2];
-		grid_pos[1]= y / min_distanse_div_sqrt2;
-		for( int x= 0; x< int(size[0]); x++, d+= 4 )
-		{
-			grid_pos[0]= x / min_distanse_div_sqrt2;
+	std::vector<g_TreePlantingPoint> result_points( max_point_count );
+	for( int i= 0; i< max_point_count; i++ )
+		result_points[i]= g_TreePlantingPoint{ short(grid[i*2]), short(grid[i*2+1]) };
 
-			int nearest_point_dst2[2]= { 0xfffffff, 0xfffffff };
-
-			for( int v= std::max( grid_pos[1] - 3, 0 ); v< std::min( grid_pos[1] + 4, int(grid_size[1]) ); v++ )
-			for( int u= std::max( grid_pos[0] - 3, 0 ); u < std::min( grid_pos[0] + 4, int(grid_size[0]) ); u++ )
-			{
-				int* cell= &grid[ (u + v * grid_size[0]) * 2 ];
-				if( cell[0] != -1 )
-				{
-					int d_dst[2];
-					d_dst[0]= cell[0] - x;
-					d_dst[1]= cell[1] - y;
-
-					int dst2= d_dst[0] * d_dst[0] + d_dst[1] * d_dst[1];
-					if( dst2 < nearest_point_dst2[0] )
-					{
-						nearest_point_dst2[1]= nearest_point_dst2[0];
-						nearest_point_dst2[0]= dst2;
-					}
-					else if( dst2 < nearest_point_dst2[1] )
-						nearest_point_dst2[1]= dst2;
-				}
-			} // for grid uv
-
-			// borders - like points
-			{
-				int dst2;
-				dst2= x * x;
-				if( dst2 < nearest_point_dst2[0] ) nearest_point_dst2[0]= dst2;
-				dst2= y * y;
-				if( dst2 < nearest_point_dst2[0] ) nearest_point_dst2[0]= dst2;
-				dst2= int(size[0]) - x; dst2= dst2 * dst2;
-				if( dst2 < nearest_point_dst2[0] ) nearest_point_dst2[0]= dst2;
-				dst2= int(size[1]) - y; dst2= dst2 * dst2;
-				if( dst2 < nearest_point_dst2[0] ) nearest_point_dst2[0]= dst2;
-			}
-
-			d[0]= (unsigned char)( std::sqrt(float(nearest_point_dst2[0])) * intencity_multipler );
-			d[1]= d[2]= d[3]= 0;
-
-			//d[1]= (unsigned char)( ( std::sqrt(float(nearest_point_dst2[1])) - std::sqrt(float(nearest_point_dst2[0])) ) * intencity_multipler );
-			//d[2]= (unsigned char)( std::sqrt(float(nearest_point_dst2[1])) * intencity_multipler );
-
-		} // fot x
-	} // for y
+	return result_points;
 }
 
 static void DrawLine(
@@ -440,8 +412,8 @@ static void GenNoise(
 	mul = 65536 / mul;
 
 	unsigned char* dst= out_data;
-	for( unsigned int y= 0; y < int(size[1]); y++ )
-	for( unsigned int x= 0; x < int(size[0]); x++, dst++ )
+	for( unsigned int y= 0; y < size[1]; y++ )
+	for( unsigned int x= 0; x < size[0]; x++, dst++ )
 		*dst= ( OctaveNoise( x, y, seed, c_octaves ) * mul) >> (8 + 8);
 }
 
@@ -472,23 +444,37 @@ void g_WorldGenerator::Generate()
 	BuildPrimaryHeightmap();
 	BuildSecondaryHeightmap();
 	BuildBiomesMap();
+	GenTreePlantingMatrix();
 }
 
 void g_WorldGenerator::DumpDebugResult()
 {
-	QImage img( parameters_.size[0], parameters_.size[1], QImage::Format_RGBX8888 );
-	img.fill(Qt::black);
-
-	unsigned char* bits= img.bits();
-	for( unsigned int i= 0; i < parameters_.size[0] * parameters_.size[1]; i++ )
 	{
-		unsigned int biome= (unsigned int)biomes_map_[i];
-		bits[i*4  ]= c_biomes_colors_[biome*4+0];
-		bits[i*4+1]= c_biomes_colors_[biome*4+1];
-		bits[i*4+2]= c_biomes_colors_[biome*4+2];
-		bits[i*4+3]= 0;
+		QImage img( parameters_.size[0], parameters_.size[1], QImage::Format_RGBX8888 );
+		img.fill(Qt::black);
+
+		unsigned char* bits= img.bits();
+		for( unsigned int i= 0; i < parameters_.size[0] * parameters_.size[1]; i++ )
+		{
+			unsigned int biome= (unsigned int)biomes_map_[i];
+			bits[i*4  ]= c_biomes_colors_[biome*4+0];
+			bits[i*4+1]= c_biomes_colors_[biome*4+1];
+			bits[i*4+2]= c_biomes_colors_[biome*4+2];
+			bits[i*4+3]= 0;
+		}
+		img.save( "biomes_map.png" );
 	}
-	img.save( "biomes_map.png" );
+
+	{
+		QImage img( tree_planting_matrix_.size[0], tree_planting_matrix_.size[1], QImage::Format_RGBX8888 );
+		img.fill( Qt::black );
+		for( const g_TreePlantingPoint& point : tree_planting_matrix_.points_grid_ )
+		{
+			if( point.x >= 0 )
+				img.setPixel( point.x, point.y, 0xFFFFFFFF );
+		}
+		img.save( "trees_matrix.png" );
+	}
 }
 
 unsigned char g_WorldGenerator::GetGroundLevel( int x, int y ) const
@@ -509,6 +495,63 @@ unsigned char g_WorldGenerator::GetGroundLevel( int x, int y ) const
 unsigned char g_WorldGenerator::GetSeaLevel() const
 {
 	return secondary_heightmap_sea_level_;
+}
+
+void g_WorldGenerator::PlantTreesForChunk( int longitude, int latitude, const PlantTreeCallback& plant_tree_callback ) const
+{
+	// Coordinates in world homogenous space.
+	// TODO - here, maybe, are some problems.
+	int world_x= ( (longitude << H_CHUNK_WIDTH_LOG2) * c_world_x_scaler ) >> 8;
+	int world_y= latitude << H_CHUNK_WIDTH_LOG2;
+
+	// Coordinates inside matrix.
+	int matrix_x= world_x & int(tree_planting_matrix_.size[0] - 1);
+	int matrix_y= world_y & int(tree_planting_matrix_.size[1] - 1);
+
+	// World space coordinates of hited matrix.
+	int matrix_coord_x= world_x - matrix_x;
+	int matrix_coord_y= world_y - matrix_y;
+
+	// Coordinate of cell in matrix.
+	int cell_x= matrix_x / int(tree_planting_matrix_.grid_cell_size);
+	int cell_y= matrix_y / int(tree_planting_matrix_.grid_cell_size);
+
+	// TODO - select right radius
+	int radius= 2 + H_CHUNK_WIDTH / int(tree_planting_matrix_.grid_cell_size);
+
+	int grid_cell_size_to_tex_size_k[2];
+	for( int i= 0; i < 2; i++ )
+		grid_cell_size_to_tex_size_k[i]=
+			int(tree_planting_matrix_.grid_size[i]) *
+			int(tree_planting_matrix_.grid_cell_size) -
+			int(tree_planting_matrix_.size[i]);
+
+	for( int y= cell_y - radius; y <= cell_y + radius; y++ )
+	for( int x= cell_x - radius; x <= cell_x + radius; x++ )
+	{
+		int wrap_x= (x + 2*int(tree_planting_matrix_.grid_size[0])) % int(tree_planting_matrix_.grid_size[0]);
+		int wrap_y= (y + 2*int(tree_planting_matrix_.grid_size[1])) % int(tree_planting_matrix_.grid_size[1]);
+
+		const g_TreePlantingPoint& point=
+			tree_planting_matrix_.points_grid_[
+				wrap_x + wrap_y * int(tree_planting_matrix_.grid_size[0]) ];
+
+		if( point.x >= 0 )
+		{
+			int tree_x= point.x + matrix_coord_x + (x - wrap_x) * int(tree_planting_matrix_.grid_cell_size);
+			int tree_y= point.y + matrix_coord_y + (y - wrap_y) * int(tree_planting_matrix_.grid_cell_size);
+
+			if( wrap_x > x ) tree_x+= grid_cell_size_to_tex_size_k[0];
+			else if( wrap_x < x ) tree_x-= grid_cell_size_to_tex_size_k[0];
+			if( wrap_y > y ) tree_y+= grid_cell_size_to_tex_size_k[1];
+			else if( wrap_y < y ) tree_y-= grid_cell_size_to_tex_size_k[1];
+
+			// Space correction
+			tree_x= (tree_x * c_world_x_inv_scaler) >> 8;
+
+			plant_tree_callback( tree_x, tree_y );
+		}
+	} // for nearest grid cells
 }
 
 void g_WorldGenerator::BuildPrimaryHeightmap()
@@ -602,6 +645,24 @@ void g_WorldGenerator::BuildBiomesMap()
 			biomes_map_[i]= Biome::Mountains;
 }
 
+void g_WorldGenerator::GenTreePlantingMatrix()
+{
+	H_ASSERT(tree_planting_matrix_.points_grid_.empty());
+
+	// Repeat planting matrix each 512 meters.
+	tree_planting_matrix_.size[0]=
+	tree_planting_matrix_.size[1]= 512;
+
+	tree_planting_matrix_.grid_cell_size= 5;
+
+	tree_planting_matrix_.points_grid_=
+		PoissonDiskPoints(
+			tree_planting_matrix_.size,
+			tree_planting_matrix_.grid_cell_size,
+			parameters_.seed,
+			tree_planting_matrix_.grid_size );
+}
+
 unsigned int g_WorldGenerator::HeightmapValueInterpolated( int x, int y ) const
 {
 	const int shift= 2;
@@ -614,6 +675,9 @@ unsigned int g_WorldGenerator::HeightmapValueInterpolated( int x, int y ) const
 	int dy1= step - dy;
 	int dx= x & mask;
 	int dx1= step - dx;
+
+	H_ASSERT( X >= 0 && X < int(parameters_.size[0] - 1) );
+	H_ASSERT( Y >= 0 && Y < int(parameters_.size[1] - 1) );
 
 	int val[4]=
 	{

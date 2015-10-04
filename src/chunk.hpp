@@ -52,8 +52,9 @@ private:
 	void GenChunkFromFile(QDataStream& stream );
 	void SaveChunkToFile( QDataStream& stream );
 
-	void PlantTrees();
-	void PlaneBigTree( short x, short y, short z );//local coordinates
+	void PlantTrees( const g_WorldGenerator* generator );
+	void PlantTree( short x, short y, short z );//local coordinates
+	void PlantBigTree( short x, short y, short z );//local coordinates
 	void PlantGrass();
 	unsigned int CalculateWaterBlockCount();
 	void GenWaterBlocks( unsigned char sea_level );
