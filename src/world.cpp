@@ -39,7 +39,7 @@ h_World::h_World(
 
 
 	g_WorldGenerationParameters parameters;
-	parameters.size[0]= parameters.size[1]= 1024;
+	parameters.size[0]= parameters.size[1]= 512;
 	parameters.seed= 24;
 
 	world_generator_.reset( new g_WorldGenerator( parameters ) );

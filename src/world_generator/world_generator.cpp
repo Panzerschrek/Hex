@@ -17,17 +17,35 @@ static const float c_2pi= 2.0f * c_pi;
 // fixed8_t
 static const int c_world_x_scaler= int(H_SPACE_SCALE_VECTOR_X * 256.0f);
 
-// returns value in range [0; 65536)
-inline static int Noise2( int x, int y )
+/*static int Noise2( int x, int y )
 {
 	int n = x + y * 57;
 	n = (n << 13) ^ n;
 
 	return ( (n * (n * n * 15731 + 789221) + 1376312589) & 0x7fffffff ) >> 15;
-}
+}*/
 
 // returns value in range [0; 65536)
-inline static int InterpolatedNoise( int x, int y, int shift )
+static const int Noise2( int x, int y, int seed )
+{
+	const int X_NOISE_GEN   =  1619;
+	const int Y_NOISE_GEN   = 31337;
+	const int Z_NOISE_GEN   =  6971;
+	const int SEED_NOISE_GEN=  1013;
+
+	int n= (
+		X_NOISE_GEN * x +
+		Y_NOISE_GEN * y +
+		Z_NOISE_GEN * 0 +
+		SEED_NOISE_GEN * seed )
+		& 0x7fffffff;
+
+	n= ( n >> 13 ) ^ n;
+	return ( ( n * ( n * n * 60493 + 19990303 ) + 1376312589 ) & 0x7fffffff ) >> 15;
+};
+
+// returns value in range [0; 65536)
+static int InterpolatedNoise( int x, int y, int seed, int shift )
 {
 	int X= x>>shift, Y= y>>shift;
 	int shift_pow2= 1 << shift;
@@ -38,10 +56,10 @@ inline static int InterpolatedNoise( int x, int y, int shift )
 
 	int noise[]=
 	{
-		Noise2(X    , Y    ),
-		Noise2(X + 1, Y    ),
-		Noise2(X + 1, Y + 1),
-		Noise2(X    , Y + 1)
+		Noise2(X    , Y    , seed ),
+		Noise2(X + 1, Y    , seed ),
+		Noise2(X + 1, Y + 1, seed ),
+		Noise2(X    , Y + 1, seed )
 	};
 
 	int interp_x[]=
@@ -54,11 +72,11 @@ inline static int InterpolatedNoise( int x, int y, int shift )
 }
 
 // returns value in range [0; 65536 + 65536/2 + 65536/4 + ... + 65536/(2^(octaves - 1)) )
-static int OctaveNoise( int x, int y, int octaves )
+int OctaveNoise( int x, int y, int seed, int octaves )
 {
 	int r= 0;
 	for( int i= 0; i < octaves; i++ )
-		r += InterpolatedNoise( x, y, octaves - i - 1 ) >> i;
+		r += InterpolatedNoise( x, y, seed, octaves - i - 1 ) >> i;
 
 	return r;
 }
@@ -379,7 +397,7 @@ static void GenHeightmap(
 
 	// draw lines from circle
 	float step_radius= float(size[0] + size[1]) * 0.5f * 0.15f;
-	for( unsigned int i= 0; i < 64; i++ )
+	for( unsigned int i= 0; i < std::min( size[0], size[1] ) / 16; i++ )
 	{
 		int x, y;
 		float a= randomizer.RandF( c_2pi );
@@ -410,7 +428,8 @@ static void GenHeightmap(
 
 static void GenNoise(
 	const unsigned int* size,
-	unsigned char* out_data )
+	unsigned char* out_data,
+	int seed )
 {
 	const unsigned int c_octaves= 7;
 
@@ -423,7 +442,7 @@ static void GenNoise(
 	unsigned char* dst= out_data;
 	for( unsigned int y= 0; y < int(size[1]); y++ )
 	for( unsigned int x= 0; x < int(size[0]); x++, dst++ )
-		*dst= ( OctaveNoise( x, y, c_octaves ) * mul) >> (8 + 8);
+		*dst= ( OctaveNoise( x, y, seed, c_octaves ) * mul) >> (8 + 8);
 }
 
 
@@ -477,9 +496,9 @@ unsigned char g_WorldGenerator::GetGroundLevel( int x, int y ) const
 	x= ( x * c_world_x_scaler) >> 8;
 
 	unsigned int noise=
-		InterpolatedNoise( x, y, 5 ) +
-		InterpolatedNoise( x, y, 4 ) / 2 +
-		InterpolatedNoise( x, y, 3 ) / 4;
+		InterpolatedNoise( x, y, parameters_.seed, 5 ) +
+		InterpolatedNoise( x, y, parameters_.seed, 4 ) / 2 +
+		InterpolatedNoise( x, y, parameters_.seed, 3 ) / 4;
 
 	x+= int(parameters_.size[0] / 2) << 2;
 	y+= int(parameters_.size[1] / 2) << 2;
@@ -497,7 +516,7 @@ void g_WorldGenerator::BuildPrimaryHeightmap()
 	GenHeightmap( parameters_.size, primary_heightmap_.data(), parameters_.seed );
 
 	std::vector<unsigned char> white_noise( parameters_.size[0] * parameters_.size[1] );
-	GenNoise( parameters_.size, white_noise.data() );
+	GenNoise( parameters_.size, white_noise.data(), parameters_.seed );
 
 	for( unsigned int i= 0; i < parameters_.size[0] * parameters_.size[1]; i++ )
 	{

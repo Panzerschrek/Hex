@@ -4,50 +4,6 @@
 #include "math_lib/rand.h"
 #include "world_generator/world_generator.hpp"
 
-//#define H_SEA_LEVEL (H_CHUNK_HEIGHT/2)
-
-typedef int fixed16_t;
-
-fixed16_t Noise2( int x, int y )
-{
-	int n = x + y * 57;
-	n = (n << 13) ^ n;
-
-	return ( ( (n * (n * n * 15731 + 789221) + 1376312589) & 0x7fffffff )>>14 ) - 65536;
-}
-
-fixed16_t InterpolatedNoise( int x, int y )
-{
-	int X= x>>6, Y= y>>6;
-
-	fixed16_t dx= x&63, dy= y&63;
-	fixed16_t dy1= 64-dy;
-
-	fixed16_t noise[]= {
-		Noise2(X, Y),
-		Noise2(X + 1, Y),
-		Noise2(X + 1, Y + 1),
-		Noise2(X, Y + 1)
-	};
-
-	fixed16_t interp_x[]= {
-		noise[3] * dy + noise[0] * dy1,
-		noise[2] * dy + noise[1] * dy1
-	};
-
-	return ( interp_x[1] * dx + interp_x[0] * (63-dx) )>>12;
-}
-
-fixed16_t FinalNoise( int x, int y )
-{
-	fixed16_t r= InterpolatedNoise(x, y)>>1;
-	r+= InterpolatedNoise(x<<1,y<<1)>>2;
-	r+= InterpolatedNoise(x<<2,y<<2)>>3;
-
-	return r;
-
-}
-
 bool h_Chunk::IsEdgeChunk() const
 {
 	return
@@ -67,16 +23,13 @@ void h_Chunk::GenChunk( const g_WorldGenerator* generator )
 	{
 		for( y= 0; y< H_CHUNK_WIDTH; y++ )
 		{
-			//h= (H_CHUNK_HEIGHT/2) + (( 2 * 24 * FinalNoise( short( float(x + longitude_ * H_CHUNK_WIDTH) * H_SPACE_SCALE_VECTOR_X  ),
-			//						   y + latitude_ * H_CHUNK_WIDTH ) ) >>16 ) ;
 			h=
 				generator->GetGroundLevel(
 					(longitude_ << H_CHUNK_WIDTH_LOG2) + x,
 					(latitude_  << H_CHUNK_WIDTH_LOG2) + y );
 			//if( longitude == -1 &&  latitude == -1 )h= 3;
 
-			soil_h= 4 + (( 2 * FinalNoise( short( float( x + longitude_ * H_CHUNK_WIDTH ) * H_SPACE_SCALE_VECTOR_X ) * 4,
-										   ( y + latitude_ * H_CHUNK_WIDTH ) * 4  ) )>>16 );
+			soil_h= 4;
 
 			// TODO - optimize
 			SetBlockAndTransparency( x, y, 0, world_->NormalBlock( SPHERICAL_BLOCK), TRANSPARENCY_SOLID );
