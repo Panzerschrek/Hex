@@ -46,7 +46,8 @@ HEADERS += \
     ../../panzer_ogl_lib/vec.hpp \
     ../src/renderer/chunk_info.hpp \
     ../src/ui/ingame_menu.hpp \
-    ../src/ui/styles.hpp
+    ../src/ui/styles.hpp \
+    ../src/world_generator/world_generator.hpp
 
 SOURCES += \
     ../src/block.cpp \
@@ -84,7 +85,8 @@ SOURCES += \
     ../../panzer_ogl_lib/matrix.cpp \
     ../../panzer_ogl_lib/ogl_state_manager.cpp \
     ../../panzer_ogl_lib/polygon_buffer.cpp \
-    ../src/ui/ingame_menu.cpp
+    ../src/ui/ingame_menu.cpp \
+    ../src/world_generator/world_generator.cpp
 
 
 QT += widgets opengl

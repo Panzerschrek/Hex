@@ -118,6 +118,7 @@ private:
 	const h_SettingsPtr settings_;
 
 	h_ChunkLoader chunk_loader_;
+	std::unique_ptr<g_WorldGenerator> world_generator_;
 
 	// Active area margins. Active area is centred rect of chunks, where world physics works.
 	// Outside active area chunks unactive.

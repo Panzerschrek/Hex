@@ -4,6 +4,7 @@
 #include "renderer/i_world_renderer.hpp"
 #include "settings.hpp"
 #include "settings_keys.hpp"
+#include "world_generator/world_generator.hpp"
 
 static const unsigned int g_updates_frequency= 15;
 static const unsigned int g_update_inrerval_ms= 1000 / g_updates_frequency;
@@ -35,6 +36,15 @@ h_World::h_World(
 			std::min(
 				settings_->GetInt( h_SettingsKeys::active_area_margins_y, 2 ),
 				int(chunk_number_y_ / 2 - 2) ) );
+
+
+	g_WorldGenerationParameters parameters;
+	parameters.size[0]= parameters.size[1]= 512;
+	parameters.seed= 24;
+
+	world_generator_.reset( new g_WorldGenerator( parameters ) );
+	world_generator_->Generate();
+	world_generator_->DumpDebugResult();
 
 	for( unsigned int i= 0; i< chunk_number_x_; i++ )
 	for( unsigned int j= 0; j< chunk_number_y_; j++ )
@@ -464,7 +474,7 @@ h_Chunk* h_World::LoadChunk( int lon, int lat )
 
 	QByteArray& ba= chunk_loader_.GetChunkData( lon, lat );
 	if( ba.size() == 0 )
-		return new h_Chunk( this, lon, lat );
+		return new h_Chunk( this, lon, lat, world_generator_.get() );
 
 
 	QByteArray uncompressed_chunk= qUncompress( ba );

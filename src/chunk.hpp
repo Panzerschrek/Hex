@@ -18,7 +18,7 @@ class h_Chunk
 
 public:
 
-	h_Chunk( h_World* world, int longitude, int latitude );
+	h_Chunk( h_World* world, int longitude, int latitude, const g_WorldGenerator* generator );
 	h_Chunk( h_World* world, const HEXCHUNK_header* header, QDataStream& stream  );
 
 	~h_Chunk();
@@ -46,17 +46,18 @@ public:
 	void GetLightsLevel( short x, short y, short z, unsigned char* out_lights ) const;
 
 private:
-	void GenChunk();
+	void GenChunk( const g_WorldGenerator* generator );
 
 	//chunk save\load
 	void GenChunkFromFile(QDataStream& stream );
 	void SaveChunkToFile( QDataStream& stream );
 
-	void PlantTrees();
-	void PlaneBigTree( short x, short y, short z );//local coordinates
+	void PlantTrees( const g_WorldGenerator* generator );
+	void PlantTree( short x, short y, short z );//local coordinates
+	void PlantBigTree( short x, short y, short z );//local coordinates
 	void PlantGrass();
 	unsigned int CalculateWaterBlockCount();
-	void GenWaterBlocks();
+	void GenWaterBlocks( unsigned char sea_level );
 	void MakeLight();
 	void SunRelight();
 
