@@ -47,7 +47,8 @@ HEADERS += \
     ../src/renderer/chunk_info.hpp \
     ../src/ui/ingame_menu.hpp \
     ../src/ui/styles.hpp \
-    ../src/world_generator/world_generator.hpp
+    ../src/world_generator/world_generator.hpp \
+    ../src/math_lib/fixed.hpp
 
 SOURCES += \
     ../src/block.cpp \

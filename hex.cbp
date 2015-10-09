@@ -74,6 +74,7 @@
 		<Unit filename="src\math_lib\allocation_free_set.hpp" />
 		<Unit filename="src\math_lib\assert.hpp" />
 		<Unit filename="src\math_lib\collection.hpp" />
+		<Unit filename="src\math_lib\fixed.hpp" />
 		<Unit filename="src\math_lib\m_math.cpp" />
 		<Unit filename="src\math_lib\m_math.h" />
 		<Unit filename="src\math_lib\rand.cpp" />
