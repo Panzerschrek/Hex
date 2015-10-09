@@ -338,8 +338,7 @@ void h_Chunk::GenWaterBlocks( unsigned char sea_level )
 			block->y_= y;
 			block->z_= z;
 			blocks_[ addr ]= block;
-			block->SetLiquidLevel(
-				H_MAX_WATER_LEVEL + H_WATER_COMPRESSION_PER_BLOCK * ( sea_level - block->z_ ) );
+			block->SetLiquidLevel( H_MAX_WATER_LEVEL );
 			water_blocks_data.water_block_list.Add( block );
 		}
 	}

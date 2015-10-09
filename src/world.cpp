@@ -702,78 +702,47 @@ void h_World::WaterPhysTick()
 					h_LiquidBlock* b2= (h_LiquidBlock*)ch->GetBlock( b->x_, b->y_, b->z_ - 1 );
 					if( b2->Type() == WATER )
 					{
-						short max_down_cell_water_level;
-						if( b->LiquidLevel() >= H_MAX_WATER_LEVEL )
-							max_down_cell_water_level= b->LiquidLevel() + H_WATER_COMPRESSION_PER_BLOCK;
-						else
-						{
-							max_down_cell_water_level= H_MAX_WATER_LEVEL + (b->LiquidLevel() *
-													   H_WATER_COMPRESSION_PER_BLOCK) /H_MAX_WATER_LEVEL;
-						}
-
-						short level_delta= max_down_cell_water_level - b2->LiquidLevel();
+						int level_delta= std::min(int(H_MAX_WATER_LEVEL - b2->LiquidLevel()), int(b->LiquidLevel()));
 						if( level_delta > 0 )
 						{
-							level_delta= std::min( level_delta, (short) b->LiquidLevel() );
 							b->DecreaseLiquidLevel( level_delta );
 							b2->IncreaseLiquidLevel( level_delta );
 							chunk_modifed= true;
 						}
-						else if( level_delta < 0 )
-						{
-							level_delta= std::min( (short)-level_delta, (short)b2->LiquidLevel() );
-							b->IncreaseLiquidLevel( level_delta );
-							b2->DecreaseLiquidLevel( level_delta );
-							chunk_modifed= true;
-						}
-					}//water flow down
+					} //water flow down
 
-					//water flow up
-					b2= (h_LiquidBlock*)ch->GetBlock( b->x_, b->y_, b->z_ + 1 );
-					if( b2->Type() == AIR )
-					{
-						short level_delta= b->LiquidLevel() - H_MAX_WATER_LEVEL;
-						if( level_delta > 0  )
-						{
-							//short level_delta= from->LiquidLevel() / 2;
-							b->DecreaseLiquidLevel( level_delta );
 
-							h_LiquidBlock* new_block= ch->NewWaterBlock();
-							new_block->x_= b->x_;
-							new_block->y_= b->y_;
-							new_block->z_= b->z_+1;
-							new_block->SetLiquidLevel( level_delta );
-							ch->SetBlockAndTransparency( new_block->x_, new_block->y_, new_block->z_, new_block, TRANSPARENCY_LIQUID );
-							chunk_modifed= true;
-						}
-					}//water flow up
-
-					if( WaterFlow( b, b->x_ + ( i << H_CHUNK_WIDTH_LOG2 ),
-								   b->y_ + ( j << H_CHUNK_WIDTH_LOG2 ) + 1, b->z_ ) )//forward
+					if( WaterFlow(
+						b, b->x_ + ( i << H_CHUNK_WIDTH_LOG2 ),
+						b->y_ + ( j << H_CHUNK_WIDTH_LOG2 ) + 1, b->z_ ) )//forward
 						chunk_modifed= true;
-					if( WaterFlow( b, b->x_ + ( i << H_CHUNK_WIDTH_LOG2 ) + 1,
-								   b->y_  + ( j << H_CHUNK_WIDTH_LOG2 ) + ((b->x_+1)&1), b->z_ ) )//FORWARD_RIGHT
+					if( WaterFlow(
+						b, b->x_ + ( i << H_CHUNK_WIDTH_LOG2 ) + 1,
+						b->y_ + ( j << H_CHUNK_WIDTH_LOG2 ) + ((b->x_+1)&1), b->z_ ) )//FORWARD_RIGHT
 						chunk_modifed= true;
-					if( WaterFlow( b, b->x_ + ( i << H_CHUNK_WIDTH_LOG2 ) - 1,
-								   b->y_  + ( j << H_CHUNK_WIDTH_LOG2 ) + ((b->x_+1)&1), b->z_ ) )//FORWARD_LEFT
+					if( WaterFlow(
+						b, b->x_ + ( i << H_CHUNK_WIDTH_LOG2 ) - 1,
+						b->y_ + ( j << H_CHUNK_WIDTH_LOG2 ) + ((b->x_+1)&1), b->z_ ) )//FORWARD_LEFT
 						chunk_modifed= true;
 
-					if( WaterFlow( b, b->x_ + ( i << H_CHUNK_WIDTH_LOG2 ),
-								   b->y_  + ( j << H_CHUNK_WIDTH_LOG2 ) - 1, b->z_ )  )//back
+					if( WaterFlow(
+						b, b->x_ + ( i << H_CHUNK_WIDTH_LOG2 ),
+						b->y_ + ( j << H_CHUNK_WIDTH_LOG2 ) - 1, b->z_ ) )//back
 						chunk_modifed= true;
-					if( WaterFlow( b, b->x_ + ( i << H_CHUNK_WIDTH_LOG2 ) + 1,
-								   b->y_  + ( j << H_CHUNK_WIDTH_LOG2 ) - (b->x_&1), b->z_ ) )//BACK_RIGHT
+					if( WaterFlow(
+						b, b->x_ + ( i << H_CHUNK_WIDTH_LOG2 ) + 1,
+						b->y_ + ( j << H_CHUNK_WIDTH_LOG2 ) - (b->x_&1), b->z_ ) )//BACK_RIGHT
 						chunk_modifed= true;
-					if( WaterFlow( b, b->x_ + ( i << H_CHUNK_WIDTH_LOG2 ) - 1,
-								   b->y_  + ( j << H_CHUNK_WIDTH_LOG2 ) - (b->x_&1), b->z_ ) )//BACK_LEFT
+					if( WaterFlow(
+						b, b->x_ + ( i << H_CHUNK_WIDTH_LOG2 ) - 1,
+						b->y_ + ( j << H_CHUNK_WIDTH_LOG2 ) - (b->x_&1), b->z_ ) )//BACK_LEFT
 						chunk_modifed= true;
 
 					if( b->LiquidLevel() == 0 ||
-							(  b->LiquidLevel() < 16 && ch->GetBlock( b->x_, b->y_, b->z_-1 )->Type() != WATER ) )
+						( b->LiquidLevel() < 16 && ch->GetBlock( b->x_, b->y_, b->z_-1 )->Type() != WATER ) )
 					{
 						iter.RemoveCurrent();
-						ch->SetBlockAndTransparency( b->x_,
-													 b->y_, b->z_, NormalBlock( AIR ), TRANSPARENCY_AIR );
+						ch->SetBlockAndTransparency( b->x_, b->y_, b->z_, NormalBlock( AIR ), TRANSPARENCY_AIR );
 						ch->DeleteWaterBlock( b );
 					}
 				}// if down block not air
@@ -818,7 +787,7 @@ bool h_World::WaterFlow( h_LiquidBlock* from, short to_x, short to_y, short to_z
 	else if( type == WATER )
 	{
 		short water_level_delta= from->LiquidLevel() - b2->LiquidLevel();
-		if( water_level_delta  > 1 )
+		if( water_level_delta > 1 )
 		{
 			water_level_delta/= 2;
 			from->DecreaseLiquidLevel( water_level_delta );
