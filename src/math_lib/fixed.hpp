@@ -43,6 +43,7 @@ fixed_base_t m_FixedInvert( fixed_base_t x )
 
 // If you wish - you can add fixedXX_t and additional direct functions.
 typedef fixed_base_t fixed16_t;
+typedef fixed_base_t fixed8_t;
 
 inline fixed16_t m_Fixed16Mul( fixed16_t x, fixed16_t y )
 {

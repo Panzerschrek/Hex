@@ -9,10 +9,12 @@
 static const unsigned int g_updates_frequency= 15;
 static const unsigned int g_update_inrerval_ms= 1000 / g_updates_frequency;
 
+static const char g_world_name[]= "world";
+
 h_World::h_World(
 	const h_SettingsPtr& settings )
 	: settings_( settings )
-	, chunk_loader_( "world" )
+	, chunk_loader_( g_world_name )
 	, phys_tick_count_(0)
 	, terminated_(false)
 {
@@ -39,7 +41,9 @@ h_World::h_World(
 
 
 	g_WorldGenerationParameters parameters;
+	parameters.world_dir= g_world_name;
 	parameters.size[0]= parameters.size[1]= 512;
+	parameters.cell_size_log2= 0;
 	parameters.seed= 24;
 
 	world_generator_.reset( new g_WorldGenerator( parameters ) );

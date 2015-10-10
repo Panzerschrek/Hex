@@ -428,7 +428,18 @@ const unsigned char g_WorldGenerator::c_biomes_colors_[ size_t(g_WorldGenerator:
 	128, 128, 240, 0, // Shelf
 	200, 200, 100, 0, // Beach
 	 32, 240,  32, 0, // Plains
+	 96,  72,  30, 0, // Foothills
 	 64,  48,  20, 0, // Mountains
+};
+
+const fixed8_t g_WorldGenerator::c_biomes_noise_amplitude_[ size_t(g_WorldGenerator::Biome::LastBiome) ]=
+{
+	 4 << 8, // Sea
+	 3 << 8, // Shelf
+	 2 << 8, // Beach
+	 5 << 8, // Plains
+	12 << 8, // Foothills
+	22 << 8, // Mountains
 };
 
 g_WorldGenerator::g_WorldGenerator(const g_WorldGenerationParameters& parameters)
@@ -436,6 +447,7 @@ g_WorldGenerator::g_WorldGenerator(const g_WorldGenerationParameters& parameters
 	, primary_heightmap_  ( parameters.size[0] * parameters.size[1] )
 	, secondary_heightmap_( primary_heightmap_.size() )
 	, biomes_map_         ( primary_heightmap_.size() )
+	, noise_amplitude_map_( primary_heightmap_.size() )
 {
 }
 
@@ -444,6 +456,7 @@ void g_WorldGenerator::Generate()
 	BuildPrimaryHeightmap();
 	BuildSecondaryHeightmap();
 	BuildBiomesMap();
+	BuildNoiseAmplitudeMap();
 	GenTreePlantingMatrix();
 }
 
@@ -462,7 +475,7 @@ void g_WorldGenerator::DumpDebugResult()
 			bits[i*4+2]= c_biomes_colors_[biome*4+2];
 			bits[i*4+3]= 0;
 		}
-		img.save( "biomes_map.png" );
+		img.save( QString::fromStdString(parameters_.world_dir + "/biomes_map.png") );
 	}
 
 	{
@@ -473,7 +486,7 @@ void g_WorldGenerator::DumpDebugResult()
 			if( point.x >= 0 )
 				img.setPixel( point.x, point.y, 0xFFFFFFFF );
 		}
-		img.save( "trees_matrix.png" );
+		img.save( QString::fromStdString(parameters_.world_dir + "/trees_matrix.png") );
 	}
 }
 
@@ -482,19 +495,24 @@ unsigned char g_WorldGenerator::GetGroundLevel( int x, int y ) const
 	x= ( x * c_world_x_scaler) >> 8;
 
 	unsigned int noise=
-		InterpolatedNoise( x, y, parameters_.seed, 5 ) +
-		InterpolatedNoise( x, y, parameters_.seed, 4 ) / 2 +
-		InterpolatedNoise( x, y, parameters_.seed, 3 ) / 4;
+		InterpolatedNoise( x, y, parameters_.seed, 6 ) +
+		InterpolatedNoise( x, y, parameters_.seed, 5 ) / 2 +
+		InterpolatedNoise( x, y, parameters_.seed, 4 ) / 4;
+	fixed8_t noise_scaler= 65536 / ((1 << 8) + (1 << 7) + (1 << 6));
+	noise= m_FixedMul<8>( noise, noise_scaler );
 
-	x+= int(parameters_.size[0] / 2) << 2;
-	y+= int(parameters_.size[1] / 2) << 2;
+	x+= int(parameters_.size[0] / 2) << (H_CHUNK_WIDTH_LOG2 - parameters_.cell_size_log2);
+	y+= int(parameters_.size[1] / 2) << (H_CHUNK_WIDTH_LOG2 - parameters_.cell_size_log2);
 
-	return ( HeightmapValueInterpolated( x, y ) + ( (noise * 8) >> 8 ) ) >> 8;
+	fixed8_t noise_amplitude;
+	fixed8_t hightmap_value= HeightmapValueInterpolated( x, y, noise_amplitude );
+
+	return ( hightmap_value + ( m_FixedMul<8>( noise_amplitude, noise ) >> 8 ) ) >> 8;
 }
 
 unsigned char g_WorldGenerator::GetSeaLevel() const
 {
-	return secondary_heightmap_sea_level_;
+	return secondary_heightmap_sea_level_ >> 8;
 }
 
 void g_WorldGenerator::PlantTreesForChunk( int longitude, int latitude, const PlantTreeCallback& plant_tree_callback ) const
@@ -556,43 +574,64 @@ void g_WorldGenerator::PlantTreesForChunk( int longitude, int latitude, const Pl
 
 void g_WorldGenerator::BuildPrimaryHeightmap()
 {
-	GenHeightmap( parameters_.size, primary_heightmap_.data(), parameters_.seed );
+	std::vector<unsigned char> base_heightmap( parameters_.size[0] * parameters_.size[1] );
+	std::vector<unsigned char> white_noise   ( parameters_.size[0] * parameters_.size[1] );
 
-	std::vector<unsigned char> white_noise( parameters_.size[0] * parameters_.size[1] );
-	GenNoise( parameters_.size, white_noise.data(), parameters_.seed );
+	GenHeightmap( parameters_.size, base_heightmap.data(), parameters_.seed );
+	GenNoise    ( parameters_.size, white_noise   .data(), parameters_.seed );
 
 	for( unsigned int i= 0; i < parameters_.size[0] * parameters_.size[1]; i++ )
-	{
-		primary_heightmap_[i]= ( primary_heightmap_[i] * white_noise[i] ) >> 8;
-	}
+		primary_heightmap_[i]= base_heightmap[i] * white_noise[i];
 }
 
 void g_WorldGenerator::BuildSecondaryHeightmap()
 {
+	const fixed8_t c_range_points[]=
+	//  primary      seondary
+	{
+		0 << 8,
+		secondary_heightmap_sea_bottom_level_,
+
+		// down sea bottom
+		primary_heightmap_sea_level_ - (2<<8),
+		secondary_heightmap_sea_level_ - (5<<8),
+
+		primary_heightmap_sea_level_,
+		secondary_heightmap_sea_level_,
+
+		// raise land
+		primary_heightmap_sea_level_ + (2<<8),
+		secondary_heightmap_sea_level_ + (4<<8),
+
+		primary_heightmap_mountains_bottom_level_,
+		secondary_heightmap_mountain_bottom_level_,
+
+		255 << 8,
+		secondary_heightmap_mountain_top_level_,
+	};
+	static const size_t c_range_points_count= sizeof(c_range_points) / (sizeof(c_range_points[0]) * 2);
+
 	for( unsigned int i= 0; i < parameters_.size[0] * parameters_.size[1]; i++ )
 	{
-		if( primary_heightmap_[i] >= primary_heightmap_sea_level_ )
-		{
-			unsigned int in_range= 255 - primary_heightmap_sea_level_;
-			unsigned int out_range= secondary_heightmap_mountain_top_level_ - secondary_heightmap_sea_level_;
+		fixed8_t primary_val= fixed8_t(primary_heightmap_[i]);
+		fixed8_t result= 0;
 
-			secondary_heightmap_[i]=
-				( primary_heightmap_[i] - primary_heightmap_sea_level_ ) *
-				out_range /
-				in_range +
-				secondary_heightmap_sea_level_;
-		}
-		else
+		for( unsigned int j= 0; j < c_range_points_count - 1; j++ )
 		{
-			unsigned int in_range= primary_heightmap_sea_level_ - 0;
-			unsigned int out_range= secondary_heightmap_sea_level_ - secondary_heightmap_sea_bottom_level_;
-
-			secondary_heightmap_[i]=
-				( primary_heightmap_[i] - 0 ) *
-				out_range /
-				in_range +
-				secondary_heightmap_sea_bottom_level_;
+			if( primary_val >= c_range_points[j*2] && primary_val < c_range_points[(j+1)*2] )
+			{
+				fixed8_t  in_range= c_range_points[(j+1)*2  ] - c_range_points[j*2  ];
+				fixed8_t out_range= c_range_points[(j+1)*2+1] - c_range_points[j*2+1];
+				result=
+					(primary_val - c_range_points[j*2]) *
+					out_range /
+					in_range +
+					c_range_points[j*2+1];
+				break;
+			}
 		}
+		secondary_heightmap_[i]= result;
+
 	}
 }
 
@@ -600,14 +639,13 @@ void g_WorldGenerator::BuildBiomesMap()
 {
 	unsigned int size= parameters_.size[0] * parameters_.size[1];
 
-
 	std::vector<unsigned char> continent_mask_( size );
 	std::vector<unsigned char> distance_filed_( size );
 
 	// Build continental mask, build Primary biomes map. Zero - sea.
 	for( unsigned int i= 0; i < size; i++ )
 	{
-		if( secondary_heightmap_[i] >= primary_heightmap_sea_level_ )
+		if( fixed8_t(primary_heightmap_[i]) >= primary_heightmap_sea_level_ )
 		{
 			continent_mask_[i]= 255;
 			biomes_map_[i]= Biome::Plains;
@@ -631,18 +669,63 @@ void g_WorldGenerator::BuildBiomesMap()
 		continent_mask_[i]= ~continent_mask_[i];
 
 	// Beaches.
-	const unsigned int c_beach_radius= 3;
+	const unsigned int c_beach_radius= 2;
 	GenDistanceFiled( parameters_.size, continent_mask_.data(), distance_filed_.data(), c_beach_radius );
 	for( unsigned int i= 0; i < size; i++ )
 		if( distance_filed_[i] > 0 && distance_filed_[i] < 255 )
 			biomes_map_[i]= Biome::SeaBeach;
 
 	// Search mountains.
-	// TODO - use primary heightmap.
-	const unsigned char c_mountains_altitude= 84;
 	for( unsigned int i= 0; i < size; i++ )
-		if( secondary_heightmap_[i] >= c_mountains_altitude )
+		if( primary_heightmap_[i] >= primary_heightmap_mountains_bottom_level_ )
 			biomes_map_[i]= Biome::Mountains;
+
+	// Foothills.
+	for( unsigned int i= 0; i < size; i++ )
+		continent_mask_[i]= biomes_map_[i] == Biome::Mountains ? 255 : 0;
+
+	const unsigned int c_foothill_radius= 5;
+	GenDistanceFiled( parameters_.size, continent_mask_.data(), distance_filed_.data(), c_foothill_radius );
+	for( unsigned int i= 0; i < size; i++ )
+		if( distance_filed_[i] > 0 && distance_filed_[i] < 255 )
+			biomes_map_[i]= Biome::Foothills;
+}
+
+void g_WorldGenerator::BuildNoiseAmplitudeMap()
+{
+	const int c_kernel_radius= 2;
+	const int c_kernel_area= (c_kernel_radius+1) * (c_kernel_radius+1);
+
+	for( unsigned int y= 0; y < parameters_.size[1]; y++ )
+	{
+		// Set Y borders amplitude
+		if( y < c_kernel_radius || y >= parameters_.size[0] - c_kernel_radius )
+		{
+			for( unsigned int x= 0; x < parameters_.size[0]; x++ )
+				noise_amplitude_map_[ x + y * parameters_.size[0] ]=
+					c_biomes_noise_amplitude_[ (int)biomes_map_[x + y * parameters_.size[0]] ];
+			continue;
+		}
+
+		// Set X borders amplitude
+		for( unsigned int x= 0; x < c_kernel_radius; x++ )
+			noise_amplitude_map_[ x + y * parameters_.size[0] ]=
+				c_biomes_noise_amplitude_[ (int)biomes_map_[x + y * parameters_.size[0]] ];
+		for( unsigned int x= parameters_.size[0] - c_kernel_radius; x < parameters_.size[0]; x++ )
+			noise_amplitude_map_[ x + y * parameters_.size[0] ]=
+				c_biomes_noise_amplitude_[ (int)biomes_map_[x + y * parameters_.size[0]] ];
+
+		// Set main area amplitude.
+		for( unsigned int x= c_kernel_radius; x < parameters_.size[0] - c_kernel_radius; x++ )
+		{
+			fixed8_t avg_amplitude= 0;
+			for( int j= -c_kernel_radius; j <= c_kernel_radius; j++ )
+			for( int i= -c_kernel_radius; i <= c_kernel_radius; i++ )
+				avg_amplitude+=
+					c_biomes_noise_amplitude_[ (int)biomes_map_[ int(x+i) + int(y+j) * int(parameters_.size[0]) ] ];
+			noise_amplitude_map_[ x + y * parameters_.size[0] ]= avg_amplitude / c_kernel_area;
+		}
+	}
 }
 
 void g_WorldGenerator::GenTreePlantingMatrix()
@@ -663,9 +746,9 @@ void g_WorldGenerator::GenTreePlantingMatrix()
 			tree_planting_matrix_.grid_size );
 }
 
-unsigned int g_WorldGenerator::HeightmapValueInterpolated( int x, int y ) const
+fixed8_t g_WorldGenerator::HeightmapValueInterpolated( int x, int y, fixed8_t& out_noise_amplitude ) const
 {
-	const int shift= 2;
+	const int shift= H_CHUNK_WIDTH_LOG2 - parameters_.cell_size_log2;
 	const int step= 1 << shift;
 	const int mask= step - 1;
 
@@ -678,6 +761,16 @@ unsigned int g_WorldGenerator::HeightmapValueInterpolated( int x, int y ) const
 
 	H_ASSERT( X >= 0 && X < int(parameters_.size[0] - 1) );
 	H_ASSERT( Y >= 0 && Y < int(parameters_.size[1] - 1) );
+
+	int size_x= int(parameters_.size[0]);
+
+	fixed8_t noise_amplitude_val[4]=
+	{
+		noise_amplitude_map_[ X +      Y    * size_x ],
+		noise_amplitude_map_[ X + 1 +  Y    * size_x ],
+		noise_amplitude_map_[ X + 1 + (Y+1) * size_x ],
+		noise_amplitude_map_[ X +     (Y+1) * size_x ]
+	};
 
 	int val[4]=
 	{
@@ -693,5 +786,13 @@ unsigned int g_WorldGenerator::HeightmapValueInterpolated( int x, int y ) const
 		val[2] * dy + val[1] * dy1
 	};
 
-	return ( interp_x[1] * dx + interp_x[0] * dx1 ) << ( 8 - (shift + shift) );
+	fixed8_t noise_amplitude_interp_x[]=
+	{
+		noise_amplitude_val[3] * dy + noise_amplitude_val[0] * dy1,
+		noise_amplitude_val[2] * dy + noise_amplitude_val[1] * dy1
+	};
+
+	out_noise_amplitude= ( noise_amplitude_interp_x[1] * dx + noise_amplitude_interp_x[0] * dx1 ) >> (shift + shift);
+
+	return ( interp_x[1] * dx + interp_x[0] * dx1 ) >> (shift + shift);
 }

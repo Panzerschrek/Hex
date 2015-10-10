@@ -3,12 +3,18 @@
 #include <string>
 #include <vector>
 
+#include "../math_lib/fixed.hpp"
+
 struct g_WorldGenerationParameters
 {
 	std::string world_dir;
 
 	// Size in units.
 	unsigned int size[2];
+
+	// Logarithm of generation cell in chunks.
+	unsigned int cell_size_log2;
+
 	unsigned int seed;
 };
 
@@ -38,12 +44,13 @@ public:
 
 private:
 
-	enum class Biome
+	enum class Biome : unsigned char
 	{
 		Sea= 0,
 		ContinentalShelf,
 		SeaBeach,
 		Plains,
+		Foothills,
 		Mountains,
 		LastBiome,
 	};
@@ -51,26 +58,35 @@ private:
 	// For debugging.
 	static const unsigned char c_biomes_colors_[ size_t(Biome::LastBiome) * 4 ];
 
+	// Amplitude of additional noise, in blocks.
+	static const fixed8_t c_biomes_noise_amplitude_[ size_t(Biome::LastBiome) ];
+
 	void BuildPrimaryHeightmap();
 	void BuildSecondaryHeightmap();
 	void BuildBiomesMap();
+	void BuildNoiseAmplitudeMap();
 	void GenTreePlantingMatrix();
 
 	// returns interpolated heightmap value * 256
-	unsigned int HeightmapValueInterpolated( int x, int y ) const;
+	fixed8_t HeightmapValueInterpolated( int x, int y, fixed8_t& out_noise_amplitude ) const;
 
 private:
 	g_WorldGenerationParameters parameters_;
 
-	std::vector<unsigned char> primary_heightmap_;
-	const unsigned char primary_heightmap_sea_level_= 44;
+	// Heightmaps - stores as fixed 8.8 values.
 
-	std::vector<unsigned char> secondary_heightmap_;
-	const unsigned char secondary_heightmap_sea_level_= 48;
-	const unsigned char secondary_heightmap_sea_bottom_level_= 20;
-	const unsigned char secondary_heightmap_mountain_top_level_= 110;
+	std::vector<unsigned short> primary_heightmap_;
+	const fixed8_t primary_heightmap_sea_level_             =  44 << 8;
+	const fixed8_t primary_heightmap_mountains_bottom_level_= 144 << 8;
+
+	std::vector<unsigned short> secondary_heightmap_;
+	const fixed8_t secondary_heightmap_sea_bottom_level_     = 16 << 8;
+	const fixed8_t secondary_heightmap_sea_level_            = 44 << 8;
+	const fixed8_t secondary_heightmap_mountain_bottom_level_= 56 << 8;
+	const fixed8_t secondary_heightmap_mountain_top_level_   = 96 << 8;
 
 	std::vector<Biome> biomes_map_;
+	std::vector<fixed8_t> noise_amplitude_map_;
 
 	struct
 	{
