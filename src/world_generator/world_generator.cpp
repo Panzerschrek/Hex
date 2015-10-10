@@ -507,7 +507,8 @@ unsigned char g_WorldGenerator::GetGroundLevel( int x, int y ) const
 	fixed8_t noise_amplitude;
 	fixed8_t hightmap_value= HeightmapValueInterpolated( x, y, noise_amplitude );
 
-	return ( hightmap_value + ( m_FixedMul<8>( noise_amplitude, noise ) >> 8 ) ) >> 8;
+	fixed8_t result= ( hightmap_value + ( m_FixedMul<8>( noise_amplitude, noise ) >> 8 ) ) >> 8;
+	return std::min( result, H_CHUNK_HEIGHT - 4 );
 }
 
 unsigned char g_WorldGenerator::GetSeaLevel() const

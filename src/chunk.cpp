@@ -157,11 +157,13 @@ void h_Chunk::PlantTrees( const g_WorldGenerator* generator )
 		longitude_, latitude_,
 		[this, generator]( int x, int y )
 		{
+			const int c_tree_planting_max_altitude= H_CHUNK_HEIGHT - 20;
+
 			int tree_x= x - (longitude_ << H_CHUNK_WIDTH_LOG2);
 			int tree_y= y - (latitude_  << H_CHUNK_WIDTH_LOG2);
 
 			int tree_z= generator->GetGroundLevel( x, y );
-			if( tree_z > (int)generator->GetSeaLevel() )
+			if( tree_z > 2 + (int)generator->GetSeaLevel() && tree_z <= c_tree_planting_max_altitude )
 			{
 				if( (tree_x ^ tree_y ^ tree_z) & 2 )
 					PlantBigTree( tree_x, tree_y, tree_z );

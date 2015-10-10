@@ -83,7 +83,7 @@ private:
 	const fixed8_t secondary_heightmap_sea_bottom_level_     = 16 << 8;
 	const fixed8_t secondary_heightmap_sea_level_            = 44 << 8;
 	const fixed8_t secondary_heightmap_mountain_bottom_level_= 56 << 8;
-	const fixed8_t secondary_heightmap_mountain_top_level_   = 96 << 8;
+	const fixed8_t secondary_heightmap_mountain_top_level_   = 88 << 8;
 
 	std::vector<Biome> biomes_map_;
 	std::vector<fixed8_t> noise_amplitude_map_;
