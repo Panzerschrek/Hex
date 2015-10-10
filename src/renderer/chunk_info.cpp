@@ -254,15 +254,16 @@ void r_ChunkInfo::BuildWaterSurfaceMesh()
 					+ ( b->LiquidLevel() >> ( H_MAX_WATER_LEVEL_LOG2 - R_WATER_VERTICES_Z_SCALER_LOG2 ) );
 				v[0].coord[2]= v[1].coord[2]= v[2].coord[2]= v[3].coord[2]= v[4].coord[2]= v[5].coord[2]= h;
 
-				unsigned char light[2];
-				chunk_->GetLightsLevel( b->x_, b->y_, b->z_ + 1, light );
+				unsigned char light[2][2];
+				chunk_->GetLightsLevel( b->x_, b->y_, b->z_ + 0, light[0] );
+				chunk_->GetLightsLevel( b->x_, b->y_, b->z_ + 1, light[1] );
 				v[0].light[0]= v[1].light[0]= v[2].light[0]=
 				v[3].light[0]= v[4].light[0]= v[5].light[0]=
-					light[0] << 4;
+					std::max( light[0][0], light[1][0] ) << 4;
 
 				v[0].light[1]= v[1].light[1]= v[2].light[1]=
 				v[3].light[1]= v[4].light[1]= v[5].light[1]=
-					light[1] << 4;
+					std::max( light[0][1], light[1][1] ) << 4;
 				v+= 6;
 			}// if water surface
 		}//for
