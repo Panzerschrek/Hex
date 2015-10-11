@@ -43,6 +43,12 @@ public:
 	void PlantTreesForChunk( int longitude, int latitude, const PlantTreeCallback& plant_tree_callback ) const;
 
 private:
+	struct RiverPoint
+	{
+		fixed8_t x, y;
+	};
+
+	typedef std::vector<RiverPoint> River;
 
 	enum class Biome : unsigned char
 	{
@@ -52,6 +58,7 @@ private:
 		Plains,
 		Foothills,
 		Mountains,
+		River,
 		LastBiome,
 	};
 
@@ -64,6 +71,7 @@ private:
 	void BuildPrimaryHeightmap();
 	void BuildSecondaryHeightmap();
 	void BuildBiomesMap();
+	void GenRivers();
 	void BuildNoiseAmplitudeMap();
 	void GenTreePlantingMatrix();
 
@@ -95,4 +103,6 @@ private:
 		unsigned int grid_size[2];
 		unsigned int grid_cell_size;
 	} tree_planting_matrix_;
+
+	std::vector<River> rivers_;
 };

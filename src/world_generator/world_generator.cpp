@@ -334,7 +334,8 @@ static std::vector<g_TreePlantingPoint> PoissonDiskPoints(
 
 static void DrawLine(
 	int x0, int y0, int x1, int y1,
-	unsigned char* framebuffer, unsigned int framebuffer_width )
+	unsigned char* framebuffer, unsigned int framebuffer_width,
+	unsigned char color= 255 )
 {
 	int dx= x1 - x0;
 	int dy= y1 - y0;
@@ -351,7 +352,7 @@ static void DrawLine(
 		int y_step_f= (dy<<16) / dx;
 		int y_f= y0 << 16;
 		for( int x= x0; x < x1; x++, y_f+= y_step_f )
-			framebuffer[ x + (y_f >> 16) * framebuffer_width ]= 255;
+			framebuffer[ x + (y_f >> 16) * framebuffer_width ]= color;
 	}
 	else
 	{
@@ -365,7 +366,7 @@ static void DrawLine(
 		int x_step_f= (dx<<16) / dy;
 		int x_f= x0 << 16;
 		for( int y= y0; y < y1; y++, x_f+= x_step_f )
-			framebuffer[ (x_f >> 16) + y * framebuffer_width ]= 255;
+			framebuffer[ (x_f >> 16) + y * framebuffer_width ]= color;
 	}
 }
 
@@ -568,6 +569,7 @@ const unsigned char g_WorldGenerator::c_biomes_colors_[ size_t(g_WorldGenerator:
 	 32, 240,  32, 0, // Plains
 	 96,  72,  30, 0, // Foothills
 	 64,  48,  20, 0, // Mountains
+	 64, 128, 255, 0, // River
 };
 
 const fixed8_t g_WorldGenerator::c_biomes_noise_amplitude_[ size_t(g_WorldGenerator::Biome::LastBiome) ]=
@@ -578,6 +580,7 @@ const fixed8_t g_WorldGenerator::c_biomes_noise_amplitude_[ size_t(g_WorldGenera
 	 5 << 8, // Plains
 	12 << 8, // Foothills
 	22 << 8, // Mountains
+	 0 << 8, // River
 };
 
 g_WorldGenerator::g_WorldGenerator(const g_WorldGenerationParameters& parameters)
@@ -594,12 +597,28 @@ void g_WorldGenerator::Generate()
 	BuildPrimaryHeightmap();
 	BuildSecondaryHeightmap();
 	BuildBiomesMap();
+	GenRivers();
 	BuildNoiseAmplitudeMap();
 	GenTreePlantingMatrix();
 }
 
 void g_WorldGenerator::DumpDebugResult()
 {
+	{
+		QImage img( parameters_.size[0], parameters_.size[1], QImage::Format_RGBX8888 );
+		img.fill(Qt::black);
+
+		unsigned char* bits= img.bits();
+		for( unsigned int i= 0; i < parameters_.size[0] * parameters_.size[1]; i++ )
+		{
+			bits[i*4  ]=
+			bits[i*4+1]=
+			bits[i*4+2]= primary_heightmap_[i] >> 8;
+			bits[i*4+3]= 0;
+		}
+		img.save( QString::fromStdString(parameters_.world_dir + "/primary_heightmap.png") );
+	}
+
 	{
 		QImage img( parameters_.size[0], parameters_.size[1], QImage::Format_RGBX8888 );
 		img.fill(Qt::black);
@@ -794,7 +813,6 @@ void g_WorldGenerator::BuildSecondaryHeightmap()
 			}
 		}
 		secondary_heightmap_[i]= result;
-
 	}
 }
 
@@ -852,6 +870,88 @@ void g_WorldGenerator::BuildBiomesMap()
 	for( unsigned int i= 0; i < size; i++ )
 		if( distance_filed_[i] > 0 && distance_filed_[i] < 255 )
 			biomes_map_[i]= Biome::Foothills;
+}
+
+void g_WorldGenerator::GenRivers()
+{
+	m_Rand randomizer(parameters_.seed);
+
+	unsigned int c_rivers_count= 384;
+
+	int size_x= int(parameters_.size[0]);
+
+	for( unsigned int r= 0; r < c_rivers_count; r++ )
+	{
+		River river;
+		river.emplace_back();
+
+		river.back().x= randomizer.RandI( int(parameters_.size[0]) >> 3, int(parameters_.size[0] * 7) >> 3 ) << 8;
+		river.back().y= randomizer.RandI( int(parameters_.size[1]) >> 3, int(parameters_.size[1] * 7) >> 3 ) << 8;
+
+		unsigned int iter= 0;
+		while(iter < 1024)
+		{
+			int x= river.back().x >> 8;
+			int y= river.back().y >> 8;
+
+			Biome& biome= biomes_map_[ x + y * size_x ];
+			if( biome == Biome::Sea || biome == Biome::ContinentalShelf || biome == Biome::River )
+				break;
+			biome= river.size() == 1 ? Biome::Mountains : Biome::River;
+
+			int c_radius[]= { 1, 2, 4, 7, 11, 15, 20, 26 };
+			int min_point[2]= { x, y };
+			fixed8_t base_altitude= primary_heightmap_[ x + y * size_x ];
+			fixed8_t min_altitude= base_altitude;
+			for( unsigned int r= 0; r < sizeof(c_radius) / sizeof(c_radius[0]); r++ )
+			{
+				for( int yy= y - c_radius[r]; yy <= y + c_radius[r]; yy++ )
+				for( int xx= x - c_radius[r]; xx <= x + c_radius[r]; xx++ )
+				{
+					fixed8_t altitude= primary_heightmap_[ xx + yy * size_x ];
+					if( altitude < min_altitude )
+					{
+						min_altitude= altitude;
+						min_point[0]= xx;
+						min_point[1]= yy;
+					}
+				}
+				if( min_altitude < base_altitude ) break;
+			}
+
+			RiverPoint new_point;
+			new_point.x= min_point[0] << 8;
+			new_point.y= min_point[1] << 8;
+			river.push_back(new_point);
+
+			/*fixed8_t gradient[2];
+			gradient[0]= primary_heightmap_[ x + y * size_x ] - primary_heightmap_[ x+4 +  y    * size_x ];
+			gradient[1]= primary_heightmap_[ x + y * size_x ] - primary_heightmap_[ x   + (y+4) * size_x ];
+			if( gradient[0] == 0 && gradient[1] == 0 ) break;
+
+			float gradient_inv_length= float(1<<8) / std::sqrt( float(gradient[0] * gradient[0] + gradient[1] * gradient[1]) );
+			gradient[0]= fixed8_t( float(gradient[0]) * gradient_inv_length );
+			gradient[1]= fixed8_t( float(gradient[1]) * gradient_inv_length );
+
+			fixed8_t step= randomizer.RandI( 1 << 8, 2 << 8 );
+
+			RiverPoint new_point;
+			new_point.x= river.back().x + m_FixedMul<8>( step, gradient[0] );
+			new_point.y= river.back().y + m_FixedMul<8>( step, gradient[1] );
+			river.push_back(new_point);*/
+
+			iter++;
+		}
+
+		for( unsigned int i= 0; i < river.size() - 1; i++ )
+		{
+			DrawLine(
+				river[i  ].x >> 8, river[i  ].y >> 8,
+				river[i+1].x >> 8, river[i+1].y >> 8,
+				(unsigned char*)biomes_map_.data(), size_x,
+				(unsigned char)Biome::River );
+		}
+	}
 }
 
 void g_WorldGenerator::BuildNoiseAmplitudeMap()
