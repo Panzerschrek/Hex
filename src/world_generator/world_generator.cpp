@@ -220,6 +220,16 @@ static int OctaveNoise( int x, int y, int seed, int octaves )
 	return r;
 }
 
+// returns value in range [0; 65536 + 65536/2 + 65536/4 + ... + 65536/(2^(octaves - 1)) )
+static int TriangularOctaveNoise( int x, int y, int seed, int octaves )
+{
+	int r= 0;
+	for( int i= 0; i < octaves; i++ )
+		r += TriangularInterpolatedNoise( x, y, seed, octaves - i - 1 ) >> i;
+
+	return r;
+}
+
 // returns vector of coordinates. (x + y )
 static std::vector<g_TreePlantingPoint> PoissonDiskPoints(
 	const unsigned int* size,
@@ -553,7 +563,13 @@ static void GenNoise(
 	unsigned char* dst= out_data;
 	for( unsigned int y= 0; y < size[1]; y++ )
 	for( unsigned int x= 0; x < size[0]; x++, dst++ )
-		*dst= ( OctaveNoise( x, y, seed, c_octaves ) * mul) >> (8 + 8);
+		// *dst= ( OctaveNoise( x, y, seed, c_octaves ) * mul) >> (8 + 8);
+		 *dst=
+			( TriangularOctaveNoise(
+				(x * c_world_x_scaler) >> 8,
+				y,
+				seed,
+				c_octaves ) * mul) >> (8 + 8);
 }
 
 
