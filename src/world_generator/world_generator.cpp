@@ -652,11 +652,14 @@ unsigned char g_WorldGenerator::GetGroundLevel( int x, int y ) const
 {
 	int x_corrected= ( x * c_world_x_scaler) >> 8;
 
+	// HACK. If not do this, borders, parallel to world X axi is to sharply.
+	int y_corrected= y - (x&1);
+
 	int noise=
-		(TriangularInterpolatedNoise( y, x, parameters_.seed, 6 )     ) +
-		(TriangularInterpolatedNoise( y, x, parameters_.seed, 5 ) >> 1) +
-		(TriangularInterpolatedNoise( y, x, parameters_.seed, 4 ) >> 2) +
-		(TriangularInterpolatedNoise( y, x, parameters_.seed, 3 ) >> 3);
+		(TriangularInterpolatedNoise( y_corrected, x, parameters_.seed, 6 )     ) +
+		(TriangularInterpolatedNoise( y_corrected, x, parameters_.seed, 5 ) >> 1) +
+		(TriangularInterpolatedNoise( y_corrected, x, parameters_.seed, 4 ) >> 2) +
+		(TriangularInterpolatedNoise( y_corrected, x, parameters_.seed, 3 ) >> 3);
 	constexpr const fixed8_t c_noise_scaler= 65536 / ( (1<<8) + (1<<7) + (1<<6) + (1<<5) );
 	noise= m_FixedMul<8>( noise, c_noise_scaler );
 
