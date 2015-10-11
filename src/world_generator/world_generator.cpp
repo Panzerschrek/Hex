@@ -72,8 +72,146 @@ static int InterpolatedNoise( int x, int y, int seed, int shift )
 	return ( interp_x[1] * dx + interp_x[0] * (shift_pow2 - dx) ) >> (shift + shift);
 }
 
+static int TriangularInterpolatedNoise( int x, int y, int seed, int shift )
+{
+	int X= x>>shift, Y= y>>shift;
+	int shift_pow2= 1 << shift;
+	int mask= shift_pow2 - 1;
+
+	int dx= x & mask, dy= y & mask;
+	int dy1= shift_pow2 - dy, dx1= shift_pow2 - dx;
+
+	int noise[3];
+	int result= 0;
+
+	if( Y & 1 )
+	{
+		// left side: y >= 2 * x
+		// right side: y >= shift_pow2 * 2 - 2* x
+		/*
+			+----------+
+			|    /\    |
+			|   /  \   |
+			|  /    \  | shift_pow2
+			| /      \ |
+			|/        \|
+			+----------+
+			 shift_pow2
+		*/
+
+		if( dy >= 2 * dx )
+		{
+			noise[0]= Noise2( X  , Y  , seed );
+			noise[1]= Noise2( X  , Y+1, seed );
+			noise[2]= Noise2( X+1, Y+1, seed );
+
+			dx-= (dy1>>1) - (shift_pow2>>1);
+			dx1= shift_pow2 - dy1 - dx;
+
+			result= (
+					noise[0] * dy1 +
+					noise[1] * dx1 +
+					noise[2] * dx
+				) >> shift;
+		}
+		else if( dy >= shift_pow2 * 2 - 2 * dx )
+		{
+			noise[0]= Noise2( X+1, Y  , seed );
+			noise[1]= Noise2( X+1, Y+1, seed );
+			noise[2]= Noise2( X+2, Y+1, seed );
+
+			dx-= (shift_pow2>>1) + (dy1>>1);
+			dx1= shift_pow2 - dy1 - dx;
+
+			result= (
+					noise[0] * dy1 +
+					noise[2] * dx +
+					noise[1] * dx1
+				) >> shift;
+		}
+		else
+		{
+			noise[0]= Noise2( X  , Y  , seed );
+			noise[1]= Noise2( X+1, Y  , seed );
+			noise[2]= Noise2( X+1, Y+1, seed );
+
+			dx -= dy >> 1;
+			dx1= shift_pow2 - dy - dx;
+
+			result= (
+					noise[2] * dy +
+					noise[0] * dx1 +
+					noise[1] * dx
+				) >> shift;
+		}
+	}
+	else
+	{
+		// left side: y <= shift_pow2 - 2 * x
+		// right side: y <= 2 * x - shift_pow2
+		/*
+			+----------+
+			|\        /|
+			| \      / |
+			|  \    /  | shift_pow2
+			|   \  /   |
+			|    \/    |
+			+----------+
+			 shift_pow2
+		*/
+		if( dy <= shift_pow2 - 2 * dx )
+		{
+			noise[0]= Noise2( X  , Y  , seed );
+			noise[1]= Noise2( X+1, Y  , seed );
+			noise[2]= Noise2( X  , Y+1, seed );
+
+			dx+= (shift_pow2>>1) - (dy>>1);
+			dx1= shift_pow2 - dy - dx;
+
+			result= (
+					noise[2] * dy +
+					noise[0] * dx1 +
+					noise[1] * dx
+				) >> shift;
+		}
+		else if( dy <= 2 * dx - shift_pow2 )
+		{
+
+			noise[0]= Noise2( X+1, Y  , seed );
+			noise[1]= Noise2( X+2, Y  , seed );
+			noise[2]= Noise2( X+1, Y+1, seed );
+
+			dx-= (shift_pow2>>1) + (dy>>1);
+			dx1= shift_pow2 - dy - dx;
+
+			result= (
+					noise[2] * dy +
+					noise[0] * dx1 +
+					noise[1] * dx
+				) >> shift;
+		}
+		else
+		{
+			noise[0]= Noise2( X+1, Y  , seed );
+			noise[1]= Noise2( X  , Y+1, seed );
+			noise[2]= Noise2( X+1, Y+1, seed );
+
+			dx-= dy1 >> 1;
+			dx1= shift_pow2 - dy1 - dx;
+
+			result= (
+					noise[0] * dy1 +
+					noise[1] * dx1 +
+					noise[2] * dx
+				) >> shift;
+		}
+	}
+
+	return result;
+}
+
 // returns value in range [0; 65536 + 65536/2 + 65536/4 + ... + 65536/(2^(octaves - 1)) )
-int OctaveNoise( int x, int y, int seed, int octaves )
+static int OctaveNoise( int x, int y, int seed, int octaves )
 {
 	int r= 0;
 	for( int i= 0; i < octaves; i++ )
@@ -488,24 +626,45 @@ void g_WorldGenerator::DumpDebugResult()
 		}
 		img.save( QString::fromStdString(parameters_.world_dir + "/trees_matrix.png") );
 	}
+
+	{
+		QImage img( 1024, 1024, QImage::Format_RGBX8888 );
+		img.fill( Qt::black );
+
+		for( unsigned int y= 0; y < img.height(); y++ )
+		for( unsigned int x= 0; x < img.width (); x++ )
+		{
+			unsigned char noise=
+				(TriangularInterpolatedNoise( x, y, 0, 6 ) >>  9) +
+				(TriangularInterpolatedNoise( x, y, 0, 5 ) >> 10) +
+				(TriangularInterpolatedNoise( x, y, 0, 4 ) >> 11) +
+				(TriangularInterpolatedNoise( x, y, 0, 3 ) >> 12) +
+				(TriangularInterpolatedNoise( x, y, 0, 2 ) >> 13) +
+				(TriangularInterpolatedNoise( x, y, 0, 1 ) >> 14) +
+				(TriangularInterpolatedNoise( x, y, 0, 0 ) >> 15);
+			img.setPixel( x, y, noise | (noise<<8) | (noise<<16) | (noise<<24) );
+		}
+		img.save( QString::fromStdString(parameters_.world_dir + "/triangle_noise.png") );
+	}
 }
 
 unsigned char g_WorldGenerator::GetGroundLevel( int x, int y ) const
 {
-	x= ( x * c_world_x_scaler) >> 8;
+	int x_corrected= ( x * c_world_x_scaler) >> 8;
 
-	unsigned int noise=
-		InterpolatedNoise( x, y, parameters_.seed, 6 ) +
-		InterpolatedNoise( x, y, parameters_.seed, 5 ) / 2 +
-		InterpolatedNoise( x, y, parameters_.seed, 4 ) / 4;
-	fixed8_t noise_scaler= 65536 / ((1 << 8) + (1 << 7) + (1 << 6));
-	noise= m_FixedMul<8>( noise, noise_scaler );
+	int noise=
+		(TriangularInterpolatedNoise( y, x, parameters_.seed, 6 )     ) +
+		(TriangularInterpolatedNoise( y, x, parameters_.seed, 5 ) >> 1) +
+		(TriangularInterpolatedNoise( y, x, parameters_.seed, 4 ) >> 2) +
+		(TriangularInterpolatedNoise( y, x, parameters_.seed, 3 ) >> 3);
+	constexpr const fixed8_t c_noise_scaler= 65536 / ( (1<<8) + (1<<7) + (1<<6) + (1<<5) );
+	noise= m_FixedMul<8>( noise, c_noise_scaler );
 
-	x+= int(parameters_.size[0] / 2) << (H_CHUNK_WIDTH_LOG2 - parameters_.cell_size_log2);
-	y+= int(parameters_.size[1] / 2) << (H_CHUNK_WIDTH_LOG2 - parameters_.cell_size_log2);
+	x_corrected+= int(parameters_.size[0] / 2) << (H_CHUNK_WIDTH_LOG2 - parameters_.cell_size_log2);
+	y          += int(parameters_.size[1] / 2) << (H_CHUNK_WIDTH_LOG2 - parameters_.cell_size_log2);
 
 	fixed8_t noise_amplitude;
-	fixed8_t hightmap_value= HeightmapValueInterpolated( x, y, noise_amplitude );
+	fixed8_t hightmap_value= HeightmapValueInterpolated( x_corrected, y, noise_amplitude );
 
 	fixed8_t result= ( hightmap_value + ( m_FixedMul<8>( noise_amplitude, noise ) >> 8 ) ) >> 8;
 	return std::min( result, H_CHUNK_HEIGHT - 4 );
