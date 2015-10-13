@@ -563,13 +563,13 @@ static void GenNoise(
 	unsigned char* dst= out_data;
 	for( unsigned int y= 0; y < size[1]; y++ )
 	for( unsigned int x= 0; x < size[0]; x++, dst++ )
-		// *dst= ( OctaveNoise( x, y, seed, c_octaves ) * mul) >> (8 + 8);
-		 *dst=
+		*dst= ( OctaveNoise( x, y, seed, c_octaves ) * mul) >> (8 + 8);
+		 /**dst=
 			( TriangularOctaveNoise(
 				(x * c_world_x_scaler) >> 8,
 				y,
 				seed,
-				c_octaves ) * mul) >> (8 + 8);
+				c_octaves ) * mul) >> (8 + 8);*/
 }
 
 
@@ -915,21 +915,28 @@ void g_WorldGenerator::GenRivers()
 				break;
 			biome= river.size() == 1 ? Biome::Mountains : Biome::River;
 
-			int c_radius[]= { 1, 2, 4, 7, 11, 15, 20, 26 };
+			int c_radius[]= { /*1, 2,*/3, 4, 7, 11, 15, 20, 26 };
 			int min_point[2]= { x, y };
 			fixed8_t base_altitude= primary_heightmap_[ x + y * size_x ];
 			fixed8_t min_altitude= base_altitude;
-			for( unsigned int r= 0; r < sizeof(c_radius) / sizeof(c_radius[0]); r++ )
+			for( int r : c_radius )
 			{
-				for( int yy= y - c_radius[r]; yy <= y + c_radius[r]; yy++ )
-				for( int xx= x - c_radius[r]; xx <= x + c_radius[r]; xx++ )
+				int r2= r * r + 2;
+				for( int yy= y - r; yy <= y + r; yy++ )
 				{
-					fixed8_t altitude= primary_heightmap_[ xx + yy * size_x ];
-					if( altitude < min_altitude )
+					int yy2= (yy - y) * (yy - y);
+					for( int xx= x - r; xx <= x + r; xx++ )
 					{
-						min_altitude= altitude;
-						min_point[0]= xx;
-						min_point[1]= yy;
+						int xx2= (xx - x) * (xx - x);
+						if( yy2 + xx2 > r2 ) continue;
+
+						fixed8_t altitude= primary_heightmap_[ xx + yy * size_x ];
+						if( altitude < min_altitude )
+						{
+							min_altitude= altitude;
+							min_point[0]= xx;
+							min_point[1]= yy;
+						}
 					}
 				}
 				if( min_altitude < base_altitude ) break;
