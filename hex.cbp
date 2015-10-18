@@ -121,6 +121,8 @@
 		<Unit filename="src\world_action.hpp" />
 		<Unit filename="src\world_generator\noise.cpp" />
 		<Unit filename="src\world_generator\noise.hpp" />
+		<Unit filename="src\world_generator\rivers.cpp" />
+		<Unit filename="src\world_generator\rivers.hpp" />
 		<Unit filename="src\world_generator\world_generator.cpp" />
 		<Unit filename="src\world_generator\world_generator.hpp" />
 		<Unit filename="src\world_lighting.cpp" />

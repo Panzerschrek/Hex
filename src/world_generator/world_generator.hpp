@@ -5,6 +5,8 @@
 
 #include "../math_lib/fixed.hpp"
 
+#include "rivers.hpp"
+
 struct g_WorldGenerationParameters
 {
 	std::string world_dir;
@@ -71,9 +73,10 @@ private:
 	void BuildPrimaryHeightmap();
 	void BuildSecondaryHeightmap();
 	void BuildBiomesMap();
-	void GenRivers();
 	void BuildNoiseAmplitudeMap();
 	void GenTreePlantingMatrix();
+
+	void BuildRiverSystem();
 
 	// returns interpolated heightmap value * 256
 	fixed8_t HeightmapValueInterpolated( int x, int y, fixed8_t& out_noise_amplitude ) const;
@@ -105,4 +108,6 @@ private:
 	} tree_planting_matrix_;
 
 	std::vector<River> rivers_;
+
+	g_RiverSystem river_system_;
 };
