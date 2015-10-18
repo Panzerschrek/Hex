@@ -32,7 +32,7 @@ fixed_base_t m_FixedDiv( fixed_base_t x, fixed_base_t y )
 {
 	// TODO - check range of result
 	H_ASSERT( y != 0 );
-	return ( ((long long int)x) << base ) * y;
+	return ( ((long long int)x) << base ) / y;
 }
 
 template< int base >

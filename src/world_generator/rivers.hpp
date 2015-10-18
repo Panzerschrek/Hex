@@ -7,6 +7,7 @@ struct g_RiverPoint
 {
 	fixed8_t x, y;
 	unsigned short river_id;
+	unsigned short index_in_river_segment;
 };
 
 struct g_RiverSegment
