@@ -97,7 +97,7 @@ public:
 	GLuint GetIndexBuffer();
 
 	// Call in CPU thread. Returns cluster for longitude and latitude.
-	r_WorldVBOClusterPtr GetCluster( int longitude, int latitude );
+	r_WorldVBOCluster& GetCluster( int longitude, int latitude );
 	// Call in CPU thread. Returns cluster segment for chunk with longitude and latitude.
 	r_WorldVBOClusterSegment& GetClusterSegment( int longitude, int latitude );
 

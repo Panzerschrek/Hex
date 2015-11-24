@@ -211,7 +211,7 @@ void r_WorldRenderer::Update()
 		{
 			chunk_info_ptr->GetQuadCount();
 
-			r_WorldVBOClusterPtr cluster=
+			r_WorldVBOCluster& cluster=
 				wvb->GetCluster(
 					chunks_info_.matrix_position[0] + x,
 					chunks_info_.matrix_position[1] + y );
@@ -223,13 +223,13 @@ void r_WorldRenderer::Update()
 
 			segment.vertex_count= chunk_info_ptr->vertex_count_;
 			if( segment.vertex_count > segment.capacity )
-				cluster->buffer_reallocated_= true;
+				cluster.buffer_reallocated_= true;
 		}
 		if( chunk_info_ptr->water_updated_ )
 		{
 			chunk_info_ptr->GetWaterHexCount();
 
-			r_WorldVBOClusterPtr cluster=
+			r_WorldVBOCluster& cluster=
 				wvb_water->GetCluster(
 					chunks_info_.matrix_position[0] + x,
 					chunks_info_.matrix_position[1] + y );
@@ -241,7 +241,7 @@ void r_WorldRenderer::Update()
 
 			segment.vertex_count= chunk_info_ptr->water_vertex_count_;
 			if( segment.vertex_count > segment.capacity )
-				cluster->buffer_reallocated_= true;
+				cluster.buffer_reallocated_= true;
 		}
 	} // for chunks in matrix
 
@@ -335,12 +335,12 @@ void r_WorldRenderer::Update()
 
 			r_WorldVBOClusterSegment& segment=
 				wvb->GetClusterSegment( longitude, latitude );
-			r_WorldVBOClusterPtr cluster=
+			r_WorldVBOCluster& cluster=
 				wvb->GetCluster( longitude, latitude );
 
 			chunk_info_ptr->vertex_data_=
 				reinterpret_cast<r_WorldVertex*>(
-				cluster->vertices_.data() + segment.first_vertex_index * sizeof(r_WorldVertex) );
+				cluster.vertices_.data() + segment.first_vertex_index * sizeof(r_WorldVertex) );
 			chunk_info_ptr->BuildChunkMesh();
 
 			// Finally, reset updated flag.
@@ -354,12 +354,12 @@ void r_WorldRenderer::Update()
 
 			r_WorldVBOClusterSegment& segment=
 				wvb_water->GetClusterSegment( longitude, latitude );
-			r_WorldVBOClusterPtr cluster=
+			r_WorldVBOCluster& cluster=
 				wvb_water->GetCluster( longitude, latitude );
 
 			chunk_info_ptr->water_vertex_data_=
 				reinterpret_cast<r_WaterVertex*>(
-				cluster->vertices_.data() + segment.first_vertex_index * sizeof(r_WaterVertex) );
+				cluster.vertices_.data() + segment.first_vertex_index * sizeof(r_WaterVertex) );
 			chunk_info_ptr->BuildWaterSurfaceMesh();
 
 			// Finally, reset updated flag.

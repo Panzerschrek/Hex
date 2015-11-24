@@ -273,7 +273,7 @@ void r_WVB::UpdateGPUMatrix( short longitude, short latitude )
 	gpu_cluster_matrix_coord_[1]= latitude ;
 }
 
-r_WorldVBOClusterPtr r_WVB::GetCluster( int longitude, int latitude )
+r_WorldVBOCluster& r_WVB::GetCluster( int longitude, int latitude )
 {
 	int x= (longitude - cpu_cluster_matrix_coord_[0]) / cluster_size_[0];
 	int y= (latitude  - cpu_cluster_matrix_coord_[1]) / cluster_size_[1];
@@ -281,7 +281,7 @@ r_WorldVBOClusterPtr r_WVB::GetCluster( int longitude, int latitude )
 	H_ASSERT( x >= 0 && x < cluster_matrix_size_[0] );
 	H_ASSERT( y >= 0 && y < cluster_matrix_size_[1] );
 
-	return cpu_cluster_matrix_[ x + y * cluster_matrix_size_[0] ];
+	return *( cpu_cluster_matrix_[ x + y * cluster_matrix_size_[0] ] );
 }
 
 r_WorldVBOClusterSegment& r_WVB::GetClusterSegment( int longitude, int latitude )
