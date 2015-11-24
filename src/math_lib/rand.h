@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 
 class m_Rand
 {
@@ -56,7 +57,7 @@ inline float m_Rand::RandIdentity()
 
 inline unsigned int m_Rand::RandI( unsigned int max )
 {
-	return Rand() * max / max_rand;
+	return uint64_t(Rand()) * max / max_rand;
 }
 
 inline float m_Rand::RandF( float max )
@@ -66,7 +67,7 @@ inline float m_Rand::RandF( float max )
 
 inline unsigned int m_Rand::RandI( int min, int max )
 {
-	return int(Rand()) * (max - min) / int(max_rand) + min;
+	return int64_t(Rand()) * (max - min) / int(max_rand) + min;
 }
 
 inline float m_Rand::RandF( float min, float max )
