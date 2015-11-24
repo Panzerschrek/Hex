@@ -694,7 +694,7 @@ void r_WorldRenderer::CalculateChunksVisibility()
 	} // for chunks
 }
 
-unsigned int r_WorldRenderer::DrawClusterMatrix( r_WVB* wvb, unsigned int indeces_per_vertex_num, unsigned int indeces_per_vertex_den )
+unsigned int r_WorldRenderer::DrawClusterMatrix( r_WVB* wvb, unsigned int triangles_per_primitive, unsigned int vertices_per_primitive )
 {
 	unsigned int vertex_count= 0;
 
@@ -727,7 +727,7 @@ unsigned int r_WorldRenderer::DrawClusterMatrix( r_WVB* wvb, unsigned int indece
 			{
 				glDrawElementsBaseVertex(
 					GL_TRIANGLES,
-					segment.vertex_count * indeces_per_vertex_num / indeces_per_vertex_den,
+					segment.vertex_count * 3 * triangles_per_primitive / vertices_per_primitive,
 					GL_UNSIGNED_SHORT,
 					nullptr, segment.first_vertex_index );
 
@@ -761,7 +761,7 @@ void r_WorldRenderer::DrawWorld()
 	world_shader_.Uniform( "fire_light_color", lighting_data_.current_fire_light );
 	world_shader_.Uniform( "ambient_light_color", R_AMBIENT_LIGHT_COLOR );
 
-	unsigned int vertex_count= DrawClusterMatrix( world_vertex_buffer_.get(), 3, 2 );
+	unsigned int vertex_count= DrawClusterMatrix( world_vertex_buffer_.get(), 2, 4 );
 	world_quads_in_frame_= vertex_count / 4;
 }
 
@@ -832,7 +832,7 @@ void r_WorldRenderer::DrawWater()
 	water_shader_.Uniform( "fire_light_color", lighting_data_.current_fire_light );
 	water_shader_.Uniform( "ambient_light_color", R_AMBIENT_LIGHT_COLOR );
 
-	unsigned int vertex_count= DrawClusterMatrix( world_water_vertex_buffer_.get(), 2, 1 );
+	unsigned int vertex_count= DrawClusterMatrix( world_water_vertex_buffer_.get(), 4, 6 );
 	water_hexagons_in_frame_= vertex_count / 6;
 }
 

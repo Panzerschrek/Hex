@@ -65,7 +65,7 @@ private:
 
 	// helper. returns vertex count
 	void CalculateChunksVisibility();
-	unsigned int DrawClusterMatrix( r_WVB* wvb, unsigned int indeces_per_vertex_num, unsigned int indeces_per_vertex_den );
+	unsigned int DrawClusterMatrix( r_WVB* wvb, unsigned int triangles_per_primitive, unsigned int vertices_per_primitive );
 	void DrawWorld();
 	void DrawWater();
 
