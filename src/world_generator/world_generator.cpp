@@ -3,6 +3,7 @@
 #include <vector>
 
 #include <QImage>
+#include <QPainter>
 
 #include "../hex.hpp"
 #include "../math_lib/assert.hpp"
@@ -470,7 +471,41 @@ void g_WorldGenerator::DumpDebugResult()
 				(g_TriangularInterpolatedNoise( x, y, 0, 0 ) >> 15);
 			img.setPixel( x, y, noise | (noise<<8) | (noise<<16) | (noise<<24) );
 		}
+
 		img.save( QString::fromStdString(parameters_.world_dir + "/triangle_noise.png") );
+	}
+
+	{
+		unsigned int c_scaler_log2= 3;
+		unsigned int k= 8 - c_scaler_log2;
+
+		QImage img( parameters_.size[0] << c_scaler_log2, parameters_.size[1] << c_scaler_log2, QImage::Format_RGBX8888 );
+		img.fill( Qt::black );
+
+		m_Rand rand;
+
+		QPainter painter( &img );
+		for( const g_RiverSegment& river : river_system_.rivers_segments )
+		{
+			painter.setPen( QColor( rand.Rand() & 255, rand.Rand() & 255, rand.Rand() & 255 ) );
+
+			if( !river.points_indeces.empty() )
+			{
+				const g_RiverPoint& point= river_system_.rivers_points[ river.points_indeces.front() ];
+				painter.drawEllipse( point.x >> k, point.y >> k, 3, 3 );
+			}
+
+			for( unsigned int i= 1; i < river.points_indeces.size(); i++ )
+			{
+				const g_RiverPoint& point0= river_system_.rivers_points[ river.points_indeces[i-1] ];
+				const g_RiverPoint& point1= river_system_.rivers_points[ river.points_indeces[i  ] ];
+				painter.drawLine(
+					point0.x >> k, point0.y >> k,
+					point1.x >> k, point1.y >> k );
+			}
+		}
+
+		img.save( QString::fromStdString(parameters_.world_dir + "/rivers.png") );
 	}
 }
 
