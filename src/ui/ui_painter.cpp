@@ -14,9 +14,7 @@ ui_Painter::ui_Painter()
 	offset= ((char*)vert.color) - ((char*)&vert);
 	ui_vbo.VertexAttribPointer( 1, 4, GL_UNSIGNED_BYTE, true, offset );
 
-
-
-	ui_shader.Load( "shaders/ui_frag.glsl", "shaders/ui_vert.glsl", NULL );
+	ui_shader.Load( "shaders/ui_frag.glsl", "shaders/ui_vert.glsl" );
 	ui_shader.SetAttribLocation( "coord", 0 );
 	ui_shader.SetAttribLocation( "color", 1 );
 	ui_shader.Create();
@@ -24,8 +22,8 @@ ui_Painter::ui_Painter()
 	//static const char*const font_files[]= { "textures/courier_new_18.bmp", "textures/courier_new_24.bmp", "textures/courier_new_32.bmp" };
 	//text_manager= new r_Text( font_files[1] );
 	text_manager= new r_Text( "textures/mono_font_sdf.tga" );
-
 }
+
 ui_Painter::~ui_Painter()
 {
 }
@@ -52,9 +50,9 @@ void ui_Painter::DrawUITriangles( ui_Vertex* vertices, int vertex_count, const u
 
 	ui_vbo.VertexSubData( vertices, vertex_count * sizeof(ui_Vertex), 0 );
 
-
 	glDrawArrays( GL_TRIANGLES, 0, vertex_count );
 }
+
 void ui_Painter::DrawUIText( const char* text, float center_x, float center_y, float font_size, const unsigned char* font_color )
 {
 	int len= strlen(text);
@@ -69,7 +67,6 @@ void ui_Painter::DrawUITextLeft( const char* text, float x, float y, float font_
 	text_manager->AddText( x / text_manager->LetterWidth(), y/text_manager->LetterHeight(), font_size, font_color, text );
 	text_manager->Draw();
 }
-
 
 void ui_Painter::DrawUITextPixelCoordsLeft( const char* text, float x, float y, float font_size, const unsigned char* font_color )
 {

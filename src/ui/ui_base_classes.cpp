@@ -167,10 +167,14 @@ void ui_Base::CursorOver( bool is_over )
 
 void ui_Base::CursorPress( int x, int y, bool pressed )
 {
+	(void)x;
+	(void)y;
+	(void)pressed;
 }
 
 void ui_Base::Draw( ui_Painter* painter ) const
 {
+	(void)painter;
 }
 
 int ui_Base::GenElementFraming( ui_Vertex* triangles, int trim_size ) const
@@ -289,7 +293,7 @@ ui_MenuBase::~ui_MenuBase()
 
 void ui_MenuBase::Draw( ui_Painter* painter )
 {
-for( auto el : elements_ )
+	for( auto el : elements_ )
 	{
 		if( el->IsVisible() )
 			el->Draw( painter );
@@ -335,13 +339,16 @@ ui_Button::~ui_Button()
 
 void ui_Button::CursorPress( int x, int y, bool pressed )
 {
+	(void)x;
+	(void)y;
+
 	if( !pressed )
 	{
 		if( callback_ ) callback_();
 	}
 }
 
-void ui_Button::Draw( ui_Painter* painter )const
+void ui_Button::Draw( ui_Painter* painter ) const
 {
 	ui_Vertex triangles[64];
 
@@ -354,6 +361,9 @@ void ui_Button::Draw( ui_Painter* painter )const
 
 void ui_Checkbox::CursorPress( int x, int y, bool pressed )
 {
+	(void)x;
+	(void)y;
+
 	if( pressed )
 	{
 		flag_= !flag_;
@@ -503,7 +513,7 @@ void ui_Slider::SetSliderPos( float pos )
 	else slider_pos_= pos;
 }
 
-void ui_Slider::Draw( ui_Painter* painter )const
+void ui_Slider::Draw( ui_Painter* painter ) const
 {
 	ui_Vertex triangles[64];
 
@@ -525,8 +535,9 @@ void ui_Slider::Draw( ui_Painter* painter )const
 	//slider bar
 	int bar_half_size= ui_Base::CellOffset();
 	int bar_arrow_offset= ArrowOffset();
-	ui_Base::GenRectangle(  triangles + 6, X() + ArrowSize() + bar_arrow_offset, Y() + SizeY()/2 - bar_half_size,
-							SizeX() - 2 * ( ArrowSize() + bar_arrow_offset ), bar_half_size * 2 );
+	ui_Base::GenRectangle(
+		triangles + 6, X() + ArrowSize() + bar_arrow_offset, Y() + SizeY()/2 - bar_half_size,
+		SizeX() - 2 * ( ArrowSize() + bar_arrow_offset ), bar_half_size * 2 );
 
 	int slider_rel_pos= SizeX()/2;
 	{
@@ -542,6 +553,8 @@ void ui_Slider::Draw( ui_Painter* painter )const
 
 void ui_Slider::CursorPress( int x, int y, bool pressed )
 {
+	(void)y;
+
 	if( !pressed )
 		return;
 

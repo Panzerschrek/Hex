@@ -172,13 +172,13 @@ public:
 	virtual void CursorOver( bool is_over );
 	virtual void CursorPress( int x, int y, bool pressed/*true - presed, false - unpressed*/ );
 
-	virtual void Draw( ui_Painter* painter )const;
+	virtual void Draw( ui_Painter* painter ) const;
 
 	void SetActive( bool active )
 	{
 		is_active_= active;
 	}
-	bool IsActive()const
+	bool IsActive() const
 	{
 		return is_active_;
 	}
@@ -233,7 +233,7 @@ public:
 		callback_= callback;
 	}
 	virtual void CursorPress( int x, int y, bool pressed) override;
-	virtual void Draw( ui_Painter* painter )const override;
+	virtual void Draw( ui_Painter* painter ) const override;
 
 private:
 	ui_Callback callback_;
@@ -253,12 +253,12 @@ public:
 	bool GetState() const
 	{
 		return flag_;
-	};
+	}
 	void SetState( bool state )
 	{
 		flag_= state;
 	}
-	virtual void Draw( ui_Painter* painter )const override;
+	virtual void Draw( ui_Painter* painter ) const override;
 	virtual void CursorPress( int x, int y, bool pressed ) override;
 
 private:
@@ -278,7 +278,7 @@ public:
 	virtual ~ui_Text() override;
 
 	void SetText( const char* text );
-	virtual void Draw( ui_Painter* painter )const override;
+	virtual void Draw( ui_Painter* painter ) const override;
 
 private:
 	std::string text_;
@@ -333,30 +333,30 @@ public:
 	float SliderPos() const
 	{
 		return slider_pos_;
-	};
+	}
 
-	virtual void Draw( ui_Painter* painter )const override;
+	virtual void Draw( ui_Painter* painter ) const override;
 	virtual void CursorPress( int x, int y, bool pressed ) override;
 
 	//step must be positive
 	void SetInvStep( int inv_step )
 	{
 		slider_inv_step_= inv_step;
-	};
+	}
 
 private:
 	inline static int ArrowSize()
 	{
 		return ui_Base::CellSize()/2 - ui_Base::CellOffset();
-	};
+	}
 	inline static int SliderHalfSize()
 	{
 		return ui_Base::CellOffset();
-	};
+	}
 	inline static int ArrowOffset()
 	{
 		return ui_Base::CellOffset()*3/2;
-	};
+	}
 
 	float slider_pos_;// in range 0.0f-1.0f;
 	int slider_inv_step_;
@@ -376,7 +376,7 @@ public:
 	bool IsActive() const { return active_; }
 	bool IsVisible() const { return visible_; }
 
-	virtual void KeyPress( ui_Key key ){}
+	virtual void KeyPress( ui_Key ){}
 
 	void Kill()
 	{
