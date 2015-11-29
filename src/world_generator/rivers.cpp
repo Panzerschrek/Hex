@@ -1,3 +1,5 @@
+#include <limits>
+
 #include "../math_lib/rand.h"
 
 #include "world_generator.hpp"
@@ -115,11 +117,6 @@ static void SplitRiver(
 	river_system.rivers_segments.push_back( std::move(new_segment) );
 }
 
-void DrawLine(
-	int x0, int y0, int x1, int y1,
-	unsigned char* framebuffer, unsigned int framebuffer_width,
-	unsigned char color= 255 );
-
 void g_WorldGenerator::BuildRiverSystem()
 {
 	m_Rand randomizer( parameters_.seed );
@@ -137,9 +134,10 @@ void g_WorldGenerator::BuildRiverSystem()
 	g_RiverSystem river_system;
 	river_system.rivers_segments.push_back( g_RiverSegment() );
 
-	unsigned int c_rivers_count= 384;
+	unsigned int rivers_count= ( parameters_.size[0] * parameters_.size[1] ) >> 7;
+
 	int size_x= int(parameters_.size[0]);
-	for( unsigned int river_counter= 0; river_counter < c_rivers_count; river_counter++ )
+	for( unsigned int river_counter= 0; river_counter < rivers_count; river_counter++ )
 	{
 		river_system.rivers_segments.emplace_back();
 		g_RiverSegment& river= river_system.rivers_segments.back();
@@ -148,8 +146,8 @@ void g_WorldGenerator::BuildRiverSystem()
 		river_system.rivers_points.emplace_back();
 		g_RiverPoint& point= river_system.rivers_points.back();
 
-		point.x= randomizer.RandI( (int(parameters_.size[0]) >> 3) << 8, (int(parameters_.size[0] * 7) >> 3) << 8 );
-		point.y= randomizer.RandI( (int(parameters_.size[1]) >> 3) << 8, (int(parameters_.size[1] * 7) >> 3) << 8 );
+		point.x= randomizer.RandI( (int(parameters_.size[0]) >> 4) << 8, (int(parameters_.size[0] * 15) >> 4) << 8 );
+		point.y= randomizer.RandI( (int(parameters_.size[1]) >> 4) << 8, (int(parameters_.size[1] * 15) >> 4) << 8 );
 		point.river_id= river_id;
 		point.index_in_river_segment= river.points_indeces.size();
 		river.points_indeces.push_back( river_system.rivers_points.size() - 1 );
@@ -210,6 +208,11 @@ void g_WorldGenerator::BuildRiverSystem()
 			};
 
 			// check near cells
+			g_RiverSegment* candidate_river= nullptr;
+			size_t candidate_river_edge= 0;
+			m_FixedVec2<8> candidate_intersection_point{ 0, 0 };
+			fixed8_t candidate_square_distance= std::numeric_limits<fixed8_t>::max();
+
 			const int c_intersect_search_radius= 1;
 			for( int y= -c_intersect_search_radius; y <= c_intersect_search_radius; y++ )
 			{
@@ -238,26 +241,43 @@ void g_WorldGenerator::BuildRiverSystem()
 								{ point1.x, point1.y },
 							};
 
-							// TODO - use nearest intersection result, not first.
 							m_FixedVec2<8> intersection_point;
 							if( LinesIntersection<8>( segment[0], segment[1], dst_segment[0], dst_segment[1], intersection_point ) )
 							{
-								SplitRiver( river_system, try_river, river, intersection_point, p - 1 );
+								m_FixedVec2<8> vec_to_intersection_point;
+								vec_to_intersection_point.x= intersection_point.x - prev_point.x;
+								vec_to_intersection_point.y= intersection_point.x - prev_point.y;
 
-								new_point_ref.x= intersection_point.x;
-								new_point_ref.y= intersection_point.y;
+								fixed8_t square_distance=
+									m_FixedMul<8>( vec_to_intersection_point.x, vec_to_intersection_point.x ) +
+									m_FixedMul<8>( vec_to_intersection_point.y, vec_to_intersection_point.y );
 
-								goto stop_river_flow;
+								if( square_distance < candidate_square_distance )
+								{
+									candidate_square_distance= square_distance;
+									candidate_river_edge= p - 1;
+									candidate_river= &try_river;
+									candidate_intersection_point= intersection_point;
+								}
 							} // if is intersection
 						} // for edges of try river
 					}
 				} // for x
 			} // for y
 
+			if( candidate_river )
+			{
+				SplitRiver(
+					river_system,
+					*candidate_river, river,
+					candidate_intersection_point, candidate_river_edge );
+
+				new_point_ref.x= candidate_intersection_point.x;
+				new_point_ref.y= candidate_intersection_point.y;
+				break; // End river.
+			}
 
 		} while( (++iter) < 256 ); // place river segments
-
-		stop_river_flow:;
 
 		for( unsigned short point_index : river.points_indeces )
 		{
@@ -269,6 +289,7 @@ void g_WorldGenerator::BuildRiverSystem()
 		}
 	} // try place river
 
+	/*
 	for( const g_RiverSegment& river : river_system.rivers_segments )
 		for( unsigned int i= 1; i < river.points_indeces.size(); i++ )
 		{
@@ -280,6 +301,7 @@ void g_WorldGenerator::BuildRiverSystem()
 				(unsigned char*)biomes_map_.data(), size_x,
 				(unsigned char)Biome::River );
 		}
+	*/
 
 	river_system_= std::move( river_system );
 }
