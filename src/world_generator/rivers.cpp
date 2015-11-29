@@ -144,7 +144,7 @@ static void SplitRiver(
 		river_system.rivers_points.push_back({
 			split_pont.x, split_pont.y,
 			new_segment_id,
-			src_segment_id });
+			static_cast<unsigned short>(src_river.points_indeces.size()) });
 
 		src_river.points_indeces.push_back( new_point_index );
 	}
@@ -219,7 +219,7 @@ void g_WorldGenerator::BuildRiverSystem()
 		unsigned int iter= 0;
 		do
 		{
-			g_RiverPoint& prev_point= river_system.rivers_points[ river.points_indeces.back() ];
+			g_RiverPoint prev_point= river_system.rivers_points[ river.points_indeces.back() ];
 			int x= prev_point.x >> 8;
 			int y= prev_point.y >> 8;
 
@@ -263,7 +263,7 @@ void g_WorldGenerator::BuildRiverSystem()
 			new_point.index_in_river_segment= river.points_indeces.size();
 			river_system.rivers_points.emplace_back( new_point );
 			river.points_indeces.push_back( river_system.rivers_points.size() - 1 );
-			g_RiverPoint& new_point_ref= river_system.rivers_points.back();
+			size_t new_point_number= river_system.rivers_points.size() - 1;
 
 			m_FixedVec2<8> segment[2]
 			{
@@ -356,8 +356,9 @@ void g_WorldGenerator::BuildRiverSystem()
 					*candidate_river, river,
 					candidate_intersection_point, candidate_river_edge );
 
-				new_point_ref.x= candidate_intersection_point.x;
-				new_point_ref.y= candidate_intersection_point.y;
+				river_system.rivers_points[ new_point_number ].x= candidate_intersection_point.x;
+				river_system.rivers_points[ new_point_number ].y= candidate_intersection_point.y;
+
 				break; // End river.
 			}
 
