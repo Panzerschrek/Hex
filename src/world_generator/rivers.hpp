@@ -17,6 +17,7 @@ struct g_RiverSegment
 	// Nonzero id`s of related segments
 	unsigned short parents_id[2];
 	unsigned short child_id;
+	bool too_short;
 };
 
 

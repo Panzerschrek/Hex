@@ -1,4 +1,5 @@
 #include <limits>
+#include <cmath>
 
 #include "../math_lib/rand.h"
 
@@ -56,10 +57,44 @@ static bool LinesIntersection(
 		proj1 >= 0 && proj1 < l1_vec_squre_len;
 }
 
+template<int base>
+static void FindNearestPointOnEdge(
+	const m_FixedVec2<base>& edgev0, const m_FixedVec2<base>& edgev1,
+	const m_FixedVec2<base>& point,
+	m_FixedVec2<base>& result_point, fixed_base_t& out_square_distance )
+{
+	m_FixedVec2<base> edge_vec{ edgev1.x - edgev0.x, edgev1.y - edgev0.y };
+	m_FixedVec2<base> vec_to_edge{ point.x - edgev0.x, point.y - edgev0.y };
+
+	fixed_base_t line_square_length= mFixedVec2Dot<base>( edge_vec, edge_vec );
+	fixed_base_t dot= mFixedVec2Dot<base>( vec_to_edge, edge_vec );
+
+	if( line_square_length == 0 || dot <= 0 )
+	{
+		result_point= edgev0;
+		out_square_distance= mFixedVec2Dot<base>( vec_to_edge, vec_to_edge );
+	}
+	else if( dot >= line_square_length )
+	{
+		result_point= edgev1;
+		m_FixedVec2<base> vec_to_v1{ point.x - edgev1.x, point.y - edgev1.y };
+		out_square_distance= mFixedVec2Dot<base>( vec_to_v1, vec_to_v1 );
+	}
+	else
+	{
+		fixed_base_t div= m_FixedDiv<base>( dot, line_square_length );
+		result_point.x= edgev0.x + m_FixedMul<base>( edge_vec.x, div );
+		result_point.y= edgev0.y + m_FixedMul<base>( edge_vec.y, div );
+
+		m_FixedVec2<base> vec_to_result_point{ point.x - result_point.x, point.y - result_point.y };
+		out_square_distance= mFixedVec2Dot<base>( vec_to_result_point, vec_to_result_point );
+	}
+}
+
 static void SplitRiver(
 	g_RiverSystem& river_system,
 	g_RiverSegment& src_river,
-	const g_RiverSegment& inflowing_river,
+	g_RiverSegment& inflowing_river,
 	const m_FixedVec2<8>& split_pont,
 	size_t splitted_segment_number )
 {
@@ -95,6 +130,7 @@ static void SplitRiver(
 	new_segment.child_id= src_river.child_id;
 	new_segment.parents_id[0]= src_segment_id;
 	new_segment.parents_id[1]= &inflowing_river - &river_system.rivers_segments.front();
+	inflowing_river.child_id= new_segment_id;
 
 	// Setup relationships of src segment.
 	src_river.child_id= new_segment_id;
@@ -115,6 +151,33 @@ static void SplitRiver(
 
 	// Put new segment to tontainer.
 	river_system.rivers_segments.push_back( std::move(new_segment) );
+}
+
+static void MarkShortRivers( g_RiverSystem& river_system )
+{
+	// TODO - colibrate constants.
+	const float c_inflow_min_length= 3.5f;
+	const float c_single_river_min_length= 6.0f;
+
+	for( g_RiverSegment& river : river_system.rivers_segments )
+	{
+		if( river.parents_id[0] == 0 && river.parents_id[1] == 0 )
+		{
+			float length= 0.0f;
+			for( unsigned int i= 1; i < river.points_indeces.size(); i++ )
+			{
+				g_RiverPoint& point0= river_system.rivers_points[ river.points_indeces[i-1] ];
+				g_RiverPoint& point1= river_system.rivers_points[ river.points_indeces[i  ] ];
+				fixed8_t dx= point1.x - point0.x;
+				fixed8_t dy= point1.y - point0.y;
+
+				//TODO - remove std::sqrt. We need fixed point square root.
+				length += std::sqrt( float( m_FixedSquare<8>(dx) + m_FixedSquare<8>(dy) ) ) * ( 1.0f / 256.0f );
+			}
+			river.too_short= length < ( river.child_id == 0 ? c_single_river_min_length : c_inflow_min_length );
+		}
+		else river.too_short= false;
+	}
 }
 
 void g_WorldGenerator::BuildRiverSystem()
@@ -141,6 +204,7 @@ void g_WorldGenerator::BuildRiverSystem()
 	{
 		river_system.rivers_segments.emplace_back();
 		g_RiverSegment& river= river_system.rivers_segments.back();
+		river.parents_id[0]= river.parents_id[1]= river.child_id= 0;
 		unsigned short river_id= river_system.rivers_segments.size() - 1;
 
 		river_system.rivers_points.emplace_back();
@@ -248,9 +312,7 @@ void g_WorldGenerator::BuildRiverSystem()
 								vec_to_intersection_point.x= intersection_point.x - prev_point.x;
 								vec_to_intersection_point.y= intersection_point.x - prev_point.y;
 
-								fixed8_t square_distance=
-									m_FixedMul<8>( vec_to_intersection_point.x, vec_to_intersection_point.x ) +
-									m_FixedMul<8>( vec_to_intersection_point.y, vec_to_intersection_point.y );
+								fixed8_t square_distance= mFixedVec2Dot<8>( vec_to_intersection_point, vec_to_intersection_point );
 
 								if( square_distance < candidate_square_distance )
 								{
@@ -260,6 +322,28 @@ void g_WorldGenerator::BuildRiverSystem()
 									candidate_intersection_point= intersection_point;
 								}
 							} // if is intersection
+							else
+							{
+								// Disagonal of quad with side size 2.
+								const fixed8_t c_min_square_distance= (2 * 2 * 2)<<8;
+
+								m_FixedVec2<8> nearest_point_on_edge;
+								fixed8_t square_distance_to_nearest_point_on_edge;
+
+								FindNearestPointOnEdge<8>(
+									dst_segment[0], dst_segment[1],
+									segment[0],
+									nearest_point_on_edge, square_distance_to_nearest_point_on_edge );
+
+								if( square_distance_to_nearest_point_on_edge <= c_min_square_distance &&
+									square_distance_to_nearest_point_on_edge < candidate_square_distance )
+								{
+									candidate_square_distance= square_distance_to_nearest_point_on_edge;
+									candidate_river_edge= p - 1;
+									candidate_river= &try_river;
+									candidate_intersection_point= nearest_point_on_edge;
+								}
+							} // Check, if point too close to river.
 						} // for edges of try river
 					}
 				} // for x
@@ -289,19 +373,27 @@ void g_WorldGenerator::BuildRiverSystem()
 		}
 	} // try place river
 
-	/*
+	MarkShortRivers( river_system );
+
 	for( const g_RiverSegment& river : river_system.rivers_segments )
-		for( unsigned int i= 1; i < river.points_indeces.size(); i++ )
+		if( !river.too_short )
 		{
-			const g_RiverPoint& point0= river_system.rivers_points[ river.points_indeces[i-1] ];
-			const g_RiverPoint& point1= river_system.rivers_points[ river.points_indeces[i  ] ];
-			DrawLine(
-				point0.x >> 8, point0.y >> 8,
-				point1.x >> 8, point1.y >> 8,
-				(unsigned char*)biomes_map_.data(), size_x,
-				(unsigned char)Biome::River );
+			for( unsigned int i= 1; i < river.points_indeces.size(); i++ )
+			{
+				const g_RiverPoint& point0= river_system.rivers_points[ river.points_indeces[i-1] ];
+				const g_RiverPoint& point1= river_system.rivers_points[ river.points_indeces[i  ] ];
+
+				extern void DrawLine(
+							int x0, int y0, int x1, int y1,
+							unsigned char* framebuffer, unsigned int framebuffer_width,
+							unsigned char color= 255 );
+				DrawLine(
+					point0.x >> 8, point0.y >> 8,
+					point1.x >> 8, point1.y >> 8,
+					(unsigned char*)biomes_map_.data(), size_x,
+					(unsigned char)Biome::River );
+			}
 		}
-	*/
 
 	river_system_= std::move( river_system );
 }

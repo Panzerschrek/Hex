@@ -487,21 +487,24 @@ void g_WorldGenerator::DumpDebugResult()
 		QPainter painter( &img );
 		for( const g_RiverSegment& river : river_system_.rivers_segments )
 		{
-			painter.setPen( QColor( rand.Rand() & 255, rand.Rand() & 255, rand.Rand() & 255 ) );
-
-			if( !river.points_indeces.empty() )
+			if( !river.too_short )
 			{
-				const g_RiverPoint& point= river_system_.rivers_points[ river.points_indeces.front() ];
-				painter.drawEllipse( point.x >> k, point.y >> k, 3, 3 );
-			}
+				painter.setPen( QColor( rand.Rand() & 255, rand.Rand() & 255, rand.Rand() & 255 ) );
 
-			for( unsigned int i= 1; i < river.points_indeces.size(); i++ )
-			{
-				const g_RiverPoint& point0= river_system_.rivers_points[ river.points_indeces[i-1] ];
-				const g_RiverPoint& point1= river_system_.rivers_points[ river.points_indeces[i  ] ];
-				painter.drawLine(
-					point0.x >> k, point0.y >> k,
-					point1.x >> k, point1.y >> k );
+				if( !river.points_indeces.empty() )
+				{
+					const g_RiverPoint& point= river_system_.rivers_points[ river.points_indeces.front() ];
+					painter.drawEllipse( point.x >> k, point.y >> k, 3, 3 );
+				}
+
+				for( unsigned int i= 1; i < river.points_indeces.size(); i++ )
+				{
+					const g_RiverPoint& point0= river_system_.rivers_points[ river.points_indeces[i-1] ];
+					const g_RiverPoint& point1= river_system_.rivers_points[ river.points_indeces[i  ] ];
+					painter.drawLine(
+						point0.x >> k, point0.y >> k,
+						point1.x >> k, point1.y >> k );
+				}
 			}
 		}
 
