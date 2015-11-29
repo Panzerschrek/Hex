@@ -17,9 +17,10 @@
 static const float c_pi= 3.1415926535f;
 static const float c_2pi= 2.0f * c_pi;
 
-// fixed8_t
-static const int c_world_x_scaler= int(H_SPACE_SCALE_VECTOR_X * 256.0f);
-static const int c_world_x_inv_scaler= int(256.0f / H_SPACE_SCALE_VECTOR_X);
+static const int c_world_scaler_base= 28;
+static const fixed_base_t c_world_scaler_unit= 1 << c_world_scaler_base;
+static const fixed_base_t c_world_x_scaler= fixed_base_t(H_SPACE_SCALE_VECTOR_X * float(c_world_scaler_unit));
+static const fixed_base_t c_world_x_inv_scaler= fixed_base_t(float(c_world_scaler_unit) / H_SPACE_SCALE_VECTOR_X);
 
 // returns vector of coordinates. (x + y )
 static std::vector<g_TreePlantingPoint> PoissonDiskPoints(
@@ -514,7 +515,7 @@ void g_WorldGenerator::DumpDebugResult()
 
 unsigned char g_WorldGenerator::GetGroundLevel( int x, int y ) const
 {
-	int x_corrected= ( x * c_world_x_scaler) >> 8;
+	int x_corrected= m_FixedMul<c_world_scaler_base>( x, c_world_x_scaler );
 
 	// HACK. If not do this, borders, parallel to world X axi is to sharply.
 	int y_corrected= y - (x&1);
@@ -546,7 +547,7 @@ void g_WorldGenerator::PlantTreesForChunk( int longitude, int latitude, const Pl
 {
 	// Coordinates in world homogenous space.
 	// TODO - here, maybe, are some problems.
-	int world_x= ( (longitude << H_CHUNK_WIDTH_LOG2) * c_world_x_scaler ) >> 8;
+	int world_x= m_FixedMul<c_world_scaler_base>( longitude << H_CHUNK_WIDTH_LOG2, c_world_x_scaler );
 	int world_y= latitude << H_CHUNK_WIDTH_LOG2;
 
 	// Coordinates inside matrix.
@@ -592,7 +593,7 @@ void g_WorldGenerator::PlantTreesForChunk( int longitude, int latitude, const Pl
 			else if( wrap_y < y ) tree_y-= grid_cell_size_to_tex_size_k[1];
 
 			// Space correction
-			tree_x= (tree_x * c_world_x_inv_scaler) >> 8;
+			tree_x= m_FixedMul<c_world_scaler_base>( tree_x, c_world_x_inv_scaler );
 
 			plant_tree_callback( tree_x, tree_y );
 		}
