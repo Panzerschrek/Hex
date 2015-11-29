@@ -5,6 +5,8 @@
 
 #include "../math_lib/fixed.hpp"
 
+#include "rivers.hpp"
+
 struct g_WorldGenerationParameters
 {
 	std::string world_dir;
@@ -43,6 +45,12 @@ public:
 	void PlantTreesForChunk( int longitude, int latitude, const PlantTreeCallback& plant_tree_callback ) const;
 
 private:
+	struct RiverPoint
+	{
+		fixed8_t x, y;
+	};
+
+	typedef std::vector<RiverPoint> River;
 
 	enum class Biome : unsigned char
 	{
@@ -52,6 +60,7 @@ private:
 		Plains,
 		Foothills,
 		Mountains,
+		River,
 		LastBiome,
 	};
 
@@ -66,6 +75,8 @@ private:
 	void BuildBiomesMap();
 	void BuildNoiseAmplitudeMap();
 	void GenTreePlantingMatrix();
+
+	void BuildRiverSystem();
 
 	// returns interpolated heightmap value * 256
 	fixed8_t HeightmapValueInterpolated( int x, int y, fixed8_t& out_noise_amplitude ) const;
@@ -95,4 +106,8 @@ private:
 		unsigned int grid_size[2];
 		unsigned int grid_cell_size;
 	} tree_planting_matrix_;
+
+	std::vector<River> rivers_;
+
+	g_RiverSystem river_system_;
 };

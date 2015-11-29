@@ -10,6 +10,12 @@ fixed_base_t m_FixedMul( fixed_base_t x, fixed_base_t y )
 }
 
 template< int base >
+fixed_base_t m_FixedSquare( fixed_base_t x )
+{
+	return ( ((long long int)x) * x ) >> base;
+}
+
+template< int base >
 int m_FixedMulResultToInt( fixed_base_t x, fixed_base_t y )
 {
 	return ( ((long long int)x) * y ) >> (base + base);
@@ -32,7 +38,7 @@ fixed_base_t m_FixedDiv( fixed_base_t x, fixed_base_t y )
 {
 	// TODO - check range of result
 	H_ASSERT( y != 0 );
-	return ( ((long long int)x) << base ) * y;
+	return ( ((long long int)x) << base ) / y;
 }
 
 template< int base >
@@ -48,6 +54,11 @@ typedef fixed_base_t fixed8_t;
 inline fixed16_t m_Fixed16Mul( fixed16_t x, fixed16_t y )
 {
 	return m_FixedMul<16>( x, y );
+}
+
+inline fixed16_t m_Fixed16Square( fixed16_t x )
+{
+	return m_FixedSquare<16>( x );
 }
 
 inline int m_Fixed16MulResultToInt( fixed16_t x, fixed16_t y )
