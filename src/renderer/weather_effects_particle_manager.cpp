@@ -1,3 +1,4 @@
+#include <limits>
 #include <time.h>
 
 #include "weather_effects_particle_manager.hpp"
@@ -22,21 +23,20 @@ void r_WeatherEffectsParticleManager::Create( unsigned int particles_count, cons
 	rain_zone_size_= rain_zone_size;
 
 	{
-		short* particle_coords= new short[ particles_count_ * 4 ];
+		std::vector<unsigned short> particle_coords( particles_count_ * 4 );
 
 		m_Rand randomizer;
+		int max_ushort= std::numeric_limits<unsigned short>::max();
 		for( unsigned int i= 0; i< particles_count_; i++ )
 		{
-			particle_coords[ i * 4     ]= randomizer() * 32767 / randomizer.max_rand;
-			particle_coords[ i * 4 + 1 ]= randomizer() * 32767 / randomizer.max_rand;
-			particle_coords[ i * 4 + 2 ]= randomizer() * 32767 / randomizer.max_rand;
-			particle_coords[ i * 4 + 3 ]= 32767;
+			particle_coords[ i * 4     ]= randomizer.RandI( max_ushort );
+			particle_coords[ i * 4 + 1 ]= randomizer.RandI( max_ushort );
+			particle_coords[ i * 4 + 2 ]= randomizer.RandI( max_ushort );
+			particle_coords[ i * 4 + 3 ]= max_ushort;
 		}
 
-		vbo_.VertexData( particle_coords, sizeof(short)* 4 * particles_count_, sizeof(float) * 4 );
-		vbo_.VertexAttribPointer( 0, 4, GL_SHORT, true, 0 );
-
-		delete[] particle_coords;
+		vbo_.VertexData( particle_coords.data(), sizeof(unsigned short) * 4 * particles_count_, sizeof(unsigned short) * 4 );
+		vbo_.VertexAttribPointer( 0, 4, GL_UNSIGNED_SHORT, true, 0 );
 	}
 
 	if( !shader_.Load( "shaders/rain_frag.glsl", "shaders/rain_vert.glsl" ) )
