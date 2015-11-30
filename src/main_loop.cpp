@@ -204,10 +204,10 @@ void h_MainLoop::Input()
 	}
 
 	QTime current_time= QTime::currentTime();
-	float dt = float( prev_move_time_.msecsTo(current_time) ) / 1000.0f;
+	float dt= float( prev_move_time_.msecsTo(current_time) ) / 1000.0f;
 	prev_move_time_= current_time;
 
-	const float speed= 5.0f;
+	float speed= keys_[ Qt::Key_Shift ] ? 48.0f : 8.0f;
 
 	m_Vec3 move_vec( 0.0f, 0.0f, 0.0f );
 	if( keys_[ Qt::Key_W ] )
