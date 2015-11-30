@@ -355,13 +355,13 @@ static void GenNoise(
 	unsigned char* dst= out_data;
 	for( unsigned int y= 0; y < size[1]; y++ )
 	for( unsigned int x= 0; x < size[0]; x++, dst++ )
-		*dst= ( g_OctaveNoise( x, y, seed, c_octaves ) * mul) >> (8 + 8);
-		 /**dst=
-			( TriangularOctaveNoise(
-				(x * c_world_x_scaler) >> 8,
+		// *dst= ( g_OctaveNoise( x, y, seed, c_octaves ) * mul) >> (8 + 8);
+		*dst=
+			( g_TriangularOctaveNoise(
+				m_FixedMul<c_world_scaler_base>( x, c_world_x_scaler ),
 				y,
 				seed,
-				c_octaves ) * mul) >> (8 + 8);*/
+				c_octaves ) * mul) >> (8 + 8);
 }
 
 
