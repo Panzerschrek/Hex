@@ -1,25 +1,25 @@
 #version 400
 
 #ifndef TEX_SCALE_VECTOR
-#define TEX_SCALE_VECTOR vec3( 0.0625, 0.125 * 0.86602540, 1.0 )
+#error
 #endif
-
 
 uniform mat4 view_matrix;
 
-const vec3 normals[8]= vec3[8](
-vec3( 0.0, 1.0, 0.0 ), vec3( 0.0, -1.0, 0.0 ), 
-vec3( 0.866025, 0.5, 0.0 ), vec3( -0.866025, -0.5, 0.0 ), 
-vec3( -0.866025, 0.5, 0.0 ), vec3( 0.866025, -0.5, 0.0 ), 
-vec3( 0.0, 0.0, 1.0 ), vec3( 0.0, 0.0, -1.0 ) );
+const vec3 normals[8]= vec3[8]
+(
+	vec3( 0.0, 1.0, 0.0 ), vec3( 0.0, -1.0, 0.0 ),
+	vec3( 0.866025, 0.5, 0.0 ), vec3( -0.866025, -0.5, 0.0 ),
+	vec3( -0.866025, 0.5, 0.0 ), vec3( 0.866025, -0.5, 0.0 ),
+	vec3( 0.0, 0.0, 1.0 ), vec3( 0.0, 0.0, -1.0 )
+);
 
-const float block_side_light_k[8]= float[8](
-1.0, 0.94, 0.94, 1.0, 0.94, 1.0, 0.97, 0.97 );
+const float block_side_light_k[8]= float[8]
+( 1.0, 0.94, 0.94, 1.0, 0.94, 1.0, 0.97, 0.97 );
 
 in vec3 coord;
 in vec3 tex_coord;
 in uint normal;
-//in vec4 reserved;
 in vec2 light;
 
 out vec3 f_tex_coord;

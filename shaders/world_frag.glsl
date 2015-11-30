@@ -1,7 +1,5 @@
 #version 400
 
-uniform float light_scale_k = 1.0;//for exponential lighting
-
 uniform vec3 sun_vector;
 
 uniform sampler2DArray tex;
@@ -22,7 +20,7 @@ const float H_HEXAGON_EDGE_SIZE= 0.5773502691;
 const vec3 TEX_COORD_SCALER= vec3( 1.0, H_INV_SPACE_SCALE_VECTOR_X, 1.0001 );
 
 ivec2 GetHexagonTexCoord( vec2 tex_coord )
-{	
+{
 	tex_coord.xy= tex_coord.yx;
 
 	ivec2 candidate_cells[3];
@@ -57,13 +55,11 @@ ivec2 GetHexagonTexCoord( vec2 tex_coord )
 		}
 	}
 
-
 	return candidate_cells[ nearest_cell ].yx;
 }
 
-
 ivec2 GetHexagonTexCoordY( vec2 tex_coord )
-{	
+{
 	ivec2 candidate_cells[3];
 
 	candidate_cells[0].y= int( floor( tex_coord.y / H_SPACE_SCALE_VECTOR_X ) );
@@ -96,11 +92,8 @@ ivec2 GetHexagonTexCoordY( vec2 tex_coord )
 		}
 	}
 
-
 	return candidate_cells[ nearest_cell ];
-
 }
-
 
 vec4 SimpleFetch()
 {
@@ -110,20 +103,19 @@ vec4 SimpleFetch()
 vec4 HexagonFetch()
 {
 	float lod= textureQueryLod( tex, f_tex_coord.xy * TEX_COORD_SCALER.xy ).x;
-	
+
 	if( lod <= 0.5 )
 	{
 		ivec2 tex_size= textureSize( tex, 0 ).xy;
 		int texture_layer= int(f_tex_coord.z+0.01);
 
 		return texelFetch( tex, ivec3(
- 			mod( GetHexagonTexCoordY( f_tex_coord.xy * vec2(tex_size) ) ,tex_size ), 
+ 			mod( GetHexagonTexCoordY( f_tex_coord.xy * vec2(tex_size) ) ,tex_size ),
  			texture_layer ), 0 );
 	}
 	else
 		return SimpleFetch();
 }
-
 
 void main()
 {
@@ -131,6 +123,6 @@ void main()
 	if( c.a < 0.5 )
 		discard;
 
-	vec3 l= f_light.x * sun_light_color + f_light.y * fire_light_color + ambient_light_color;	
+	vec3 l= f_light.x * sun_light_color + f_light.y * fire_light_color + ambient_light_color;
 	color= vec4( c.xyz * l, 1.0 );
 }

@@ -1,7 +1,7 @@
 #version 330
 
+uniform vec3 sun_vector;
 
-const vec3 sun_vector= normalize( vec3( 0.5, 0.9, 1.0 ) ); 
 uniform sampler2D tex;
 uniform float time;
 uniform vec3 sun_light_color;
@@ -16,14 +16,10 @@ out vec4 color;
 
 void main()
 {
-	
-	vec3 l= f_light.x * sun_light_color + f_light.y * fire_light_color + ambient_light_color;	
+	vec3 l= f_light.x * sun_light_color + f_light.y * fire_light_color + ambient_light_color;
 
 	vec2 tc= f_tex_coord + sin( f_tex_coord.yx * 8.0 + vec2( time, time ) ) * 0.06125;
-	vec4 c=texture( tex, tc);
-
-	//vec4 c= texelFetch( tex, ivec2( mod( tc, 1.0 ) * 256.0 ), 0 );
-	//c = round( c * 8.0 ) *  0.125;
+	vec4 c= texture( tex, tc );
 
 	color= vec4( l * c.xyz, c.a );
 }

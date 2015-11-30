@@ -1,7 +1,7 @@
 #version 330
 
 #ifndef SUN_SIZE
-#define SUN_SIZE 128.0
+#error
 #endif
 
 uniform vec3 sun_vector;

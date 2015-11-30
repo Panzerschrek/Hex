@@ -1,14 +1,6 @@
 #version 330
 
 uniform mat4 view_matrix;
-uniform float time;
-
-const vec3 normals[8]= vec3[8](
-vec3( 0.0, 1.0, 0.0 ), vec3( 0.0, -1.0, 0.0 ), 
-vec3( 0.866025, 0.5, 0.0 ), vec3( -0.866025, -0.5, 0.0 ), 
-vec3( -0.866025, 0.5, 0.0 ), vec3( 0.866025, -0.5, 0.0 ), 
-vec3( 0.0, 0.0, 1.0 ), vec3( 0.0, 0.0, -1.0 ) );
-
 
 in vec3 coord;
 in vec2 light;
