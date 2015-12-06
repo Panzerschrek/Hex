@@ -22,7 +22,7 @@
 class r_WorldRenderer final : public r_IWorldRenderer
 {
 public:
-	r_WorldRenderer( const h_SettingsPtr& settings, const h_WorldConstPtr& world );
+	r_WorldRenderer( const h_SettingsPtr& settings, const h_WorldConstPtr& world, const h_PlayerConstPtr& player );
 	virtual ~r_WorldRenderer() override;
 
 public: // r_IWorldRenderer
@@ -37,9 +37,6 @@ public:
 	void Init();
 	void InitGL();
 
-	void SetCamPos( const m_Vec3& p );
-	void SetCamAng( const m_Vec3& a );
-	void SetBuildPos( const m_Vec3& p, h_Direction direction );
 	void SetViewportSize( unsigned int viewport_width, unsigned int viewport_height );
 
 private:
@@ -76,6 +73,7 @@ private:
 private:
 	const h_SettingsPtr settings_;
 	const h_WorldConstPtr world_;
+	const h_PlayerConstPtr player_;
 
 	// Counters
 	h_TicksCounter frames_counter_;
@@ -117,9 +115,6 @@ private:
 	m_Mat4 view_matrix_, block_scale_matrix_, block_final_matrix_, water_final_matrix_;
 	m_Vec3 cam_ang_, cam_pos_;
 
-	m_Vec3 build_pos_;
-	h_Direction build_direction_;
-
 	struct
 	{
 		std::vector< r_ChunkInfoPtr > chunk_matrix;
@@ -148,22 +143,6 @@ private:
 
 	time_t startup_time_;
 };
-
-inline void r_WorldRenderer::SetCamPos( const m_Vec3& p )
-{
-	cam_pos_= p;
-}
-
-inline void r_WorldRenderer::SetCamAng( const m_Vec3& a )
-{
-	cam_ang_= a;
-}
-
-inline void r_WorldRenderer::SetBuildPos( const m_Vec3& p, h_Direction direction )
-{
-	build_pos_= p;
-	build_direction_= direction;
-}
 
 inline void r_WorldRenderer::SetViewportSize( unsigned int viewport_width, unsigned int viewport_height )
 {

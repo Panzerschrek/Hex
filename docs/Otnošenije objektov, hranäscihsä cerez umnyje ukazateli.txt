@@ -7,6 +7,7 @@ Siljnyje ukazateli na vseh nih hranit h_MainLoop.
 h_WorldRenderer hranit siljnyje ukazateli na h_World i h_Player.
 h_Player hranit siljnyj ukazatelj na h_World.
 h_World hranit slabyje ukazateli na h_Player i h_WorldRenderer.
+ui_IngameMenu hranit siljnyj ukazatelj na h_Player.
 
 ^ Primecanije:
 Graf, sostavlennyj iz objektov i siljnyh ukazatelej ne dolžen soderžatj

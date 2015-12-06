@@ -9,7 +9,7 @@ public:
 	ui_SettingsMenu( ui_MenuBase* parent, int x, int y, int sx, int sy );
 	virtual ~ui_SettingsMenu() override;
 
-	virtual void Tick() override {};
+	virtual void Tick() override {}
 
 private:
 	void OnBackButton();

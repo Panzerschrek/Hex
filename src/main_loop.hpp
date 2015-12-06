@@ -1,16 +1,13 @@
 #pragma once
 
-#include <map>
-
 #include "hex.hpp"
 #include "fwd.hpp"
-#include "vec.hpp"
 
 #include <QtGlobal>
 #include <QObject>
 #include <QtOpenGL>
 
-class h_MainLoop : public QGLWidget
+class h_MainLoop final : public QGLWidget
 {
 	Q_OBJECT
 
@@ -46,19 +43,15 @@ public://main menu interface logic
 	void StartGame();
 
 private:
-	void Input();
-	void GetBuildPos();
-	void ProcessMenuKeyPress( QKeyEvent* e );
+	void UpdateCursor();
+	void ProcessMenuKey( QKeyEvent* e, bool pressed );
 
 private:
 	h_SettingsPtr settings_;
 
 	QMainWindow* window_;
 	QCursor cursor_;
-	QTime startup_time_;
-	QTime prev_move_time_;
-	std::map<int, bool> keys_;
-	bool use_mouse_;
+	bool in_focus_;
 
 	int screen_width_, screen_height_;
 
@@ -68,15 +61,6 @@ private:
 
 	bool game_started_;
 
-	m_Vec3 cam_pos_, cam_ang_;
-
-	short build_pos_x_, build_pos_y_, build_pos_z_;
-	h_Direction build_dir_;
-	h_BlockType build_block_;
-
-	ui_Painter* ui_painter_;
-	ui_MenuBase* root_menu_;
-
-
-	int frame_count_;
+	std::unique_ptr<ui_Painter> ui_painter_;
+	std::unique_ptr<ui_MenuBase> root_menu_;
 };

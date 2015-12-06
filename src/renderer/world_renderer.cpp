@@ -14,6 +14,7 @@
 #include "../math_lib/m_math.h"
 #include "../math_lib/assert.hpp"
 
+#include "../player.hpp"
 #include "../world.hpp"
 
 struct r_ClipPlane
@@ -43,9 +44,11 @@ static const char* const g_supersampling_antialiasing_key_value= "ss";
 
 r_WorldRenderer::r_WorldRenderer(
 	const h_SettingsPtr& settings,
-	const h_WorldConstPtr& world )
+	const h_WorldConstPtr& world ,
+	const h_PlayerConstPtr& player )
 	: settings_(settings)
 	, world_(world)
+	, player_(player)
 	, startup_time_(clock())
 {
 	use_supersampling_=
@@ -436,7 +439,11 @@ void r_WorldRenderer::UpdateWorldPosition( int longitude, int latitude )
 
 void r_WorldRenderer::CalculateMatrices()
 {
-	m_Mat4 scale, translate, result, perspective, rotate_x, rotate_z, basis_change;
+	cam_pos_= player_->Pos();
+	cam_pos_.z+= H_PLAYER_EYE_LEVEL;
+	cam_ang_= player_->Angle();
+
+	m_Mat4 scale, translate, perspective, rotate_x, rotate_z, basis_change;
 
 	fov_y_= 1.57f;
 	fov_x_= 2.0f * std::atan( float(viewport_width_) / float(viewport_height_) * std::tan( fov_y_ * 0.5f ) );
@@ -846,7 +853,7 @@ void r_WorldRenderer::DrawBuildPrism()
 		state_clear_color,
 		1.0f, GL_FRONT, GL_FALSE );
 
-	if( build_pos_.z < 0.0f )
+	if( player_->BuildDirection() == DIRECTION_UNKNOWN )
 		return;
 
 	r_OGLStateManager::UpdateState( state );
@@ -854,12 +861,12 @@ void r_WorldRenderer::DrawBuildPrism()
 	build_prism_shader_.Bind();
 	build_prism_shader_.Uniform( "view_matrix", view_matrix_ );
 
-	build_prism_shader_.Uniform( "build_prism_pos", build_pos_ );
+	build_prism_shader_.Uniform( "build_prism_pos", player_->BuildPos() );
 
 	// Setup active build side alpha.
 	float alpha[12];
 	for( int i= 0; i < 12; i++ ) alpha[i]= 0.15f;
-	switch( build_direction_ )
+	switch( player_->BuildDirection() )
 	{
 		case DOWN:
 			alpha[6]= alpha[7]= alpha[8]= alpha[9]= alpha[10]= alpha[11]= 1.0f;
@@ -890,7 +897,6 @@ void r_WorldRenderer::DrawBuildPrism()
 	};
 
 	build_prism_shader_.Uniform( "active_vertices", alpha, 12 );
-
 	build_prism_shader_.Uniform( "cam_pos", cam_pos_ );
 
 	build_prism_vbo_.Bind();

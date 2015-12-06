@@ -7,6 +7,7 @@ typedef std::shared_ptr<h_Settings> h_SettingsPtr;
 class h_MainLoop;
 class h_Player;
 typedef std::shared_ptr<h_Player> h_PlayerPtr;
+typedef std::shared_ptr<const h_Player> h_PlayerConstPtr;
 typedef std::weak_ptr<h_Player> h_PlayerWeakPtr;
 
 class h_World;

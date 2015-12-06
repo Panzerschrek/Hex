@@ -1,7 +1,10 @@
 #pragma once
+#include <ctime>
 #include <functional>
+#include <map>
 
 #include "../hex.hpp"
+#include "../fwd.hpp"
 #include "ui_base_classes.hpp"
 
 class ui_IngameMenu final : public ui_MenuBase
@@ -9,20 +12,28 @@ class ui_IngameMenu final : public ui_MenuBase
 public:
 	ui_IngameMenu(
 		int sx, int sy,
-		// TODO - this paremater is hack. Invent, how to do build and other actions.
-		std::function<void(h_BlockType)> hack_on_block_type_changed_callback );
+		const h_PlayerPtr& player );
 
 	virtual ~ui_IngameMenu() override;
 
+	virtual ui_MouseButtonMask AcceptedMouseButtons() const override;
+
+	virtual void CursorPress( int x, int y, ui_MouseButton button, bool pressed ) override;
 	virtual void KeyPress( ui_Key key ) override;
+	virtual void KeyRelease( ui_Key key ) override;
+	virtual void ControllerMove( int dx, int dy ) override;
+
 	virtual void Tick() override;
 
 private:
-	void OnBlockSelected(h_BlockType block_type);
+	void OnBlockSelected( h_BlockType block_type );
 
 private:
-	h_BlockType active_block_type_;
+	h_PlayerPtr player_;
+	clock_t prev_move_time_;
+
+	std::map<ui_Key, bool> keys_;
+
 	ui_Text* block_type_text_;
 
-	std::function<void(h_BlockType)> hack_on_block_type_changed_callback_;
 };

@@ -13,6 +13,15 @@ class ui_MenuBase;
 
 typedef std::function<void()> ui_Callback;
 
+typedef unsigned int ui_MouseButtonMask;
+
+enum class ui_MouseButton : ui_MouseButtonMask
+{
+	Left = 1 << 0,
+	Middle = 1 << 1,
+	Right = 1 << 2,
+};
+
 enum class ui_Key : unsigned char
 {
 	Unknown= 0,
@@ -87,8 +96,13 @@ enum class ui_Key : unsigned char
 class ui_CursorHandler
 {
 public:
-	static void CursorPress( int x, int y, bool pressed );
+	static void CursorPress( int x, int y, ui_MouseButton button, bool pressed );
 	static void UpdateCursorPos( int x, int y );
+
+	static void ControllerMove( int dx, int dy );
+
+	static void GrabMouse( bool grab );
+	static bool IsMouseGrabbed();
 
 private:
 	friend class ui_Base;
@@ -100,12 +114,14 @@ private:
 	static void AddMenu( ui_MenuBase* menu );
 	static void RemoveMenu( ui_MenuBase* menu );
 
+private:
 	static unsigned int ui_elements_count_;
 	static std::array<ui_Base*, H_UI_MAX_ELEMENTS> ui_elements_;
 	static unsigned int ui_menu_count_;
 	static std::array<ui_MenuBase*, H_UI_MAX_MENUS> ui_menus_;
-};
 
+	static bool mouse_grabbed_;
+};
 
 struct ui_Style
 {
@@ -170,7 +186,9 @@ public:
 
 	//set state of ui element
 	virtual void CursorOver( bool is_over );
-	virtual void CursorPress( int x, int y, bool pressed/*true - presed, false - unpressed*/ );
+	virtual void CursorPress( int x, int y, ui_MouseButton button, bool pressed/*true - presed, false - unpressed*/ );
+
+	virtual ui_MouseButtonMask AcceptedMouseButtons() const;
 
 	virtual void Draw( ui_Painter* painter ) const;
 
@@ -232,7 +250,7 @@ public:
 	{
 		callback_= callback;
 	}
-	virtual void CursorPress( int x, int y, bool pressed) override;
+	virtual void CursorPress( int x, int y, ui_MouseButton button, bool pressed ) override;
 	virtual void Draw( ui_Painter* painter ) const override;
 
 private:
@@ -258,8 +276,9 @@ public:
 	{
 		flag_= state;
 	}
+
+	virtual void CursorPress( int x, int y, ui_MouseButton button, bool pressed ) override;
 	virtual void Draw( ui_Painter* painter ) const override;
-	virtual void CursorPress( int x, int y, bool pressed ) override;
 
 private:
 	bool flag_;
@@ -336,7 +355,7 @@ public:
 	}
 
 	virtual void Draw( ui_Painter* painter ) const override;
-	virtual void CursorPress( int x, int y, bool pressed ) override;
+	virtual void CursorPress( int x, int y, ui_MouseButton button, bool pressed ) override;
 
 	//step must be positive
 	void SetInvStep( int inv_step )
@@ -369,6 +388,11 @@ public:
 	ui_MenuBase( ui_MenuBase* parent, int x, int y, int sx , int sy );
 	virtual ~ui_MenuBase();
 
+	int X() const { return pos_x_; }
+	int Y() const { return pos_y_; }
+	int SizeX() const { return size_x_; }
+	int SizeY() const { return size_y_; }
+
 	void Draw( ui_Painter* painter );
 	void SetActive( bool active );
 	void SetVisible( bool visible );
@@ -376,7 +400,12 @@ public:
 	bool IsActive() const { return active_; }
 	bool IsVisible() const { return visible_; }
 
+	virtual ui_MouseButtonMask AcceptedMouseButtons() const;
+
+	virtual void CursorPress( int x, int y, ui_MouseButton button, bool pressed );
 	virtual void KeyPress( ui_Key ){}
+	virtual void KeyRelease( ui_Key ){}
+	virtual void ControllerMove( int dx, int dy );
 
 	void Kill()
 	{

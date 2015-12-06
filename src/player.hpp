@@ -15,32 +15,67 @@ public:
 	void Move( const m_Vec3& delta );
 	void Rotate( const m_Vec3& delta );
 
-	m_Vec3 Pos() const;
-	m_Vec3 Angle() const;
+	const m_Vec3& Pos() const;
+	const m_Vec3& Angle() const;
+
+	const m_Vec3& BuildPos() const;
+	h_Direction BuildDirection() const;
+
+	void Tick();
+
+	void SetBuildBlock( h_BlockType block_type );
+	h_BlockType BuildBlock() const;
+
+	void Build();
+	void Dig();
 
 	void SetCollisionMesh( h_ChunkPhysMesh* mesh );
-	h_Direction GetBuildPos( short* x, short* y, short* z ) const;
 
 	void Lock();
 	void Unlock();
+
+private:
+	void UpdateBuildPos();
 
 private:
 	const h_WorldPtr world_;
 	m_Vec3 pos_;
 	m_Vec3 view_angle_;
 
+	m_Vec3 build_pos_;
+	short discret_build_pos_[3]; // World space build position.
+	h_Direction build_direction_;
+
+	h_BlockType build_block_;
+
 	std::mutex player_data_mutex_;
 
 	h_ChunkPhysMesh phys_mesh_;
 };
 
-inline m_Vec3 h_Player::Pos() const
+inline const m_Vec3& h_Player::Pos() const
 {
 	return pos_;
 }
-inline m_Vec3 h_Player::Angle() const
+
+inline const m_Vec3& h_Player::Angle() const
 {
 	return view_angle_;
+}
+
+inline const m_Vec3& h_Player::BuildPos() const
+{
+	return build_pos_;
+}
+
+inline h_Direction h_Player::BuildDirection() const
+{
+	return build_direction_;
+}
+
+inline h_BlockType h_Player::BuildBlock() const
+{
+	return build_block_;
 }
 
 inline void h_Player::Lock()
@@ -52,3 +87,4 @@ inline void h_Player::Unlock()
 {
 	player_data_mutex_.unlock();
 }
+

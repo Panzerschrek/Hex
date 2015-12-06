@@ -20,6 +20,7 @@ unsigned int ui_CursorHandler::ui_elements_count_= 0;
 std::array<ui_Base*, H_UI_MAX_ELEMENTS> ui_CursorHandler::ui_elements_;
 unsigned int ui_CursorHandler::ui_menu_count_= 0;
 std::array<ui_MenuBase*, H_UI_MAX_MENUS> ui_CursorHandler::ui_menus_;
+bool ui_CursorHandler::mouse_grabbed_= false;
 
 void ui_CursorHandler::AddUIElement( ui_Base* element )
 {
@@ -69,17 +70,27 @@ void ui_CursorHandler::RemoveMenu( ui_MenuBase* menu )
 	H_ASSERT( false );
 }
 
-void ui_CursorHandler::CursorPress( int x, int y, bool pressed )
+void ui_CursorHandler::CursorPress( int x, int y, ui_MouseButton button, bool pressed )
 {
+	ui_MouseButtonMask button_bit= static_cast<ui_MouseButtonMask>(button);
+
+	for( unsigned int i= 0; i < ui_menu_count_; i++ )
+	{
+		if( ui_menus_[i]->IsActive() && (ui_menus_[i]->AcceptedMouseButtons() & button_bit) )
+			ui_menus_[i]->CursorPress( x, y, button, pressed );
+	}
+
 	for( unsigned int i= 0; i< ui_elements_count_; i++ )
 	{
 		ui_Base* el= ui_elements_[i];
 		if( !el->IsActive() )
 			continue;
-		//if inside element
-		if( el->X() <= x && el->X()+el->SizeX() > x &&
-			el->Y() <= y && el->Y()+el->SizeY() > y )
-			el->CursorPress( x, y, pressed );
+
+		if( el->AcceptedMouseButtons() & button_bit )
+			//if inside element
+			if( el->X() <= x && el->X()+el->SizeX() > x &&
+				el->Y() <= y && el->Y()+el->SizeY() > y )
+					el->CursorPress( x, y, button, pressed );
 	}
 }
 
@@ -97,6 +108,25 @@ void ui_CursorHandler::UpdateCursorPos( int x, int y )
 		else
 			el->CursorOver( false );
 	}
+}
+
+void ui_CursorHandler::ControllerMove( int dx, int dy )
+{
+	for( unsigned int i= 0; i < ui_menu_count_; i++ )
+	{
+		if( ui_menus_[i]->IsActive() )
+			ui_menus_[i]->ControllerMove( dx, dy );
+	}
+}
+
+void ui_CursorHandler::GrabMouse( bool grab )
+{
+	mouse_grabbed_= grab;
+}
+
+bool ui_CursorHandler::IsMouseGrabbed()
+{
+	return mouse_grabbed_;
 }
 
 /*
@@ -165,11 +195,17 @@ void ui_Base::CursorOver( bool is_over )
 	}
 }
 
-void ui_Base::CursorPress( int x, int y, bool pressed )
+void ui_Base::CursorPress( int x, int y, ui_MouseButton button, bool pressed )
 {
 	(void)x;
 	(void)y;
+	(void)button;
 	(void)pressed;
+}
+
+ui_MouseButtonMask ui_Base::AcceptedMouseButtons() const
+{
+	return static_cast<ui_MouseButtonMask>(ui_MouseButton::Left);
 }
 
 void ui_Base::Draw( ui_Painter* painter ) const
@@ -317,6 +353,25 @@ void ui_MenuBase::SetVisible( bool visible )
 		el->SetVisible( visible );
 }
 
+ui_MouseButtonMask ui_MenuBase::AcceptedMouseButtons() const
+{
+	return static_cast<ui_MouseButtonMask>(ui_MouseButton::Left);
+}
+
+void ui_MenuBase::CursorPress( int x, int y, ui_MouseButton button, bool pressed )
+{
+	(void)x;
+	(void)y;
+	(void)button;
+	(void)pressed;
+}
+
+void ui_MenuBase::ControllerMove( int dx, int dy )
+{
+	(void)dx;
+	(void)dy;
+}
+
 /*
 ---------------ui_Button-------------
 */
@@ -337,10 +392,11 @@ ui_Button::~ui_Button()
 {
 }
 
-void ui_Button::CursorPress( int x, int y, bool pressed )
+void ui_Button::CursorPress( int x, int y, ui_MouseButton button, bool pressed )
 {
 	(void)x;
 	(void)y;
+	(void)button;
 
 	if( !pressed )
 	{
@@ -359,18 +415,6 @@ void ui_Button::Draw( ui_Painter* painter ) const
 	ui_Base::TextDraw( painter, button_text_.data() );
 }
 
-void ui_Checkbox::CursorPress( int x, int y, bool pressed )
-{
-	(void)x;
-	(void)y;
-
-	if( pressed )
-	{
-		flag_= !flag_;
-		if( callback_ ) callback_();
-	}
-}
-
 /*
 ---------ui_Checkbox-------
 */
@@ -387,6 +431,19 @@ ui_Checkbox::ui_Checkbox( int cell_x, int cell_y, bool state, const ui_Style& st
 
 ui_Checkbox::~ui_Checkbox()
 {
+}
+
+void ui_Checkbox::CursorPress( int x, int y, ui_MouseButton button, bool pressed )
+{
+	(void)x;
+	(void)y;
+	(void)button;
+
+	if( pressed )
+	{
+		flag_= !flag_;
+		if( callback_ ) callback_();
+	}
 }
 
 void ui_Checkbox::Draw( ui_Painter* painter ) const
@@ -551,9 +608,10 @@ void ui_Slider::Draw( ui_Painter* painter ) const
 	painter->DrawUITriangles( triangles, 18, current_color_ );
 }
 
-void ui_Slider::CursorPress( int x, int y, bool pressed )
+void ui_Slider::CursorPress( int x, int y, ui_MouseButton button, bool pressed )
 {
 	(void)y;
+	(void)button;
 
 	if( !pressed )
 		return;

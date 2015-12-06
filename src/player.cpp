@@ -6,12 +6,17 @@ h_Player::h_Player( const h_WorldPtr& world  )
 	: world_(world)
 	, pos_()
 	, view_angle_( 0.0f, 0.0f, 0.0f )
+	, build_direction_( DIRECTION_UNKNOWN )
+	, build_block_( BLOCK_UNKNOWN )
 	, player_data_mutex_()
 	, phys_mesh_()
 {
 	pos_.x= ( world->Longitude() + world->ChunkNumberX()/2 ) * H_SPACE_SCALE_VECTOR_X * float( H_CHUNK_WIDTH );
 	pos_.y= ( world->Latitude() + world->ChunkNumberY()/2 ) * H_SPACE_SCALE_VECTOR_Y  * float( H_CHUNK_WIDTH );
 	pos_.z= float(H_CHUNK_HEIGHT/2 + 10);
+
+	build_pos_= pos_;
+	discret_build_pos_[0]= discret_build_pos_[1]= discret_build_pos_[2]= 0;
 }
 
 h_Player::~h_Player()
@@ -23,12 +28,12 @@ void h_Player::SetCollisionMesh( h_ChunkPhysMesh* mesh )
 	phys_mesh_= *mesh;
 }
 
-h_Direction h_Player::GetBuildPos( short* x, short* y, short* z )  const
+void h_Player::UpdateBuildPos()
 {
 	m_Vec3 eye_dir(
-	-sin( view_angle_.z ) * cos( view_angle_.x ),
-	 cos( view_angle_.z ) * cos( view_angle_.x ),
-	 sin( view_angle_.x ) );
+		-std::sin( view_angle_.z ) * std::cos( view_angle_.x ),
+		+std::cos( view_angle_.z ) * std::cos( view_angle_.x ),
+		+std::sin( view_angle_.x ) );
 
 	m_Vec3 eye_pos= pos_;
 	eye_pos.z+= H_PLAYER_EYE_LEVEL;
@@ -43,10 +48,9 @@ h_Direction h_Player::GetBuildPos( short* x, short* y, short* z )  const
 	static const m_Vec3 normals[9]=
 	{
 		m_Vec3( 0.0f, 1.0f, 0.0f ),      m_Vec3( 0.0f, -1.0f, 0.0f ),
-		m_Vec3( 0.866025f, 0.5f, 0.0 ),  m_Vec3( -0.866025f, -0.5f, 0.0 ),
-		m_Vec3( -0.866025f, 0.5f, 0.0 ), m_Vec3( 0.866025f, -0.5f, 0.0 ),
-		m_Vec3( 0.0f, 0.0f, 1.0f ), 	 m_Vec3( 0.0f, 0.0f, -1.0f ),
-		m_Vec3( 100500.0f, 100500.0f, 100500.0f )
+		m_Vec3( +H_SPACE_SCALE_VECTOR_X, 0.5f, 0.0 ), m_Vec3( -H_SPACE_SCALE_VECTOR_X, -0.5f, 0.0 ),
+		m_Vec3( -H_SPACE_SCALE_VECTOR_X, 0.5f, 0.0 ), m_Vec3( +H_SPACE_SCALE_VECTOR_X, -0.5f, 0.0 ),
+		m_Vec3( 0.0f, 0.0f, 1.0f ),      m_Vec3( 0.0f, 0.0f, -1.0f )
 	};
 
 	m_Vec3 candidate_pos;
@@ -151,23 +155,20 @@ h_Direction h_Player::GetBuildPos( short* x, short* y, short* z )  const
 		}
 	}
 
-	intersect_pos+= normals[ block_dir ] *  0.01f;
+	if( block_dir == DIRECTION_UNKNOWN ) return;
+
+	intersect_pos+= normals[ block_dir ] * 0.01f;
 
 	short new_x, new_y, new_z;
 	GetHexogonCoord( intersect_pos.xy(), &new_x, &new_y );
 	new_z= (short) intersect_pos.z;
 	new_z++;
 
-	if( block_dir != DIRECTION_UNKNOWN )
-	{
-		*x= new_x;
-		*y= new_y;
-		*z= new_z;
-	}
-	else
-		*x = *y= *z= -1;
+	discret_build_pos_[0]= new_x;
+	discret_build_pos_[1]= new_y;
+	discret_build_pos_[2]= new_z;
 
-	return block_dir;
+	build_direction_= block_dir;
 }
 
 void h_Player::Move( const m_Vec3& delta )
@@ -230,4 +231,84 @@ void h_Player::Rotate( const m_Vec3& delta )
 
 	if( view_angle_.x > m_Math::FM_PI2 ) view_angle_.x= m_Math::FM_PI2;
 	else if( view_angle_.x < -m_Math::FM_PI2 ) view_angle_.x= -m_Math::FM_PI2;
+}
+
+void h_Player::SetBuildBlock( h_BlockType block_type )
+{
+	build_block_= block_type;
+}
+
+void h_Player::Tick()
+{
+	UpdateBuildPos();
+
+	build_pos_.x= float( discret_build_pos_[0] + 1.0f / 3.0f ) * H_SPACE_SCALE_VECTOR_X;
+	build_pos_.y= float( discret_build_pos_[1] ) - 0.5f * float(discret_build_pos_[0]&1) + 0.5f;
+	build_pos_.z= float( discret_build_pos_[2] ) - 1.0f;
+}
+
+void h_Player::Build()
+{
+	if( build_block_ != BLOCK_UNKNOWN )
+	{
+		world_->AddBuildEvent(
+			discret_build_pos_[0] - world_->Longitude() * H_CHUNK_WIDTH,
+			discret_build_pos_[1] - world_->Latitude () * H_CHUNK_WIDTH,
+			discret_build_pos_[2], build_block_ );
+	}
+}
+
+void h_Player::Dig()
+{
+	if( build_direction_ != DIRECTION_UNKNOWN )
+	{
+		short dig_pos[3]=
+		{
+			discret_build_pos_[0],
+			discret_build_pos_[1],
+			discret_build_pos_[2]
+		};
+
+		switch( build_direction_ )
+		{
+		case UP:
+			dig_pos[2]--;
+			break;
+		case DOWN:
+			dig_pos[2]++;
+			break;
+
+		case FORWARD:
+			dig_pos[1]--;
+			break;
+		case BACK:
+			dig_pos[1]++;
+			break;
+
+		case FORWARD_RIGHT:
+			dig_pos[1]-= (dig_pos[0]&1);
+			dig_pos[0]--;
+			break;
+		case BACK_RIGHT:
+			dig_pos[1]+= ((dig_pos[0]+1)&1);
+			dig_pos[0]--;
+			break;
+
+		case FORWARD_LEFT:
+			dig_pos[1]-= (dig_pos[0]&1);
+			dig_pos[0]++;
+			break;
+		case BACK_LEFT:
+			dig_pos[1]+= ((dig_pos[0]+1)&1);
+			dig_pos[0]++;
+			break;
+
+		default: break;
+		};
+
+		world_->AddDestroyEvent(
+			dig_pos[0] - world_->Longitude() * H_CHUNK_WIDTH,
+			dig_pos[1] - world_->Latitude () * H_CHUNK_WIDTH,
+			dig_pos[2] );
+	}
 }
