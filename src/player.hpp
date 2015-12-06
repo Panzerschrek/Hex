@@ -1,4 +1,5 @@
 #pragma once
+#include <ctime>
 #include <mutex>
 
 #include "hex.hpp"
@@ -12,8 +13,10 @@ public:
 	h_Player( const h_WorldPtr& world );
 	~h_Player();
 
-	void Move( const m_Vec3& delta );
+	void Move( const m_Vec3& direction );
 	void Rotate( const m_Vec3& delta );
+	void ToggleFly();
+	void Jump();
 
 	const m_Vec3& Pos() const;
 	const m_Vec3& Angle() const;
@@ -36,11 +39,18 @@ public:
 
 private:
 	void UpdateBuildPos();
+	void MoveInternal( const m_Vec3& delta );
 
 private:
 	const h_WorldPtr world_;
 	m_Vec3 pos_;
+	m_Vec3 speed_;
+	float vertical_speed_;
+	bool is_flying_;
+	bool in_air_;
 	m_Vec3 view_angle_;
+
+	clock_t prev_move_time_;
 
 	m_Vec3 build_pos_;
 	short discret_build_pos_[3]; // World space build position.

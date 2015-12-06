@@ -2,17 +2,33 @@
 #include "block_collision.hpp"
 #include "world.hpp"
 
+static const float g_acceleration= 40.0f;
+static const float g_deceleration= 40.0f;
+static const float g_air_acceleration= 2.0f;
+static const float g_air_deceleration= 4.0f;
+static const float g_vertical_acceleration= -9.8f * 1.5f;
+static const float g_max_speed= 5.0f;
+static const float g_max_vertical_speed= 30.0f;
+
+static const float g_jump_height= 1.4f;
+static const float g_jump_speed= std::sqrt( 2.0f * g_jump_height * -g_vertical_acceleration );
+
 h_Player::h_Player( const h_WorldPtr& world  )
 	: world_(world)
 	, pos_()
+	, speed_( 0.0f, 0.0f, 0.0f )
+	, vertical_speed_(0.0f)
+	, is_flying_(false)
+	, in_air_(true)
 	, view_angle_( 0.0f, 0.0f, 0.0f )
+	, prev_move_time_(0)
 	, build_direction_( DIRECTION_UNKNOWN )
 	, build_block_( BLOCK_UNKNOWN )
 	, player_data_mutex_()
 	, phys_mesh_()
 {
 	pos_.x= ( world->Longitude() + world->ChunkNumberX()/2 ) * H_SPACE_SCALE_VECTOR_X * float( H_CHUNK_WIDTH );
-	pos_.y= ( world->Latitude() + world->ChunkNumberY()/2 ) * H_SPACE_SCALE_VECTOR_Y  * float( H_CHUNK_WIDTH );
+	pos_.y= ( world->Latitude () + world->ChunkNumberY()/2 ) * H_SPACE_SCALE_VECTOR_Y * float( H_CHUNK_WIDTH );
 	pos_.z= float(H_CHUNK_HEIGHT/2 + 10);
 
 	build_pos_= pos_;
@@ -26,6 +42,166 @@ h_Player::~h_Player()
 void h_Player::SetCollisionMesh( h_ChunkPhysMesh* mesh )
 {
 	phys_mesh_= *mesh;
+}
+
+void h_Player::Move( const m_Vec3& direction )
+{
+	clock_t current_time= std::clock();
+	if( prev_move_time_ == 0 ) prev_move_time_= current_time;
+	float dt= float(current_time - prev_move_time_) / float(CLOCKS_PER_SEC);
+	prev_move_time_= current_time;
+
+	const float c_eps= 0.001f;
+
+	bool use_ground_acceleration= !in_air_ || is_flying_;
+
+	m_Vec3 move_delta= direction;
+	if( !is_flying_ ) move_delta.z= 0.0f;
+
+	float move_delta_length= move_delta.Length();
+	if( move_delta_length > c_eps )
+	{
+		m_Vec3 acceleration_vec= ( use_ground_acceleration ? g_acceleration : g_air_acceleration ) / move_delta_length * move_delta;
+		speed_+= acceleration_vec * dt;
+	}
+
+	float speed_value= speed_.Length();
+	if( speed_value > g_max_speed )
+		speed_*= g_max_speed / speed_value;
+
+	if( speed_value > c_eps )
+	{
+		if( move_delta_length <= c_eps )
+		{
+			m_Vec3 deceleration_vec= speed_;
+			deceleration_vec.Normalize();
+
+			float d_speed= std::min( dt * ( use_ground_acceleration ? g_deceleration : g_air_deceleration ), speed_value );
+			speed_-= deceleration_vec * d_speed;
+		}
+	}
+	else
+	{
+		speed_value= 0.0f;
+		speed_= m_Vec3( 0.0f, 0.0f, 0.0f );
+	}
+
+	if( !is_flying_ )
+	{
+		speed_.z= 0.0f;
+
+		vertical_speed_+= g_vertical_acceleration * dt;
+		if( vertical_speed_ > g_max_vertical_speed ) vertical_speed_= g_max_vertical_speed;
+		else if( -vertical_speed_ > g_max_vertical_speed ) vertical_speed_= -g_max_vertical_speed;
+	}
+	else vertical_speed_= 0.0f;
+
+	MoveInternal( m_Vec3( speed_.x, speed_.y, speed_.z + vertical_speed_ ) * dt );
+}
+
+void h_Player::Rotate( const m_Vec3& delta )
+{
+	view_angle_+= delta;
+
+	if( view_angle_.z < 0.0f ) view_angle_.z+= m_Math::FM_2PI;
+	else if( view_angle_.z > m_Math::FM_2PI ) view_angle_.z-= m_Math::FM_2PI;
+
+	if( view_angle_.x > m_Math::FM_PI2 ) view_angle_.x= m_Math::FM_PI2;
+	else if( view_angle_.x < -m_Math::FM_PI2 ) view_angle_.x= -m_Math::FM_PI2;
+}
+
+void h_Player::ToggleFly()
+{
+	is_flying_= !is_flying_;
+}
+
+void h_Player::Jump()
+{
+	if( !is_flying_ && !in_air_ )
+	{
+		vertical_speed_+= g_jump_speed;
+		in_air_= true;
+	}
+}
+
+void h_Player::SetBuildBlock( h_BlockType block_type )
+{
+	build_block_= block_type;
+}
+
+void h_Player::Tick()
+{
+	UpdateBuildPos();
+
+	build_pos_.x= float( discret_build_pos_[0] + 1.0f / 3.0f ) * H_SPACE_SCALE_VECTOR_X;
+	build_pos_.y= float( discret_build_pos_[1] ) - 0.5f * float(discret_build_pos_[0]&1) + 0.5f;
+	build_pos_.z= float( discret_build_pos_[2] ) - 1.0f;
+}
+
+void h_Player::Build()
+{
+	if( build_block_ != BLOCK_UNKNOWN )
+	{
+		world_->AddBuildEvent(
+			discret_build_pos_[0] - world_->Longitude() * H_CHUNK_WIDTH,
+			discret_build_pos_[1] - world_->Latitude () * H_CHUNK_WIDTH,
+			discret_build_pos_[2], build_block_ );
+	}
+}
+
+void h_Player::Dig()
+{
+	if( build_direction_ != DIRECTION_UNKNOWN )
+	{
+		short dig_pos[3]=
+		{
+			discret_build_pos_[0],
+			discret_build_pos_[1],
+			discret_build_pos_[2]
+		};
+
+		switch( build_direction_ )
+		{
+		case UP:
+			dig_pos[2]--;
+			break;
+		case DOWN:
+			dig_pos[2]++;
+			break;
+
+		case FORWARD:
+			dig_pos[1]--;
+			break;
+		case BACK:
+			dig_pos[1]++;
+			break;
+
+		case FORWARD_RIGHT:
+			dig_pos[1]-= (dig_pos[0]&1);
+			dig_pos[0]--;
+			break;
+		case BACK_RIGHT:
+			dig_pos[1]+= ((dig_pos[0]+1)&1);
+			dig_pos[0]--;
+			break;
+
+		case FORWARD_LEFT:
+			dig_pos[1]-= (dig_pos[0]&1);
+			dig_pos[0]++;
+			break;
+		case BACK_LEFT:
+			dig_pos[1]+= ((dig_pos[0]+1)&1);
+			dig_pos[0]++;
+			break;
+
+		default: break;
+		};
+
+		world_->AddDestroyEvent(
+			dig_pos[0] - world_->Longitude() * H_CHUNK_WIDTH,
+			dig_pos[1] - world_->Latitude () * H_CHUNK_WIDTH,
+			dig_pos[2] );
+	}
 }
 
 void h_Player::UpdateBuildPos()
@@ -171,10 +347,11 @@ void h_Player::UpdateBuildPos()
 	build_direction_= block_dir;
 }
 
-void h_Player::Move( const m_Vec3& delta )
+void h_Player::MoveInternal( const m_Vec3& delta )
 {
 	const float c_eps= 0.00001f;
 	const float c_vertical_collision_eps= 0.001f;
+	const float c_on_ground_eps= 0.01f;
 
 	m_Vec3 new_pos= pos_ + delta;
 
@@ -188,21 +365,25 @@ void h_Player::Move( const m_Vec3& delta )
 	{
 		if( delta.z > c_eps )
 		{
-			if( face->dir == DOWN )
-				if( face->z >= (pos_.z + H_PLAYER_HEIGHT) && face->z < (new_pos.z + H_PLAYER_HEIGHT) )
+			if( face->dir == DOWN &&
+				face->z >= (pos_.z + H_PLAYER_HEIGHT) &&
+				face->z < (new_pos.z + H_PLAYER_HEIGHT) &&
+				face->HasCollisionWithCircle( new_pos.xy(), H_PLAYER_RADIUS ) )
 				{
-					if( face->HasCollisionWithCircle( new_pos.xy(), H_PLAYER_RADIUS ) )
-						new_pos.z= face->z - H_PLAYER_HEIGHT - c_vertical_collision_eps;
+					new_pos.z= face->z - H_PLAYER_HEIGHT - c_vertical_collision_eps;
+					break;
 				}
 		}
 		else if( delta.z < -c_eps )
 		{
-			if( face->dir == UP )
-				if( face->z <= pos_.z && face->z > new_pos.z )
-				{
-					if( face->HasCollisionWithCircle( new_pos.xy(), H_PLAYER_RADIUS ) )
-						new_pos.z= face->z + c_vertical_collision_eps;
-				}
+			if( face->dir == UP &&
+				face->z <= pos_.z &&
+				face->z > new_pos.z &&
+				face->HasCollisionWithCircle( new_pos.xy(), H_PLAYER_RADIUS ) )
+			{
+				new_pos.z= face->z + c_vertical_collision_eps;
+				break;
+			}
 		}
 	}// upeer faces
 
@@ -219,96 +400,30 @@ void h_Player::Move( const m_Vec3& delta )
 		}
 	}
 
+	// Check in_air
+	in_air_= true;
+	face= phys_mesh_.upper_block_faces.Data();
+	count= phys_mesh_.upper_block_faces.Size();
+	for( unsigned int k= 0; k< count; k++, face++ )
+	{
+		if( face->dir == UP &&
+			new_pos.z <= face->z + c_on_ground_eps &&
+			new_pos.z > face->z &&
+			face->HasCollisionWithCircle( new_pos.xy(), H_PLAYER_RADIUS ) )
+		{
+			in_air_= false;
+			vertical_speed_= 0.0f;
+			break;
+		}
+		if (face->dir == DOWN &&
+			new_pos.z + H_PLAYER_HEIGHT >= face->z - c_on_ground_eps &&
+			new_pos.z + H_PLAYER_HEIGHT < face->z &&
+			face->HasCollisionWithCircle( new_pos.xy(), H_PLAYER_RADIUS ) )
+		{
+			vertical_speed_= 0.0f;
+			break;
+		}
+	}
+
 	pos_= new_pos;
-}
-
-void h_Player::Rotate( const m_Vec3& delta )
-{
-	view_angle_+= delta;
-
-	if( view_angle_.z < 0.0f ) view_angle_.z+= m_Math::FM_2PI;
-	else if( view_angle_.z > m_Math::FM_2PI ) view_angle_.z-= m_Math::FM_2PI;
-
-	if( view_angle_.x > m_Math::FM_PI2 ) view_angle_.x= m_Math::FM_PI2;
-	else if( view_angle_.x < -m_Math::FM_PI2 ) view_angle_.x= -m_Math::FM_PI2;
-}
-
-void h_Player::SetBuildBlock( h_BlockType block_type )
-{
-	build_block_= block_type;
-}
-
-void h_Player::Tick()
-{
-	UpdateBuildPos();
-
-	build_pos_.x= float( discret_build_pos_[0] + 1.0f / 3.0f ) * H_SPACE_SCALE_VECTOR_X;
-	build_pos_.y= float( discret_build_pos_[1] ) - 0.5f * float(discret_build_pos_[0]&1) + 0.5f;
-	build_pos_.z= float( discret_build_pos_[2] ) - 1.0f;
-}
-
-void h_Player::Build()
-{
-	if( build_block_ != BLOCK_UNKNOWN )
-	{
-		world_->AddBuildEvent(
-			discret_build_pos_[0] - world_->Longitude() * H_CHUNK_WIDTH,
-			discret_build_pos_[1] - world_->Latitude () * H_CHUNK_WIDTH,
-			discret_build_pos_[2], build_block_ );
-	}
-}
-
-void h_Player::Dig()
-{
-	if( build_direction_ != DIRECTION_UNKNOWN )
-	{
-		short dig_pos[3]=
-		{
-			discret_build_pos_[0],
-			discret_build_pos_[1],
-			discret_build_pos_[2]
-		};
-
-		switch( build_direction_ )
-		{
-		case UP:
-			dig_pos[2]--;
-			break;
-		case DOWN:
-			dig_pos[2]++;
-			break;
-
-		case FORWARD:
-			dig_pos[1]--;
-			break;
-		case BACK:
-			dig_pos[1]++;
-			break;
-
-		case FORWARD_RIGHT:
-			dig_pos[1]-= (dig_pos[0]&1);
-			dig_pos[0]--;
-			break;
-		case BACK_RIGHT:
-			dig_pos[1]+= ((dig_pos[0]+1)&1);
-			dig_pos[0]--;
-			break;
-
-		case FORWARD_LEFT:
-			dig_pos[1]-= (dig_pos[0]&1);
-			dig_pos[0]++;
-			break;
-		case BACK_LEFT:
-			dig_pos[1]+= ((dig_pos[0]+1)&1);
-			dig_pos[0]++;
-			break;
-
-		default: break;
-		};
-
-		world_->AddDestroyEvent(
-			dig_pos[0] - world_->Longitude() * H_CHUNK_WIDTH,
-			dig_pos[1] - world_->Latitude () * H_CHUNK_WIDTH,
-			dig_pos[2] );
-	}
 }

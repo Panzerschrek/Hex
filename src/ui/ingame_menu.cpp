@@ -10,6 +10,15 @@
 #include "ingame_menu.hpp"
 
 static const ui_Key g_inventory_key= ui_Key::E;
+static const ui_Key g_fly_mode_key= ui_Key::Z;
+
+static const ui_Key g_jump_key= ui_Key::Space;
+static const ui_Key g_down_key= ui_Key::C;
+
+static const ui_Key g_forward_key= ui_Key::W;
+static const ui_Key g_backward_key= ui_Key::S;
+static const ui_Key g_left_key= ui_Key::A;
+static const ui_Key g_right_key= ui_Key::D;
 
 class ui_BlockSelectMenu final : public ui_MenuBase
 {
@@ -74,7 +83,6 @@ ui_IngameMenu::ui_IngameMenu(
 	const h_PlayerPtr& player )
 	: ui_MenuBase( nullptr, 0, 0, sx, sy )
 	, player_(player)
-	, prev_move_time_(0)
 {
 	int row= sy / ui_Base::CellSize() - 2;
 
@@ -130,6 +138,10 @@ void ui_IngameMenu::KeyPress( ui_Key key )
 				std::bind(&ui_IngameMenu::OnBlockSelected, this, std::placeholders::_1) );
 		this->SetActive( false );
 	}
+	else if( key == g_jump_key )
+		player_->Jump();
+	else if( key == g_fly_mode_key )
+		player_->ToggleFly();
 }
 
 void ui_IngameMenu::KeyRelease( ui_Key key )
@@ -164,45 +176,38 @@ void ui_IngameMenu::Tick()
 		this->SetActive( true );
 	}
 
-	clock_t current_time= std::clock();
-	if( prev_move_time_ == 0 ) prev_move_time_= current_time;
-	float dt= float(current_time - prev_move_time_) / float(CLOCKS_PER_SEC);
-	prev_move_time_= current_time;
-
 	if( this->IsActive() )
 	{
-		float speed= keys_[ ui_Key::Shift ] ? 48.0f : 8.0f;
-
-		m_Vec3 move_vec( 0.0f, 0.0f, 0.0f );
+		m_Vec3 move_direction( 0.0f, 0.0f, 0.0f );
 		float cam_ang_z= player_->Angle().z;
 
-		if( keys_[ ui_Key::W ] )
+		if( keys_[ g_forward_key ] )
 		{
-			move_vec.y+= dt * speed * std::cos( cam_ang_z );
-			move_vec.x-= dt * speed * std::sin( cam_ang_z );
+			move_direction.y+= std::cos( cam_ang_z );
+			move_direction.x-= std::sin( cam_ang_z );
 		}
-		if( keys_[ ui_Key::S ] )
+		if( keys_[ g_backward_key ] )
 		{
-			move_vec.y-= dt * speed * std::cos( cam_ang_z );
-			move_vec.x+= dt * speed * std::sin( cam_ang_z );
+			move_direction.y-= std::cos( cam_ang_z );
+			move_direction.x+= std::sin( cam_ang_z );
 		}
-		if( keys_[ ui_Key::A ] )
+		if( keys_[ g_left_key ] )
 		{
-			move_vec.y-= dt * speed * std::cos( cam_ang_z - m_Math::FM_PI2);
-			move_vec.x+= dt * speed * std::sin( cam_ang_z - m_Math::FM_PI2);
+			move_direction.y-= std::cos( cam_ang_z - m_Math::FM_PI2 );
+			move_direction.x+= std::sin( cam_ang_z - m_Math::FM_PI2 );
 		}
-		if( keys_[ ui_Key::D ] )
+		if( keys_[ g_right_key ] )
 		{
-			move_vec.y-= dt * speed * std::cos( cam_ang_z + m_Math::FM_PI2);
-			move_vec.x+= dt * speed * std::sin( cam_ang_z + m_Math::FM_PI2);
+			move_direction.y-= std::cos( cam_ang_z + m_Math::FM_PI2 );
+			move_direction.x+= std::sin( cam_ang_z + m_Math::FM_PI2 );
 		}
 
-		if( keys_[ ui_Key::Space ] )
-			move_vec.z+= dt * speed;
-		if( keys_[ ui_Key::C ] )
-			move_vec.z-= dt * speed;
+		if( keys_[ g_jump_key ] )
+			move_direction.z+= 1.0f;
+		if( keys_[ g_down_key ] )
+			move_direction.z-= 1.0f;
 
-		player_->Move( move_vec );
+		player_->Move( move_direction );
 	}
 }
 

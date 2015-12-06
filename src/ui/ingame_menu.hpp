@@ -30,7 +30,6 @@ private:
 
 private:
 	h_PlayerPtr player_;
-	clock_t prev_move_time_;
 
 	std::map<ui_Key, bool> keys_;
 

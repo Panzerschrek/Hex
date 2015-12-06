@@ -643,8 +643,8 @@ void h_World::PhysTick()
 			player_coord[2]= int(player->Pos().z + H_PLAYER_EYE_LEVEL);
 			BuildPhysMesh(
 				&player_phys_mesh_,
-				player_coord[0] - 4, player_coord[0] + 4,
-				player_coord[1] - 5, player_coord[1] + 5,
+				player_coord[0] - 5, player_coord[0] + 5,
+				player_coord[1] - 6, player_coord[1] + 6,
 				player_coord[2] - 5, player_coord[2] + 5 );
 
 			if( player_coord[1]/H_CHUNK_WIDTH > int(chunk_number_y_/2+2) )
