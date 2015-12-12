@@ -33,12 +33,13 @@ static const float g_build_prism_vertices[]=
 
 static const unsigned short g_build_prism_indeces[]=
 {
-	0,1, 1,2, 2,3, 3, 4,  4, 5,  5,0,
-	6,7, 7,8, 8,9, 9,10, 10,11, 11,6,
-	0,6, 1,7, 2,8, 3, 9,  4,10,  5,11
+	0,1, 1,2, 2,3, 3, 4,  4, 5,  5,0, // lower side
+	6,7, 7,8, 8,9, 9,10, 10,11, 11,6, // upper side
+	0,6, 1,7, 2,8, 3, 9,  4,10, 5,11, // lateral sides
+	0,7,1,6,  1,8,2,7,  2,9,3,8,  3,10,4,9,  4,11,5,10,  5,6,0,11, //additional lines for lateral sides
+	0,3,  1,4,  2,5, // lower side additional
+	6,9, 7,10, 8,11, // upper side additional
 };
-// 0,7, 1,8, 2,9, 3,10, 4,11, 5,6//additional lines
-// 0,3, 1,4, 2,5, 6,9, 7,10, 8,11  };
 
 static const char* const g_supersampling_antialiasing_key_value= "ss";
 
