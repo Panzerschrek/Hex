@@ -136,7 +136,10 @@ void ui_IngameMenu::KeyPress( ui_Key key )
 				0, 0,
 				size_x_, size_y_,
 				std::bind(&ui_IngameMenu::OnBlockSelected, this, std::placeholders::_1) );
+
 		this->SetActive( false );
+
+		for( auto& key : keys_ ) key.second= false;
 	}
 	else if( key == g_jump_key )
 		player_->Jump();
@@ -176,9 +179,10 @@ void ui_IngameMenu::Tick()
 		this->SetActive( true );
 	}
 
+	m_Vec3 move_direction( 0.0f, 0.0f, 0.0f );
+
 	if( this->IsActive() )
 	{
-		m_Vec3 move_direction( 0.0f, 0.0f, 0.0f );
 		float cam_ang_z= player_->Angle().z;
 
 		if( keys_[ g_forward_key ] )
@@ -202,13 +206,11 @@ void ui_IngameMenu::Tick()
 			move_direction.x+= std::sin( cam_ang_z + m_Math::FM_PI2 );
 		}
 
-		if( keys_[ g_jump_key ] )
-			move_direction.z+= 1.0f;
-		if( keys_[ g_down_key ] )
-			move_direction.z-= 1.0f;
-
-		player_->Move( move_direction );
+		if( keys_[ g_jump_key ] ) move_direction.z+= 1.0f;
+		if( keys_[ g_down_key ] ) move_direction.z-= 1.0f;
 	}
+
+	player_->Move( move_direction );
 }
 
 void ui_IngameMenu::OnBlockSelected( h_BlockType block_type )
