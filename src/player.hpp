@@ -54,8 +54,7 @@ private:
 
 	m_Vec3 build_pos_;
 	short discret_build_pos_[3]; // World space build position.
-	h_Direction build_direction_;
-
+	h_Direction build_direction_; // Firection of build side. Unknown, if build block does not exist
 	h_BlockType build_block_;
 
 	std::mutex player_data_mutex_;

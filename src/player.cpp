@@ -150,7 +150,7 @@ void h_Player::Tick()
 
 void h_Player::Build()
 {
-	if( build_block_ != BLOCK_UNKNOWN )
+	if( build_block_ != BLOCK_UNKNOWN && build_direction_ != DIRECTION_UNKNOWN )
 	{
 		world_->AddBuildEvent(
 			discret_build_pos_[0] - world_->Longitude() * H_CHUNK_WIDTH,
@@ -333,7 +333,11 @@ void h_Player::UpdateBuildPos()
 		}
 	}
 
-	if( block_dir == DIRECTION_UNKNOWN ) return;
+	if( block_dir == DIRECTION_UNKNOWN )
+	{
+		build_direction_= block_dir;
+		return;
+	}
 
 	intersect_pos+= g_block_normals[ block_dir ] * 0.01f;
 
