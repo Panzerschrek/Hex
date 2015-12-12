@@ -59,6 +59,7 @@ private:
 	void CalculateLight();
 
 	void DrawBuildPrism();
+	void DrawCrosshair();
 
 	// helper. returns vertex count
 	void CalculateChunksVisibility();
@@ -85,7 +86,14 @@ private:
 	unsigned int chunks_visible_;
 
 	// Shaders
-	r_GLSLProgram world_shader_, build_prism_shader_, water_shader_, skybox_shader_, sun_shader_, console_bg_shader_, supersampling_final_shader_;
+	r_GLSLProgram world_shader_;
+	r_GLSLProgram build_prism_shader_;
+	r_GLSLProgram water_shader_;
+	r_GLSLProgram skybox_shader_;
+	r_GLSLProgram sun_shader_;
+	r_GLSLProgram console_bg_shader_;
+	r_GLSLProgram crosshair_shader_;
+	r_GLSLProgram supersampling_final_shader_;
 
 	//VBO
 	r_PolygonBuffer build_prism_vbo_;
@@ -109,6 +117,7 @@ private:
 	r_FramebufferTexture sun_texture_;
 	r_FramebufferTexture water_texture_;
 	r_FramebufferTexture console_bg_texture_;
+	r_FramebufferTexture crosshair_texture_;
 
 	//matrices and vectors
 	float fov_x_, fov_y_;

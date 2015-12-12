@@ -519,6 +519,7 @@ void r_WorldRenderer::Draw()
 		glDrawArrays( GL_TRIANGLES, 0, 6 );
 	}
 
+	DrawCrosshair();
 	DrawConsole();
 
 	if( settings_->GetBool( h_SettingsKeys::show_debug_info, false ) && h_Console::GetPosition() == 0.0f )
@@ -904,6 +905,34 @@ void r_WorldRenderer::DrawBuildPrism()
 	build_prism_vbo_.Show();
 }
 
+void r_WorldRenderer::DrawCrosshair()
+{
+	static const GLenum state_blend_mode[]= { GL_ONE, GL_ONE_MINUS_SRC_COLOR };
+	static const float state_clear_color[]= { 0.0f, 0.0f, 0.0f, 0.0f };
+	static const r_OGLState state(
+		true, false, true, false,
+		state_blend_mode,
+		state_clear_color,
+		1.0f, GL_FRONT, GL_FALSE );
+
+	r_OGLStateManager::UpdateState( state );
+
+	crosshair_shader_.Bind();
+
+	m_Mat4 mat;
+	mat.Scale(
+		m_Vec3(
+			float(crosshair_texture_.Width ()) / float(viewport_width_ ),
+			float(crosshair_texture_.Height()) / float(viewport_height_),
+			1.0f));
+	crosshair_shader_.Uniform( "transform_matrix", mat );
+
+	crosshair_texture_.Bind(0);
+	crosshair_shader_.Uniform( "tex", 0 );
+
+	glDrawArrays( GL_TRIANGLES, 0, 6 );
+}
+
 void r_WorldRenderer::UpdateChunkMatrixPointers()
 {
 	H_ASSERT( world_->Longitude() == chunks_info_.matrix_position[0] );
@@ -1077,6 +1106,9 @@ void r_WorldRenderer::LoadShaders()
 		h_Console::Error( "console bg shader not found" );
 	console_bg_shader_.Create();
 
+	if( !crosshair_shader_.Load( "shaders/crosshair_frag.glsl", "shaders/crosshair_vert.glsl" ) )
+		h_Console::Error( "crosshair shader not found" );
+	crosshair_shader_.Create();
 
 	if( !supersampling_final_shader_.Load( "shaders/supersampling_2x2_frag.glsl", "shaders/fullscreen_quad_vert.glsl", nullptr ) )
 		h_Console::Error( "supersampling final shader not found" );
@@ -1138,4 +1170,5 @@ void r_WorldRenderer::LoadTextures()
 	r_ImgUtils::LoadTexture( &water_texture_, "textures/water2.tga" );
 	r_ImgUtils::LoadTexture( &sun_texture_, "textures/sun.tga" );
 	r_ImgUtils::LoadTexture( &console_bg_texture_, "textures/console_bg_normalized.png" );
+	r_ImgUtils::LoadTexture( &crosshair_texture_, "textures/crosshair.bmp" );
 }
