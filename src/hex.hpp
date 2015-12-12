@@ -44,7 +44,7 @@
 #define H_SPACE_SCALE_VECTOR_Z 1.0f
 
 #define H_PLAYER_HEIGHT 1.75f
-#define H_PLAYER_RADIUS 0.25f
+#define H_PLAYER_RADIUS (0.25f * 0.9f) // 90% of block side
 #define H_PLAYER_EYE_LEVEL 1.67f
 
 #define H_MAX_TEXTURE_SCALE 4

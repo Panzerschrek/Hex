@@ -13,6 +13,16 @@ static const float g_max_vertical_speed= 30.0f;
 static const float g_jump_height= 1.4f;
 static const float g_jump_speed= std::sqrt( 2.0f * g_jump_height * -g_vertical_acceleration );
 
+
+static const m_Vec3 g_block_normals[8]=
+{
+	m_Vec3( 0.0f, 1.0f, 0.0f ),      m_Vec3( 0.0f, -1.0f, 0.0f ),
+	m_Vec3( +H_SPACE_SCALE_VECTOR_X, 0.5f, 0.0 ), m_Vec3( -H_SPACE_SCALE_VECTOR_X, -0.5f, 0.0 ),
+	m_Vec3( -H_SPACE_SCALE_VECTOR_X, 0.5f, 0.0 ), m_Vec3( +H_SPACE_SCALE_VECTOR_X, -0.5f, 0.0 ),
+	m_Vec3( 0.0f, 0.0f, 1.0f ),      m_Vec3( 0.0f, 0.0f, -1.0f )
+};
+
+
 h_Player::h_Player( const h_WorldPtr& world  )
 	: world_(world)
 	, pos_()
@@ -221,14 +231,6 @@ void h_Player::UpdateBuildPos()
 	p_BlockSide* side;
 	unsigned int count;
 
-	static const m_Vec3 normals[9]=
-	{
-		m_Vec3( 0.0f, 1.0f, 0.0f ),      m_Vec3( 0.0f, -1.0f, 0.0f ),
-		m_Vec3( +H_SPACE_SCALE_VECTOR_X, 0.5f, 0.0 ), m_Vec3( -H_SPACE_SCALE_VECTOR_X, -0.5f, 0.0 ),
-		m_Vec3( -H_SPACE_SCALE_VECTOR_X, 0.5f, 0.0 ), m_Vec3( +H_SPACE_SCALE_VECTOR_X, -0.5f, 0.0 ),
-		m_Vec3( 0.0f, 0.0f, 1.0f ),      m_Vec3( 0.0f, 0.0f, -1.0f )
-	};
-
 	m_Vec3 candidate_pos;
 	m_Vec3 triangle[3];
 	m_Vec3 n;
@@ -237,7 +239,7 @@ void h_Player::UpdateBuildPos()
 	count= phys_mesh_.upper_block_faces.Size();
 	for( unsigned int k= 0; k< count; k++, face++ )
 	{
-		n= normals[ face->dir ];
+		n= g_block_normals[ face->dir ];
 
 		triangle[0]= m_Vec3( face->edge[0].x, face->edge[0].y, face->z );
 		triangle[1]= m_Vec3( face->edge[1].x, face->edge[1].y, face->z );
@@ -300,7 +302,7 @@ void h_Player::UpdateBuildPos()
 	count= phys_mesh_.block_sides.Size();
 	for( unsigned int k= 0; k< count; k++, side++ )
 	{
-		n= normals[ side->dir ];
+		n= g_block_normals[ side->dir ];
 
 		triangle[0]= m_Vec3( side->edge[0].x, side->edge[0].y, side->z );
 		triangle[1]= m_Vec3( side->edge[1].x, side->edge[1].y, side->z );
@@ -333,7 +335,7 @@ void h_Player::UpdateBuildPos()
 
 	if( block_dir == DIRECTION_UNKNOWN ) return;
 
-	intersect_pos+= normals[ block_dir ] * 0.01f;
+	intersect_pos+= g_block_normals[ block_dir ] * 0.01f;
 
 	short new_x, new_y, new_z;
 	GetHexogonCoord( intersect_pos.xy(), &new_x, &new_y );
@@ -395,8 +397,14 @@ void h_Player::MoveInternal( const m_Vec3& delta )
 			( side->z + 1.0f > new_pos.z && side->z + 1.0f < new_pos.z + H_PLAYER_HEIGHT ) )
 		{
 			m_Vec2 collide_pos= side->CollideWithCirlce( new_pos.xy(), H_PLAYER_RADIUS );
-			new_pos.x= collide_pos.x;
-			new_pos.y= collide_pos.y;
+			if( collide_pos != new_pos.xy() )
+			{
+				new_pos.x= collide_pos.x;
+				new_pos.y= collide_pos.y;
+
+				// Zero speed component, perpendicalar to this side.
+				speed_-= ( speed_ * g_block_normals[side->dir] ) * g_block_normals[side->dir];
+			}
 		}
 	}
 
