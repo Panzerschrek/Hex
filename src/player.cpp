@@ -13,6 +13,7 @@ static const float g_max_vertical_speed= 30.0f;
 static const float g_jump_height= 1.4f;
 static const float g_jump_speed= std::sqrt( 2.0f * g_jump_height * -g_vertical_acceleration );
 
+static const float g_max_build_distance= 4.0f;
 
 static const m_Vec3 g_block_normals[8]=
 {
@@ -333,9 +334,10 @@ void h_Player::UpdateBuildPos()
 		}
 	}
 
-	if( block_dir == DIRECTION_UNKNOWN )
+	if( block_dir == DIRECTION_UNKNOWN ||
+		(intersect_pos - eye_pos).SquareLength() > g_max_build_distance * g_max_build_distance )
 	{
-		build_direction_= block_dir;
+		build_direction_= DIRECTION_UNKNOWN;
 		return;
 	}
 
