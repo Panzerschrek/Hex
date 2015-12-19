@@ -130,8 +130,6 @@
 		<Unit filename="src\world_loading.hpp" />
 		<Unit filename="..\panzer_ogl_lib\framebuffer.cpp" />
 		<Unit filename="..\panzer_ogl_lib\framebuffer.hpp" />
-		<Unit filename="..\panzer_ogl_lib\framebuffer_texture.cpp" />
-		<Unit filename="..\panzer_ogl_lib\framebuffer_texture.hpp" />
 		<Unit filename="..\panzer_ogl_lib\func_addresses.cpp" />
 		<Unit filename="..\panzer_ogl_lib\func_declarations.hpp" />
 		<Unit filename="..\panzer_ogl_lib\glsl_program.cpp" />
@@ -143,6 +141,8 @@
 		<Unit filename="..\panzer_ogl_lib\panzer_ogl_lib.hpp" />
 		<Unit filename="..\panzer_ogl_lib\polygon_buffer.cpp" />
 		<Unit filename="..\panzer_ogl_lib\polygon_buffer.hpp" />
+		<Unit filename="..\panzer_ogl_lib\texture.cpp" />
+		<Unit filename="..\panzer_ogl_lib\texture.hpp" />
 		<Unit filename="..\panzer_ogl_lib\vec.hpp" />
 		<Extensions>
 			<code_completion />

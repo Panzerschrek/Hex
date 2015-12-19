@@ -8,7 +8,7 @@
 #include "i_world_renderer.hpp"
 #include "chunk_data_cache.hpp"
 
-#include "framebuffer_texture.hpp"
+#include "texture.hpp"
 #include "framebuffer.hpp"
 #include "polygon_buffer.hpp"
 #include "glsl_program.hpp"
@@ -114,10 +114,10 @@ private:
 
 	//textures
 	r_TextureManager texture_manager_;
-	r_FramebufferTexture sun_texture_;
-	r_FramebufferTexture water_texture_;
-	r_FramebufferTexture console_bg_texture_;
-	r_FramebufferTexture crosshair_texture_;
+	r_Texture sun_texture_;
+	r_Texture water_texture_;
+	r_Texture console_bg_texture_;
+	r_Texture crosshair_texture_;
 
 	//matrices and vectors
 	float fov_x_, fov_y_;

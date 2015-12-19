@@ -1,30 +1,30 @@
 #pragma once
 
+#include <vector>
+
 #include "glsl_program.hpp"
 #include "polygon_buffer.hpp"
-#include "framebuffer_texture.hpp"
+#include "texture.hpp"
 
-class Texture;
-
-#pragma pack( push, 1 )
-struct r_TextVertex
-{
-	float pos[2];
-	unsigned char color[4];
-	unsigned char tex_coord[2];
-	unsigned char texles_per_pixel[2]; // in 4.4 format
-};
-#pragma pack (pop)
-
-
-#define H_MAX_TEXT_BUFFER_SIZE 8192
-
-#define LETTERS_IN_TEXTURE 96
+/*
+ * Simple class for drawing simple texts.
+ * Can draw 96 ASCII symbols with codes [32;127).
+ * Supported fonts - only monospace.
+ * Input font - texture, where letters placed top to down, like this:
+ *  ___
+ * | A |
+ * | B |
+ * | C |
+ * | D |
+ * |___|
+ *
+ * Drawing is buffered. You need call AddText, and then, call Draw.
+ * Inner buffer size is large enough for big texts.
+ */
 
 class r_Text
 {
 public:
-
 	r_Text( const char* font_file );
 	~r_Text() {}
 	void AddText( float colomn, float row, float, const unsigned char* color, const char* text );
@@ -34,52 +34,67 @@ public:
 	void Draw();
 	void SetViewport( unsigned int x, unsigned int y );
 
-	unsigned int ColomnsInScreen()const;
-	unsigned int RowsInScreen()const;
+	unsigned int ColomnsInScreen() const;
+	unsigned int RowsInScreen() const;
 
-	float LetterWidth() const;
+	float LetterWidth () const;
 	float LetterHeight() const;
 
 public:
 	static const unsigned char default_color[4];
 
 private:
+	#pragma pack( push, 1 )
+	struct r_TextVertex
+	{
+		float pos[2];
+		unsigned char color[4];
+		unsigned char tex_coord[2];
+		unsigned char texles_per_pixel[2]; // in 4.4 format
+	};
+	#pragma pack (pop)
+	static_assert(
+		sizeof(r_TextVertex) == 16,
+		"Unexpected size. It will be perfect, if size of this structure will be 16 bytes.");
 
-	r_GLSLProgram text_shader;
-	r_TextVertex* vertices;
-	r_PolygonBuffer text_vbo;
-	unsigned int vertex_buffer_size;
-	unsigned int vertex_buffer_pos;
-	float screen_x, screen_y;
+private:
+	r_GLSLProgram shader_;
+	r_PolygonBuffer text_vbo_;
+	r_Texture font_texture_;
 
-	unsigned char* text_texture_data;
-	unsigned int letter_width, letter_height;
+	std::vector<r_TextVertex> vertices_;
+	unsigned int vertex_buffer_pos_;
+	float viewport_width_, viewport_height_;
 
-	r_FramebufferTexture font_texture;
+	unsigned int letter_width_, letter_height_;
+
+private:
+	static const constexpr unsigned int c_letters_in_texture_= 96;
+	static const constexpr unsigned int c_text_buffer_size_= 8192;
 };
 
 inline void r_Text::SetViewport( unsigned int x, unsigned int y )
 {
-	screen_x= float(x);
-	screen_y= float(y);
+	viewport_width_= float(x);
+	viewport_height_= float(y);
 }
 
-inline unsigned int r_Text::ColomnsInScreen()const
+inline unsigned int r_Text::ColomnsInScreen() const
 {
-	return screen_x / letter_width;
+	return viewport_width_ / letter_width_;
 }
 
-inline unsigned int r_Text::RowsInScreen()const
+inline unsigned int r_Text::RowsInScreen() const
 {
-	return screen_y / letter_height;
+	return viewport_height_ / letter_height_;
 }
 
-inline float r_Text::LetterWidth() const
+inline float r_Text::LetterWidth () const
 {
-	return float(letter_width);
+	return float(letter_width_);
 }
 
 inline float r_Text::LetterHeight() const
 {
-	return float(letter_height);
+	return float(letter_height_);
 }

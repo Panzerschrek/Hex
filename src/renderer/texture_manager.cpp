@@ -58,8 +58,6 @@ void r_TextureManager::LoadTextures()
 {
 	unsigned int texture_layers= 32;
 	unsigned int tex_id= 0;
-	char str[256];
-
 
 	glGenTextures( 1, &texture_array );
 	glBindTexture( GL_TEXTURE_2D_ARRAY, texture_array );

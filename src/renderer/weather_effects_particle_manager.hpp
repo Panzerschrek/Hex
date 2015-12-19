@@ -1,7 +1,7 @@
 #pragma once
 
 #include "panzer_ogl_lib.hpp"
-#include "framebuffer_texture.hpp"
+#include "texture.hpp"
 #include "glsl_program.hpp"
 #include "polygon_buffer.hpp"
 
@@ -23,5 +23,5 @@ private:
 	unsigned int particles_count_;
 	r_PolygonBuffer vbo_;
 	r_GLSLProgram shader_;
-	r_FramebufferTexture particle_texture_;
+	r_Texture particle_texture_;
 };

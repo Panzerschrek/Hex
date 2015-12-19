@@ -514,7 +514,7 @@ void r_WorldRenderer::Draw()
 		r_OGLStateManager::SetState( state );
 
 		supersampling_final_shader_.Bind();
-		(*supersampling_buffer_.GetTextures())[0].Bind(0);
+		supersampling_buffer_.GetTextures()[0].Bind(0);
 		supersampling_final_shader_.Uniform( "frame_buffer", 0 );
 		glDrawArrays( GL_TRIANGLES, 0, 6 );
 	}
@@ -1120,9 +1120,9 @@ void r_WorldRenderer::InitFrameBuffers()
 	if( use_supersampling_ )
 	{
 		supersampling_buffer_.Create(
-			std::vector<r_FramebufferTexture::TextureFormat>{ r_FramebufferTexture::FORMAT_RGBA8 },
-			r_FramebufferTexture::FORMAT_DEPTH24_STENCIL8,
-			viewport_width_ * 2,
+			std::vector<r_Texture::PixelFormat>{ r_Texture::PixelFormat::RGBA8 },
+			r_Texture::PixelFormat::Depth24Stencil8,
+			viewport_width_  * 2,
 			viewport_height_ * 2 );
 	}
 }

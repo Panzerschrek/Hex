@@ -1,7 +1,37 @@
 #include "img_utils.hpp"
 
 #include <QImage>
-#include "framebuffer_texture.hpp"
+#include "texture.hpp"
+
+
+static void MakeStub( r_Texture* texture )
+{
+	const constexpr unsigned int stub_tex_size= 32;
+	unsigned char data[ stub_tex_size * stub_tex_size * 4 ];
+
+	for( unsigned int y= 0; y< stub_tex_size; y++ )
+		for( unsigned int x= 0; x< stub_tex_size; x++ )
+		{
+			int ind= 4 * (x + y*stub_tex_size);
+			data[ind  ]=
+			data[ind+1]=
+			data[ind+2]= 0;
+			data[ind+3]= 255;
+		}
+	for( unsigned int y= 0; y< stub_tex_size/2; y++ )
+		for( unsigned int x= 0; x< stub_tex_size/2; x++ )
+		{
+			int ind= 4 * (x + y*stub_tex_size);
+			data[ind  ]= 240;
+			data[ind+1]= 12;
+			data[ind+2]= 245;
+			ind= 4 * (x+stub_tex_size/2 + (y+stub_tex_size/2)*stub_tex_size);
+			data[ind  ]= 240;
+			data[ind+1]= 12;
+			data[ind+2]= 245;
+		}
+	texture->Create( r_Texture::PixelFormat::RGBA8, stub_tex_size, stub_tex_size, data );
+}
 
 void r_ImgUtils::RGBA8_To_BRGA8( const unsigned char* in, unsigned char* out, int width, int height )
 {
@@ -93,10 +123,9 @@ void r_ImgUtils::RGBA8_GetMip2( const unsigned char* in, unsigned char* out, int
 	}
 }
 
-
-void r_ImgUtils::RGBA8_MirrorVerticalAndSwapRB( unsigned char* in_out, int width, int height )
+void r_ImgUtils::RGBA8_MirrorVertical( unsigned char* in_out, int width, int height )
 {
-	for( int y= 0; y< height>>1; y++ )
+	for( int y= 0; y < (height >> 1); y++ )
 		for( int x= 0,
 				k= y * width,
 				k2= ( height - y - 1 ) * width
@@ -106,19 +135,21 @@ void r_ImgUtils::RGBA8_MirrorVerticalAndSwapRB( unsigned char* in_out, int width
 			int c= p[k];
 			p[k]= p[k2];
 			p[k2]= c;
-			/*unsigned char tmp[4];
-			tmp[0]= in_out[k*4  ];
-			tmp[1]= in_out[k*4+1];
-			tmp[2]= in_out[k*4+2];
-			tmp[3]= in_out[k*4+3];
-			in_out[k*4  ]= in_out[k2*4  ];
-			in_out[k*4+1]= in_out[k2*4+1];
-			in_out[k*4+2]= in_out[k2*4+2];
-			in_out[k*4+3]= in_out[k2*4+3];
-			in_out[k2*4  ]= tmp[0];
-			in_out[k2*4+1]= tmp[1];
-			in_out[k2*4+2]= tmp[2];
-			in_out[k2*4+3]= tmp[3];*/
+		}
+}
+
+void r_ImgUtils::RGBA8_MirrorVerticalAndSwapRB( unsigned char* in_out, int width, int height )
+{
+	for( int y= 0; y < (height >> 1); y++ )
+		for( int x= 0,
+				k= y * width,
+				k2= ( height - y - 1 ) * width
+					; x< width; x++, k++, k2++ )
+		{
+			int* p = (int*) in_out;
+			int c= p[k];
+			p[k]= p[k2];
+			p[k2]= c;
 
 			unsigned char tmp= in_out[k*4];
 			in_out[k*4]= in_out[k*4+2];
@@ -129,64 +160,37 @@ void r_ImgUtils::RGBA8_MirrorVerticalAndSwapRB( unsigned char* in_out, int width
 		}
 }
 
-void r_ImgUtils::LoadTexture( r_FramebufferTexture* texture, const char* filename )
+void r_ImgUtils::LoadTexture( r_Texture* texture, const char* filename )
 {
-	auto make_stub = [] ( r_FramebufferTexture* texture )
-	{
-		const constexpr unsigned int stub_tex_size= 32;
-		unsigned char data[ stub_tex_size * stub_tex_size * 4 ];
-
-		for( unsigned int y= 0; y< stub_tex_size; y++ )
-			for( unsigned int x= 0; x< stub_tex_size; x++ )
-			{
-				int ind= 4 * (x + y*stub_tex_size);
-				data[ind  ]=
-				data[ind+1]=
-				data[ind+2]= 0;
-				data[ind+3]= 255;
-			}
-		for( unsigned int y= 0; y< stub_tex_size/2; y++ )
-			for( unsigned int x= 0; x< stub_tex_size/2; x++ )
-			{
-				int ind= 4 * (x + y*stub_tex_size);
-				data[ind  ]= 240;
-				data[ind+1]= 12;
-				data[ind+2]= 245;
-				ind= 4 * (x+stub_tex_size/2 + (y+stub_tex_size/2)*stub_tex_size);
-				data[ind  ]= 240;
-				data[ind+1]= 12;
-				data[ind+2]= 245;
-			}
-		texture->Create( r_FramebufferTexture::FORMAT_RGBA8, stub_tex_size, stub_tex_size, data );
-	};
-
 	QImage img( filename );
+
 	if ( img.isNull() )
 	{
-		make_stub(texture);
+		MakeStub(texture);
 		goto after_creating;
 	}
 
 	if( img.depth() == 1 )
 	{
-		unsigned char* tmp_data= new unsigned char[ img.width() * img.height() ];
-		R1_To_R8( img.constBits(), tmp_data, img.width(), img.height() );
-		texture->Create( r_FramebufferTexture::FORMAT_R8, img.width(), img.height(), tmp_data );
-		delete[] tmp_data;
+		std::vector<unsigned char> tmp_data( img.width() * img.height() );
+		R1_To_R8( img.constBits(), tmp_data.data(), img.width(), img.height() );
+		RGBA8_MirrorVertical( img.bits(), img.width(), img.height() );
+		texture->Create( r_Texture::PixelFormat::R8, img.width(), img.height(), tmp_data.data() );
 	}
 	else if( img.depth() == 8 )
-		texture->Create( r_FramebufferTexture::FORMAT_R8, img.width(), img.height(), img.constBits() );
+	{
+		RGBA8_MirrorVertical( img.bits(), img.width(), img.height() );
+		texture->Create( r_Texture::PixelFormat::R8, img.width(), img.height(), img.bits() );
+	}
 	else if( img.depth() == 32 )
 	{
-		unsigned char* img_data= (unsigned char*)img.constBits();
-		RGBA8_MirrorVerticalAndSwapRB( img_data, img.width(), img.height() );
-		texture->Create( r_FramebufferTexture::FORMAT_RGBA8, img.width(), img.height(), img_data );
+		RGBA8_MirrorVerticalAndSwapRB( img.bits(), img.width(), img.height() );
+		texture->Create( r_Texture::PixelFormat::RGBA8, img.width(), img.height(), img.bits() );
 	}
 	else
-		make_stub(texture);
+		MakeStub(texture);
 
 after_creating:
-
-	texture->SetFiltration( r_FramebufferTexture::FILTRATION_LINEAR_MIPMAP_LINEAR, r_FramebufferTexture::FILTRATION_LINEAR );
+	texture->SetFiltration( r_Texture::Filtration::LinearMipmapLinear, r_Texture::Filtration::Linear );
 	texture->BuildMips();
 }
