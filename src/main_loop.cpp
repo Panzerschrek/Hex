@@ -105,6 +105,10 @@ void h_MainLoop::initializeGL()
 		[](const char* name)
 		{
 			return (void*)QOpenGLContext::currentContext()->getProcAddress(name);
+		},
+		[](const char* name)
+		{
+			printf( "Warning, function \"%s\" not found", name );
 		});
 
 	r_OGLState state;
