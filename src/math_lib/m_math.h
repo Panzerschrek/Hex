@@ -11,6 +11,10 @@ public:
 	static int DivNonNegativeRemainder( int x, int y );
 	static int ModNonNegativeRemainder( int x, int y );
 
+	// Integer square root. Returns floor(sqrt(x)).
+	// Result undefined, if x < 0.
+	static int IntSqrt( int x );
+
 	static float F16_to_f32( unsigned short x );
 	/*float functions*/
 	static float Abs ( float x );

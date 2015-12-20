@@ -2,6 +2,7 @@
 #include <cmath>
 
 #include "../math_lib/rand.h"
+#include "../math_lib/m_math.h"
 
 #include "world_generator.hpp"
 
@@ -171,8 +172,7 @@ static void MarkShortRivers( g_RiverSystem& river_system )
 				fixed8_t dx= point1.x - point0.x;
 				fixed8_t dy= point1.y - point0.y;
 
-				//TODO - remove std::sqrt. We need fixed point square root.
-				length += std::sqrt( float( m_FixedSquare<8>(dx) + m_FixedSquare<8>(dy) ) ) * ( 1.0f / 256.0f );
+				length += m_Math::IntSqrt( dx * dx + dy * dy );
 			}
 			river.too_short= length < ( river.child_id == 0 ? c_single_river_min_length : c_inflow_min_length );
 		}
