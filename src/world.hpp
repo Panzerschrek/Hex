@@ -56,7 +56,6 @@ public:
 	void GetForwardVertexLight( short x, short y, short z, unsigned char* out_light ) const;
 	//returns light level of back-backleft upper vertex of prism X16. coordinates - relative
 	void GetBackVertexLight( short x, short y, short z, unsigned char* out_light ) const;
-	//returns nominal value of lightmaps
 
 	// Set global coordinates of test mob.
 	void TestMobSetTargetPosition( int x, int y, int z );
