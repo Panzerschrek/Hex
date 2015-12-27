@@ -55,7 +55,7 @@ bool h_PathFinder::FindPath(
 	visited_points.emplace_back( src_x, src_y, src_z, 0 );
 	prev_wavefront.emplace_back( visited_points.size() - 1 );
 
-	while( wave_radius < c_max_search_distance_ )
+	while( wave_radius < max_radius )
 	{
 		while( !prev_wavefront.empty() )
 		{
