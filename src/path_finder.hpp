@@ -11,18 +11,21 @@ struct h_PathPoint
 class h_PathFinder
 {
 public:
-	h_PathFinder(const h_World& world);
+	h_PathFinder( const h_World& world );
 	~h_PathFinder();
-	h_PathFinder& operator=(const h_PathFinder&) = delete;
+	h_PathFinder& operator=( const h_PathFinder& )= delete;
 
 	bool FindPath(
 		int src_x, int src_y, int src_z,
-		int target_x, int target_y, int target_z );
+		int target_x, int target_y, int target_z,
+		unsigned int max_radius= GetMaxSearchRadius() );
 
 	// Get Result Path.
-	// Path contains cells from src to target, include target, but exclude src.
+	// Path contains cells from source to target, include target, but exclude source.
 	const h_PathPoint* GetPathPoints() const;
 	unsigned int GetPathLength() const;
+
+	static unsigned int GetMaxSearchRadius();
 
 private:
 	void ClearVisitedCells();

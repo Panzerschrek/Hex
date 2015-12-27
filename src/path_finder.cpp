@@ -8,14 +8,12 @@
 struct WavefrontPoint
 {
 	int x, y, z;
-	// In wave this is id of point
-	// In list of visitid point this is id of previous point
-	unsigned int id;
+	unsigned int prev_point_id;
 
 	WavefrontPoint(){}
-	WavefrontPoint( int in_x, int in_y, int in_z, unsigned int in_id )
+	WavefrontPoint( int in_x, int in_y, int in_z, unsigned int in_prev_point_id )
 		: x(in_x), y(in_y), z(in_z)
-		, id(in_id)
+		, prev_point_id(in_prev_point_id)
 	{}
 };
 
@@ -23,7 +21,7 @@ const constexpr unsigned int h_PathFinder::c_cube_size_log2_;
 const constexpr unsigned int h_PathFinder::c_cube_size_;
 const constexpr unsigned int h_PathFinder::c_max_search_distance_;
 
-h_PathFinder::h_PathFinder(const h_World &world)
+h_PathFinder::h_PathFinder( const h_World &world )
 	: world_(world)
 	, path_length_(0)
 {
@@ -37,7 +35,8 @@ h_PathFinder::~h_PathFinder()
 // Replace all std::vector with member arrays
 bool h_PathFinder::FindPath(
 	int src_x, int src_y, int src_z,
-	int target_x, int target_y, int target_z )
+	int target_x, int target_y, int target_z,
+	unsigned int max_radius )
 {
 	ClearVisitedCells();
 
@@ -48,20 +47,21 @@ bool h_PathFinder::FindPath(
 	unsigned int wave_radius= 0;
 
 	std::vector<WavefrontPoint> visited_points;
-	std::vector<WavefrontPoint> prev_wavefront;
-	std::vector<WavefrontPoint> new_wavefront;
-
-	visited_points.emplace_back(); // Dummy
+	std::vector<unsigned int> prev_wavefront;
+	std::vector<unsigned int> new_wavefront;
 
 	SetPointVisited( src_x, src_y, src_z );
+	visited_points.emplace_back(); // Dummy
 	visited_points.emplace_back( src_x, src_y, src_z, 0 );
-	prev_wavefront.emplace_back( src_x, src_y, src_z, visited_points.size() - 1 );
+	prev_wavefront.emplace_back( visited_points.size() - 1 );
 
 	while( wave_radius < c_max_search_distance_ )
 	{
 		while( !prev_wavefront.empty() )
 		{
-			WavefrontPoint& wavefront_point= prev_wavefront.back();
+			unsigned int prev_point_id= prev_wavefront.back();
+			prev_wavefront.pop_back();
+			WavefrontPoint& wavefront_point= visited_points[ prev_point_id ];
 
 			int forward_side_dy= (wavefront_point.x+1) & 1;
 			int back_side_dy= wavefront_point.x & 1;
@@ -111,15 +111,15 @@ bool h_PathFinder::FindPath(
 					path_[0].y= target_y;
 					path_[0].z= target_z;
 					unsigned int i= 1;
-					H_ASSERT( wavefront_point.id < visited_points.size() );
-					const WavefrontPoint* point= &visited_points[ wavefront_point.id ];
-					while( point->id != 0 )
+					H_ASSERT( wavefront_point.prev_point_id < visited_points.size() );
+					const WavefrontPoint* point= &visited_points[ prev_point_id ];
+					while( point->prev_point_id != 0 )
 					{
 						path_[i].x= point->x;
 						path_[i].y= point->y;
 						path_[i].z= point->z;
-						H_ASSERT( point->id < visited_points.size() );
-						point= &visited_points[ point->id ];
+						H_ASSERT( point->prev_point_id < visited_points.size() );
+						point= &visited_points[ point->prev_point_id ];
 						i++;
 					}
 					path_length_= i;
@@ -129,32 +129,29 @@ bool h_PathFinder::FindPath(
 
 				if( can_step_forward )
 				{
-					visited_points.emplace_back( neighbor.x, neighbor.y, neighbor.z, wavefront_point.id );
-					new_wavefront.emplace_back( neighbor.x, neighbor.y, neighbor.z, visited_points.size() - 1 );
+					visited_points.emplace_back( neighbor.x, neighbor.y, neighbor.z, prev_point_id );
+					new_wavefront.emplace_back( visited_points.size() - 1 );
 					SetPointVisited( neighbor.x, neighbor.y, neighbor.z );
 				}
 				// step down
 				else if( can_step_down )
 				{
-					visited_points.emplace_back( neighbor.x, neighbor.y, neighbor.z - 1, wavefront_point.id );
-					new_wavefront.emplace_back( neighbor.x, neighbor.y, neighbor.z - 1, visited_points.size() - 1 );
+					visited_points.emplace_back( neighbor.x, neighbor.y, neighbor.z - 1, prev_point_id );
+					new_wavefront.emplace_back( visited_points.size() - 1 );
 					SetPointVisited( neighbor.x, neighbor.y, neighbor.z );
 					SetPointVisited( neighbor.x, neighbor.y, neighbor.z - 1 );
 				}
 				else if( can_step_up )
 				{
-					visited_points.emplace_back( neighbor.x, neighbor.y, neighbor.z + 1, wavefront_point.id );
-					new_wavefront.emplace_back( neighbor.x, neighbor.y, neighbor.z + 1, visited_points.size() - 1 );
+					visited_points.emplace_back( neighbor.x, neighbor.y, neighbor.z + 1, prev_point_id );
+					new_wavefront.emplace_back( visited_points.size() - 1 );
 					SetPointVisited( neighbor.x, neighbor.y, neighbor.z );
 					SetPointVisited( neighbor.x, neighbor.y, neighbor.z + 1 );
 				}
 			} // for neighbors
-
-			prev_wavefront.pop_back();
 		} // for current wavefront
 
 		prev_wavefront.swap( new_wavefront );
-
 		wave_radius++;
 	} // while max radius not reached
 
@@ -170,6 +167,11 @@ const h_PathPoint* h_PathFinder::GetPathPoints() const
 unsigned int h_PathFinder::GetPathLength() const
 {
 	return path_length_;
+}
+
+unsigned int h_PathFinder::GetMaxSearchRadius()
+{
+	return c_max_search_distance_;
 }
 
 void h_PathFinder::ClearVisitedCells()
