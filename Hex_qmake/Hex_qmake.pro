@@ -101,6 +101,7 @@ INCLUDEPATH = ../../panzer_ogl_lib
 QMAKE_CXXFLAGS += -std=c++11 -fno-exceptions
 
 debug {
+	DEFINES += DEBUG
 } else {
 	QMAKE_CXXFLAGS  += -O2 -s
 }

@@ -19,6 +19,8 @@ public:
 		int src_x, int src_y, int src_z,
 		int target_x, int target_y, int target_z );
 
+	// Get Result Path.
+	// Path contains cells from src to target, include target, but exclude src.
 	const h_PathPoint* GetPathPoints() const;
 	unsigned int GetPathLength() const;
 
@@ -26,16 +28,18 @@ private:
 	void ClearVisitedCells();
 	void SetPointVisited( int x, int y, int z );
 	bool IsPointVisited( int x, int y, int z ) const;
+	int GetBitmapAddress( int x, int y, int z ) const;
 
 private:
-	static const constexpr unsigned int max_search_distance_= 13;
-	static const constexpr unsigned int cube_size_= 32;
+	static const constexpr unsigned int c_cube_size_log2_= 6;
+	static const constexpr unsigned int c_cube_size_= 1 << c_cube_size_log2_;
+	static const constexpr unsigned int c_max_search_distance_= (c_cube_size_ >> 1) - 2;
 
 	const h_World& world_;
 
-	h_PathPoint path_[max_search_distance_];
+	h_PathPoint path_[ c_max_search_distance_ ];
 	unsigned int path_length_;
 
 	int cube_position_[3];
-	unsigned char visited_cells_bitmap_[ cube_size_ * cube_size_ * cube_size_ / 8 ];
+	unsigned char visited_cells_bitmap_[ ( c_cube_size_ * c_cube_size_ * c_cube_size_ ) >> 3 ];
 };

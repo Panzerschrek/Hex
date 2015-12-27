@@ -108,6 +108,7 @@ private:
 	bool CanBuild( short x, short y, short z ) const;
 
 	void PhysTick();
+	void TestMobTick();
 
 	void RelightWaterModifedChunksLight();//relight chunks, where water was modifed in last ticks
 	void WaterPhysTick();
@@ -150,7 +151,9 @@ private:
 	std::queue< h_WorldAction > action_queue_[2];
 	std::mutex action_queue_mutex_;
 
+	int test_mob_discret_pos_[3];
 	int test_mob_target_pos_[3];
+	unsigned int test_mob_last_think_tick_= 0;
 	m_Vec3 test_mob_pos_;
 
 	// Chunks matrix. chunk(x, y)= chunks_[ x + y * H_MAX_CHUNKS ]
