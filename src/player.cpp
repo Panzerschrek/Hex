@@ -215,6 +215,14 @@ void h_Player::Dig()
 	}
 }
 
+void h_Player::TestMobSetPosition()
+{
+	if( build_direction_ != DIRECTION_UNKNOWN )
+	{
+		world_->TestMobSetTargetPosition( discret_build_pos_[0], discret_build_pos_[1], discret_build_pos_[2] );
+	}
+}
+
 void h_Player::UpdateBuildPos()
 {
 	m_Vec3 eye_dir(

@@ -502,6 +502,7 @@ void r_WorldRenderer::Draw()
 	//weather_effects_particle_manager_.Draw( view_matrix_, cam_pos_ );
 	DrawWater();
 	DrawBuildPrism();
+	DrawTestMob();
 
 	if( use_supersampling_ )
 	{
@@ -897,6 +898,34 @@ void r_WorldRenderer::DrawBuildPrism()
 		case DIRECTION_UNKNOWN:
 			break;
 	};
+
+	build_prism_shader_.Uniform( "active_vertices", alpha, 12 );
+	build_prism_shader_.Uniform( "cam_pos", cam_pos_ );
+
+	build_prism_vbo_.Bind();
+	build_prism_vbo_.Show();
+}
+
+void r_WorldRenderer::DrawTestMob()
+{
+	static const GLenum state_blend_mode[]= { GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA };
+	static const float state_clear_color[]= { 0.0f, 0.0f, 0.0f, 0.0f };
+	static const r_OGLState state(
+		true, false, true, false,
+		state_blend_mode,
+		state_clear_color,
+		1.0f, GL_FRONT, GL_FALSE );
+
+	r_OGLStateManager::UpdateState( state );
+
+	build_prism_shader_.Bind();
+	build_prism_shader_.Uniform( "view_matrix", view_matrix_ );
+
+	build_prism_shader_.Uniform( "build_prism_pos", world_->TestMobGetPosition() - m_Vec3(0.0f, 0.0f, 1.0f) );
+
+	// Setup active build side alpha.
+	float alpha[12];
+	for( int i= 0; i < 12; i++ ) alpha[i]= 1.0f;
 
 	build_prism_shader_.Uniform( "active_vertices", alpha, 12 );
 	build_prism_shader_.Uniform( "cam_pos", cam_pos_ );

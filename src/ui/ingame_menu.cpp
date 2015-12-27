@@ -101,7 +101,10 @@ ui_IngameMenu::~ui_IngameMenu()
 
 ui_MouseButtonMask ui_IngameMenu::AcceptedMouseButtons() const
 {
-	return static_cast<ui_MouseButtonMask>(ui_MouseButton::Left) | static_cast<ui_MouseButtonMask>(ui_MouseButton::Right);
+	return
+		static_cast<ui_MouseButtonMask>(ui_MouseButton::Left) |
+		static_cast<ui_MouseButtonMask>(ui_MouseButton::Right) |
+		static_cast<ui_MouseButtonMask>(ui_MouseButton::Middle);
 }
 
 void ui_IngameMenu::CursorPress(int x, int y, ui_MouseButton button, bool pressed )
@@ -115,6 +118,8 @@ void ui_IngameMenu::CursorPress(int x, int y, ui_MouseButton button, bool presse
 			player_->Build();
 		else if( button == ui_MouseButton::Left )
 			player_->Dig();
+		else if( button == ui_MouseButton::Middle )
+			player_->TestMobSetPosition();
 	}
 }
 

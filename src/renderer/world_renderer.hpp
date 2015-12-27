@@ -59,6 +59,7 @@ private:
 	void CalculateLight();
 
 	void DrawBuildPrism();
+	void DrawTestMob();
 	void DrawCrosshair();
 
 	// helper. returns vertex count

@@ -14,6 +14,8 @@
 #include "world_action.hpp"
 #include "chunk_loader.hpp"
 
+#include "vec.hpp"
+
 class h_World
 {
 	friend class h_Chunk;
@@ -55,6 +57,10 @@ public:
 	//returns light level of back-backleft upper vertex of prism X16. coordinates - relative
 	void GetBackVertexLight( short x, short y, short z, unsigned char* out_light ) const;
 	//returns nominal value of lightmaps
+
+	// Set global coordinates of test mob.
+	void TestMobSetTargetPosition( int x, int y, int z );
+	const m_Vec3& TestMobGetPosition() const;
 
 private:
 	void Build( short x, short y, short z, h_BlockType block_type );//coordinates - relative
@@ -144,6 +150,9 @@ private:
 	//queue 0 - for enqueue, queue 1 - for dequeue
 	std::queue< h_WorldAction > action_queue_[2];
 	std::mutex action_queue_mutex_;
+
+	int test_mob_target_pos_[3];
+	m_Vec3 test_mob_pos_;
 
 	// Chunks matrix. chunk(x, y)= chunks_[ x + y * H_MAX_CHUNKS ]
 	h_Chunk* chunks_[ H_MAX_CHUNKS * H_MAX_CHUNKS ];

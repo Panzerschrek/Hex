@@ -136,6 +136,22 @@ void h_World::Save()
 	chunk_loader_.ForceSaveAllChunks();
 }
 
+void h_World::TestMobSetTargetPosition( int x, int y, int z )
+{
+	test_mob_target_pos_[0]= x;
+	test_mob_target_pos_[1]= y;
+	test_mob_target_pos_[2]= z;
+
+	test_mob_pos_.x= ( float(x) + 1.0f / 3.0f ) * H_SPACE_SCALE_VECTOR_X;
+	test_mob_pos_.y= float(y) + 0.5f * float((x^1)&1);
+	test_mob_pos_.z= float(z);
+}
+
+const m_Vec3& h_World::TestMobGetPosition() const
+{
+	return test_mob_pos_;
+}
+
 void h_World::Build( short x, short y, short z, h_BlockType block_type )
 {
 	if( !InBorders( x, y, z ) )
