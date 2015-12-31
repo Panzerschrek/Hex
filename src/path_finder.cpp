@@ -125,6 +125,7 @@ bool h_PathFinder::FindPath(
 					current_point_taransparency_data[ wavefront_point.z + 1 ] == TRANSPARENCY_AIR;
 				bool can_step_down=
 					neighbor.z >= 2 &&
+					transparency_data[ address ] == TRANSPARENCY_AIR &&
 					transparency_data[ address - 1 ] == TRANSPARENCY_AIR &&
 					transparency_data[ address - 2 ] != TRANSPARENCY_AIR;
 
