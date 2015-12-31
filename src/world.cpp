@@ -5,6 +5,7 @@
 #include "settings.hpp"
 #include "settings_keys.hpp"
 #include "world_generator/world_generator.hpp"
+#include "path_finder.hpp"
 
 static const unsigned int g_updates_frequency= 15;
 static const unsigned int g_update_inrerval_ms= 1000 / g_updates_frequency;
@@ -55,6 +56,10 @@ h_World::h_World(
 		chunks_[ i + j * H_MAX_CHUNKS ]= LoadChunk( i+longitude_, j+latitude_);
 
 	LightWorld();
+
+	test_mob_target_pos_[0]= test_mob_discret_pos_[0]= 0;
+	test_mob_target_pos_[1]= test_mob_discret_pos_[1]= 0;
+	test_mob_target_pos_[2]= test_mob_discret_pos_[2]= 72;
 }
 
 h_World::~h_World()
@@ -134,6 +139,18 @@ void h_World::Save()
 		for( unsigned int y= 0; y< chunk_number_y_; y++ )
 			SaveChunk( GetChunk(x,y) );
 	chunk_loader_.ForceSaveAllChunks();
+}
+
+void h_World::TestMobSetTargetPosition( int x, int y, int z )
+{
+	test_mob_target_pos_[0]= x;
+	test_mob_target_pos_[1]= y;
+	test_mob_target_pos_[2]= z;
+}
+
+const m_Vec3& h_World::TestMobGetPosition() const
+{
+	return test_mob_pos_;
 }
 
 void h_World::Build( short x, short y, short z, h_BlockType block_type )
@@ -622,6 +639,8 @@ void h_World::PhysTick()
 {
 	while(!terminated_.load())
 	{
+		TestMobTick();
+
 		int64_t t0_ms = clock() * 1000 / CLOCKS_PER_SEC;
 
 		h_PlayerPtr player= player_.lock();
@@ -671,6 +690,34 @@ void h_World::PhysTick()
 		if (dt_ms < g_update_inrerval_ms)
 			std::this_thread::sleep_for(std::chrono::milliseconds(g_update_inrerval_ms - dt_ms));
 	}
+}
+
+void h_World::TestMobTick()
+{
+	if( phys_tick_count_ - test_mob_last_think_tick_ >= g_updates_frequency / 3u )
+	{
+		test_mob_last_think_tick_= phys_tick_count_;
+
+		if( test_mob_discret_pos_[0] != test_mob_target_pos_[0] ||
+			test_mob_discret_pos_[1] != test_mob_target_pos_[1] ||
+			test_mob_discret_pos_[2] != test_mob_target_pos_[2] )
+		{
+			h_PathFinder finder(*this);
+			if( finder.FindPath(
+				test_mob_discret_pos_[0], test_mob_discret_pos_[1], test_mob_discret_pos_[2],
+				test_mob_target_pos_[0], test_mob_target_pos_[1], test_mob_target_pos_[2] ) )
+			{
+				const h_PathPoint* path= finder.GetPathPoints() + finder.GetPathLength() - 1;
+				test_mob_discret_pos_[0]= path->x;
+				test_mob_discret_pos_[1]= path->y;
+				test_mob_discret_pos_[2]= path->z;
+			}
+		}
+	}
+
+	test_mob_pos_.x= ( float(test_mob_discret_pos_[0]) + 1.0f / 3.0f ) * H_SPACE_SCALE_VECTOR_X;
+	test_mob_pos_.y= float(test_mob_discret_pos_[1]) + 0.5f * float((test_mob_discret_pos_[0]^1)&1);
+	test_mob_pos_.z= float(test_mob_discret_pos_[2]);
 }
 
 void h_World::WaterPhysTick()

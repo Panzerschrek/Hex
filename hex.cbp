@@ -81,6 +81,8 @@
 		<Unit filename="src\math_lib\rand.h" />
 		<Unit filename="src\math_lib\small_objects_allocator.hpp" />
 		<Unit filename="src\moc\moc_main_loop.cpp" />
+		<Unit filename="src\path_finder.cpp" />
+		<Unit filename="src\path_finder.hpp" />
 		<Unit filename="src\player.cpp" />
 		<Unit filename="src\player.hpp" />
 		<Unit filename="src\renderer\chunk_data_cache.cpp" />

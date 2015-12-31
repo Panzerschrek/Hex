@@ -31,6 +31,7 @@ public:
 
 	void Build();
 	void Dig();
+	void TestMobSetPosition();
 
 	void SetCollisionMesh( h_ChunkPhysMesh* mesh );
 

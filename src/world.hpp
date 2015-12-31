@@ -14,6 +14,8 @@
 #include "world_action.hpp"
 #include "chunk_loader.hpp"
 
+#include "vec.hpp"
+
 class h_World
 {
 	friend class h_Chunk;
@@ -54,7 +56,11 @@ public:
 	void GetForwardVertexLight( short x, short y, short z, unsigned char* out_light ) const;
 	//returns light level of back-backleft upper vertex of prism X16. coordinates - relative
 	void GetBackVertexLight( short x, short y, short z, unsigned char* out_light ) const;
-	//returns nominal value of lightmaps
+
+	// Set global coordinates of test mob.
+	// THREAD UNSAFE. REMOVE THIS.
+	void TestMobSetTargetPosition( int x, int y, int z );
+	const m_Vec3& TestMobGetPosition() const;
 
 private:
 	void Build( short x, short y, short z, h_BlockType block_type );//coordinates - relative
@@ -103,6 +109,7 @@ private:
 	bool CanBuild( short x, short y, short z ) const;
 
 	void PhysTick();
+	void TestMobTick();
 
 	void RelightWaterModifedChunksLight();//relight chunks, where water was modifed in last ticks
 	void WaterPhysTick();
@@ -144,6 +151,11 @@ private:
 	//queue 0 - for enqueue, queue 1 - for dequeue
 	std::queue< h_WorldAction > action_queue_[2];
 	std::mutex action_queue_mutex_;
+
+	int test_mob_discret_pos_[3];
+	int test_mob_target_pos_[3];
+	unsigned int test_mob_last_think_tick_= 0;
+	m_Vec3 test_mob_pos_;
 
 	// Chunks matrix. chunk(x, y)= chunks_[ x + y * H_MAX_CHUNKS ]
 	h_Chunk* chunks_[ H_MAX_CHUNKS * H_MAX_CHUNKS ];

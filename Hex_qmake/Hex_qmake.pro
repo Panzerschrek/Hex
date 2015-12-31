@@ -50,7 +50,8 @@ HEADERS += \
     ../src/world_generator/world_generator.hpp \
     ../src/math_lib/fixed.hpp \
     ../src/world_generator/noise.hpp \
-	../src/world_generator/rivers.hpp
+	../src/world_generator/rivers.hpp \
+    ../src/path_finder.hpp
 
 SOURCES += \
     ../src/block.cpp \
@@ -91,7 +92,8 @@ SOURCES += \
     ../src/ui/ingame_menu.cpp \
     ../src/world_generator/world_generator.cpp \
     ../src/world_generator/noise.cpp \
-	../src/world_generator/rivers.cpp
+	../src/world_generator/rivers.cpp \
+    ../src/path_finder.cpp
 
 
 QT += widgets opengl
@@ -99,6 +101,7 @@ INCLUDEPATH = ../../panzer_ogl_lib
 QMAKE_CXXFLAGS += -std=c++11 -fno-exceptions
 
 debug {
+	DEFINES += DEBUG
 } else {
 	QMAKE_CXXFLAGS  += -O2 -s
 }
