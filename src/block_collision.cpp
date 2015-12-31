@@ -1,3 +1,6 @@
+#include <cmath>
+#include <limits>
+
 #include "math_lib/assert.hpp"
 
 #include "block_collision.hpp"
@@ -170,7 +173,7 @@ p_BlockSide::p_BlockSide( short x, short y, short in_z, h_Direction in_dir )
 	}
 }
 
-bool p_BlockSide::HasCollisionWithCircle( const m_Vec2& pos,  float radius ) const
+bool p_BlockSide::HasCollisionWithCircle( const m_Vec2& pos, float radius ) const
 {
 	m_Vec2 edge_vec= edge[0]- edge[1];
 	edge_vec.Normalize();
@@ -276,38 +279,41 @@ bool RayHasIniersectWithTriangle(
 
 void GetHexogonCoord( const m_Vec2& pos, short* x, short* y )
 {
-	short nearest_x, nearest_y;
+	float transformed_x= pos.x / H_SPACE_SCALE_VECTOR_X;
+	float floor_x= std::floor( transformed_x );
+	short nearest_x= short( floor_x );
+	float dx= transformed_x - floor_x;
 
-	nearest_x= short( floor( pos.x / H_SPACE_SCALE_VECTOR_X ) );
-	nearest_y= short( floor( pos.y  - 0.5f * float((nearest_x+1)&1) )  );
+	float transformed_y= pos.y - 0.5f * float( (nearest_x^1) & 1 );
+	float floor_y= std::floor( transformed_y );
+	short nearest_y= short( floor_y );
+	float dy= transformed_y - floor_y;
 
-	short candidate_cells[]= {
-		nearest_x, nearest_y,
-		short(nearest_x - 1), short( nearest_y - (nearest_x&1 )),//lower left
-		short(nearest_x - 1), short( nearest_y + ((nearest_x+1)&1) )
-	};//upper left
-
-	m_Vec2 center_pos[3];
-	center_pos[0].x= float( nearest_x ) * H_SPACE_SCALE_VECTOR_X + H_HEXAGON_EDGE_SIZE;
-	center_pos[0].y= float( nearest_y ) + 0.5f * ((nearest_x+1)&1) + 0.5f;
-
-	center_pos[1].x= center_pos[2].x= center_pos[0].x - H_SPACE_SCALE_VECTOR_X;
-	center_pos[1].y= center_pos[0].y - 0.5f;
-	center_pos[2].y= center_pos[0].y + 0.5f;
-
-	unsigned int nearest_cell= 0;
-	float dst_min= 16.0f;
-	for( unsigned int i= 0; i< 3; i++ )
+	// Upper part   y=  0.5 + sqrt(3) * x
+	// Lower part   y=  0.5 - sqrt(3) * x
+	/*
+	_____________
+	|  /         |\
+	| /          | \
+	|/           |  \
+	|\           |  /
+	| \          | /
+	|__\_________|/
+	*/
+	if( dy > 0.5f + (2.0f * H_SPACE_SCALE_VECTOR_X) * dx )
 	{
-		float dst= ( center_pos[i] - pos ).SquareLength();
-		if( dst < dst_min )
-		{
-			dst_min= dst;
-			nearest_cell= i;
-		}
+		*x= nearest_x - 1;
+		*y= nearest_y + ((nearest_x^1)&1);
 	}
-
-	*x= candidate_cells[nearest_cell*2];
-	*y= candidate_cells[nearest_cell*2 + 1];
-	return;
+	else
+	if( dy < 0.5f - (2.0f * H_SPACE_SCALE_VECTOR_X) * dx )
+	{
+		*x= nearest_x - 1;
+		*y= nearest_y - (nearest_x&1);
+	}
+	else
+	{
+		*x= nearest_x;
+		*y= nearest_y;
+	}
 }

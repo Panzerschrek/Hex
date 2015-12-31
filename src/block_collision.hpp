@@ -7,7 +7,7 @@ class p_UpperBlockFace
 public:
 	p_UpperBlockFace( short x, short y, short z, h_Direction dir );
 
-	bool HasCollisionWithCircle( const m_Vec2& pos,  float radius ) const;
+	bool HasCollisionWithCircle( const m_Vec2& pos, float radius ) const;
 
 	m_Vec2 edge[6];
 	float z;
@@ -19,7 +19,7 @@ class p_BlockSide
 public:
 	p_BlockSide( short x, short y, short z, h_Direction dir );
 
-	bool HasCollisionWithCircle( const m_Vec2& pos,  float radius ) const;
+	bool HasCollisionWithCircle( const m_Vec2& pos, float radius ) const;
 	m_Vec2 CollideWithCirlce( const m_Vec2& pos, float radius ) const;// returns new position of circle
 
 	m_Vec2 edge[2];//xy coordinates of edge vertices
