@@ -939,7 +939,7 @@ void r_WorldRenderer::DrawCrosshair()
 	static const GLenum state_blend_mode[]= { GL_ONE, GL_ONE_MINUS_SRC_COLOR };
 	static const float state_clear_color[]= { 0.0f, 0.0f, 0.0f, 0.0f };
 	static const r_OGLState state(
-		true, false, true, false,
+		true, false, false, false,
 		state_blend_mode,
 		state_clear_color,
 		1.0f, GL_FRONT, GL_FALSE );
