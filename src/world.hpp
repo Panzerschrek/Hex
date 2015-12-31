@@ -58,6 +58,7 @@ public:
 	void GetBackVertexLight( short x, short y, short z, unsigned char* out_light ) const;
 
 	// Set global coordinates of test mob.
+	// THREAD UNSAFE. REMOVE THIS.
 	void TestMobSetTargetPosition( int x, int y, int z );
 	const m_Vec3& TestMobGetPosition() const;
 
