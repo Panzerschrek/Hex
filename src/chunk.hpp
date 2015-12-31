@@ -57,7 +57,7 @@ private:
 	void PlantBigTree( short x, short y, short z );//local coordinates
 	void PlantGrass();
 	unsigned int CalculateWaterBlockCount();
-	void GenWaterBlocks( unsigned char sea_level );
+	void GenWaterBlocks();
 	void MakeLight();
 	void SunRelight();
 

@@ -635,6 +635,9 @@ void h_World::AddFireLightSafe_r( short x, short y, short z, unsigned char l )
 
 void h_World::ShineFireLight( short x_min, short y_min, short z_min, short x_max, short y_max, short z_max )
 {
+	(void)z_min;
+	(void)z_max;
+
 	x_min>>= H_CHUNK_WIDTH_LOG2;
 	x_max>>= H_CHUNK_WIDTH_LOG2;
 	y_min>>= H_CHUNK_WIDTH_LOG2;

@@ -117,7 +117,7 @@ static std::vector<g_TreePlantingPoint> PoissonDiskPoints(
 			H_ASSERT( cell[0] == -1 );
 			cell[0]= pos[0];
 			cell[1]= pos[1];
-			H_ASSERT( processing_stack.size() < max_point_count );
+			H_ASSERT( processing_stack.size() < (unsigned int)max_point_count );
 			processing_stack.push_back( cell );
 
 			xy_loop_break:;
@@ -459,8 +459,8 @@ void g_WorldGenerator::DumpDebugResult()
 		QImage img( 1024, 1024, QImage::Format_RGBX8888 );
 		img.fill( Qt::black );
 
-		for( unsigned int y= 0; y < img.height(); y++ )
-		for( unsigned int x= 0; x < img.width (); x++ )
+		for( int y= 0; y < img.height(); y++ )
+		for( int x= 0; x < img.width (); x++ )
 		{
 			unsigned char noise=
 				(g_TriangularInterpolatedNoise( x, y, 0, 6 ) >>  9) +

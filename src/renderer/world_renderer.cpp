@@ -381,8 +381,8 @@ void r_WorldRenderer::Update()
 
 void r_WorldRenderer::UpdateChunk(unsigned short X,  unsigned short Y, bool immediately )
 {
-	H_ASSERT( X >= 0 && X < chunks_info_.matrix_size[0] );
-	H_ASSERT( Y >= 0 && Y < chunks_info_.matrix_size[1] );
+	H_ASSERT( X < chunks_info_.matrix_size[0] );
+	H_ASSERT( Y < chunks_info_.matrix_size[1] );
 	H_ASSERT( world_->Longitude() == chunks_info_.matrix_position[0] );
 	H_ASSERT( world_->Latitude () == chunks_info_.matrix_position[1] );
 
@@ -395,8 +395,8 @@ void r_WorldRenderer::UpdateChunk(unsigned short X,  unsigned short Y, bool imme
 
 void r_WorldRenderer::UpdateChunkWater(unsigned short X,  unsigned short Y, bool immediately )
 {
-	H_ASSERT( X >= 0 && X < chunks_info_.matrix_size[0] );
-	H_ASSERT( Y >= 0 && Y < chunks_info_.matrix_size[1] );
+	H_ASSERT( X < chunks_info_.matrix_size[0] );
+	H_ASSERT( Y < chunks_info_.matrix_size[1] );
 	H_ASSERT( world_->Longitude() == chunks_info_.matrix_position[0] );
 	H_ASSERT( world_->Latitude () == chunks_info_.matrix_position[1] );
 

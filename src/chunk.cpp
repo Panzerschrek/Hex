@@ -326,7 +326,7 @@ unsigned int h_Chunk::CalculateWaterBlockCount()
 	return c;
 }
 
-void h_Chunk::GenWaterBlocks( unsigned char sea_level )
+void h_Chunk::GenWaterBlocks()
 {
 	short x, y, z, addr = 0;
 	for( x= 0; x< H_CHUNK_WIDTH; x++ )
@@ -434,7 +434,7 @@ h_Chunk::h_Chunk( h_World* world, int longitude, int latitude, const g_WorldGene
 	GenChunk( generator );
 	PlantGrass();
 	PlantTrees( generator );
-	GenWaterBlocks( generator->GetSeaLevel() );
+	GenWaterBlocks();
 	MakeLight();
 
 }
