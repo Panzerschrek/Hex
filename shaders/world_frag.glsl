@@ -60,39 +60,30 @@ ivec2 GetHexagonTexCoord( vec2 tex_coord )
 
 ivec2 GetHexagonTexCoordY( vec2 tex_coord )
 {
-	ivec2 candidate_cells[3];
+	vec2 tex_coord_dransformed;
+	vec2 tex_coord_transformed_floor;
+	ivec2 nearest_cell;
+	vec2 d;
 
-	candidate_cells[0].y= int( floor( tex_coord.y / H_SPACE_SCALE_VECTOR_X ) );
-	float x_delta= 0.5 * float((candidate_cells[0].y+1)&1);
-	candidate_cells[0].x= int( floor( tex_coord.x  - x_delta )  );
+	tex_coord_dransformed.y= tex_coord.y / H_SPACE_SCALE_VECTOR_X;
+	tex_coord_transformed_floor.y= floor( tex_coord_dransformed.y );
+	nearest_cell.y= int( tex_coord_transformed_floor.y );
+	d.y= tex_coord_dransformed.y - tex_coord_transformed_floor.y;
 
-	candidate_cells[1].y= candidate_cells[0].y - 1;
-	candidate_cells[1].x= candidate_cells[0].x - (candidate_cells[0].y&1);
-	candidate_cells[2].y= candidate_cells[1].y;
-	candidate_cells[2].x= candidate_cells[1].x + 1;
+	tex_coord_dransformed.x= tex_coord.x - 0.5 * float( (nearest_cell.y^1) & 1 );
+	tex_coord_transformed_floor.x= floor( tex_coord_dransformed.x );
+	nearest_cell.x= int( tex_coord_transformed_floor.x );
+	d.x= tex_coord_dransformed.x - tex_coord_transformed_floor.x;
 
-	vec2 center_pos[3];
+	if( d.x > 0.5 + (2.0 * H_SPACE_SCALE_VECTOR_X) * d.y )
+		return ivec2( nearest_cell.x + ((nearest_cell.y^1)&1), nearest_cell.y - 1 );
 
-	center_pos[0].y= float( candidate_cells[0].y ) * H_SPACE_SCALE_VECTOR_X + H_HEXAGON_EDGE_SIZE;
-	center_pos[0].x= float( candidate_cells[0].x ) + x_delta + 0.5;
-	center_pos[1].y= center_pos[2].y= center_pos[0].y - H_SPACE_SCALE_VECTOR_X;
-	center_pos[1].x= center_pos[0].x - 0.5;
-	center_pos[2].x= center_pos[0].x + 0.5;
+	else
+	if( d.x < 0.5 - (2.0 * H_SPACE_SCALE_VECTOR_X) * d.y )
+		return ivec2( nearest_cell.x - (nearest_cell.y&1), nearest_cell.y - 1 );
 
-	int nearest_cell= 0;
-	float dst_min= 256.0;
-	for( int i= 0; i< 3; i++ )
-	{
-		vec2 v= center_pos[i] - tex_coord;
-		float dst= dot(v,v);
-		if( dst < dst_min )
-		{
-			dst_min= dst;
-			nearest_cell= i;
-		}
-	}
-
-	return candidate_cells[ nearest_cell ];
+	else
+		return nearest_cell;
 }
 
 vec4 SimpleFetch()
