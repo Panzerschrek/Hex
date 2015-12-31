@@ -1,11 +1,18 @@
 #pragma once
+#include <vector>
+
 #include "block_collision.hpp"
-#include "chunk.hpp"
 
 struct h_ChunkPhysMesh
 {
-	m_Collection< p_BlockSide > block_sides;
-	m_Collection< p_UpperBlockFace > upper_block_faces;
+	h_ChunkPhysMesh(){}
+	h_ChunkPhysMesh( const h_ChunkPhysMesh& )= delete;
+	h_ChunkPhysMesh( h_ChunkPhysMesh&& other );
 
-	short z_min, z_max;
+	h_ChunkPhysMesh& operator=( const h_ChunkPhysMesh& )= delete;
+	h_ChunkPhysMesh& operator= ( h_ChunkPhysMesh&& other );
+
+
+	std::vector< p_BlockSide > block_sides;
+	std::vector< p_UpperBlockFace > upper_block_faces;
 };

@@ -50,9 +50,9 @@ h_Player::~h_Player()
 {
 }
 
-void h_Player::SetCollisionMesh( h_ChunkPhysMesh* mesh )
+void h_Player::SetCollisionMesh( h_ChunkPhysMesh mesh )
 {
-	phys_mesh_= *mesh;
+	phys_mesh_= std::move(mesh);
 }
 
 void h_Player::Move( const m_Vec3& direction )
@@ -236,23 +236,18 @@ void h_Player::UpdateBuildPos()
 	h_Direction block_dir= DIRECTION_UNKNOWN;
 
 	m_Vec3 intersect_pos;
-	p_UpperBlockFace* face;
-	p_BlockSide* side;
-	unsigned int count;
 
 	m_Vec3 candidate_pos;
 	m_Vec3 triangle[3];
 	m_Vec3 n;
 
-	face= phys_mesh_.upper_block_faces.Data();
-	count= phys_mesh_.upper_block_faces.Size();
-	for( unsigned int k= 0; k< count; k++, face++ )
+	for( const p_UpperBlockFace& face : phys_mesh_.upper_block_faces )
 	{
-		n= g_block_normals[ face->dir ];
+		n= g_block_normals[ face.dir ];
 
-		triangle[0]= m_Vec3( face->edge[0].x, face->edge[0].y, face->z );
-		triangle[1]= m_Vec3( face->edge[1].x, face->edge[1].y, face->z );
-		triangle[2]= m_Vec3( face->edge[2].x, face->edge[2].y, face->z );
+		triangle[0]= m_Vec3( face.edge[0].x, face.edge[0].y, face.z );
+		triangle[1]= m_Vec3( face.edge[1].x, face.edge[1].y, face.z );
+		triangle[2]= m_Vec3( face.edge[2].x, face.edge[2].y, face.z );
 		if( RayHasIniersectWithTriangle( triangle, n, eye_pos, eye_dir, &candidate_pos ) )
 		{
 			float candidate_dst= ( candidate_pos - eye_pos ).Length();
@@ -260,13 +255,13 @@ void h_Player::UpdateBuildPos()
 			{
 				dst= candidate_dst;
 				intersect_pos= candidate_pos;
-				block_dir= face->dir;
+				block_dir= face.dir;
 			}
 		}
 
-		triangle[0]= m_Vec3( face->edge[2].x, face->edge[2].y, face->z );
-		triangle[1]= m_Vec3( face->edge[3].x, face->edge[3].y, face->z );
-		triangle[2]= m_Vec3( face->edge[4].x, face->edge[4].y, face->z );
+		triangle[0]= m_Vec3( face.edge[2].x, face.edge[2].y, face.z );
+		triangle[1]= m_Vec3( face.edge[3].x, face.edge[3].y, face.z );
+		triangle[2]= m_Vec3( face.edge[4].x, face.edge[4].y, face.z );
 		if( RayHasIniersectWithTriangle( triangle, n, eye_pos, eye_dir, &candidate_pos ) )
 		{
 			float candidate_dst= ( candidate_pos - eye_pos ).Length();
@@ -274,13 +269,13 @@ void h_Player::UpdateBuildPos()
 			{
 				dst= candidate_dst;
 				intersect_pos= candidate_pos;
-				block_dir= face->dir;
+				block_dir= face.dir;
 			}
 		}
 
-		triangle[0]= m_Vec3( face->edge[4].x, face->edge[4].y, face->z );
-		triangle[1]= m_Vec3( face->edge[5].x, face->edge[5].y, face->z );
-		triangle[2]= m_Vec3( face->edge[0].x, face->edge[0].y, face->z );
+		triangle[0]= m_Vec3( face.edge[4].x, face.edge[4].y, face.z );
+		triangle[1]= m_Vec3( face.edge[5].x, face.edge[5].y, face.z );
+		triangle[2]= m_Vec3( face.edge[0].x, face.edge[0].y, face.z );
 		if( RayHasIniersectWithTriangle( triangle, n, eye_pos, eye_dir, &candidate_pos ) )
 		{
 			float candidate_dst= ( candidate_pos - eye_pos ).Length();
@@ -288,13 +283,13 @@ void h_Player::UpdateBuildPos()
 			{
 				dst= candidate_dst;
 				intersect_pos= candidate_pos;
-				block_dir= face->dir;
+				block_dir= face.dir;
 			}
 		}
 
-		triangle[0]= m_Vec3( face->edge[0].x, face->edge[0].y, face->z );
-		triangle[1]= m_Vec3( face->edge[2].x, face->edge[2].y, face->z );
-		triangle[2]= m_Vec3( face->edge[4].x, face->edge[4].y, face->z );
+		triangle[0]= m_Vec3( face.edge[0].x, face.edge[0].y, face.z );
+		triangle[1]= m_Vec3( face.edge[2].x, face.edge[2].y, face.z );
+		triangle[2]= m_Vec3( face.edge[4].x, face.edge[4].y, face.z );
 		if( RayHasIniersectWithTriangle( triangle, n, eye_pos, eye_dir, &candidate_pos ) )
 		{
 			float candidate_dst= ( candidate_pos - eye_pos ).Length();
@@ -302,20 +297,18 @@ void h_Player::UpdateBuildPos()
 			{
 				dst= candidate_dst;
 				intersect_pos= candidate_pos;
-				block_dir= face->dir;
+				block_dir= face.dir;
 			}
 		}
 	}
 
-	side= phys_mesh_.block_sides.Data();
-	count= phys_mesh_.block_sides.Size();
-	for( unsigned int k= 0; k< count; k++, side++ )
+	for( const p_BlockSide& side : phys_mesh_.block_sides )
 	{
-		n= g_block_normals[ side->dir ];
+		n= g_block_normals[ side.dir ];
 
-		triangle[0]= m_Vec3( side->edge[0].x, side->edge[0].y, side->z );
-		triangle[1]= m_Vec3( side->edge[1].x, side->edge[1].y, side->z );
-		triangle[2]= m_Vec3( side->edge[1].x, side->edge[1].y, side->z + 1.0f );
+		triangle[0]= m_Vec3( side.edge[0].x, side.edge[0].y, side.z );
+		triangle[1]= m_Vec3( side.edge[1].x, side.edge[1].y, side.z );
+		triangle[2]= m_Vec3( side.edge[1].x, side.edge[1].y, side.z + 1.0f );
 		if( RayHasIniersectWithTriangle( triangle, n, eye_pos, eye_dir, &candidate_pos ) )
 		{
 			float candidate_dst= ( candidate_pos - eye_pos ).Length();
@@ -323,13 +316,13 @@ void h_Player::UpdateBuildPos()
 			{
 				dst= candidate_dst;
 				intersect_pos= candidate_pos;
-				block_dir= side->dir;
+				block_dir= side.dir;
 			}
 		}
 
-		triangle[0]= m_Vec3( side->edge[0].x, side->edge[0].y, side->z + 1.0f );
-		triangle[1]= m_Vec3( side->edge[0].x, side->edge[0].y, side->z );
-		triangle[2]= m_Vec3( side->edge[1].x, side->edge[1].y, side->z + 1.0f );
+		triangle[0]= m_Vec3( side.edge[0].x, side.edge[0].y, side.z + 1.0f );
+		triangle[1]= m_Vec3( side.edge[0].x, side.edge[0].y, side.z );
+		triangle[2]= m_Vec3( side.edge[1].x, side.edge[1].y, side.z + 1.0f );
 		if( RayHasIniersectWithTriangle( triangle, n, eye_pos, eye_dir, &candidate_pos ) )
 		{
 			float candidate_dst= ( candidate_pos - eye_pos ).Length();
@@ -337,7 +330,7 @@ void h_Player::UpdateBuildPos()
 			{
 				dst= candidate_dst;
 				intersect_pos= candidate_pos;
-				block_dir= side->dir;
+				block_dir= side.dir;
 			}
 		}
 	}
@@ -371,76 +364,66 @@ void h_Player::MoveInternal( const m_Vec3& delta )
 
 	m_Vec3 new_pos= pos_ + delta;
 
-	const p_UpperBlockFace* face;
-	const p_BlockSide* side;
-	unsigned int count;
-
-	face= phys_mesh_.upper_block_faces.Data();
-	count= phys_mesh_.upper_block_faces.Size();
-	for( unsigned int k= 0; k< count; k++, face++ )
+	for( const p_UpperBlockFace& face : phys_mesh_.upper_block_faces )
 	{
 		if( delta.z > c_eps )
 		{
-			if( face->dir == DOWN &&
-				face->z >= (pos_.z + H_PLAYER_HEIGHT) &&
-				face->z < (new_pos.z + H_PLAYER_HEIGHT) &&
-				face->HasCollisionWithCircle( new_pos.xy(), H_PLAYER_RADIUS ) )
+			if( face.dir == DOWN &&
+				face.z >= (pos_.z + H_PLAYER_HEIGHT) &&
+				face.z < (new_pos.z + H_PLAYER_HEIGHT) &&
+				face.HasCollisionWithCircle( new_pos.xy(), H_PLAYER_RADIUS ) )
 				{
-					new_pos.z= face->z - H_PLAYER_HEIGHT - c_vertical_collision_eps;
+					new_pos.z= face.z - H_PLAYER_HEIGHT - c_vertical_collision_eps;
 					break;
 				}
 		}
 		else if( delta.z < -c_eps )
 		{
-			if( face->dir == UP &&
-				face->z <= pos_.z &&
-				face->z > new_pos.z &&
-				face->HasCollisionWithCircle( new_pos.xy(), H_PLAYER_RADIUS ) )
+			if( face.dir == UP &&
+				face.z <= pos_.z &&
+				face.z > new_pos.z &&
+				face.HasCollisionWithCircle( new_pos.xy(), H_PLAYER_RADIUS ) )
 			{
-				new_pos.z= face->z + c_vertical_collision_eps;
+				new_pos.z= face.z + c_vertical_collision_eps;
 				break;
 			}
 		}
 	}// upeer faces
 
-	side= phys_mesh_.block_sides.Data();
-	count= phys_mesh_.block_sides.Size();
-	for( unsigned int k= 0; k< count; k++, side++ )
+	for( const p_BlockSide& side : phys_mesh_.block_sides )
 	{
-		if( ( side->z > new_pos.z && side->z < new_pos.z + H_PLAYER_HEIGHT ) ||
-			( side->z + 1.0f > new_pos.z && side->z + 1.0f < new_pos.z + H_PLAYER_HEIGHT ) )
+		if( ( side.z > new_pos.z && side.z < new_pos.z + H_PLAYER_HEIGHT ) ||
+			( side.z + 1.0f > new_pos.z && side.z + 1.0f < new_pos.z + H_PLAYER_HEIGHT ) )
 		{
-			m_Vec2 collide_pos= side->CollideWithCirlce( new_pos.xy(), H_PLAYER_RADIUS );
+			m_Vec2 collide_pos= side.CollideWithCirlce( new_pos.xy(), H_PLAYER_RADIUS );
 			if( collide_pos != new_pos.xy() )
 			{
 				new_pos.x= collide_pos.x;
 				new_pos.y= collide_pos.y;
 
 				// Zero speed component, perpendicalar to this side.
-				speed_-= ( speed_ * g_block_normals[side->dir] ) * g_block_normals[side->dir];
+				speed_-= ( speed_ * g_block_normals[side.dir] ) * g_block_normals[side.dir];
 			}
 		}
 	}
 
 	// Check in_air
 	in_air_= true;
-	face= phys_mesh_.upper_block_faces.Data();
-	count= phys_mesh_.upper_block_faces.Size();
-	for( unsigned int k= 0; k< count; k++, face++ )
+	for( const p_UpperBlockFace& face : phys_mesh_.upper_block_faces )
 	{
-		if( face->dir == UP &&
-			new_pos.z <= face->z + c_on_ground_eps &&
-			new_pos.z > face->z &&
-			face->HasCollisionWithCircle( new_pos.xy(), H_PLAYER_RADIUS ) )
+		if( face.dir == UP &&
+			new_pos.z <= face.z + c_on_ground_eps &&
+			new_pos.z > face.z &&
+			face.HasCollisionWithCircle( new_pos.xy(), H_PLAYER_RADIUS ) )
 		{
 			in_air_= false;
 			vertical_speed_= 0.0f;
 			break;
 		}
-		if (face->dir == DOWN &&
-			new_pos.z + H_PLAYER_HEIGHT >= face->z - c_on_ground_eps &&
-			new_pos.z + H_PLAYER_HEIGHT < face->z &&
-			face->HasCollisionWithCircle( new_pos.xy(), H_PLAYER_RADIUS ) )
+		if (face.dir == DOWN &&
+			new_pos.z + H_PLAYER_HEIGHT >= face.z - c_on_ground_eps &&
+			new_pos.z + H_PLAYER_HEIGHT < face.z &&
+			face.HasCollisionWithCircle( new_pos.xy(), H_PLAYER_RADIUS ) )
 		{
 			vertical_speed_= 0.0f;
 			break;

@@ -1,3 +1,5 @@
+#include "math_lib/assert.hpp"
+
 #include "block_collision.hpp"
 
 static bool IsPointInTriangle( const m_Vec2* triangle, const m_Vec2& point )
@@ -69,12 +71,11 @@ static bool TriangleIntersectWithCircle( const m_Vec2* triangle, const m_Vec2& c
 	return false;
 }
 
-void p_UpperBlockFace::Gen( short x, short y, short z, h_Direction dir )
+p_UpperBlockFace::p_UpperBlockFace( short x, short y, short in_z, h_Direction in_dir )
+	: z( float( in_dir == UP ? in_z : in_z - 1 ) )
+	, dir(in_dir)
 {
-	this->z= float(z);
-	this->dir= dir;
-	if( dir == DOWN )
-		this->z -= 1.0f;
+	H_ASSERT( in_dir == UP || in_dir == DOWN );
 
 	edge[0].x= float(x) * H_SPACE_SCALE_VECTOR_X;
 	edge[1].x= edge[5].x= edge[0].x + 0.5f * H_HEXAGON_EDGE_SIZE;
@@ -117,11 +118,10 @@ bool p_UpperBlockFace::HasCollisionWithCircle( const m_Vec2& pos, float radius )
 	return false;
 }
 
-void p_BlockSide::Gen( short x, short y, short z, h_Direction dir )
+p_BlockSide::p_BlockSide( short x, short y, short in_z, h_Direction in_dir )
+	: z(in_z)
+	, dir(in_dir)
 {
-	this->z= float(z);
-	this->dir= dir;
-
 	switch( dir )
 	{
 	case FORWARD:
@@ -164,6 +164,9 @@ void p_BlockSide::Gen( short x, short y, short z, h_Direction dir )
 		edge[1].y= edge[0].y + 0.5f;
 		break;
 
+	default:
+		H_ASSERT(false);
+		break;
 	}
 }
 

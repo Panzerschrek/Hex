@@ -3,6 +3,7 @@
 #include <mutex>
 
 #include "hex.hpp"
+#include "fwd.hpp"
 #include "vec.hpp"
 #include "math_lib/m_math.h"
 #include "chunk_phys_mesh.hpp"
@@ -33,7 +34,7 @@ public:
 	void Dig();
 	void TestMobSetPosition();
 
-	void SetCollisionMesh( h_ChunkPhysMesh* mesh );
+	void SetCollisionMesh( h_ChunkPhysMesh mesh );
 
 	void Lock();
 	void Unlock();

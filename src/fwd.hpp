@@ -15,6 +15,7 @@ typedef std::shared_ptr<h_World> h_WorldPtr;
 typedef std::shared_ptr<const h_World> h_WorldConstPtr;
 class h_Chunk;
 class h_ChunkLoader;
+class h_ChunkPhysMesh;
 
 class g_WorldGenerator;
 

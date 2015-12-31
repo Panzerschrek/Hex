@@ -9,7 +9,6 @@
 #include "fwd.hpp"
 #include "block.hpp"
 #include "chunk.hpp"
-#include "chunk_phys_mesh.hpp"
 #include "math_lib/rand.h"
 #include "world_action.hpp"
 #include "chunk_loader.hpp"
@@ -78,7 +77,7 @@ private:
 	void AddLightToBorderChunk( unsigned int X, unsigned int Y );
 
 	//function uses local coordinates of loaded zone
-	void BuildPhysMesh( h_ChunkPhysMesh* phys_mesh, short x_min, short x_max, short y_min, short y_max, short z_min, short z_max );
+	h_ChunkPhysMesh BuildPhysMesh( short x_min, short x_max, short y_min, short y_max, short z_min, short z_max );
 
 	//clamp coordinates to [ 0; H_CHUNK_WIDTH * chunk_number - 1 ) for x and y
 	//and to [ 0; H_CHUNK_HEIGHT - 1 ] for z
@@ -139,8 +138,6 @@ private:
 
 	r_IWorldRendererWeakPtr renderer_;
 	h_PlayerWeakPtr player_;
-
-	h_ChunkPhysMesh player_phys_mesh_;
 
 	h_Block normal_blocks_[ NUM_BLOCK_TYPES ];
 

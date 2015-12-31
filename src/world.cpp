@@ -5,6 +5,7 @@
 #include "settings.hpp"
 #include "settings_keys.hpp"
 #include "world_generator/world_generator.hpp"
+#include "chunk_phys_mesh.hpp"
 #include "path_finder.hpp"
 
 static const unsigned int g_updates_frequency= 15;
@@ -507,15 +508,12 @@ h_Chunk* h_World::LoadChunk( int lon, int lat )
 	return new h_Chunk( this, &header, stream );
 }
 
-void h_World::BuildPhysMesh( h_ChunkPhysMesh* phys_mesh, short x_min, short x_max, short y_min, short y_max, short z_min, short z_max )
+h_ChunkPhysMesh h_World::BuildPhysMesh( short x_min, short x_max, short y_min, short y_max, short z_min, short z_max )
 {
-	short x, y, z;
-	short x1, y1;
-	phys_mesh->block_sides.Resize(0);
-	phys_mesh->upper_block_faces.Resize(0);
+	h_ChunkPhysMesh phys_mesh;
 
 	short X= Longitude() * H_CHUNK_WIDTH;
-	short Y= Latitude() * H_CHUNK_WIDTH;
+	short Y= Latitude () * H_CHUNK_WIDTH;
 
 	x_min= std::max( short(2), x_min );
 	y_min= std::max( short(2), y_min );
@@ -524,74 +522,74 @@ void h_World::BuildPhysMesh( h_ChunkPhysMesh* phys_mesh, short x_min, short x_ma
 	y_max= std::min( y_max, short( chunk_number_y_ * H_CHUNK_WIDTH - 2 ) );
 	z_max= std::min( z_max, short( H_CHUNK_HEIGHT - 1 ) );
 
-	p_UpperBlockFace* block_face;
-	p_BlockSide* block_side;
+	for( short x= x_min; x< x_max; x++ )
+	for( short y= y_min; y< y_max; y++ )
+	{
+		const unsigned char *t_p, *t_f_p, *t_fr_p, *t_br_p;
+		short x1, y1;
 
-	unsigned char t, t_up, t_f, t_fr, t_br;
-	for( x= x_min; x< x_max; x++ )
-		for( y= y_min; y< y_max; y++ )
+		t_p=
+			GetChunk( x >> H_CHUNK_WIDTH_LOG2, y >> H_CHUNK_WIDTH_LOG2 )->GetTransparencyData() +
+			BlockAddr( x&(H_CHUNK_WIDTH-1), y&(H_CHUNK_WIDTH-1), 0 );
+
+		y1= y + 1;
+		t_f_p=
+			GetChunk( x >> H_CHUNK_WIDTH_LOG2, y1 >> H_CHUNK_WIDTH_LOG2 )->GetTransparencyData() +
+			BlockAddr( x&(H_CHUNK_WIDTH-1), y1&(H_CHUNK_WIDTH-1), 0 );
+
+		x1= x+1;
+		y1= y + ( 1&(x+1) );
+		t_fr_p=
+			GetChunk( x1 >> H_CHUNK_WIDTH_LOG2, y1 >> H_CHUNK_WIDTH_LOG2 )->GetTransparencyData() +
+			BlockAddr( x1&(H_CHUNK_WIDTH-1), y1&(H_CHUNK_WIDTH-1), 0 );
+
+		x1= x+1;
+		y1= y - (x&1);
+		t_br_p=
+			GetChunk( x1 >> H_CHUNK_WIDTH_LOG2, y1 >> H_CHUNK_WIDTH_LOG2 )->GetTransparencyData() +
+			BlockAddr( x1&(H_CHUNK_WIDTH-1), y1&(H_CHUNK_WIDTH-1), 0 );
+
+		for( short z= z_min; z < z_max; z++ )
 		{
-			t_up= GetChunk( x >> H_CHUNK_WIDTH_LOG2, y>> H_CHUNK_WIDTH_LOG2 )
-				  ->Transparency( x&(H_CHUNK_WIDTH-1), y&(H_CHUNK_WIDTH-1), z_min );
-			for( z= z_min; z < z_max; z++ )
+			unsigned char t, t_up, t_f, t_fr, t_br;
+			t= t_p[z];
+			t_up= t_p[z+1];
+			t_f= t_f_p[z];
+			t_fr= t_fr_p[z];
+			t_br= t_br_p[z];
+
+			if( t != t_up )
 			{
-				t= t_up;
-
-				y1= y+1;
-				t_f= GetChunk( x >> H_CHUNK_WIDTH_LOG2, y1>> H_CHUNK_WIDTH_LOG2 )
-					 ->Transparency( x&(H_CHUNK_WIDTH-1), y1&(H_CHUNK_WIDTH-1), z );
-
-				x1= x+1;
-				y1= y + ( 1&(x+1) );
-				t_fr= GetChunk( x1 >> H_CHUNK_WIDTH_LOG2, y1 >> H_CHUNK_WIDTH_LOG2 )
-					  ->Transparency( x1&(H_CHUNK_WIDTH-1), y1&(H_CHUNK_WIDTH-1), z );
-
-				x1= x+1;
-				y1= y - (x&1);
-				t_br= GetChunk( x1 >> H_CHUNK_WIDTH_LOG2, y1 >> H_CHUNK_WIDTH_LOG2 )
-					  ->Transparency( x1&(H_CHUNK_WIDTH-1), y1&(H_CHUNK_WIDTH-1), z );
-
-				t_up= GetChunk( x >> H_CHUNK_WIDTH_LOG2, y>> H_CHUNK_WIDTH_LOG2 )
-					  ->Transparency( x&(H_CHUNK_WIDTH-1), y&(H_CHUNK_WIDTH-1), z + 1 );
-
-				if( t != t_up )
-				{
-					phys_mesh->upper_block_faces.AddToSize(1);
-					block_face=  phys_mesh->upper_block_faces.Last();
-					if( t > t_up )
-						block_face->Gen( x + X, y + Y, z + 1, DOWN );
-					else
-						block_face->Gen( x + X, y + Y, z, UP );
-				}
-				if( t != t_fr )
-				{
-					phys_mesh->block_sides.AddToSize(1);
-					block_side= phys_mesh->block_sides.Last();
-					if( t > t_fr )
-						block_side->Gen( x + X + 1, y + Y + ((x+1)&1), z-1, BACK_LEFT );
-					else
-						block_side->Gen( x + X, y + Y, z-1, FORWARD_RIGHT );
-				}
-				if( t != t_br )
-				{
-					phys_mesh->block_sides.AddToSize(1);
-					block_side= phys_mesh->block_sides.Last();
-					if( t > t_br )
-						block_side->Gen( x + X + 1, y + Y - (x&1), z-1, FORWARD_LEFT );
-					else
-						block_side->Gen( x + X, y + Y, z-1, BACK_RIGHT );
-				}
-				if( t!= t_f )
-				{
-					phys_mesh->block_sides.AddToSize(1);
-					block_side= phys_mesh->block_sides.Last();
-					if( t > t_f )
-						block_side->Gen( x + X, y + Y + 1, z-1, BACK );
-					else
-						block_side->Gen( x + X, y + Y, z-1, FORWARD );
-				}
+				if( t > t_up )
+					phys_mesh.upper_block_faces.emplace_back( x + X, y + Y, z + 1, DOWN );
+				else
+					phys_mesh.upper_block_faces.emplace_back( x + X, y + Y, z, UP );
 			}
-		}
+			if( t != t_fr )
+			{
+				if( t > t_fr )
+					phys_mesh.block_sides.emplace_back( x + X + 1, y + Y + ((x+1)&1), z-1, BACK_LEFT );
+				else
+					phys_mesh.block_sides.emplace_back( x + X, y + Y, z-1, FORWARD_RIGHT );
+			}
+			if( t != t_br )
+			{
+				if( t > t_br )
+					phys_mesh.block_sides.emplace_back( x + X + 1, y + Y - (x&1), z-1, FORWARD_LEFT );
+				else
+					phys_mesh.block_sides.emplace_back( x + X, y + Y, z-1, BACK_RIGHT );
+			}
+			if( t!= t_f )
+			{
+				if( t > t_f )
+					phys_mesh.block_sides.emplace_back( x + X, y + Y + 1, z-1, BACK );
+				else
+					phys_mesh.block_sides.emplace_back( x + X, y + Y, z-1, FORWARD );
+			}
+		} // for z
+	} // for xy
+
+	return phys_mesh;
 }
 
 void h_World::BlastBlock_r( short x, short y, short z, short blast_power )
@@ -660,11 +658,11 @@ void h_World::PhysTick()
 			player_coord[0]= player_coord_global[0] - Longitude() * H_CHUNK_WIDTH;
 			player_coord[1]= player_coord_global[1] - Latitude () * H_CHUNK_WIDTH;
 			player_coord[2]= int(player->Pos().z + H_PLAYER_EYE_LEVEL);
-			BuildPhysMesh(
-				&player_phys_mesh_,
-				player_coord[0] - 5, player_coord[0] + 5,
-				player_coord[1] - 6, player_coord[1] + 6,
-				player_coord[2] - 5, player_coord[2] + 5 );
+			h_ChunkPhysMesh player_phys_mesh=
+				BuildPhysMesh(
+					player_coord[0] - 5, player_coord[0] + 5,
+					player_coord[1] - 6, player_coord[1] + 6,
+					player_coord[2] - 5, player_coord[2] + 5 );
 
 			if( player_coord[1]/H_CHUNK_WIDTH > int(chunk_number_y_/2+2) )
 				MoveWorld( NORTH );
@@ -676,7 +674,7 @@ void h_World::PhysTick()
 				MoveWorld( WEST );
 
 			player->Lock();
-			player->SetCollisionMesh( &player_phys_mesh_ );
+			player->SetCollisionMesh( std::move(player_phys_mesh) );
 			player->Unlock();
 		}
 
