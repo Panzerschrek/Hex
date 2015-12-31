@@ -3,33 +3,96 @@
 #include "rendering_constants.hpp"
 #include "../block.hpp"
 #include "../console.hpp"
-#include <iostream>
-#include <fstream>
 
+#include <QImage>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QFile>
 #include <QPainter>
 
-unsigned char r_TextureManager::texture_table[ NUM_BLOCK_TYPES * 8 ];
-bool r_TextureManager::texture_mode_table[ NUM_BLOCK_TYPES * 8 ];
-unsigned char r_TextureManager::texture_scale_table[ NUM_BLOCK_TYPES * 8 ];
+unsigned char r_TextureManager::texture_table_[ NUM_BLOCK_TYPES * 8 ];
+bool r_TextureManager::texture_mode_table_[ NUM_BLOCK_TYPES * 8 ];
+unsigned char r_TextureManager::texture_scale_table_[ NUM_BLOCK_TYPES * 8 ];
 
-void r_TextureManager::InitTextureTable()
+static void ValidateTexturesConfig( const QJsonDocument& doc )
 {
-	unsigned int i;
-	for( i= 0; i< NUM_BLOCK_TYPES * 8; i++ )
-		texture_table[i]= 0;
-	for( i= 0; i< NUM_BLOCK_TYPES * 8; i++ )
-		texture_mode_table[i]= false;
-	for( i= 0; i< NUM_BLOCK_TYPES * 8; i++ )
-		texture_scale_table[i]= H_MAX_TEXTURE_SCALE;
+	if( !doc.isArray() )
+	{
+		h_Console::Error( "Expected, that textures config is valid json array" );
+		return;
+	}
+
+	const QJsonArray array= doc.array();
+	for( const QJsonValue value : array )
+	{
+		if( !value.isObject() )
+		{
+			h_Console::Error( "Expected, that values in array are objects" );
+			continue;
+		}
+
+		const QJsonObject object= value.toObject();
+
+		if( !object.contains( "filename" ) )
+			h_Console::Error( "Expected, that objects contains property \"filename\"" );
+
+		const QJsonValue blocks= object["blocks"];
+		if( blocks == QJsonValue::Undefined )
+		{
+			h_Console::Error( "Expected, that objects contains \"blocks\" array" );
+			continue;
+		}
+
+		if( !blocks.isArray() )
+		{
+			h_Console::Error( "Expected, that \"blocks\" is array" );
+			continue;
+		}
+
+		const QJsonArray blocks_array= blocks.toArray();
+		for( const QJsonValue block_value : blocks_array )
+		{
+			if( !block_value.isObject() )
+			{
+				h_Console::Error( "Expected, that array \"blocks\" contains objects" );
+				continue;
+			}
+			const QJsonObject block_object= block_value.toObject();
+
+			if( !block_object.contains( "blockname" ) )
+				h_Console::Error( "Expected, that \"block\" object has property \"\blockname\"" );
+
+			if( !block_object.contains( "blockside" ) )
+				h_Console::Error( "Expected, that \"block\" object has property \"\blockside\"" );
+
+		} // for blocks
+
+		if( blocks_array.size() == 0 )
+		{
+			h_Console::Error( "Expected, that \"blocks\" is non empty array" );
+			continue;
+		}
+	} // for objects in array
 }
 
-void r_TextureManager::DrawNullTexture( QImage* img, const char* text )
+static unsigned char* RescaleAndPrepareTexture( unsigned char* in_data, unsigned char* tmp_data, unsigned int requrided_size )
 {
-	QPainter p( img );
+	unsigned int s= 0, d= 1;
+	unsigned char* tex_data_pointers[2];
+	tex_data_pointers[0]= in_data;
+	tex_data_pointers[1]= tmp_data;
+
+	for( unsigned int i= R_MAX_TEXTURE_RESOLUTION; i > requrided_size; i>>=1, s^=1, d^=1 )
+		r_ImgUtils::RGBA8_GetMip( tex_data_pointers[s], tex_data_pointers[d], i, i );
+
+	r_ImgUtils::RGBA8_MirrorVerticalAndSwapRB( tex_data_pointers[s], requrided_size, requrided_size );
+	return tex_data_pointers[s];
+}
+
+static void DrawNullTexture( QImage& img, const char* text= nullptr )
+{
+	QPainter p( &img );
 
 	p.fillRect( 0, 0, 128, 128, Qt::black );
 	p.fillRect( 128, 0, 128, 128, Qt::magenta );
@@ -45,135 +108,138 @@ void r_TextureManager::DrawNullTexture( QImage* img, const char* text )
 	p.setFont( f );
 	p.setPen( QColor( Qt::white ) );
 	p.drawText( 20, 80, "Texture not found" );
-	p.drawText( 20, 130, text );
+	if( text) p.drawText( 20, 130, text );
 	p.drawText( 20, 180, "Texture not found" );
 }
 
 r_TextureManager::r_TextureManager()
+	: texture_size_( R_MAX_TEXTURE_RESOLUTION )
+	, filter_textures_( true )
 {
 	InitTextureTable();
 }
 
+void r_TextureManager::InitTextureTable()
+{
+	unsigned int i;
+	for( i= 0; i< NUM_BLOCK_TYPES * 8; i++ )
+		texture_table_[i]= 0;
+	for( i= 0; i< NUM_BLOCK_TYPES * 8; i++ )
+		texture_mode_table_[i]= false;
+	for( i= 0; i< NUM_BLOCK_TYPES * 8; i++ )
+		texture_scale_table_[i]= H_MAX_TEXTURE_SCALE;
+}
+
 void r_TextureManager::LoadTextures()
 {
-	unsigned int texture_layers= 32;
 	unsigned int tex_id= 0;
+	QSize required_texture_size( R_MAX_TEXTURE_RESOLUTION, R_MAX_TEXTURE_RESOLUTION );
+	std::vector<unsigned char> tmp_data( R_MAX_TEXTURE_RESOLUTION * R_MAX_TEXTURE_RESOLUTION * 4 );
 
-	glGenTextures( 1, &texture_array );
-	glBindTexture( GL_TEXTURE_2D_ARRAY, texture_array );
-	glTexImage3D( GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, texture_size, texture_size, texture_layers, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+	QJsonArray arr;
+	{
+		const char* config_file_name= "textures/textures.json";
+		QFile f( config_file_name );
+		if( !f.open( QIODevice::ReadOnly ) )
+			h_Console::Error( "fatal error, textures config file \"%s\" not found", config_file_name );
+		QByteArray ba= f.readAll();
+		f.close();
 
-	QImage img( QSize( 256, 256 ), QImage::Format_RGBA8888 );
+		QJsonDocument doc= QJsonDocument::fromJson( ba );
+		ValidateTexturesConfig( doc );
+		arr= doc.array();
+	}
+	unsigned texture_layers= std::min( arr.size() + 1, R_MAX_TEXTURES );
 
-	//"load" null texture
-	DrawNullTexture( &img );
+	glGenTextures( 1, &texture_array_ );
+	glBindTexture( GL_TEXTURE_2D_ARRAY, texture_array_ );
+	glTexImage3D(
+		GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8,
+		texture_size_, texture_size_, texture_layers,
+		0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr );
 
-	unsigned char* tmp_data= new unsigned char[ R_MAX_TEXTURE_RESOLUTION * R_MAX_TEXTURE_RESOLUTION * 4 ];
-	unsigned char* tex_data_pointers[2];
-	tex_data_pointers[0]= (unsigned char*) img.constBits();
-	tex_data_pointers[1]= tmp_data;
-	int s= 0, d= 1;
-	for( unsigned int i= R_MAX_TEXTURE_RESOLUTION; i > texture_size; i>>=1, s^=1, d^=1 )
-		r_ImgUtils::RGBA8_GetMip( tex_data_pointers[s], tex_data_pointers[d], i, i );
-	r_ImgUtils::RGBA8_MirrorVerticalAndSwapRB( tex_data_pointers[s], texture_size, texture_size );
+	QImage img( required_texture_size, QImage::Format_RGBA8888 );
+
+	DrawNullTexture( img );
 	glTexSubImage3D(
 		GL_TEXTURE_2D_ARRAY,
 		0, 0, 0,
 		tex_id,
-		texture_size, texture_size,
-		1, GL_RGBA, GL_UNSIGNED_BYTE, tex_data_pointers[s] );
+		texture_size_, texture_size_,
+		1, GL_RGBA, GL_UNSIGNED_BYTE,
+		RescaleAndPrepareTexture( img.bits(), tmp_data.data(), texture_size_ ) );
 
-
-	const char* config_file_name=  "textures/textures.json";
-	QString fn( config_file_name );
-	QFile f( fn );
-	if( !f.open( QIODevice::ReadOnly ) )
-		h_Console::Error( "fatal error, file \"%s\" not found", config_file_name );
-	QByteArray ba= f.readAll();
-	f.close();
-
-	QJsonParseError err;
-	QJsonDocument doc= QJsonDocument::fromJson( ba, &err );
-
-	if( doc.isArray() )
+	//for each texture
+	for( const QJsonValue arr_val : arr )
 	{
-		QJsonArray arr= doc.array();
+		QJsonObject obj= arr_val.toObject();
+		QJsonValue val;
 
-		//for each texture
-		for( int i= 0; i< arr.size(); i++ )
+		QString filename= obj[ "filename" ].toString();
+		if( !img.load( filename ) )
 		{
-			QJsonObject obj= arr.at(i).toObject();
-			QJsonValue val;
-			val= obj[ "filename" ];
+			h_Console::Warning( "texture \"%s\" not fund", filename.toLocal8Bit().constData() );
+			continue;
+		}
 
-			if( ! img.load( obj[ "filename" ].toString() ) )
-			{
-				h_Console::Warning( "texture \"%s\" not fund", obj[ "filename" ].toString().toLocal8Bit().constData() );
-				continue;
-			}
-			else
-			{
-				tex_id++;
+		tex_id++;
+		if( tex_id == R_MAX_TEXTURES )
+		{
+			h_Console::Warning( "Too much textures! %d is maximum", R_MAX_TEXTURES );
+			break;
+		}
 
-				tex_data_pointers[0]= (unsigned char*) img.constBits();
-				tex_data_pointers[1]= tmp_data;
-				s= 0, d= 1;
-				for( unsigned int i= R_MAX_TEXTURE_RESOLUTION; i > texture_size; i>>=1, s^=1, d^=1 )
-					r_ImgUtils::RGBA8_GetMip( tex_data_pointers[s], tex_data_pointers[d], i, i );
-				r_ImgUtils::RGBA8_MirrorVerticalAndSwapRB( tex_data_pointers[s], texture_size, texture_size );
-				glTexSubImage3D(
-					GL_TEXTURE_2D_ARRAY,
-					0, 0, 0,
-					tex_id,
-					texture_size, texture_size,
-					1, GL_RGBA, GL_UNSIGNED_BYTE, tex_data_pointers[s] );
-			}
+		if( img.size() != required_texture_size )
+		{
+			h_Console::Warning(
+				"texture \"%s\" has unexpected size: %dx%d, expected %dx%d",
+				filename.toLocal8Bit().constData(),
+				img.width(), img.height(),
+				required_texture_size.width(), required_texture_size.height() );
 
-			val= obj[ "scale" ];
-			if( val.isDouble() )
-				texture_scale_table[ tex_id ]= std::min( std::max( val.toInt(), 1 ), H_MAX_TEXTURE_SCALE * H_MAX_TEXTURE_SCALE );
+			img= img.scaled( required_texture_size, Qt::IgnoreAspectRatio, Qt::SmoothTransformation );
+		}
 
-			val= obj[ "perblock" ];
-			if( val.isBool() )
-				texture_mode_table[ tex_id ]= val.toBool();
+		glTexSubImage3D(
+			GL_TEXTURE_2D_ARRAY,
+			0, 0, 0,
+			tex_id,
+			texture_size_, texture_size_,
+			1, GL_RGBA, GL_UNSIGNED_BYTE,
+			RescaleAndPrepareTexture( img.bits(), tmp_data.data(), texture_size_ ) );
 
-			QJsonArray blocks= obj[ "blocks" ].toArray();
+		val= obj[ "scale" ];
+		if( val.isDouble() )
+			texture_scale_table_[ tex_id ]= std::min( std::max( val.toInt(), 1 ), H_MAX_TEXTURE_SCALE * H_MAX_TEXTURE_SCALE );
 
-			//for each block for texture
-			for( int j= 0; j< blocks.size(); j++ )
-			{
-				QJsonObject block_obj= blocks.at(j).toObject();
+		val= obj[ "perblock" ];
+		if( val.isBool() )
+			texture_mode_table_[ tex_id ]= val.toBool();
 
-				QString blockname, blockside;
+		QJsonArray blocks= obj[ "blocks" ].toArray();
 
-				val= block_obj[ "blockname" ];
-				blockname= val.toString();
+		//for each block for texture
+		for( const QJsonValue block_val : blocks )
+		{
+			QJsonObject block_obj= block_val.toObject();
 
-				val= block_obj[ "blockside" ];
-				blockside= val.toString();
+			QString blockname= block_obj[ "blockname" ].toString();
+			QString blockside= block_obj[ "blockside" ].toString();
 
+			h_BlockType t= h_Block::GetGetBlockTypeByName( blockname.toLocal8Bit().data() );
+			if( t == BLOCK_UNKNOWN ) continue;
 
-				h_BlockType t= h_Block::GetGetBlockTypeByName( blockname.toLocal8Bit().data() );
-				if( t == BLOCK_UNKNOWN ) continue;
+			if( blockside == "universal" )
+				for( int k= 0; k< 8; k++ )
+					texture_table_[ (t<<3) | k ]= tex_id;
 
-				if( ! strcmp( blockside.toLocal8Bit().data(), "universal" )  )
-					for( int k= 0; k< 8; k++ )
-						texture_table[ (t<<3) | k ]= tex_id;
+			h_Direction d= h_Block::GetDirectionByName( blockside.toLocal8Bit().data() );
+			if( d != DIRECTION_UNKNOWN )
+				texture_table_[ (t<<3) | d ]= tex_id;
+		}//for blocks
+	}//for textures
 
-				h_Direction d= h_Block::GetDirectionByName( blockside.toLocal8Bit().data() );
-				if( d != DIRECTION_UNKNOWN )
-					texture_table[ (t<<3) |d ]= tex_id;
-
-			}//for blocks
-
-		}//for textures
-	}//if json array
-	else
-		h_Console::Error( "invalid JSON file: \"%s\"\n", config_file_name );
-
-	delete[] tmp_data;
-
-	if( filter_textures )
+	if( filter_textures_ )
 	{
 		glTexParameteri( GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 		glTexParameteri( GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR );
@@ -185,3 +251,24 @@ void r_TextureManager::LoadTextures()
 	}
 	glGenerateMipmap( GL_TEXTURE_2D_ARRAY );
 }
+
+void r_TextureManager::BindTextureArray( unsigned int unit )
+{
+	glActiveTexture( GL_TEXTURE0 + unit );
+	glBindTexture( GL_TEXTURE_2D_ARRAY, texture_array_ );
+}
+
+void r_TextureManager::SetTextureSize( unsigned int size )
+{
+	// Ceil to nearest power of two
+	texture_size_= R_MIN_TEXTURE_RESOLUTION;
+	while( texture_size_ < size ) texture_size_<<= 1;
+
+	texture_size_= std::min( texture_size_, (unsigned int)R_MAX_TEXTURE_RESOLUTION );
+}
+
+void r_TextureManager::SetFiltration( bool filter_textures )
+{
+	filter_textures_= filter_textures;
+}
+
