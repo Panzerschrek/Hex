@@ -10,7 +10,7 @@ struct h_ChunkPhysMesh
 	h_ChunkPhysMesh( h_ChunkPhysMesh&& other );
 
 	h_ChunkPhysMesh& operator=( const h_ChunkPhysMesh& )= delete;
-	h_ChunkPhysMesh& operator= ( h_ChunkPhysMesh&& other );
+	h_ChunkPhysMesh& operator=( h_ChunkPhysMesh&& other );
 
 
 	std::vector< p_BlockSide > block_sides;

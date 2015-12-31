@@ -232,11 +232,10 @@ void h_Player::UpdateBuildPos()
 
 	m_Vec3 eye_pos= pos_;
 	eye_pos.z+= H_PLAYER_EYE_LEVEL;
-	float dst= 1024.0f;
+	float dst= std::numeric_limits<float>::max();
 	h_Direction block_dir= DIRECTION_UNKNOWN;
 
 	m_Vec3 intersect_pos;
-
 	m_Vec3 candidate_pos;
 	m_Vec3 triangle[3];
 	m_Vec3 n;
@@ -342,7 +341,8 @@ void h_Player::UpdateBuildPos()
 		return;
 	}
 
-	intersect_pos+= g_block_normals[ block_dir ] * 0.01f;
+	// Fix accuracy.
+	intersect_pos+= g_block_normals[ block_dir ] * 0.1f;
 
 	short new_x, new_y, new_z;
 	GetHexogonCoord( intersect_pos.xy(), &new_x, &new_y );
