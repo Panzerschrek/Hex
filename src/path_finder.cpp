@@ -1,4 +1,5 @@
 #include <cstring>
+#include <limits>
 #include <vector>
 
 #include "math_lib/assert.hpp"
@@ -7,13 +8,19 @@
 
 struct WavefrontPoint
 {
-	int x, y, z;
+	typedef short CoordinateType;
+	static_assert(
+		std::numeric_limits<CoordinateType>::max() >
+		( (H_MAX_LONGITUDE > H_MAX_LATITUDE ? H_MAX_LONGITUDE : H_MAX_LATITUDE) << H_CHUNK_WIDTH_LOG2 ),
+		"too small CoordinateType" );
+
 	unsigned int prev_point_id;
+	CoordinateType x, y, z;
 
 	WavefrontPoint(){}
-	WavefrontPoint( int in_x, int in_y, int in_z, unsigned int in_prev_point_id )
-		: x(in_x), y(in_y), z(in_z)
-		, prev_point_id(in_prev_point_id)
+	WavefrontPoint( CoordinateType in_x, CoordinateType in_y, CoordinateType in_z, unsigned int in_prev_point_id )
+		: prev_point_id(in_prev_point_id)
+		, x(in_x), y(in_y), z(in_z)
 	{}
 };
 
@@ -63,21 +70,21 @@ bool h_PathFinder::FindPath(
 			prev_wavefront.pop_back();
 			WavefrontPoint& wavefront_point= visited_points[ prev_point_id ];
 
-			int forward_side_dy= (wavefront_point.x+1) & 1;
-			int back_side_dy= wavefront_point.x & 1;
+			short forward_side_y= short( wavefront_point.y + ((wavefront_point.x+1) & 1) );
+			short back_side_y= short( wavefront_point.y - (wavefront_point.x & 1) );
 			WavefrontPoint neighbors[6]=
 			{
-				{ wavefront_point.x, wavefront_point.y + 1, // FORWARD
+				{ wavefront_point.x, short(wavefront_point.y + 1), // FORWARD
 					wavefront_point.z, 0 },
-				{ wavefront_point.x, wavefront_point.y - 1, // BACK
+				{ wavefront_point.x, short(wavefront_point.y - 1), // BACK
 					wavefront_point.z, 0 },
-				{ wavefront_point.x + 1, wavefront_point.y + forward_side_dy, // FORWARD_RIGHT
+				{ short(wavefront_point.x + 1), forward_side_y, // FORWARD_RIGHT
 					wavefront_point.z, 0 },
-				{ wavefront_point.x + 1, wavefront_point.y - back_side_dy, // BACK_RIGHT
+				{ short(wavefront_point.x + 1), back_side_y, // BACK_RIGHT
 					wavefront_point.z, 0 },
-				{ wavefront_point.x - 1, wavefront_point.y + forward_side_dy, // FORWARD_LEFT
+				{ short(wavefront_point.x - 1), forward_side_y, // FORWARD_LEFT
 					wavefront_point.z, 0 },
-				{ wavefront_point.x - 1, wavefront_point.y - back_side_dy, // BACK_LEFT
+				{ short(wavefront_point.x - 1), back_side_y, // BACK_LEFT
 					wavefront_point.z, 0 },
 			};
 			for( const WavefrontPoint& neighbor : neighbors )
