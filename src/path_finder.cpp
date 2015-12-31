@@ -68,7 +68,7 @@ bool h_PathFinder::FindPath(
 		{
 			unsigned int prev_point_id= prev_wavefront.back();
 			prev_wavefront.pop_back();
-			WavefrontPoint& wavefront_point= visited_points[ prev_point_id ];
+			WavefrontPoint wavefront_point= visited_points[ prev_point_id ];
 
 			short forward_side_y= short( wavefront_point.y + ((wavefront_point.x+1) & 1) );
 			short back_side_y= short( wavefront_point.y - (wavefront_point.x & 1) );
