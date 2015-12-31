@@ -87,6 +87,21 @@ bool h_PathFinder::FindPath(
 				{ short(wavefront_point.x - 1), back_side_y, // BACK_LEFT
 					wavefront_point.z, 0 },
 			};
+
+			const unsigned char* current_point_taransparency_data;
+			{
+				int world_relative_x= wavefront_point.x - ( world_.Longitude() << H_CHUNK_WIDTH_LOG2 );
+				int world_relative_y= wavefront_point.y - ( world_.Latitude () << H_CHUNK_WIDTH_LOG2 );
+				int chunk_local_x= wavefront_point.x & (H_CHUNK_WIDTH - 1);
+				int chunk_local_y= wavefront_point.y & (H_CHUNK_WIDTH - 1);
+				// TODO - maybe just skip points, outside world borders?
+				H_ASSERT( world_relative_x >= 0 );
+				H_ASSERT( world_relative_y >= 0 );
+
+				const h_Chunk* chunk= world_.GetChunk( world_relative_x >> H_CHUNK_WIDTH_LOG2, world_relative_y >> H_CHUNK_WIDTH_LOG2 );
+				current_point_taransparency_data= chunk->GetTransparencyData() + BlockAddr( chunk_local_x, chunk_local_y, 0 );
+			}
+
 			for( const WavefrontPoint& neighbor : neighbors )
 			{
 				if( IsPointVisited( neighbor.x, neighbor.y, neighbor.z ) ) continue;
@@ -95,6 +110,7 @@ bool h_PathFinder::FindPath(
 				int world_relative_y= neighbor.y - ( world_.Latitude () << H_CHUNK_WIDTH_LOG2 );
 				int chunk_local_x= neighbor.x & (H_CHUNK_WIDTH - 1);
 				int chunk_local_y= neighbor.y & (H_CHUNK_WIDTH - 1);
+				// TODO - maybe just skip points, outside world borders?
 				H_ASSERT( world_relative_x >= 0 );
 				H_ASSERT( world_relative_y >= 0 );
 
@@ -103,7 +119,10 @@ bool h_PathFinder::FindPath(
 				const unsigned char* transparency_data= chunk->GetTransparencyData();
 
 				bool can_step_forward= transparency_data[ address ] == TRANSPARENCY_AIR && transparency_data[ address - 1 ] != TRANSPARENCY_AIR;
-				bool can_step_up= transparency_data[ address ] != TRANSPARENCY_AIR && transparency_data[ address + 1 ] == TRANSPARENCY_AIR;
+				bool can_step_up=
+					transparency_data[ address ] != TRANSPARENCY_AIR &&
+					transparency_data[ address + 1 ] == TRANSPARENCY_AIR &&
+					current_point_taransparency_data[ wavefront_point.z + 1 ] == TRANSPARENCY_AIR;
 				bool can_step_down=
 					neighbor.z >= 2 &&
 					transparency_data[ address - 1 ] == TRANSPARENCY_AIR &&
