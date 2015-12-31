@@ -3,17 +3,10 @@
 static bool IsPointInTriangle( const m_Vec2* triangle, const m_Vec2& point )
 {
 	float cross_z[3];
-	m_Vec2 tmp_v1, tmp_v2;
 
-	tmp_v1= point - triangle[0];
-	tmp_v2= triangle[1] - triangle[0];
-	cross_z[0]= tmp_v1.x * tmp_v2.y - tmp_v1.y * tmp_v2.x;
-	tmp_v1= point - triangle[1];
-	tmp_v2= triangle[2] - triangle[1];
-	cross_z[1]= tmp_v1.x * tmp_v2.y - tmp_v1.y * tmp_v2.x;
-	tmp_v1= point - triangle[2];
-	tmp_v2= triangle[0] - triangle[2];
-	cross_z[2]= tmp_v1.x * tmp_v2.y - tmp_v1.y * tmp_v2.x;
+	cross_z[0]= mVec2Cross( point - triangle[0], triangle[1] - triangle[0] );
+	cross_z[1]= mVec2Cross( point - triangle[1], triangle[2] - triangle[1] );
+	cross_z[2]= mVec2Cross( point - triangle[2], triangle[0] - triangle[2] );
 
 	float dot[2];
 	dot[0]= cross_z[0] * cross_z[1];
@@ -25,23 +18,55 @@ static bool IsPointInTriangle( const m_Vec2* triangle, const m_Vec2& point )
 static bool IsPointInTriangle( const m_Vec3* triangle, const m_Vec3& point )
 {
 	m_Vec3 cross[3];
-	m_Vec3 tmp_v1, tmp_v2;
 
-	tmp_v1= point - triangle[0];
-	tmp_v2= triangle[1] - triangle[0];
-	cross[0]= mVec3Cross( tmp_v1, tmp_v2 );
-	tmp_v1= point - triangle[1];
-	tmp_v2= triangle[2] - triangle[1];
-	cross[1]= mVec3Cross( tmp_v1, tmp_v2 );
-	tmp_v1= point - triangle[2];
-	tmp_v2= triangle[0] - triangle[2];
-	cross[2]= mVec3Cross( tmp_v1, tmp_v2 );
+	cross[0]= mVec3Cross( point - triangle[0], triangle[1] - triangle[0] );
+	cross[1]= mVec3Cross( point - triangle[1], triangle[2] - triangle[1] );
+	cross[2]= mVec3Cross( point - triangle[2], triangle[0] - triangle[2] );
 
 	float dot[2];
 	dot[0]= cross[0] * cross[1];
 	dot[1]= cross[0] * cross[2];
 
 	return dot[0] >= 0.0f && dot[1] >= 0.0f;
+}
+
+static bool TriangleIntersectWithCircle( const m_Vec2* triangle, const m_Vec2& center, float radius )
+{
+	if( IsPointInTriangle( triangle, center ) )
+		return true;
+
+	float square_radius= radius * radius;
+
+	// If triangle vertex is inside circle
+	for( unsigned int i= 0; i < 3; i++ )
+		if( (triangle[i] - center).SquareLength() <= square_radius )
+			return true;
+
+	// Check distance from circle to triangle edges
+	for( unsigned int i= 0; i < 3; i++ )
+	{
+		const m_Vec2& v0= triangle[i];
+		const m_Vec2& v1= triangle[ i == 2 ? 0 : i + 1 ];
+
+		m_Vec2 edge_vec= v1 - v0;
+		m_Vec2 v0_to_pos_vec= center - v0;
+
+		float edge_square_length= edge_vec * edge_vec;
+		float dot= edge_vec * v0_to_pos_vec;
+
+		float square_dist_to_edge;
+		if( dot < 0.0f )
+			square_dist_to_edge= v0_to_pos_vec.SquareLength();
+		else if( dot > edge_square_length )
+			square_dist_to_edge= (center - v1).SquareLength();
+		else
+			square_dist_to_edge= (v0_to_pos_vec - edge_vec * (dot / edge_square_length)).SquareLength();
+
+		if( square_dist_to_edge <= square_radius )
+			return true;
+	}
+
+	return false;
 }
 
 void p_UpperBlockFace::Gen( short x, short y, short z, h_Direction dir )
@@ -71,9 +96,25 @@ bool p_UpperBlockFace::HasCollisionWithCircle( const m_Vec2& pos, float radius )
 
 	float dst= ( pos - center ).Length();
 
-	if( dst < radius + H_HEXAGON_EDGE_SIZE )
+	// Not hit outer circle. Has no collision.
+	if( dst >= radius + H_HEXAGON_EDGE_SIZE )
+		return false;
+	// Hit inner circle. Has collision.
+	if( dst <= radius + H_HEXAGON_INNER_RADIUS )
 		return true;
-	else return false;//temporal hack - replase hexagon by outer circle
+
+	// Check collision with hexagon traigles
+	m_Vec2 triangle[3];
+	triangle[0]= center;
+	for( unsigned int i= 0; i < 6; i++ )
+	{
+		triangle[1]= edge[i];
+		triangle[2]= edge[ i == 5 ? 0 : i + 1 ];
+
+		if( TriangleIntersectWithCircle( triangle, pos, radius ) )
+			return true;
+	}
+	return false;
 }
 
 void p_BlockSide::Gen( short x, short y, short z, h_Direction dir )

@@ -37,6 +37,7 @@
 
 
 #define H_HEXAGON_EDGE_SIZE 0.5773502691f
+#define H_HEXAGON_INNER_RADIUS 0.5f
 
 //space scale vector
 #define H_SPACE_SCALE_VECTOR_X 0.8660254037f
