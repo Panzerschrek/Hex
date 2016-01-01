@@ -84,6 +84,7 @@ void h_Chunk::GenChunkFromFile( QDataStream& stream )
 		case GRASS:
 		case SAND:
 		case FOLIAGE:
+		case BRICK:
 			blocks_[i]= b= world_->NormalBlock(block_id);
 			transparency_[i]= b->Transparency();
 			break;
@@ -113,6 +114,7 @@ void h_Chunk::GenChunkFromFile( QDataStream& stream )
 			break;
 
 		default:
+			H_ASSERT(false);
 			break;
 		};
 	}//for blocks in
@@ -138,6 +140,7 @@ void h_Chunk::SaveChunkToFile( QDataStream& stream )
 		case SAND:
 		case FOLIAGE:
 		case FIRE_STONE:
+		case BRICK:
 			break;
 
 		case WATER:

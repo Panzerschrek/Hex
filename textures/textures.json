@@ -152,6 +152,18 @@
 			"blockside": "universal"
 		}
 	]
+},
+
+{
+	"filename": "brick.jpg",
+	"scale" : 3,
+	"blocks":
+	[
+		{
+			"blockname": "brick",
+			"blockside": "universal"
+		}
+	]
 }
 
 ]

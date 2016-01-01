@@ -59,8 +59,8 @@
 #define H_MAX_SCREEN_HEIGHT 4096
 #define H_MIN_SCREEN_HEIGHT 240
 
-enum h_BlockType:
-unsigned short
+// Put new block types at the end of list.
+enum h_BlockType : unsigned short
 {
 	AIR= 0,//MUST BE ZERO
 	SPHERICAL_BLOCK,
@@ -72,6 +72,7 @@ unsigned short
 	SAND,
 	FOLIAGE,
 	FIRE_STONE,
+	BRICK,
 	NUM_BLOCK_TYPES,
 	BLOCK_UNKNOWN= 65535
 };
