@@ -50,7 +50,7 @@ h_World::h_World(
 
 	world_generator_.reset( new g_WorldGenerator( parameters ) );
 	world_generator_->Generate();
-	world_generator_->DumpDebugResult();
+	//world_generator_->DumpDebugResult();
 
 	for( unsigned int i= 0; i< chunk_number_x_; i++ )
 	for( unsigned int j= 0; j< chunk_number_y_; j++ )
