@@ -1,108 +1,85 @@
+#include <cmath>
+
 #include "hex.hpp"
 #include "console.hpp"
 #include "renderer/text.hpp"
 
-char h_Console:: buffer[ H_CONSOLE_BUFFER_LEN ];
-char* h_Console:: lines_beginning[ H_CONSOLE_BUFFER_MAX_LINES ];
-h_Console::ConsoleColor h_Console:: lines_color_id[ H_CONSOLE_BUFFER_MAX_LINES ];
+#include "framebuffer.hpp"
 
-unsigned int h_Console:: buffer_pos=0;
-unsigned int h_Console:: lines_buffer_pos=0;
-bool h_Console:: initialized=false;
-bool h_Console:: is_ingame_console= false;
+std::mutex h_Console::mutex_;
+std::stringstream h_Console::stream_;
+std::list<h_Console::MessageLine> h_Console::lines_;
 
-float h_Console::moving_direction= 0.0f;
-float h_Console::position= 0.0f;
+float h_Console::moving_direction_= 0.0f;
+float h_Console::position_= 0.0f;
 
-static char tmp_buffer[ H_CONSOLE_BUFFER_LEN ];
-void h_Console::Message( const char* str, ... )
+h_Console::MessageLine::MessageLine( h_Console::Color in_color, std::string in_message )
+	: color(in_color)
+	, message(std::move(in_message))
+{}
+
+h_Console::MessageLine::MessageLine( h_Console::MessageLine&& other )
 {
-	va_list ap;
-	va_start( ap, str );
-	vsprintf( tmp_buffer, str, ap );
-	va_end( ap );
-
-	WriteText( tmp_buffer, WHITE );
-}
-void h_Console::Warning( const char* str, ...  )
-{
-	va_list ap;
-	va_start( ap, str );
-	vsprintf( tmp_buffer, str, ap );
-	va_end( ap );
-
-	WriteText( tmp_buffer, YELLOW );
-}
-void h_Console::Error( const char* str, ...  )
-{
-	va_list ap;
-	va_start( ap, str );
-	vsprintf( tmp_buffer, str, ap );
-	va_end( ap );
-
-	WriteText( tmp_buffer, RED );
+	*this= std::move(other);
 }
 
-
-void h_Console::WriteText( const char* str, ConsoleColor color )
+h_Console::MessageLine& h_Console::MessageLine::operator=( h_Console::MessageLine&& other )
 {
-	lines_beginning[ lines_buffer_pos % H_CONSOLE_BUFFER_MAX_LINES ]= &buffer[ buffer_pos % H_CONSOLE_BUFFER_LEN ];
-	lines_color_id[ lines_buffer_pos % H_CONSOLE_BUFFER_MAX_LINES ]= color;
-	lines_buffer_pos++;
-
-	const char* s= str;
-	while( s[0] != 0 )
-	{
-		if( s[0] == '\n' )
-		{
-			buffer[ buffer_pos % H_CONSOLE_BUFFER_LEN ]= 0x00;
-			buffer_pos++;
-
-			lines_beginning[ lines_buffer_pos % H_CONSOLE_BUFFER_MAX_LINES ]= &buffer[ buffer_pos % H_CONSOLE_BUFFER_LEN ];
-			lines_color_id[ lines_buffer_pos % H_CONSOLE_BUFFER_MAX_LINES ]= color;
-			lines_buffer_pos++;
-		}
-		else
-		{
-			buffer[ buffer_pos % H_CONSOLE_BUFFER_LEN ]= s[0];
-			buffer_pos++;
-		}
-		s++;
-	}
-	//write end of line
-	buffer[ buffer_pos % H_CONSOLE_BUFFER_LEN ]= 0x00;
-	buffer_pos++;
-
-	if( ! is_ingame_console )
-		printf( "%s\n", str );
+	color= other.color;
+	message= std::move(other.message);
+	return *this;
 }
 
+void h_Console::Toggle()
+{
+	std::lock_guard<std::mutex> lock(mutex_);
+
+	if( moving_direction_ < 1.0f )
+		moving_direction_= 1.0f;
+	else
+		moving_direction_= -1.0f;
+}
+
+void h_Console::Move( float dt )
+{
+	std::lock_guard<std::mutex> lock(mutex_);
+
+	position_+= moving_direction_ * dt;
+	if( position_ > 1.0f ) position_= 1.0f;
+	else if( position_ < 0.0f ) position_= 0.0f;
+}
+
+float h_Console::GetPosition()
+{
+	std::lock_guard<std::mutex> lock(mutex_);
+
+	return position_;
+}
 
 void h_Console::Draw( r_Text* text )
 {
-	is_ingame_console= true;
+	std::lock_guard<std::mutex> lock(mutex_);
 
-	if( position == 0.0f )
-		return;
-
-	float init_row= 4.0f * ( 0.5f * position * float( text->RowsInScreen() ) );
-	float i;
-	int j;
-	for( i= init_row, j= lines_buffer_pos - 1; i>= 0.0f && j>=0 ; i-=1.0f, j-- )
+	static const unsigned char c_msg_colors[]=
 	{
-		const unsigned char* c;
-		static const unsigned char msg_colors[]= {
-			255, 255, 255, 0,
-			255, 32, 32, 0,
-			255, 255, 32, 0
-		};
-		int l= j % H_CONSOLE_BUFFER_MAX_LINES;
-		if( lines_color_id[l] == RED )
-			c= msg_colors + 4;
-		else if( lines_color_id[l] == YELLOW )
-			c= msg_colors + 8;
-		else
-			c= msg_colors;
-		text->AddText( 0.5f, i, 0.25f, c, lines_beginning[ l ] );
+		0xF0, 0xF0, 0xF0, 0xFF,
+		0xF0, 0xF0, 0x20, 0xFF,
+		0xF0, 0x20, 0x20, 0xFF
+	};
+
+	const float c_font_scale= 0.25f;
+
+	float i=
+		0.5f * position_ * float(r_Framebuffer::CurrentFramebufferHeight()) / (float(text->LetterHeight()) * c_font_scale )
+		- 1.5f;
+	for( auto rit= lines_.rbegin();
+		rit != lines_.rend() && i > -1.0f;
+		++rit, i-= 1.0f )
+	{
+		text->AddText(
+			0.5f, i,
+			c_font_scale,
+			c_msg_colors + 4 * static_cast<unsigned char>(rit->color),
+			rit->message.data() );
 	}
 }

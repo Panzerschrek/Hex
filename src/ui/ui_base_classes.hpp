@@ -48,6 +48,7 @@ enum class ui_Key : unsigned char
 	BracketRight=']',
 	Semicolon= ';',
 	Apostrophe= '\'',
+	GraveAccent= '`',
 
 	A= 'A',
 	B,

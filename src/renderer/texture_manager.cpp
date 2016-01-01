@@ -17,6 +17,8 @@ unsigned char r_TextureManager::texture_scale_table_[ NUM_BLOCK_TYPES * 8 ];
 
 static void ValidateTexturesConfig( const QJsonDocument& doc )
 {
+	h_Console::Info( "Validate textures config." );
+
 	if( !doc.isArray() )
 	{
 		h_Console::Error( "Expected, that textures config is valid json array" );
@@ -28,25 +30,25 @@ static void ValidateTexturesConfig( const QJsonDocument& doc )
 	{
 		if( !value.isObject() )
 		{
-			h_Console::Error( "Expected, that values in array are objects" );
+			h_Console::Warning( "Expected, that values in array are objects" );
 			continue;
 		}
 
 		const QJsonObject object= value.toObject();
 
 		if( !object.contains( "filename" ) )
-			h_Console::Error( "Expected, that objects contains property \"filename\"" );
+			h_Console::Warning( "Expected, that objects contains property \"filename\"" );
 
 		const QJsonValue blocks= object["blocks"];
 		if( blocks == QJsonValue::Undefined )
 		{
-			h_Console::Error( "Expected, that objects contains \"blocks\" array" );
+			h_Console::Warning( "Expected, that objects contains \"blocks\" array" );
 			continue;
 		}
 
 		if( !blocks.isArray() )
 		{
-			h_Console::Error( "Expected, that \"blocks\" is array" );
+			h_Console::Warning( "Expected, that \"blocks\" is array" );
 			continue;
 		}
 
@@ -55,22 +57,22 @@ static void ValidateTexturesConfig( const QJsonDocument& doc )
 		{
 			if( !block_value.isObject() )
 			{
-				h_Console::Error( "Expected, that array \"blocks\" contains objects" );
+				h_Console::Warning( "Expected, that array \"blocks\" contains objects" );
 				continue;
 			}
 			const QJsonObject block_object= block_value.toObject();
 
 			if( !block_object.contains( "blockname" ) )
-				h_Console::Error( "Expected, that \"block\" object has property \"\blockname\"" );
+				h_Console::Warning( "Expected, that \"block\" object has property \"\blockname\"" );
 
 			if( !block_object.contains( "blockside" ) )
-				h_Console::Error( "Expected, that \"block\" object has property \"\blockside\"" );
+				h_Console::Warning( "Expected, that \"block\" object has property \"\blockside\"" );
 
 		} // for blocks
 
 		if( blocks_array.size() == 0 )
 		{
-			h_Console::Error( "Expected, that \"blocks\" is non empty array" );
+			h_Console::Warning( "Expected, that \"blocks\" is non empty array" );
 			continue;
 		}
 	} // for objects in array
@@ -178,24 +180,24 @@ void r_TextureManager::LoadTextures()
 		QString filename= obj[ "filename" ].toString();
 		if( !img.load( filename ) )
 		{
-			h_Console::Warning( "texture \"%s\" not fund", filename.toLocal8Bit().constData() );
+			h_Console::Warning( "texture \"", filename.toLocal8Bit().constData(), "\" not found" );
 			continue;
 		}
 
 		tex_id++;
 		if( tex_id == R_MAX_TEXTURES )
 		{
-			h_Console::Warning( "Too much textures! %d is maximum", R_MAX_TEXTURES );
+			h_Console::Warning( "Too much textures! ", R_MAX_TEXTURES, " is maximum" );
 			break;
 		}
 
 		if( img.size() != required_texture_size )
 		{
 			h_Console::Warning(
-				"texture \"%s\" has unexpected size: %dx%d, expected %dx%d",
+				"texture \"",
 				filename.toLocal8Bit().constData(),
-				img.width(), img.height(),
-				required_texture_size.width(), required_texture_size.height() );
+				"\" has unexpected size: ", img.width(), "x", img.height() ," expected ",
+				required_texture_size.width(), "x", required_texture_size.height() );
 
 			img= img.scaled( required_texture_size, Qt::IgnoreAspectRatio, Qt::SmoothTransformation );
 		}

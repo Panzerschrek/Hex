@@ -5,6 +5,7 @@
 
 #include "settings.hpp"
 #include "settings_keys.hpp"
+#include "console.hpp"
 
 #include "ui/ui_base_classes.hpp"
 #include "ui/ui_painter.hpp"
@@ -108,7 +109,7 @@ void h_MainLoop::initializeGL()
 		},
 		[](const char* name)
 		{
-			printf( "Warning, function \"%s\" not found", name );
+			h_Console::Warning( "Function ", name, " not found" );
 		});
 
 	r_OGLState state;
@@ -240,6 +241,7 @@ void h_MainLoop::ProcessMenuKey( QKeyEvent* e, bool pressed )
 
 		case Qt::Key_Semicolon: ui_key= ui_Key::Semicolon; break;
 		case Qt::Key_Apostrophe: ui_key= ui_Key::Apostrophe; break;
+		case Qt::Key_QuoteLeft: ui_key= ui_Key::GraveAccent; break;
 
 		case Qt::Key_Comma: ui_key= ui_Key::Comma; break;
 		case Qt::Key_Period: ui_key= ui_Key::Dot; break;
@@ -247,6 +249,13 @@ void h_MainLoop::ProcessMenuKey( QKeyEvent* e, bool pressed )
 
 		default: ui_key= ui_Key::Unknown; break;
 		};
+	}
+
+	// HACK. Remove from here.
+	if( pressed && ui_key == ui_Key::GraveAccent )
+	{
+		h_Console::Toggle();
+		return;
 	}
 
 	if( pressed ) root_menu_->KeyPress( ui_key );

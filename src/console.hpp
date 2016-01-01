@@ -1,66 +1,96 @@
 #pragma once
-#define H_CONSOLE_BUFFER_LEN 4096
-#define H_CONSOLE_BUFFER_MAX_LINES (H_CONSOLE_BUFFER_LEN/2)
-#define H_CONSOLE_MOVING_SPEED 1.0f
+#include <iostream>
+#include <list>
+#include <mutex>
+#include <sstream>
 
-class r_Text;
+#include "fwd.hpp"
 
+#define H_CONSOLE_MAX_LINES 512
+
+// Static class for console output.
+// Thread safe.
 class h_Console
 {
 public:
+	static float GetPosition();
+	static void Toggle();//open or close console
+	static void Move( float dt );//roll up or roll down colsole
 
-	inline static float GetPosition();
+public:
+	template<class ... Args>
+	static void Info( const Args &... args )
+	{
+		MessageHandler( Color::White, args... );
+	}
 
-	inline static void Toggle();//open or close console
-	inline static void Move( float dt );//roll up or roll down colsole
+	template<class ... Args>
+	static void Warning( const Args &... args )
+	{
+		MessageHandler( Color::Yellow, args... );
+	}
 
-	static void Message( const char* str, ... );
-	static void Warning( const char* str, ...  );
-	static void Error( const char* str, ... );
+	template<class ... Args>
+	static void Error( const Args &... args )
+	{
+		MessageHandler( Color::Red, args... );
+	}
 
 	static void Draw( r_Text* text );
 
 private:
 
-enum ConsoleColor:
-	unsigned char
+	enum class Color : unsigned char
 	{
-		WHITE,
-		YELLOW,
-		RED
+		White,
+		Yellow,
+		Red,
 	};
 
-	static void WriteText( const char* str, ConsoleColor color );
+	struct MessageLine
+	{
+		Color color;
+		std::string message;
 
-	static char buffer[ H_CONSOLE_BUFFER_LEN ];
-	static char* lines_beginning[ H_CONSOLE_BUFFER_MAX_LINES ];//every line contains 1 or more symbols
-	static ConsoleColor lines_color_id[ H_CONSOLE_BUFFER_MAX_LINES ];
+		MessageLine( Color in_color, std::string in_message );
+		MessageLine( MessageLine&& other );
 
-	static unsigned int buffer_pos, lines_buffer_pos;
+		MessageLine& operator=( const MessageLine& )= delete;
+		MessageLine& operator=( MessageLine&& other );
+	};
 
-	static bool initialized;
-	static bool is_ingame_console;
+private:
+	static void MessageExpand(){}
 
-	static float moving_direction;
-	static float position;// 0 - closed, 1 - opened, (0;1) - rolling-up \ rolling-down
+	template<class Arg0, class ... Args>
+	static void MessageExpand( const Arg0& arg0, const Args &... args )
+	{
+		stream_ << arg0;
+		MessageExpand(args...);
+	}
 
+	template<class ... Args>
+	static void MessageHandler( Color color, const Args &... args )
+	{
+		std::lock_guard<std::mutex> lock(mutex_);
+
+		if( lines_.size() > H_CONSOLE_MAX_LINES ) lines_.pop_front();
+
+		MessageExpand(args...);
+
+		std::string str= stream_.str();
+		std::cout << str << std::endl;
+
+		lines_.emplace_back( color, std::move(str) );
+
+		stream_.str( "" );
+	}
+
+private:
+	static std::mutex mutex_;
+	static std::stringstream stream_;
+	static std::list<MessageLine> lines_;
+
+	static float moving_direction_;
+	static float position_;// 0 - closed, 1 - opened, (0;1) - rolling-up \ rolling-down
 };
-
-inline void h_Console::Toggle()
-{
-	if( moving_direction != 1.0f )
-		moving_direction= 1.0f;
-	else
-		moving_direction= -1.0f;
-}
-inline void h_Console::Move( float dt )
-{
-	position+= moving_direction * dt;
-	if( position > 1.0f ) position= 1.0f;
-	else if( position < 0.0f ) position= 0.0f;
-}
-
-inline float h_Console::GetPosition()
-{
-	return position;
-}

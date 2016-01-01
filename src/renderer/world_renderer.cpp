@@ -576,7 +576,7 @@ void r_WorldRenderer::DrawConsole()
 	static const GLenum state_blend_mode[]= { GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA };
 	static const float state_clear_color[]= { 0.0f, 0.0f, 0.0f, 0.0f };
 	static const r_OGLState state(
-		true, false, true, false,
+		false, false, true, false,
 		state_blend_mode,
 		state_clear_color,
 		1.0f, GL_FRONT, GL_TRUE );
@@ -591,8 +591,7 @@ void r_WorldRenderer::DrawConsole()
 	console_bg_shader_.Bind();
 	console_bg_shader_.Uniform( "tex", 0 );
 	console_bg_shader_.Uniform( "pos", 1.0f - h_Console::GetPosition() );
-	m_Vec3 scr_size( viewport_width_, viewport_height_, 0.0f );
-	console_bg_shader_.Uniform( "screen_size", scr_size );
+	console_bg_shader_.Uniform( "screen_size", m_Vec3( viewport_width_, viewport_height_, 0.0f ) );
 
 	console_bg_texture_.Bind(0);
 
