@@ -10,7 +10,6 @@
 	( (y) << H_CHUNK_HEIGHT_LOG2 ) |\
 	( (x) << ( H_CHUNK_HEIGHT_LOG2 + H_CHUNK_WIDTH_LOG2 ) ) )
 
-
 class h_Chunk
 {
 
@@ -26,8 +25,11 @@ public:
 	//get functions - local coordinates
 	unsigned char Transparency( short x, short y, short z ) const;
 	const unsigned char* GetTransparencyData() const;
+
 	h_Block* GetBlock( short x, short y, short z );
 	const h_Block* GetBlock( short x, short y, short z ) const;
+	const h_Block* const* GetBlocksData() const;
+
 	const m_Collection< h_LiquidBlock* >* GetWaterList() const;
 	const m_Collection< h_LightSource* >* GetLightSourceList() const;
 	h_World* GetWorld();
@@ -44,6 +46,9 @@ public:
 
 	// Get sun and fire light levels. out_lights[0]= sun, out_lights[1]= fire
 	void GetLightsLevel( short x, short y, short z, unsigned char* out_lights ) const;
+
+	const unsigned char* GetSunLightData() const;
+	const unsigned char* GetFireLightData() const;
 
 private:
 	void GenChunk( const g_WorldGenerator* generator );
@@ -129,6 +134,10 @@ inline const h_Block* h_Chunk::GetBlock( short x, short y, short z ) const
 	return blocks_[ BlockAddr( x, y, z ) ];
 }
 
+inline const h_Block* const* h_Chunk::GetBlocksData() const
+{
+	return blocks_;
+}
 
 inline void h_Chunk::SetBlock( short x, short y, short z, h_Block* b )
 {
@@ -163,6 +172,16 @@ inline void h_Chunk::GetLightsLevel( short x, short y, short z, unsigned char* o
 	int addr= BlockAddr( x, y, z );
 	out_lights[0]= sun_light_map_ [addr];
 	out_lights[1]= fire_light_map_[addr];
+}
+
+inline const unsigned char* h_Chunk::GetSunLightData() const
+{
+	return sun_light_map_;
+}
+
+inline const unsigned char* h_Chunk::GetFireLightData() const
+{
+	return fire_light_map_;
 }
 
 inline void h_Chunk::SetSunLightLevel( short x, short y, short z, unsigned char l )

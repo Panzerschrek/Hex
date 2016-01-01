@@ -298,242 +298,119 @@ d - default stage
 
 void r_ChunkInfo::GetQuadCount()
 {
-	short x, y, z;
-
-	unsigned char t, t_up, t_fr, t_br, t_f;
-
 	unsigned int quad_count= 0;
 
 	min_geometry_height_= H_CHUNK_HEIGHT;
 	max_geometry_height_= 0;
 
-	for( x= 0; x< H_CHUNK_WIDTH; x++ )
-		for( y= 0; y< H_CHUNK_WIDTH; y++ )
-		{
-			t_up= chunk_->Transparency( x, y, 0 );
-
-			const unsigned char* t_up_p= chunk_->GetTransparencyData() + BlockAddr(x,y,1);
-			const unsigned char* t_fr_p= chunk_->GetTransparencyData() + BlockAddr(x + 1, y + (1&(x+1)),0);
-			const unsigned char* t_br_p= chunk_->GetTransparencyData() + BlockAddr(x + 1, y - ( 1&x )  ,0);
-			const unsigned char* t_f_p=  chunk_->GetTransparencyData() + BlockAddr(x,y+1,0);
-
-			//front chunk border
-			if( y == H_CHUNK_WIDTH - 1 && x < H_CHUNK_WIDTH - 1 )
-			{
-				if( chunk_front_ != nullptr )
-					t_f_p= chunk_front_->GetTransparencyData() + BlockAddr( x, 0, 0 );
-				else
-					t_f_p= chunk_->GetTransparencyData() + BlockAddr(x,H_CHUNK_WIDTH - 1,0);//this block transparency
-				if(x&1)
-					t_fr_p= chunk_->GetTransparencyData() + BlockAddr( x + 1, H_CHUNK_WIDTH - 1, 0 );
-				else if( chunk_front_ != nullptr )
-					t_fr_p= chunk_front_->GetTransparencyData() + BlockAddr( x + 1, 0, 0 );
-				else
-					t_fr_p= chunk_->GetTransparencyData() + BlockAddr(x,H_CHUNK_WIDTH - 1,0);//this block transparency
-			}
-			//back chunk border
-			if( y == 0 && x < H_CHUNK_WIDTH - 1 )
-			{
-				if(!(x&1))
-					t_br_p= chunk_->GetTransparencyData() + BlockAddr( x + 1, 0, 0 );
-				else if( chunk_back_ != nullptr )
-					t_br_p= chunk_back_->GetTransparencyData() + BlockAddr( x+ 1, H_CHUNK_WIDTH - 1, 0 );
-				else
-					t_br_p= chunk_->GetTransparencyData() + BlockAddr(x,0,0);//this block transparency
-			}
-			//right chunk border
-			if( x == H_CHUNK_WIDTH - 1 && y> 0 && y< H_CHUNK_WIDTH-1 )
-			{
-				if( chunk_right_ != nullptr )
-				{
-					t_fr_p= chunk_right_->GetTransparencyData() + BlockAddr( 0, y, 0 );
-					t_br_p= chunk_right_->GetTransparencyData() + BlockAddr( 0, y - 1, 0 );
-				}
-				else
-					t_fr_p= t_br_p= chunk_->GetTransparencyData() + BlockAddr(H_CHUNK_WIDTH - 1,y,0);//this block transparency
-			}
-			if( x == H_CHUNK_WIDTH - 1 && y == H_CHUNK_WIDTH - 1 )
-			{
-				if( chunk_front_ != nullptr )
-					t_f_p= chunk_front_->GetTransparencyData() + BlockAddr( H_CHUNK_WIDTH - 1, 0, 0 );
-				else
-					t_f_p= chunk_->GetTransparencyData() + BlockAddr(x,y,0);//this block transparency;
-				if( chunk_right_ != nullptr )
-				{
-					t_fr_p= chunk_right_->GetTransparencyData() + BlockAddr( 0, H_CHUNK_WIDTH  - 1, 0 );
-					t_br_p= chunk_right_->GetTransparencyData() + BlockAddr( 0, H_CHUNK_WIDTH  - 2, 0 );
-				}
-				else
-					t_fr_p= t_br_p= chunk_->GetTransparencyData() + BlockAddr(H_CHUNK_WIDTH - 1,H_CHUNK_WIDTH - 1,0);//this block transparency;
-			}
-			if( x == H_CHUNK_WIDTH - 1 && y == 0 )
-			{
-				//t_f_p= chunk->GetTransparencyData() + BlockAddr( H_CHUNK_WIDTH - 1, 1, 0 );
-				if( chunk_right_ != nullptr )
-					t_fr_p= chunk_right_->GetTransparencyData() + BlockAddr( 0, 0, 0 );
-				else
-					t_fr_p= chunk_->GetTransparencyData() + BlockAddr(H_CHUNK_WIDTH - 1,0,0);//this block transparency;
-				if( chunk_back_right_ != nullptr )
-					t_br_p= chunk_back_right_->GetTransparencyData() + BlockAddr( 0, H_CHUNK_WIDTH - 1, 0 );
-				else
-					t_br_p= chunk_->GetTransparencyData() + BlockAddr(H_CHUNK_WIDTH - 1,0,0);//this block transparency;
-			}
-			for( z= 0; z< H_CHUNK_HEIGHT - 2; z++ )
-			{
-				t= t_up;
-				t_fr= *t_fr_p;
-				t_br= *t_br_p;
-				t_up= *t_up_p;
-				t_f= *t_f_p;
-
-#define ADD_QUADS \
-                if( t != t_up ) \
-                {\
-                    quad_count+=2; \
-                    if( z > max_geometry_height_ ) max_geometry_height_= z;\
-                    else if( z < min_geometry_height_ ) min_geometry_height_= z;\
-                }\
-                if( t != t_fr ) \
-				{\
-                    quad_count++; \
-                    if( z > max_geometry_height_ ) max_geometry_height_= z;\
-                    else if( z < min_geometry_height_ ) min_geometry_height_= z;\
-                }\
-                if( t != t_br ) \
-				{\
-                    quad_count++; \
-                    if( z > max_geometry_height_ ) max_geometry_height_= z;\
-                    else if( z < min_geometry_height_ ) min_geometry_height_= z;\
-                }\
-                if( t!= t_f ) \
-				{\
-                    quad_count++; \
-                    if( z > max_geometry_height_ ) max_geometry_height_= z;\
-                    else if( z < min_geometry_height_ ) min_geometry_height_= z;\
-                }
-				ADD_QUADS
-
-				t_fr_p++;
-				t_br_p++;
-				t_up_p++;
-				t_f_p++;
-
-			}//for z
-		}//for y
-
-	goto func_end;
-
-	//back chunk border( x E [ 0; H_CHUNK_WIDTH - 2 ], y=0 )
-	for( x= 0; x< H_CHUNK_WIDTH - 1; x++ )
+	for( int x= 0; x< H_CHUNK_WIDTH; x++ )
+	for( int y= 0; y< H_CHUNK_WIDTH; y++ )
 	{
-		t_up= chunk_->Transparency(  x, 0, 0 );
-		for( z= 0; z< H_CHUNK_HEIGHT - 2; z++ )
+		const unsigned char* t_p= chunk_->GetTransparencyData() + BlockAddr(x,y,0);
+		const unsigned char* t_fr_p= chunk_->GetTransparencyData() + BlockAddr(x + 1, y + (1&(x+1)),0);
+		const unsigned char* t_br_p= chunk_->GetTransparencyData() + BlockAddr(x + 1, y - ( 1&x )  ,0);
+		const unsigned char* t_f_p= chunk_->GetTransparencyData() + BlockAddr(x,y+1,0);
+
+		//front chunk border
+		if( y == H_CHUNK_WIDTH - 1 && x < H_CHUNK_WIDTH - 1 )
 		{
-			t= t_up;
-			if( ! (x&1) )
-				t_br= chunk_->Transparency( x + 1, 0, z );//forward right
-			else if( chunk_back_ !=nullptr )
-				t_br= chunk_back_->Transparency( x+ 1, H_CHUNK_WIDTH - 1, z );
+			if( chunk_front_ != nullptr )
+				t_f_p= chunk_front_->GetTransparencyData() + BlockAddr( x, 0, 0 );
 			else
-				t_br= t;
-			t_fr= chunk_->Transparency( x + 1, ( 1&(x+1) ), z );//forward right
-			t_up= chunk_->Transparency( x, 0, z + 1 );//up
-			t_f= chunk_->Transparency( x, 1, z );//forward
-			ADD_QUADS
+				t_f_p= t_p;//this block transparency
+			if(x&1)
+				t_fr_p= chunk_->GetTransparencyData() + BlockAddr( x + 1, H_CHUNK_WIDTH - 1, 0 );
+			else if( chunk_front_ != nullptr )
+				t_fr_p= chunk_front_->GetTransparencyData() + BlockAddr( x + 1, 0, 0 );
+			else
+				t_fr_p= t_p;//this block transparency
 		}
-	}
-
-	//right chunk border ( y E [ 1; H_CHUNK_WIDTH - 2 ] )
-	for( y= 1; y< H_CHUNK_WIDTH - 1; y++ )
-	{
-		t_up= chunk_->Transparency(  H_CHUNK_WIDTH - 1, y, 0 );
-		for( z= 0; z< H_CHUNK_HEIGHT - 2; z++ )
+		//back chunk border
+		else if( y == 0 && x < H_CHUNK_WIDTH - 1 )
 		{
-			t= t_up;
+			if(!(x&1))
+				t_br_p= chunk_->GetTransparencyData() + BlockAddr( x + 1, 0, 0 );
+			else if( chunk_back_ != nullptr )
+				t_br_p= chunk_back_->GetTransparencyData() + BlockAddr( x+ 1, H_CHUNK_WIDTH - 1, 0 );
+			else
+				t_br_p= t_p;//this block transparency
+		}
+		//right chunk border
+		else if( x == H_CHUNK_WIDTH - 1 && y> 0 && y< H_CHUNK_WIDTH-1 )
+		{
 			if( chunk_right_ != nullptr )
 			{
-				t_fr= chunk_right_->Transparency( 0, y, z );//forward right
-				t_br= chunk_right_->Transparency( 0, y - 1, z );	//back right
+				t_fr_p= chunk_right_->GetTransparencyData() + BlockAddr( 0, y, 0 );
+				t_br_p= chunk_right_->GetTransparencyData() + BlockAddr( 0, y - 1, 0 );
 			}
 			else
-				t_fr= t_br= t;
-			t_up= chunk_->Transparency( H_CHUNK_WIDTH - 1, y, z + 1 );//up
-			t_f= chunk_->Transparency( H_CHUNK_WIDTH - 1, y + 1, z );//forward
-			ADD_QUADS
+				t_fr_p= t_br_p= t_p;//this block transparency
 		}
-	}
-
-	//front chunk border ( x E[ 0; H_CHUNK_WIDTH - 2 ] )
-	for( x= 0; x < H_CHUNK_WIDTH - 1; x++ )
-	{
-		t_up= chunk_->Transparency( x, H_CHUNK_WIDTH - 1, 0 );
-		for( z= 0; z< H_CHUNK_HEIGHT - 2; z++ )
+		else if( x == H_CHUNK_WIDTH - 1 && y == H_CHUNK_WIDTH - 1 )
 		{
-			t= t_up;
-			if( x&1  )
-				t_fr= chunk_->Transparency( x + 1, H_CHUNK_WIDTH - 1, z );//forward right
-			else if( chunk_front_ != nullptr )
-				t_fr= chunk_front_->Transparency( x + 1, 0, z );//forward right
-			else t_fr= t;
-
-			t_br= chunk_->Transparency( x + 1, H_CHUNK_WIDTH - 1 - ( 1&x ), z );//back right
-			t_up= chunk_->Transparency( x, H_CHUNK_WIDTH - 1, z + 1 );//up
-
 			if( chunk_front_ != nullptr )
-				t_f= chunk_front_->Transparency( x, 0, z );//forward
+				t_f_p= chunk_front_->GetTransparencyData() + BlockAddr( H_CHUNK_WIDTH - 1, 0, 0 );
 			else
-				t_f= t;
-
-			ADD_QUADS
+				t_f_p= t_p;//this block transparency;
+			if( chunk_right_ != nullptr )
+			{
+				t_fr_p= chunk_right_->GetTransparencyData() + BlockAddr( 0, H_CHUNK_WIDTH  - 1, 0 );
+				t_br_p= chunk_right_->GetTransparencyData() + BlockAddr( 0, H_CHUNK_WIDTH  - 2, 0 );
+			}
+			else
+				t_fr_p= t_br_p= t_p;//this block transparency;
 		}
-	}
-
-	//x= y= H_CHUNK_WIDTH - 1
-	t_up= chunk_->Transparency( H_CHUNK_WIDTH - 1, H_CHUNK_WIDTH - 1, 0 );
-	for( z= 0; z< H_CHUNK_HEIGHT - 2; z++ )
-	{
-		t= t_up;
-		if( chunk_front_ != nullptr )
-			t_f= chunk_front_->Transparency( H_CHUNK_WIDTH - 1, 0, z );
-		else
-			t_f= t;
-
-		if( chunk_right_ != nullptr )
+		else if( x == H_CHUNK_WIDTH - 1 && y == 0 )
 		{
-			t_fr= chunk_right_->Transparency( 0, H_CHUNK_WIDTH  - 1, z );
-			t_br= chunk_right_->Transparency( 0, H_CHUNK_WIDTH  - 2, z );
+			if( chunk_right_ != nullptr )
+				t_fr_p= chunk_right_->GetTransparencyData() + BlockAddr( 0, 0, 0 );
+			else
+				t_fr_p= t_p;//this block transparency;
+			if( chunk_back_right_ != nullptr )
+				t_br_p= chunk_back_right_->GetTransparencyData() + BlockAddr( 0, H_CHUNK_WIDTH - 1, 0 );
+			else
+				t_br_p= t_p;//this block transparency;
 		}
-		else
-			t_fr= t_br= t;
-		t_up= chunk_->Transparency( H_CHUNK_WIDTH  - 1, H_CHUNK_WIDTH  - 1, z + 1 );//up
-		ADD_QUADS
+		int column_max_geometry_height= 0;
+		for( int z= 0; z< H_CHUNK_HEIGHT - 2; z++ )
+		{
+			unsigned char t= t_p[z];
+			unsigned char t_fr= t_fr_p[z];
+			unsigned char t_br= t_br_p[z];
+			unsigned char t_up= t_p[z+1];
+			unsigned char t_f= t_f_p[z];
 
-	}
+			if( t != t_up )
+			{
+				quad_count+=2;
+				column_max_geometry_height= z;
+				if( z < min_geometry_height_ ) min_geometry_height_= z;
+			}
+			if( t != t_fr )
+			{
+				quad_count++;
+				column_max_geometry_height= z;
+				if( z < min_geometry_height_ ) min_geometry_height_= z;
+			}
+			if( t != t_br )
+			{
+				quad_count++;
+				column_max_geometry_height= z;
+				if( z < min_geometry_height_ ) min_geometry_height_= z;
+			}
+			if( t!= t_f )
+			{
+				quad_count++;
+				column_max_geometry_height= z;
+				if( z < min_geometry_height_ ) min_geometry_height_= z;
+			}
+		}//for z
 
-	//x= H_CHUNK_WIDTH - 1, y=0
-	t_up= chunk_->Transparency( H_CHUNK_WIDTH - 1, 0, 0 );
-	for( z= 0; z< H_CHUNK_HEIGHT - 2; z++ )
-	{
-		t= t_up;
-		t_f= chunk_->Transparency( H_CHUNK_WIDTH - 1, 1, z );
+		if( column_max_geometry_height > max_geometry_height_ )
+			max_geometry_height_= column_max_geometry_height;
+	}//for xy
 
-		if( chunk_right_ != nullptr )
-			t_fr= chunk_right_->Transparency( 0, 0, z );
-		else
-			t_fr= t;
-
-		if( chunk_back_right_ != nullptr )
-			t_br= chunk_back_right_->Transparency( 0, H_CHUNK_WIDTH - 1, z );
-		else
-			t_br= t;
-		t_up= chunk_->Transparency( H_CHUNK_WIDTH - 1, 0, z + 1 );//up
-		ADD_QUADS
-	}
-
-func_end:
 	vertex_count_= quad_count * 4;
-
-#undef ADD_QUADS
 }
 
 /*
@@ -554,7 +431,6 @@ up/down side */
                     \____/
 forward right side*/
 
-
 /*
                      ____
                     /    \
@@ -565,8 +441,6 @@ forward right side*/
                           \/
                            2
 back right*/
-
-
 
 /*
                        1+--+2 - z-1
@@ -579,727 +453,441 @@ back right*/
                        \____/
 forward side*/
 
-/* old code of tex_coord generation for upper prism side
-
-v[0].tex_coord[0]= v[0].coord[0] & 127;\
-                    v[1].tex_coord[0]= v[7].tex_coord[0]= v[0].tex_coord[0] + 1;\
-                    v[2].tex_coord[0]= v[6].tex_coord[0]= v[0].tex_coord[0] + 3;\
-                    v[3].tex_coord[0]= v[0].tex_coord[0] + 4;\
-\
-                    v[0].tex_coord[1]= v[3].tex_coord[1]= ( v[0].coord[1] & 127 ) + 1;\
-                    v[1].tex_coord[1]= v[2].tex_coord[1]= v[0].tex_coord[1] + 1;\
-                    v[6].tex_coord[1]= v[7].tex_coord[1]= v[0].tex_coord[1] - 1;\
-*/
-/* new code
-					v[0].tex_coord[0]= 0;\
-                    v[1].tex_coord[0]= v[7].tex_coord[0]= 1;\
-                    v[2].tex_coord[0]= v[6].tex_coord[0]= 3;\
-                    v[3].tex_coord[0]= 4;\
-\
-                    v[0].tex_coord[1]= v[3].tex_coord[1]= 1;\
-                    v[1].tex_coord[1]= v[2].tex_coord[1]= 2;\
-                    v[6].tex_coord[1]= v[7].tex_coord[1]= 0;\
-
-*/
-
 void r_ChunkInfo::BuildChunkMesh()
 {
-	int x, y, z;
-
-	unsigned char t, t_up, t_fr, t_br, t_f;//block transparency
-	unsigned char normal_id;
-	unsigned char tex_id, tex_scale, light[2];
-
 	r_WorldVertex* v= vertex_data_;
-	r_WorldVertex tmp_vertex;
 
-	const h_Block* b;
-
-	int X= chunk_->Longitude() * H_CHUNK_WIDTH, Y= chunk_->Latitude() * H_CHUNK_WIDTH;
-	int relative_X, relative_Y;
 	const h_World* w= chunk_->GetWorld();
-	relative_X= ( chunk_->Longitude() - w->Longitude() ) * H_CHUNK_WIDTH;
-	relative_Y= ( chunk_->Latitude() - w->Latitude() ) * H_CHUNK_WIDTH;
-
+	int X= chunk_->Longitude() * H_CHUNK_WIDTH;
+	int Y= chunk_->Latitude () * H_CHUNK_WIDTH;
+	int relative_X= ( chunk_->Longitude() - w->Longitude() ) * H_CHUNK_WIDTH;
+	int relative_Y= ( chunk_->Latitude () - w->Latitude () ) * H_CHUNK_WIDTH;
 
 	bool flat_lighting= chunk_->IsEdgeChunk();
 
-	for( x= 0; x< H_CHUNK_WIDTH - 1; x++ )
+	for( int x= 0; x< H_CHUNK_WIDTH; x++ )
+	for( int y= 0; y< H_CHUNK_WIDTH; y++ )
 	{
-		for( y= 1; y< H_CHUNK_WIDTH - 1; y++ )
+		int offset;
+
+		offset= BlockAddr(x,y,0);
+		const unsigned char* t_p= chunk_->GetTransparencyData() + offset;
+		const h_Block* const* b_p= chunk_->GetBlocksData() + offset;
+		const unsigned char* ls_p= chunk_->GetSunLightData() + offset;
+		const unsigned char* lf_p= chunk_->GetFireLightData() + offset;
+
+		offset= BlockAddr(x + 1, y + (1&(x+1)),0);
+		const unsigned char* t_fr_p= chunk_->GetTransparencyData() + offset;
+		const h_Block* const* b_fr_p= chunk_->GetBlocksData() + offset;
+		const unsigned char* ls_fr_p= chunk_->GetSunLightData() + offset;
+		const unsigned char* lf_fr_p= chunk_->GetFireLightData() + offset;
+
+		offset= BlockAddr(x + 1, y - ( 1&x )  ,0);
+		const unsigned char* t_br_p= chunk_->GetTransparencyData() + offset;
+		const h_Block* const* b_br_p= chunk_->GetBlocksData() + offset;
+		const unsigned char* ls_br_p= chunk_->GetSunLightData() + offset;
+		const unsigned char* lf_br_p= chunk_->GetFireLightData() + offset;
+
+		offset= BlockAddr(x,y+1,0);
+		const unsigned char* t_f_p= chunk_->GetTransparencyData() + offset;
+		const h_Block* const* b_f_p= chunk_->GetBlocksData() + offset;
+		const unsigned char* ls_f_p= chunk_->GetSunLightData() + offset;
+		const unsigned char* lf_f_p= chunk_->GetFireLightData() + offset;
+
+		//front chunk border
+		if( y == H_CHUNK_WIDTH - 1 && x < H_CHUNK_WIDTH - 1 )
 		{
-			t_up= chunk_->Transparency( x, y, min_geometry_height_ );
-
-			const unsigned char* t_up_p= chunk_->GetTransparencyData() + BlockAddr(x,y,min_geometry_height_+1);
-			const unsigned char* t_fr_p= chunk_->GetTransparencyData() + BlockAddr(x + 1, y + (1&(x+1)),min_geometry_height_);
-			const unsigned char* t_br_p= chunk_->GetTransparencyData() + BlockAddr(x + 1, y - ( 1&x )  ,min_geometry_height_);
-			const unsigned char* t_f_p=  chunk_->GetTransparencyData() + BlockAddr(x,y+1,min_geometry_height_);
-
-			for( z= min_geometry_height_; z<= max_geometry_height_; z++ )
+			if( chunk_front_ != nullptr )
 			{
-				t= t_up;
-				t_fr= *t_fr_p;
-				t_br= *t_br_p;
-				t_up= *t_up_p;
-				t_f= *t_f_p;
-
-				if( t != t_up )//up
-				{
-#define BUILD_QUADS_UP \
-                    if( t > t_up )\
-                    {\
-                        normal_id= DOWN;\
-                        b= chunk_->GetBlock( x, y, z  + 1 );\
-                        chunk_->GetLightsLevel( x, y, z, light );\
-                    }\
-                    else\
-                    {\
-                        normal_id= UP;\
-                        b= chunk_->GetBlock( x, y, z  );\
-                        chunk_->GetLightsLevel( x, y, z + 1, light );\
-                    }\
-\
-					\
-					tex_id= r_TextureManager::GetTextureId( b->Type(), normal_id );\
-					tex_scale= r_TextureManager::GetTextureScale( tex_id );\
-					\
-                    v[0].coord[0]= 3 * ( x + X );\
-                    v[1].coord[0]= v[4].coord[0]= v[0].coord[0] + 1;\
-                    v[2].coord[0]= v[7].coord[0]= v[0].coord[0] + 3;\
-                    v[3].coord[0]= v[0].coord[0] + 4;\
-\
-                    v[0].coord[1]= v[3].coord[1]= 2 * ( y + Y ) - (x&1) + 2;\
-                    v[1].coord[1]= v[2].coord[1]= v[0].coord[1] + 1;\
-                    v[7].coord[1]= v[4].coord[1]= v[0].coord[1] - 1;\
-\
-                    v[0].coord[2]= v[1].coord[2]= v[2].coord[2]= v[3].coord[2]= v[7].coord[2]= v[4].coord[2]= z;\
-\
-					if( r_TextureManager::TexturePerBlock( tex_id ) )\
-					{\
-                    	v[0].tex_coord[0]= 0;\
-                    	v[1].tex_coord[0]= v[4].tex_coord[0]= 1*H_MAX_TEXTURE_SCALE;\
-                    	v[2].tex_coord[0]= v[7].tex_coord[0]= 3*H_MAX_TEXTURE_SCALE;\
-                    	v[3].tex_coord[0]= 4*H_MAX_TEXTURE_SCALE;\
-\
-                    	v[0].tex_coord[1]= v[3].tex_coord[1]= 1*H_MAX_TEXTURE_SCALE;\
-                    	v[1].tex_coord[1]= v[2].tex_coord[1]= 2*H_MAX_TEXTURE_SCALE;\
-                    	v[7].tex_coord[1]= v[4].tex_coord[1]= 0;\
-					}\
-					else\
-					{\
-						v[0].tex_coord[0]= tex_scale * v[0].coord[0];\
-                    	v[1].tex_coord[0]= v[4].tex_coord[0]= v[0].tex_coord[0] + 1*tex_scale;\
-                    	v[2].tex_coord[0]= v[7].tex_coord[0]= v[0].tex_coord[0] + 3*tex_scale;\
-                    	v[3].tex_coord[0]= v[0].tex_coord[0] + 4*tex_scale;\
-\
-                    	v[0].tex_coord[1]= v[3].tex_coord[1]= tex_scale * v[0].coord[1];\
-                    	v[1].tex_coord[1]= v[2].tex_coord[1]= v[0].tex_coord[1] + 1*tex_scale;\
-                    	v[7].tex_coord[1]= v[4].tex_coord[1]= v[0].tex_coord[1] - 1*tex_scale;\
-					}\
-\
-                    v[0].normal_id= v[1].normal_id= v[2].normal_id= v[3].normal_id= v[7].normal_id= v[4].normal_id= normal_id;\
-                    v[0].tex_coord[2]= v[1].tex_coord[2]= v[2].tex_coord[2]= v[3].tex_coord[2]= v[7].tex_coord[2]= v[4].tex_coord[2]= \
-                    tex_id;\
-                    if( flat_lighting )\
-                    {\
-                    	v[0].light[0]= v[1].light[0]= v[2].light[0]= v[3].light[0]= v[7].light[0]= v[4].light[0]= light[0] << 4;\
-                    	v[0].light[1]= v[1].light[1]= v[2].light[1]= v[3].light[1]= v[7].light[1]= v[4].light[1]= light[1] << 4;\
-                    }\
-					else\
-					{\
-                    	w->GetForwardVertexLight( x + relative_X - 1, y + relative_Y - (x&1), z, v[0].light );\
-                    	w->GetBackVertexLight( x + relative_X, y + relative_Y + 1, z, v[1].light );\
-                    	w->GetForwardVertexLight( x + relative_X, y + relative_Y, z, v[2].light );\
-                    	w->GetBackVertexLight( x + relative_X + 1, y + relative_Y + ((1+x)&1), z, v[3].light );\
-                    	w->GetForwardVertexLight( x + relative_X, y + relative_Y - 1, z, v[7].light );\
-                    	w->GetBackVertexLight(  x + relative_X, y + relative_Y, z, v[4].light );\
-					}\
-                    v[5]= v[0];\
-                    v[6]= v[3];\
-\
-                    if( normal_id == DOWN )\
-                    {\
-                        tmp_vertex= v[1];\
-                        v[1]= v[3];\
-                        v[3]= tmp_vertex;\
-\
-                        tmp_vertex= v[5];\
-                        v[5]= v[7];\
-                        v[7]= tmp_vertex;\
-                    }\
-                    v+=8;\
-
-
-					BUILD_QUADS_UP
-				}
-
-				if( t != t_fr )//forwaed right
-				{
-#define BUILD_QUADS_FORWARD_RIGHT \
-\
-					tex_id= r_TextureManager::GetTextureId( b->Type(), normal_id );\
-					tex_scale= r_TextureManager::GetTextureScale( tex_id );\
-\
-                    v[ 1 ].coord[0]= v[2].coord[0]= 3 * ( x + X ) + 3;\
-                    v[0].coord[0]= v[ 3 ].coord[0]= v[ 1 ].coord[0] + 1;\
-\
-                    v[0].coord[1]= v[ 3 ].coord[1]= 2 * ( y + Y ) - (x&1) + 2;\
-                    v[ 1 ].coord[1]= v[2].coord[1]= v[0].coord[1] + 1;\
-\
-                    v[0].coord[2]= v[ 1 ].coord[2]= z;\
-                    v[2].coord[2]= v[ 3 ].coord[2]= z - 1;\
-\
-\
-                    v[ 1 ].tex_coord[0]= v[2].tex_coord[0]= tex_scale * ( v[ 1 ].coord[1] - v[1].coord[0] );\
-                    v[0].tex_coord[0]= v[ 3 ].tex_coord[0]= v[ 1 ].tex_coord[0] - 2 * tex_scale;\
-\
-                    v[0].tex_coord[1]= v[ 1 ].tex_coord[1]= z * 2 * tex_scale;\
-                    v[2].tex_coord[1]= v[ 3 ].tex_coord[1]= v[0].tex_coord[1] - 2 * tex_scale;\
-\
-                    v[0].tex_coord[2]= v[1].tex_coord[2]= v[2].tex_coord[2]= v[3].tex_coord[2]=\
-                    tex_id;\
-					if( flat_lighting )\
-					{\
-						v[0].light[1]= v[1].light[1]= v[2].light[1]= v[3].light[1]= light[1] << 4;\
-						v[0].light[0]= v[1].light[0]= v[2].light[0]= v[3].light[0]= light[0] << 4;\
-					}\
-					else\
-					{\
-						w->GetBackVertexLight( x + relative_X + 1, y + relative_Y + ((x+1)&1), z, v[0].light );\
-						w->GetForwardVertexLight( x + relative_X, y + relative_Y, z, v[1].light );\
-						w->GetForwardVertexLight( x + relative_X, y + relative_Y, z-1, v[2].light  );\
-						w->GetBackVertexLight( x + relative_X + 1, y + relative_Y + ((x+1)&1), z-1, v[3].light  );\
-					}\
-					v[0].normal_id= v[1].normal_id= v[2].normal_id= v[3].normal_id= normal_id;\
-					if( normal_id == BACK_LEFT )\
-					{\
-						tmp_vertex= v[3];\
-						v[3]= v[1];\
-						v[1]= tmp_vertex;\
-					}\
-\
-                    v+=4;
-					if( t > t_fr )
-					{
-						normal_id= BACK_LEFT;
-						b= chunk_->GetBlock( x + 1, y + ((x+1)&1), z );
-						chunk_->GetLightsLevel( x, y, z, light );
-					}
-					else
-					{
-						normal_id= FORWARD_RIGHT;
-						b= chunk_->GetBlock( x, y, z );
-						chunk_->GetLightsLevel( x + 1, y + ((x+1)&1), z, light );
-					}
-					BUILD_QUADS_FORWARD_RIGHT
-				}
-
-				if( t != t_br )//back right
-				{
-#define BUILD_QUADS_BACK_RIGHT \
-\
-					tex_id= r_TextureManager::GetTextureId( b->Type(), normal_id );\
-					tex_scale= r_TextureManager::GetTextureScale( tex_id );\
-\
-                    v[ 1 ].coord[0]= v[2].coord[0]= 3 * ( x + X ) + 3;\
-                    v[0].coord[0]= v[ 3 ].coord[0]= v[ 1 ].coord[0] + 1;\
-\
-                    v[ 1 ].coord[1]= v[2].coord[1]= 2 * ( y + Y ) - (x&1) + 2 - 1;\
-                    v[0].coord[1]= v[ 3 ].coord[1]= v[ 1 ].coord[1] + 1;\
-\
-                    v[ 1 ].coord[2]= v[0].coord[2]= z;\
-                    v[2].coord[2]= v[ 3 ].coord[2]= z - 1;\
-\
-                   \
-                    v[2].tex_coord[0]= v[ 1 ].tex_coord[0]=  ( v[1].coord[1]  + v[1].coord[0] ) * tex_scale;\
-                    v[0].tex_coord[0]= v[ 3 ].tex_coord[0]= v[2].tex_coord[0] + 2 * tex_scale;\
-\
-                    v[0].tex_coord[1]= v[ 1 ].tex_coord[1]= z * 2 * tex_scale;\
-                    v[ 3 ].tex_coord[1]= v[2].tex_coord[1]= v[0].tex_coord[1] - 2 * tex_scale;\
-\
-                    v[0].tex_coord[2]= v[1].tex_coord[2]= v[2].tex_coord[2]= v[3].tex_coord[2]=\
-                    tex_id;\
-					if( flat_lighting )\
-					{\
-						v[0].light[1]= v[1].light[1]= v[2].light[1]= v[3].light[1]= light[1] << 4;\
-                    	v[0].light[0]= v[1].light[0]= v[2].light[0]= v[3].light[0]= light[0] << 4;\
-					}\
-					else\
-					{\
-						w->GetBackVertexLight( x + relative_X + 1, y + relative_Y + ((x+1)&1), z, v[0].light );\
-						w->GetBackVertexLight( x + relative_X + 1, y + relative_Y + ((x+1)&1), z - 1, v[3].light );\
-						w->GetForwardVertexLight( x + relative_X, y + relative_Y - 1, z - 1, v[2].light );\
-						w->GetForwardVertexLight( x + relative_X, y + relative_Y - 1, z, v[1].light );\
-					}\
-                    v[0].normal_id= v[1].normal_id= v[2].normal_id= v[3].normal_id= normal_id;\
-                    if( normal_id == BACK_RIGHT )\
-                    {\
-                    	tmp_vertex= v[3];\
-						v[3]= v[1];\
-						v[1]= tmp_vertex;\
-                    }\
-                    v+=4;
-					if( t > t_br )
-					{
-						normal_id= FORWARD_LEFT;
-						b= chunk_->GetBlock( x + 1, y - (x&1), z );
-						chunk_->GetLightsLevel( x, y, z, light );
-					}
-					else
-					{
-						normal_id= BACK_RIGHT;
-						b= chunk_->GetBlock( x, y, z );
-						chunk_->GetLightsLevel(x + 1, y - (x&1), z, light );
-					}
-					BUILD_QUADS_BACK_RIGHT
-				}
-
-				if( t != t_f )//forward
-				{
-#define BUILD_QUADS_FORWARD\
-\
-					tex_id= r_TextureManager::GetTextureId( b->Type(), normal_id );\
-					tex_scale= r_TextureManager::GetTextureScale( tex_id );\
-\
-                    v[0].coord[0]= v[ 1 ].coord[0]= 3 * ( x + X ) + 1;\
-                    v[0].coord[1]= v[ 1 ].coord[1]= v[2].coord[1]= v[ 3 ].coord[1]= 2 * ( y + Y ) - (x&1) + 2 + 1;\
-\
-                    v[0].coord[2]= v[ 3 ].coord[2]= z;\
-                    v[ 1 ].coord[2]= v[2].coord[2]= z - 1;\
-\
-                    v[ 3 ].coord[0]= v[2].coord[0]= v[ 1 ].coord[0] + 2;\
-\
-\
-                    v[0].tex_coord[0]= v[ 1 ].tex_coord[0]= v[0].coord[0] * tex_scale;\
-                    v[2].tex_coord[0]= v[ 3 ].tex_coord[0]= v[0].tex_coord[0] + 2 * tex_scale;\
-\
-                    v[0].tex_coord[1]= v[ 3 ].tex_coord[1]= z * 2 * tex_scale;\
-                    v[ 1 ].tex_coord[1]= v[2].tex_coord[1]= v[0].tex_coord[1] - 2 * tex_scale;\
-                    v[0].tex_coord[2]= v[1].tex_coord[2]= v[2].tex_coord[2]= v[3].tex_coord[2]=\
-                    tex_id;\
-                    \
-                    if( flat_lighting )\
-                    {\
-                    	v[0].light[0]= v[1].light[0]= v[2].light[0]= v[3].light[0]= light[0] << 4;\
-						v[0].light[1]= v[1].light[1]= v[2].light[1]= v[3].light[1]= light[1] << 4;\
-                    }\
-					else\
-					{\
-						w->GetBackVertexLight( x + relative_X, y + relative_Y + 1, z, v[0].light );\
-						w->GetBackVertexLight( x + relative_X, y + relative_Y + 1, z - 1, v[1].light  );\
-						w->GetForwardVertexLight( x + relative_X, y + relative_Y, z - 1, v[2].light  );\
-						w->GetForwardVertexLight( x + relative_X, y + relative_Y, z, v[3].light  );\
-					}\
-                    v[0].normal_id= v[1].normal_id= v[2].normal_id= v[3].normal_id= normal_id;\
-					if( normal_id == BACK )\
-                    {\
-                    	tmp_vertex= v[3];\
-						v[3]= v[1];\
-						v[1]= tmp_vertex;\
-                    }\
-                    v+= 4;
-					if( t > t_f )
-					{
-						normal_id= BACK;
-						b= chunk_->GetBlock( x, y + 1, z );
-						chunk_->GetLightsLevel( x, y, z, light );
-					}
-					else
-					{
-						normal_id= FORWARD;
-						b= chunk_->GetBlock( x, y, z );
-						chunk_->GetLightsLevel( x, y+1, z, light );
-					}
-					BUILD_QUADS_FORWARD
-				}//forward quad
-
-				t_fr_p++;
-				t_br_p++;
-				t_up_p++;
-				t_f_p++;
-			}//for z
-		}//for y
-	}//for x
-
-#if 1
-	//back chunk border( x E [ 0; H_CHUNK_WIDTH - 2 ], y=0 )
-	y= 0;
-	for( x= 0; x< H_CHUNK_WIDTH - 1; x++ )
-	{
-		t_up= chunk_->Transparency(  x, 0, 0 );
-		for( z= 0; z< H_CHUNK_HEIGHT - 2; z++ )
-		{
-			t= t_up;
-			if( ! (x&1) )
-				t_br= chunk_->Transparency( x + 1, 0, z );//back right
-			else if( chunk_back_ != nullptr )
-				t_br= chunk_back_->Transparency( x + 1, H_CHUNK_WIDTH - 1, z );
+				offset= BlockAddr( x, 0, 0 );
+				t_f_p= chunk_front_->GetTransparencyData() + offset;
+				b_f_p= chunk_front_->GetBlocksData() + offset;
+				ls_f_p= chunk_front_->GetSunLightData() + offset;
+				lf_f_p= chunk_front_->GetFireLightData() + offset;
+			}
 			else
-				t_br= t;
-			t_fr= chunk_->Transparency( x + 1, ( 1&(x+1) ), z );//forward right
-			t_up= chunk_->Transparency( x, 0, z + 1 );//up
-			t_f= chunk_->Transparency( x, 1, z );//forward
+				t_f_p= t_p;//this block transparency
 
-			if( t!= t_up )
+			if(x&1)
 			{
-				BUILD_QUADS_UP
+				offset= BlockAddr( x + 1, H_CHUNK_WIDTH - 1, 0 );
+				t_fr_p= chunk_->GetTransparencyData() + offset;
+				b_fr_p= chunk_->GetBlocksData() + offset;
+				ls_fr_p= chunk_->GetSunLightData() + offset;
+				lf_fr_p= chunk_->GetFireLightData() + offset;
 			}
-			if( t!= t_fr )
+			else if( chunk_front_ != nullptr )
 			{
-				if( t > t_fr )
-				{
-					normal_id= BACK_LEFT;
-					b= chunk_->GetBlock( x + 1, y + ((x+1)&1), z );
-					chunk_->GetLightsLevel( x, y, z, light );
-				}
-				else
-				{
-					normal_id= FORWARD_RIGHT;
-					b= chunk_->GetBlock( x, y, z );
-					chunk_->GetLightsLevel( x + 1, y + ((x+1)&1), z, light );
-				}
-				BUILD_QUADS_FORWARD_RIGHT
+				offset= BlockAddr( x + 1, 0, 0 );
+				t_fr_p= chunk_front_->GetTransparencyData() + offset;
+				b_fr_p= chunk_front_->GetBlocksData() + offset;
+				ls_fr_p= chunk_front_->GetSunLightData() + offset;
+				lf_fr_p= chunk_front_->GetFireLightData() + offset;
 			}
-			if( t!= t_br )
-			{
-				if( t > t_br )
-				{
-					normal_id= FORWARD_LEFT;
-					b= (x&1) ? chunk_back_->GetBlock( x + 1, H_CHUNK_WIDTH - 1, z ) :
-					   chunk_->GetBlock( x + 1, 0, z );
-					chunk_->GetLightsLevel( x, y, z, light );
-				}
-				else
-				{
-					normal_id= BACK_RIGHT;
-					b= chunk_->GetBlock( x, y, z );
-					(x&1) ? chunk_back_->GetLightsLevel( x + 1, H_CHUNK_WIDTH - 1, z, light ) :
-							chunk_->GetLightsLevel( x + 1, 0, z, light );
-				}
-				BUILD_QUADS_BACK_RIGHT
-			}
-			if( t!= t_f )
-			{
-				if( t > t_f )
-				{
-					normal_id= BACK;
-					b= chunk_->GetBlock( x, y + 1, z );
-					chunk_->GetLightsLevel( x, y, z, light );
-				}
-				else
-				{
-					normal_id= FORWARD;
-					b= chunk_->GetBlock( x, y, z );
-					chunk_->GetLightsLevel( x, y + 1, z, light );
-				}
-				BUILD_QUADS_FORWARD
-			}
-
+			else
+				t_fr_p= t_p;//this block transparency
 		}
-	}
-#endif
-#if 1
-	//right chunk border ( y E [ 1; H_CHUNK_WIDTH - 2 ] )
-	x= H_CHUNK_WIDTH - 1;
-	for( y= 1; y< H_CHUNK_WIDTH - 1; y++ )
-	{
-		t_up= chunk_->Transparency(  H_CHUNK_WIDTH - 1, y, 0 );
-		for( z= 0; z< H_CHUNK_HEIGHT - 2; z++ )
+		//back chunk border
+		else if( y == 0 && x < H_CHUNK_WIDTH - 1 )
 		{
-			t= t_up;
+			if(!(x&1))
+			{
+				offset= BlockAddr( x + 1, 0, 0 );
+				t_br_p= chunk_->GetTransparencyData() + offset;
+				b_br_p= chunk_->GetBlocksData() + offset;
+				ls_br_p= chunk_->GetSunLightData() + offset;
+				lf_br_p= chunk_->GetFireLightData() + offset;
+			}
+			else if( chunk_back_ != nullptr )
+			{
+				offset= BlockAddr( x+ 1, H_CHUNK_WIDTH - 1, 0 );
+				t_br_p= chunk_back_->GetTransparencyData() + offset;
+				b_br_p= chunk_back_->GetBlocksData() + offset;
+				ls_br_p= chunk_back_->GetSunLightData() + offset;
+				lf_br_p= chunk_back_->GetFireLightData() + offset;
+			}
+			else
+				t_br_p= t_p;//this block transparency
+		}
+		//right chunk border
+		else if( x == H_CHUNK_WIDTH - 1 && y> 0 && y< H_CHUNK_WIDTH-1 )
+		{
 			if( chunk_right_ != nullptr )
 			{
-				t_fr= chunk_right_->Transparency( 0, y, z );//forward right
-				t_br= chunk_right_->Transparency( 0, y - 1, z );	//back right
+				offset= BlockAddr( 0, y, 0 );
+				t_fr_p= chunk_right_->GetTransparencyData() + offset;
+				b_fr_p= chunk_right_->GetBlocksData() + offset;
+				ls_fr_p= chunk_right_->GetSunLightData() + offset;
+				lf_fr_p= chunk_right_->GetFireLightData() + offset;
+
+				offset= BlockAddr( 0, y - 1, 0 );
+				t_br_p= chunk_right_->GetTransparencyData() + offset;
+				b_br_p= chunk_right_->GetBlocksData() + offset;
+				ls_br_p= chunk_right_->GetSunLightData() + offset;
+				lf_br_p= chunk_right_->GetFireLightData() + offset;
+
 			}
 			else
-				t_fr= t_br= t;
-			t_up= chunk_->Transparency( H_CHUNK_WIDTH - 1, y, z + 1 );//up
-			t_f= chunk_->Transparency( H_CHUNK_WIDTH - 1, y + 1, z );//forward
-
-			if( t!= t_up )
-			{
-				BUILD_QUADS_UP
-			}
-			if( t!= t_fr )
-			{
-				if( t > t_fr )
-				{
-					normal_id= BACK_LEFT;
-					b= chunk_right_->GetBlock( 0, y + ((x+1)&1), z );
-					chunk_->GetLightsLevel( x, y, z, light );
-				}
-				else
-				{
-					normal_id= FORWARD_RIGHT;
-					b= chunk_->GetBlock( x, y, z );
-					chunk_right_->GetLightsLevel( 0, y + ((x+1)&1), z, light );
-				}
-				BUILD_QUADS_FORWARD_RIGHT
-			}
-			if( t!= t_br )
-			{
-				if( t > t_br )
-				{
-					normal_id= FORWARD_LEFT;
-					b= chunk_right_->GetBlock( 0, y - (x&1), z );
-					chunk_->GetLightsLevel( x, y, z, light );
-				}
-				else
-				{
-					normal_id= BACK_RIGHT;
-					b= chunk_->GetBlock( x, y, z );
-					chunk_right_->GetLightsLevel( 0, y - (x&1), z, light );
-				}
-				BUILD_QUADS_BACK_RIGHT
-			}
-			if( t!= t_f )
-			{
-				if( t > t_f )
-				{
-					normal_id= BACK;
-					b= chunk_->GetBlock( x, y + 1, z );
-					chunk_->GetLightsLevel( x, y, z, light );
-				}
-				else
-				{
-					normal_id= FORWARD;
-					b= chunk_->GetBlock( x, y, z );
-					chunk_->GetLightsLevel( x, y + 1, z, light );
-				}
-				BUILD_QUADS_FORWARD
-			}
+				t_fr_p= t_br_p= t_p;//this block transparency
 		}
-	}
-#endif
-#if 1
-	//front chunk border ( x E[ 0; H_CHUNK_WIDTH - 2 ] )
-	y= H_CHUNK_WIDTH - 1;
-	for( x= 0; x < H_CHUNK_WIDTH - 1; x++ )
-	{
-		t_up= chunk_->Transparency( x, H_CHUNK_WIDTH - 1, 0 );
-		for( z= 0; z< H_CHUNK_HEIGHT - 2; z++ )
+		else if( x == H_CHUNK_WIDTH - 1 && y == H_CHUNK_WIDTH - 1 )
 		{
-			t= t_up;
-			if( x&1  )
-				t_fr= chunk_->Transparency( x + 1, H_CHUNK_WIDTH - 1, z );//forward right
-			else if( chunk_front_ != nullptr )
-				t_fr= chunk_front_->Transparency( x + 1, 0, z );//forward right
-			else t_fr= t;
-
-			t_br= chunk_->Transparency( x + 1, H_CHUNK_WIDTH - 1 - ( 1&x ), z );//back right
-			t_up= chunk_->Transparency( x, H_CHUNK_WIDTH - 1, z + 1 );//up
-
 			if( chunk_front_ != nullptr )
-				t_f= chunk_front_->Transparency( x, 0, z );//forward
-			else
-				t_f= t;
-
-			if( t!= t_up )
 			{
-				BUILD_QUADS_UP
+				offset= BlockAddr( H_CHUNK_WIDTH - 1, 0, 0 );
+				t_f_p= chunk_front_->GetTransparencyData() + offset;
+				b_f_p= chunk_front_->GetBlocksData() + offset;
+				ls_f_p= chunk_front_->GetSunLightData() + offset;
+				lf_f_p= chunk_front_->GetFireLightData() + offset;
 			}
-			if( t!= t_fr )
+			else
+				t_f_p= t_p;//this block transparency;
+			if( chunk_right_ != nullptr )
+			{
+				offset= BlockAddr( 0, H_CHUNK_WIDTH  - 1, 0 );
+				t_fr_p= chunk_right_->GetTransparencyData() + offset;
+				b_fr_p= chunk_right_->GetBlocksData() + offset;
+				ls_fr_p= chunk_right_->GetSunLightData() + offset;
+				lf_fr_p= chunk_right_->GetFireLightData() + offset;
+
+				offset= BlockAddr( 0, H_CHUNK_WIDTH  - 2, 0 );
+				t_br_p= chunk_right_->GetTransparencyData() + offset;
+				b_br_p= chunk_right_->GetBlocksData() + offset;
+				ls_br_p= chunk_right_->GetSunLightData() + offset;
+				lf_br_p= chunk_right_->GetFireLightData() + offset;
+			}
+			else
+				t_fr_p= t_br_p= t_p;//this block transparency;
+		}
+		else if( x == H_CHUNK_WIDTH - 1 && y == 0 )
+		{
+			if( chunk_right_ != nullptr )
+			{
+				offset= BlockAddr( 0, 0, 0 );
+				t_fr_p= chunk_right_->GetTransparencyData() + offset;
+				b_fr_p= chunk_right_->GetBlocksData() + offset;
+				ls_fr_p= chunk_right_->GetSunLightData() + offset;
+				lf_fr_p= chunk_right_->GetFireLightData() + offset;
+			}
+			else
+				t_fr_p= t_p;//this block transparency;
+			if( chunk_back_right_ != nullptr )
+			{
+				offset= BlockAddr( 0, H_CHUNK_WIDTH - 1, 0 );
+				t_br_p= chunk_back_right_->GetTransparencyData() + offset;
+				b_br_p= chunk_back_right_->GetBlocksData() + offset;
+				ls_br_p= chunk_back_right_->GetSunLightData() + offset;
+				lf_br_p= chunk_back_right_->GetFireLightData() + offset;
+			}
+			else
+				t_br_p= t_p;//this block transparency;
+		}
+
+		for( int z= min_geometry_height_; z<= max_geometry_height_; z++ )
+		{
+			unsigned char normal_id;
+			unsigned char tex_id, tex_scale, light[2];
+			const h_Block* b;
+
+			unsigned char t= t_p[z];
+			unsigned char t_fr= t_fr_p[z];
+			unsigned char t_br= t_br_p[z];
+			unsigned char t_up= t_p[z+1];
+			unsigned char t_f= t_f_p[z];
+
+			if( t != t_up )//up
+			{
+				if( t > t_up )
+				{
+					normal_id= DOWN;
+					b= b_p[z+1];
+					light[0]= ls_p[z];
+					light[1]= lf_p[z];
+				}
+				else
+				{
+					normal_id= UP;
+					b= b_p[z];
+					light[0]= ls_p[z+1];
+					light[1]= lf_p[z+1];
+				}
+
+				tex_id= r_TextureManager::GetTextureId( b->Type(), normal_id );
+				tex_scale= r_TextureManager::GetTextureScale( tex_id );
+
+				v[0].coord[0]= 3 * ( x + X );
+				v[1].coord[0]= v[4].coord[0]= v[0].coord[0] + 1;
+				v[2].coord[0]= v[7].coord[0]= v[0].coord[0] + 3;
+				v[3].coord[0]= v[0].coord[0] + 4;
+
+				v[0].coord[1]= v[3].coord[1]= 2 * ( y + Y ) - (x&1) + 2;
+				v[1].coord[1]= v[2].coord[1]= v[0].coord[1] + 1;
+				v[7].coord[1]= v[4].coord[1]= v[0].coord[1] - 1;
+
+				v[0].coord[2]= v[1].coord[2]= v[2].coord[2]= v[3].coord[2]= v[7].coord[2]= v[4].coord[2]= z;
+
+				if( r_TextureManager::TexturePerBlock( tex_id ) )
+				{
+					v[0].tex_coord[0]= 0;
+					v[1].tex_coord[0]= v[4].tex_coord[0]= 1*H_MAX_TEXTURE_SCALE;
+					v[2].tex_coord[0]= v[7].tex_coord[0]= 3*H_MAX_TEXTURE_SCALE;
+					v[3].tex_coord[0]= 4*H_MAX_TEXTURE_SCALE;
+
+					v[0].tex_coord[1]= v[3].tex_coord[1]= 1*H_MAX_TEXTURE_SCALE;
+					v[1].tex_coord[1]= v[2].tex_coord[1]= 2*H_MAX_TEXTURE_SCALE;
+					v[7].tex_coord[1]= v[4].tex_coord[1]= 0;
+				}
+				else
+				{
+					v[0].tex_coord[0]= tex_scale * v[0].coord[0];
+					v[1].tex_coord[0]= v[4].tex_coord[0]= v[0].tex_coord[0] + 1*tex_scale;
+					v[2].tex_coord[0]= v[7].tex_coord[0]= v[0].tex_coord[0] + 3*tex_scale;
+					v[3].tex_coord[0]= v[0].tex_coord[0] + 4*tex_scale;
+
+					v[0].tex_coord[1]= v[3].tex_coord[1]= tex_scale * v[0].coord[1];
+					v[1].tex_coord[1]= v[2].tex_coord[1]= v[0].tex_coord[1] + 1*tex_scale;
+					v[7].tex_coord[1]= v[4].tex_coord[1]= v[0].tex_coord[1] - 1*tex_scale;
+				}
+
+				v[0].normal_id= v[1].normal_id= v[2].normal_id= v[3].normal_id= v[7].normal_id= v[4].normal_id= normal_id;
+				v[0].tex_coord[2]= v[1].tex_coord[2]= v[2].tex_coord[2]= v[3].tex_coord[2]= v[7].tex_coord[2]= v[4].tex_coord[2]=
+				tex_id;
+				if( flat_lighting )
+				{
+					v[0].light[0]= v[1].light[0]= v[2].light[0]= v[3].light[0]= v[7].light[0]= v[4].light[0]= light[0] << 4;
+					v[0].light[1]= v[1].light[1]= v[2].light[1]= v[3].light[1]= v[7].light[1]= v[4].light[1]= light[1] << 4;
+				}
+				else
+				{
+					w->GetForwardVertexLight( x + relative_X - 1, y + relative_Y - (x&1), z, v[0].light );
+					w->GetBackVertexLight( x + relative_X, y + relative_Y + 1, z, v[1].light );
+					w->GetForwardVertexLight( x + relative_X, y + relative_Y, z, v[2].light );
+					w->GetBackVertexLight( x + relative_X + 1, y + relative_Y + ((1+x)&1), z, v[3].light );
+					w->GetForwardVertexLight( x + relative_X, y + relative_Y - 1, z, v[7].light );
+					w->GetBackVertexLight(  x + relative_X, y + relative_Y, z, v[4].light );
+				}
+				v[5]= v[0];
+				v[6]= v[3];
+
+				if( normal_id == DOWN )
+				{
+					std::swap( v[1], v[3] );
+					std::swap( v[5], v[7] );
+				}
+				v+=8;
+			}
+
+			if( t != t_fr )//forward right
 			{
 				if( t > t_fr )
 				{
 					normal_id= BACK_LEFT;
-					b= ( x&1) ? chunk_->GetBlock( x + 1, H_CHUNK_WIDTH - 1, z ) :
-					   chunk_front_->GetBlock( x + 1, 0, z );
-					chunk_->GetLightsLevel( x, y, z, light );
+					b= b_fr_p[z];
+					light[0]= ls_p[z];
+					light[1]= lf_p[z];
 				}
 				else
 				{
 					normal_id= FORWARD_RIGHT;
-					b= chunk_->GetBlock( x, y, z );
-					( x&1) ? chunk_->GetLightsLevel( x + 1, H_CHUNK_WIDTH - 1, z, light ) :
-							chunk_front_->GetLightsLevel( x + 1, 0, z, light );
+					b= b_p[z];
+					light[0]= ls_fr_p[z];
+					light[1]= lf_fr_p[z];
 				}
-				BUILD_QUADS_FORWARD_RIGHT
+
+				tex_id= r_TextureManager::GetTextureId( b->Type(), normal_id );
+				tex_scale= r_TextureManager::GetTextureScale( tex_id );
+
+				v[ 1 ].coord[0]= v[2].coord[0]= 3 * ( x + X ) + 3;
+				v[0].coord[0]= v[ 3 ].coord[0]= v[ 1 ].coord[0] + 1;
+
+				v[0].coord[1]= v[ 3 ].coord[1]= 2 * ( y + Y ) - (x&1) + 2;
+				v[ 1 ].coord[1]= v[2].coord[1]= v[0].coord[1] + 1;
+
+				v[0].coord[2]= v[ 1 ].coord[2]= z;
+				v[2].coord[2]= v[ 3 ].coord[2]= z - 1;
+
+
+				v[ 1 ].tex_coord[0]= v[2].tex_coord[0]= tex_scale * ( v[ 1 ].coord[1] - v[1].coord[0] );
+				v[0].tex_coord[0]= v[ 3 ].tex_coord[0]= v[ 1 ].tex_coord[0] - 2 * tex_scale;
+
+				v[0].tex_coord[1]= v[ 1 ].tex_coord[1]= z * 2 * tex_scale;
+				v[2].tex_coord[1]= v[ 3 ].tex_coord[1]= v[0].tex_coord[1] - 2 * tex_scale;
+
+				v[0].tex_coord[2]= v[1].tex_coord[2]= v[2].tex_coord[2]= v[3].tex_coord[2]=
+				tex_id;
+				if( flat_lighting )
+				{
+					v[0].light[0]= v[1].light[0]= v[2].light[0]= v[3].light[0]= light[0] << 4;
+					v[0].light[1]= v[1].light[1]= v[2].light[1]= v[3].light[1]= light[1] << 4;
+				}
+				else
+				{
+					w->GetBackVertexLight( x + relative_X + 1, y + relative_Y + ((x+1)&1), z, v[0].light );
+					w->GetForwardVertexLight( x + relative_X, y + relative_Y, z, v[1].light );
+					w->GetForwardVertexLight( x + relative_X, y + relative_Y, z-1, v[2].light  );
+					w->GetBackVertexLight( x + relative_X + 1, y + relative_Y + ((x+1)&1), z-1, v[3].light  );
+				}
+				v[0].normal_id= v[1].normal_id= v[2].normal_id= v[3].normal_id= normal_id;
+				if( normal_id == BACK_LEFT )
+					std::swap( v[1], v[3] );
+
+				v+=4;
 			}
-			if( t!= t_br )
+
+			if( t != t_br )//back right
 			{
 				if( t > t_br )
 				{
 					normal_id= FORWARD_LEFT;
-					b= chunk_->GetBlock( x + 1, y - (x&1), z );
-					chunk_->GetLightsLevel( x, y, z, light );
+					b= b_br_p[z];
+					light[0]= ls_p[z];
+					light[1]= lf_p[z];
 				}
 				else
 				{
 					normal_id= BACK_RIGHT;
-					b= chunk_->GetBlock( x, y, z );
-					chunk_->GetLightsLevel( x + 1, y - (x&1), z, light );
+					b= b_p[z];
+					light[0]= ls_br_p[z];
+					light[1]= lf_br_p[z];
 				}
-				BUILD_QUADS_BACK_RIGHT
+
+				tex_id= r_TextureManager::GetTextureId( b->Type(), normal_id );
+				tex_scale= r_TextureManager::GetTextureScale( tex_id );
+
+				v[ 1 ].coord[0]= v[2].coord[0]= 3 * ( x + X ) + 3;
+				v[0].coord[0]= v[ 3 ].coord[0]= v[ 1 ].coord[0] + 1;
+
+				v[ 1 ].coord[1]= v[2].coord[1]= 2 * ( y + Y ) - (x&1) + 2 - 1;
+				v[0].coord[1]= v[ 3 ].coord[1]= v[ 1 ].coord[1] + 1;
+
+				v[ 1 ].coord[2]= v[0].coord[2]= z;
+				v[2].coord[2]= v[ 3 ].coord[2]= z - 1;
+
+
+				v[2].tex_coord[0]= v[ 1 ].tex_coord[0]=  ( v[1].coord[1]  + v[1].coord[0] ) * tex_scale;
+				v[0].tex_coord[0]= v[ 3 ].tex_coord[0]= v[2].tex_coord[0] + 2 * tex_scale;
+
+				v[0].tex_coord[1]= v[ 1 ].tex_coord[1]= z * 2 * tex_scale;
+				v[ 3 ].tex_coord[1]= v[2].tex_coord[1]= v[0].tex_coord[1] - 2 * tex_scale;
+
+				v[0].tex_coord[2]= v[1].tex_coord[2]= v[2].tex_coord[2]= v[3].tex_coord[2]=
+				tex_id;
+				if( flat_lighting )
+				{
+					v[0].light[0]= v[1].light[0]= v[2].light[0]= v[3].light[0]= light[0] << 4;
+					v[0].light[1]= v[1].light[1]= v[2].light[1]= v[3].light[1]= light[1] << 4;
+				}
+				else
+				{
+					w->GetBackVertexLight( x + relative_X + 1, y + relative_Y + ((x+1)&1), z, v[0].light );
+					w->GetBackVertexLight( x + relative_X + 1, y + relative_Y + ((x+1)&1), z - 1, v[3].light );
+					w->GetForwardVertexLight( x + relative_X, y + relative_Y - 1, z - 1, v[2].light );
+					w->GetForwardVertexLight( x + relative_X, y + relative_Y - 1, z, v[1].light );
+				}
+				v[0].normal_id= v[1].normal_id= v[2].normal_id= v[3].normal_id= normal_id;
+				if( normal_id == BACK_RIGHT )
+					std::swap( v[1], v[3] );
+
+				v+=4;
 			}
-			if( t!= t_f )
+
+			if( t != t_f )//forward
 			{
 				if( t > t_f )
 				{
 					normal_id= BACK;
-					b= chunk_front_->GetBlock( x, 0, z );
-					chunk_->GetLightsLevel( x, y, z, light );
+					b= b_f_p[z];
+					light[0]= ls_p[z];
+					light[1]= lf_p[z];
 				}
 				else
 				{
 					normal_id= FORWARD;
-					b= chunk_->GetBlock( x, y, z );
-					chunk_front_->GetLightsLevel( x, 0, z, light );
+					b= b_p[z];
+					light[0]= ls_f_p[z];
+					light[1]= lf_f_p[z];
 				}
-				BUILD_QUADS_FORWARD
-			}
-		}
-	}
-#endif
-#if 1
-	//right up chunk corner
-	x= y= H_CHUNK_WIDTH - 1;
-	t_up= chunk_->Transparency( H_CHUNK_WIDTH - 1, H_CHUNK_WIDTH - 1, 0 );
-	for( z= 0; z< H_CHUNK_HEIGHT - 2; z++ )
-	{
-		t= t_up;
-		if( chunk_front_ != nullptr )
-			t_f= chunk_front_->Transparency( H_CHUNK_WIDTH - 1, 0, z );
-		else
-			t_f= t;
 
-		if( chunk_right_ != nullptr )
-		{
-			t_fr= chunk_right_->Transparency( 0, H_CHUNK_WIDTH - 1, z );
-			t_br= chunk_right_->Transparency( 0, H_CHUNK_WIDTH - 2, z );
-		}
-		else
-			t_fr= t_br= t;
-		t_up= chunk_->Transparency( H_CHUNK_WIDTH - 1, H_CHUNK_WIDTH - 1, z + 1 );//up
+				tex_id= r_TextureManager::GetTextureId( b->Type(), normal_id );
+				tex_scale= r_TextureManager::GetTextureScale( tex_id );
 
-		if( t!= t_up )
-		{
-			BUILD_QUADS_UP
-		}
-		if( t!= t_fr )
-		{
-			if( t > t_fr )
-			{
-				normal_id= BACK_LEFT;
-				b= chunk_right_->GetBlock( 0, H_CHUNK_WIDTH  - 1, z );
-				chunk_->GetLightsLevel( x, y, z, light );
-			}
-			else
-			{
-				normal_id= FORWARD_RIGHT;
-				b= chunk_->GetBlock( x, y, z );
-				chunk_right_->GetLightsLevel( 0, H_CHUNK_WIDTH  - 1, z, light );
-			}
-			BUILD_QUADS_FORWARD_RIGHT
-		}
-		if( t!= t_br )
-		{
-			if( t > t_br )
-			{
-				normal_id= FORWARD_LEFT;
-				b= chunk_right_->GetBlock( 0, H_CHUNK_WIDTH  - 2, z );
-				chunk_->GetLightsLevel( x, y, z, light );
-			}
-			else
-			{
-				normal_id= BACK_RIGHT;
-				b= chunk_->GetBlock( x, y, z );
-				chunk_right_->GetLightsLevel( 0, H_CHUNK_WIDTH  - 2, z, light );
-			}
-			BUILD_QUADS_BACK_RIGHT
-		}
-		if( t!= t_f )
-		{
-			if( t > t_f )
-			{
-				normal_id= BACK;
-				b= chunk_front_->GetBlock( x, 0, z );
-				chunk_->GetLightsLevel( x, y, z, light );
-			}
-			else
-			{
-				normal_id= FORWARD;
-				b= chunk_->GetBlock( x, y, z );
-				chunk_front_->GetLightsLevel( x, 0, z, light );
-			}
-			BUILD_QUADS_FORWARD
-		}
-	}
-#endif
-#if 1
-	//right down chunk corner
-	x= H_CHUNK_WIDTH - 1, y=0;
-	t_up= chunk_->Transparency( H_CHUNK_WIDTH - 1, 0, 0 );
-	for( z= 0; z< H_CHUNK_HEIGHT - 2; z++ )
-	{
-		t= t_up;
-		t_f= chunk_->Transparency( H_CHUNK_WIDTH - 1, 1, z );
+				v[0].coord[0]= v[ 1 ].coord[0]= 3 * ( x + X ) + 1;
+				v[0].coord[1]= v[ 1 ].coord[1]= v[2].coord[1]= v[ 3 ].coord[1]= 2 * ( y + Y ) - (x&1) + 2 + 1;
 
-		if( chunk_right_ != nullptr )
-			t_fr= chunk_right_->Transparency( 0, 0, z );
-		else
-			t_fr= t;
+				v[0].coord[2]= v[ 3 ].coord[2]= z;
+				v[ 1 ].coord[2]= v[2].coord[2]= z - 1;
 
-		if( chunk_back_right_ !=nullptr )
-			t_br= chunk_back_right_->Transparency( 0, H_CHUNK_WIDTH - 1, z );
-		else
-			t_br= t;
-		t_up= chunk_->Transparency( H_CHUNK_WIDTH - 1, 0, z + 1 );//up
+				v[ 3 ].coord[0]= v[2].coord[0]= v[ 1 ].coord[0] + 2;
 
-		if( t!= t_up )
-		{
-			BUILD_QUADS_UP
-		}
-		if( t!= t_fr )
-		{
-			if( t > t_fr )
-			{
-				normal_id= BACK_LEFT;
-				b= chunk_right_->GetBlock( 0, 0, z );
-				chunk_->GetLightsLevel( x, y, z, light );
-			}
-			else
-			{
-				normal_id= FORWARD_RIGHT;
-				b= chunk_->GetBlock( x, y, z );
-				chunk_right_->GetLightsLevel( 0, 0, z, light );
-			}
-			BUILD_QUADS_FORWARD_RIGHT
-		}
-		if( t!= t_br )
-		{
-			if( t > t_br )
-			{
-				normal_id= FORWARD_LEFT;
-				b= chunk_back_right_->GetBlock( 0, H_CHUNK_WIDTH  - 1, z );
-				chunk_->GetLightsLevel( x, y, z, light );
-			}
-			else
-			{
-				normal_id= BACK_RIGHT;
-				b= chunk_->GetBlock( x, y, z );
-				chunk_back_right_->GetLightsLevel( 0, H_CHUNK_WIDTH  - 1, z, light );
-			}
-			BUILD_QUADS_BACK_RIGHT
-		}
-		if( t!= t_f )
-		{
-			if( t > t_f )
-			{
-				normal_id= BACK;
-				b= chunk_->GetBlock( x, y + 1, z );
-				chunk_->GetLightsLevel( x, y, z, light );
-			}
-			else
-			{
-				normal_id= FORWARD;
-				b= chunk_->GetBlock( x, y, z );
-				chunk_->GetLightsLevel( x, y + 1, z, light );
-			}
-			BUILD_QUADS_FORWARD
-		}
-	}
-#endif
 
+				v[0].tex_coord[0]= v[ 1 ].tex_coord[0]= v[0].coord[0] * tex_scale;
+				v[2].tex_coord[0]= v[ 3 ].tex_coord[0]= v[0].tex_coord[0] + 2 * tex_scale;
+
+				v[0].tex_coord[1]= v[ 3 ].tex_coord[1]= z * 2 * tex_scale;
+				v[ 1 ].tex_coord[1]= v[2].tex_coord[1]= v[0].tex_coord[1] - 2 * tex_scale;
+				v[0].tex_coord[2]= v[1].tex_coord[2]= v[2].tex_coord[2]= v[3].tex_coord[2]=
+				tex_id;
+
+				if( flat_lighting )
+				{
+					v[0].light[0]= v[1].light[0]= v[2].light[0]= v[3].light[0]= light[0] << 4;
+					v[0].light[1]= v[1].light[1]= v[2].light[1]= v[3].light[1]= light[1] << 4;
+				}
+				else
+				{
+					w->GetBackVertexLight( x + relative_X, y + relative_Y + 1, z, v[0].light );
+					w->GetBackVertexLight( x + relative_X, y + relative_Y + 1, z - 1, v[1].light  );
+					w->GetForwardVertexLight( x + relative_X, y + relative_Y, z - 1, v[2].light  );
+					w->GetForwardVertexLight( x + relative_X, y + relative_Y, z, v[3].light  );
+				}
+				v[0].normal_id= v[1].normal_id= v[2].normal_id= v[3].normal_id= normal_id;
+				if( normal_id == BACK )
+					std::swap( v[1], v[3] );
+
+				v+= 4;
+			}//forward quad
+		}//for z
+	}//for xy
+
+	H_ASSERT( v - vertex_data_ == (int)vertex_count_ );
 }
