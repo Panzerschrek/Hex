@@ -178,7 +178,7 @@ void r_TextureManager::LoadTextures()
 		QJsonValue val;
 
 		QString filename= obj[ "filename" ].toString();
-		if( !img.load( filename ) )
+		if( !img.load( "textures/" + filename ) )
 		{
 			h_Console::Warning( "texture \"", filename.toLocal8Bit().constData(), "\" not found" );
 			continue;

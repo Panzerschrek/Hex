@@ -1,7 +1,7 @@
 [
 
 {
- 	"filename": "textures/grass2.jpg",
+	"filename": "grass2.jpg",
 	"scale": 3,
 	"blocks":
 	[
@@ -13,7 +13,7 @@
 },
 
 {
- 	"filename": "textures/leaves3.tga",
+	"filename": "leaves3.tga",
 	"scale": 4,
 	"blocks":
 	[
@@ -26,7 +26,7 @@
 },
 
 {
- 	"filename": "textures/stone.jpg",
+	"filename": "stone.jpg",
 	"scale": 3,
 	"blocks":
 	[
@@ -39,7 +39,7 @@
 },
 
 {
- 	"filename": "textures/fire.jpg",
+	"filename": "fire.jpg",
 	"scale": 2,
 	"blocks":
 	[
@@ -52,7 +52,7 @@
 },
 
 {
- 	"filename": "textures/wood.jpg",
+	"filename": "wood.jpg",
 	"scale": 4,
 	"blocks":
 	[
@@ -85,7 +85,7 @@
 },
 
 {
- 	"filename": "textures/soil.jpg",
+	"filename": "soil.jpg",
 	"scale": 4,
 	"blocks":
 	[
@@ -121,12 +121,12 @@
 			"blockname": "grass",
 			"blockside": "down"
 		}
-		
+
 	]
 },
 
 {
- 	"filename": "textures/wood-end.jpg",
+	"filename": "wood-end.jpg",
 	"perblock": true,
 	"blocks":
 	[
@@ -143,7 +143,7 @@
 },
 
 {
-	"filename": "textures/spherical_block.jpg",
+	"filename": "spherical_block_2.png",
 	"perblock": true,
 	"blocks":
 	[
