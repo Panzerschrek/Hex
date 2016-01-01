@@ -1103,6 +1103,11 @@ void r_WorldRenderer::LoadShaders()
 			 0.25f * sqrt(3.0f) / float( H_MAX_TEXTURE_SCALE ),
 			 1.0f );
 	world_shader_.Define( define_str );
+	if( settings_->GetBool( h_SettingsKeys::lighting_only ) )
+	{
+		sprintf( define_str, "LIGHTING_ONLY" );
+		world_shader_.Define( define_str );
+	}
 	world_shader_.Create();
 
 	if( !water_shader_.Load( "shaders/water_frag.glsl", "shaders/water_vert.glsl", nullptr ) )

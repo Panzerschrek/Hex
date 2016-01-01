@@ -9,5 +9,6 @@
     "active_area_margins_x" : "5",
     "active_area_margins_y" : "4",
     "antialiasing" : "4",
-    "vsync" : "1"
+    "vsync" : "1",
+    "lighting_only" : "0"
 }

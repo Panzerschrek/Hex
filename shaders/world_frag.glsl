@@ -101,8 +101,8 @@ vec4 HexagonFetch()
 		int texture_layer= int(f_tex_coord.z+0.01);
 
 		return texelFetch( tex, ivec3(
- 			mod( GetHexagonTexCoordY( f_tex_coord.xy * vec2(tex_size) ) ,tex_size ),
- 			texture_layer ), 0 );
+			mod( GetHexagonTexCoordY( f_tex_coord.xy * vec2(tex_size) ) ,tex_size ),
+			texture_layer ), 0 );
 	}
 	else
 		return SimpleFetch();
@@ -113,6 +113,10 @@ void main()
 	vec4 c= HexagonFetch();
 	if( c.a < 0.5 )
 		discard;
+
+	#ifdef LIGHTING_ONLY
+	c.xyz= vec3( 0.5, 0.5, 0.5 );
+	#endif
 
 	vec3 l= f_light.x * sun_light_color + f_light.y * fire_light_color + ambient_light_color;
 	color= vec4( c.xyz * l, 1.0 );
