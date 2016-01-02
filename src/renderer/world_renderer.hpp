@@ -105,6 +105,7 @@ private:
 		m_Vec3 current_sun_light;
 		m_Vec3 current_fire_light;
 		m_Vec3 sun_direction;
+		m_Vec3 sky_color;
 	} lighting_data_;
 
 	//framebuffers

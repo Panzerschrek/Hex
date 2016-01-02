@@ -6,6 +6,8 @@ const m_Vec3 R_DAY_SKY_LIGHT_COLOR( 0.95f, 0.95f, 1.0f );
 const m_Vec3 R_NIGHT_SKY_LIGHT_COLOR( 0.2f, 0.2f, 0.2f );
 const m_Vec3 R_AMBIENT_LIGHT_COLOR( 0.06f, 0.06f, 0.06f );
 
+const m_Vec3 R_SKYBOX_COLOR( 1.0f, 1.0f, 1.5f );
+
 #define R_MAX_TEXTURES 256
 #define R_MAX_TEXTURE_RESOLUTION 256
 #define R_MIN_TEXTURE_RESOLUTION 4

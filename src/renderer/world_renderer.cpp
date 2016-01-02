@@ -507,6 +507,8 @@ void r_WorldRenderer::CalculateLight()
 	lighting_data_.current_sun_light= sky_light / float ( H_MAX_SUN_LIGHT * 16 );
 	lighting_data_.current_fire_light= R_FIRE_LIGHT_COLOR / float ( H_MAX_FIRE_LIGHT * 16 );
 	lighting_data_.sun_direction= m_Vec3( 0.7f, 0.8f, 0.6f );
+
+	lighting_data_.sky_color= R_SKYBOX_COLOR * daynight_k;
 }
 
 void r_WorldRenderer::Draw()
@@ -814,6 +816,7 @@ void r_WorldRenderer::DrawSky()
 	skybox_shader_.Bind();
 	skybox_shader_.Uniform( "cam_pos", cam_pos_ );
 	skybox_shader_.Uniform( "view_matrix", view_matrix_ );
+	skybox_shader_.Uniform( "sky_color", lighting_data_.sky_color );
 
 	skybox_vbo_.Bind();
 	skybox_vbo_.Show();
