@@ -5,6 +5,7 @@ void FileLump::Read( QDataStream& stream )
 	stream>> offset;
 	stream>> size;
 }
+
 void FileLump::Write( QDataStream& stream )
 {
 	stream<< offset;
@@ -43,7 +44,6 @@ void HEXCHUNK_header::Write( QDataStream& stream )
 	blocks_data.Write( stream );
 }
 
-
 void HEXREGION_header::Read( QDataStream& stream )
 {
 	for( unsigned int i= 0; i< sizeof(format_key); i++ )
@@ -55,9 +55,8 @@ void HEXREGION_header::Read( QDataStream& stream )
 	stream>> longitude;
 	stream>> latitude;
 
-	for( unsigned int i= 0; i< sizeof(chunk_lumps)/sizeof(FileLump); i++ )
-		chunk_lumps[i].Read( stream );
-
+	for( FileLump& lump : chunk_lumps )
+		lump.Read( stream );
 }
 
 void HEXREGION_header::Write( QDataStream& stream )
@@ -71,8 +70,8 @@ void HEXREGION_header::Write( QDataStream& stream )
 	stream<< longitude;
 	stream<< latitude;
 
-	for( unsigned int i= 0; i< sizeof(chunk_lumps)/sizeof(FileLump); i++ )
-		chunk_lumps[i].Write( stream );
+	for( FileLump& lump : chunk_lumps )
+		lump.Write( stream );
 }
 
 void WORLD_header::Read( QDataStream& stream )
@@ -83,7 +82,6 @@ void WORLD_header::Read( QDataStream& stream )
 	stream>> version;
 	stream>> datalen;
 }
-
 
 void WORLD_header::Write( QDataStream& stream )
 {

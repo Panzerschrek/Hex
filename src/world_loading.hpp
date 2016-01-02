@@ -20,7 +20,6 @@ struct FileLump
 	//if struct changed, this must be changed too
 	void Read( QDataStream& stream );
 	void Write( QDataStream& stream );
-
 };
 
 struct HEXCHUNK_header
@@ -40,7 +39,6 @@ struct HEXCHUNK_header
 	void Read( QDataStream& stream );
 	void Write( QDataStream& stream );
 };
-
 
 struct HEXREGION_header
 {
@@ -70,4 +68,3 @@ struct WORLD_header
 	void Read( QDataStream& stream );
 	void Write( QDataStream& stream );
 };
-
