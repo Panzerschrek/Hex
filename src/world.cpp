@@ -130,7 +130,7 @@ void h_World::Blast( short x, short y, short z, short radius )
 }
 
 void h_World::StartUpdates()
-{;
+{
 	phys_thread_.reset( new std::thread( &h_World::PhysTick, this ) );
 }
 
@@ -432,32 +432,11 @@ void h_World::MoveWorld( h_WorldMoveDirection dir )
 
 void h_World::SaveChunk( h_Chunk* ch )
 {
-	/*QByteArray array;
-	QDataStream stream( &array, QIODevice::WriteOnly );
-
-	HEXCHUNK_header header;
-	//strcpy( header.format_key, "HEXchunk" );
-	header.water_block_count= ch->GetWaterList()->Size();
-	header.longitude= ch->Longitude();
-	header.latitude= ch->Latitude();
-
-	header.Write( stream );
-
-	ch->SaveChunkToFile( stream );
-
-	QByteArray compressed_chunk= qCompress( array );
-
-	char file_name[128];
-	sprintf( file_name, "world/ch_%d_%d", ch->Longitude(), ch->Latitude() );
-	FILE* f= fopen( file_name, "wb" );
-	fwrite( compressed_chunk.constData(), 1, compressed_chunk.size(), f );
-	fclose(f);*/
-
 	QByteArray array;
 	QDataStream stream( &array, QIODevice::WriteOnly );
 
 	HEXCHUNK_header header;
-	//strcpy( header.format_key, "HEXchunk" );
+
 	header.water_block_count= ch->GetWaterList()->Size();
 	header.longitude= ch->Longitude();
 	header.latitude= ch->Latitude();
@@ -470,34 +449,9 @@ void h_World::SaveChunk( h_Chunk* ch )
 
 h_Chunk* h_World::LoadChunk( int lon, int lat )
 {
-	/*char file_name[128];
-	sprintf( file_name, "world/ch_%d_%d", lon, lat );
-	FILE* f= fopen( file_name, "rb" );
-	if( f == NULL )
-		return  new h_Chunk( this, lon, lat );
-
-	int file_len;
-	fseek( f, 0, SEEK_END );
-	file_len= ftell( f );
-	fseek( f, 0, SEEK_SET );
-
-	unsigned char* file_data= new unsigned char[ file_len ];
-	fread( file_data, 1, file_len, f );
-	fclose(f);
-
-	QByteArray uncompressed_chunk= qUncompress( file_data, file_len );
-	delete[] file_data;
-	QDataStream stream( &uncompressed_chunk, QIODevice::ReadOnly );
-
-	HEXCHUNK_header header;
-	header.Read( stream );
-
-	return new h_Chunk( this, &header, stream );*/
-
 	QByteArray& ba= chunk_loader_.GetChunkData( lon, lat );
 	if( ba.size() == 0 )
 		return new h_Chunk( this, lon, lat, world_generator_.get() );
-
 
 	QByteArray uncompressed_chunk= qUncompress( ba );
 	QDataStream stream( &uncompressed_chunk, QIODevice::ReadOnly );

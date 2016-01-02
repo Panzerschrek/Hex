@@ -10,6 +10,7 @@
 #include "block.hpp"
 #include "chunk.hpp"
 #include "math_lib/rand.h"
+#include "math_lib/assert.hpp"
 #include "world_action.hpp"
 #include "chunk_loader.hpp"
 
@@ -180,10 +181,17 @@ inline short h_World::Latitude () const
 
 inline h_Chunk* h_World::GetChunk( short X, short Y )
 {
+	H_ASSERT( X >= 0 && X < (int)chunk_number_x_ );
+	H_ASSERT( Y >= 0 && Y < (int)chunk_number_y_ );
+
 	return chunks_[ X | ( Y << H_MAX_CHUNKS_LOG2 ) ];
 }
+
 inline const h_Chunk* h_World::GetChunk( short X, short Y ) const
 {
+	H_ASSERT( X >= 0 && X < (int)chunk_number_x_ );
+	H_ASSERT( Y >= 0 && Y < (int)chunk_number_y_ );
+
 	return chunks_[ X | ( Y << H_MAX_CHUNKS_LOG2 ) ];
 }
 
