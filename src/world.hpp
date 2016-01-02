@@ -57,6 +57,13 @@ public:
 	//returns light level of back-backleft upper vertex of prism X16. coordinates - relative
 	void GetBackVertexLight( short x, short y, short z, unsigned char* out_light ) const;
 
+	// Time in ticks. 0 - Midnight. TicksInDay()/2 - midday.
+	// Sun have maximum elevation at midday.
+	unsigned int GetTimeOfDay() const;
+	unsigned int TicksInDay() const;
+	// Night - time, when sun is below horizon.
+	unsigned int GetNightDuration() const;
+
 	// Set global coordinates of test mob.
 	// THREAD UNSAFE. REMOVE THIS.
 	void TestMobSetTargetPosition( int x, int y, int z );

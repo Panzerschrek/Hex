@@ -478,7 +478,33 @@ void r_WorldRenderer::CalculateMatrices()
 
 void r_WorldRenderer::CalculateLight()
 {
-	lighting_data_.current_sun_light= R_SUN_LIGHT_COLOR / float ( H_MAX_SUN_LIGHT * 16 );
+	unsigned int daytime= world_->GetTimeOfDay();
+	unsigned int ticks_in_day= world_->TicksInDay();
+	unsigned int night_duration= world_->GetNightDuration();
+	unsigned int sunrise_time= night_duration / 2;
+	unsigned int sunset_time= ticks_in_day - night_duration / 2;
+
+	// Time, when sun is below horizon, but light level is greater, then in night.
+	unsigned int dawn_duration= ticks_in_day / 32;
+
+	float daynight_k; // 0 - night, 1 - day
+
+	if( daytime <= sunrise_time - dawn_duration )
+		daynight_k= 0.0f;
+	else if( daytime <= sunrise_time )
+		daynight_k= 1.0f - float(sunrise_time - daytime) / float(dawn_duration);
+	else if( daytime <= sunset_time )
+		daynight_k= 1.0f;
+	else if( daytime <= sunset_time + dawn_duration )
+		daynight_k= 1.0f - float(daytime - sunset_time) / float(dawn_duration);
+	else
+		daynight_k= 0.0f;
+
+	m_Vec3 sky_light=
+		R_DAY_SKY_LIGHT_COLOR * daynight_k +
+		R_NIGHT_SKY_LIGHT_COLOR * ( 1.0f - daynight_k );
+
+	lighting_data_.current_sun_light= sky_light / float ( H_MAX_SUN_LIGHT * 16 );
 	lighting_data_.current_fire_light= R_FIRE_LIGHT_COLOR / float ( H_MAX_FIRE_LIGHT * 16 );
 	lighting_data_.sun_direction= m_Vec3( 0.7f, 0.8f, 0.6f );
 }

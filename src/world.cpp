@@ -10,6 +10,7 @@
 
 static const unsigned int g_updates_frequency= 15;
 static const unsigned int g_update_inrerval_ms= 1000 / g_updates_frequency;
+static const unsigned int g_day_duration_ticks= 12 /*min*/ * 60 /*sec*/ * g_updates_frequency;
 
 static const char g_world_name[]= "world";
 
@@ -140,6 +141,22 @@ void h_World::Save()
 		for( unsigned int y= 0; y< chunk_number_y_; y++ )
 			SaveChunk( GetChunk(x,y) );
 	chunk_loader_.ForceSaveAllChunks();
+}
+
+unsigned int h_World::GetTimeOfDay() const
+{
+	return phys_tick_count_ % g_day_duration_ticks;
+}
+
+unsigned int h_World::TicksInDay() const
+{
+	return g_day_duration_ticks;
+}
+
+unsigned int h_World::GetNightDuration() const
+{
+	// TODO - different night duration for different seasons
+	return g_day_duration_ticks * 7 / 16;
 }
 
 void h_World::TestMobSetTargetPosition( int x, int y, int z )
