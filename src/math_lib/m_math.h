@@ -70,13 +70,14 @@ public:
 	static double DAtan	( double x );
 	static double DActan( double x );
 
-	const static float FM_TODEG;
-	const static float FM_TORAD;
-	const static float FM_PI;
-	const static float FM_2PI;
-	const static float FM_PI2;
-	const static float FM_PI4;
-	const static float FM_PI8;
+	static const constexpr float  FM_PI= 3.1415926535f;
+	static const constexpr float FM_2PI= FM_PI * 2.0f;
+	static const constexpr float FM_PI2= FM_PI * 0.5f;
+	static const constexpr float FM_PI4= FM_PI * 0.25f;
+	static const constexpr float FM_PI8= FM_PI * 0.125f;
+
+	static const constexpr float FM_TODEG= 180.0f / FM_PI;
+	static const constexpr float FM_TORAD= FM_PI / 180.0f;
 
 	static float Pi();
 	static double DPi();

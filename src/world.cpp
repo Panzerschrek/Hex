@@ -8,14 +8,22 @@
 #include "chunk_phys_mesh.hpp"
 #include "path_finder.hpp"
 
-static const unsigned int g_updates_frequency= 15;
-static const unsigned int g_update_inrerval_ms= 1000 / g_updates_frequency;
+static constexpr const unsigned int g_updates_frequency= 15;
+static constexpr const unsigned int g_update_inrerval_ms= 1000 / g_updates_frequency;
 
-static const unsigned int g_day_duration_ticks= 12 /*min*/ * 60 /*sec*/ * g_updates_frequency;
-static const unsigned int g_days_in_year= 32;
-static const unsigned int g_northern_hemisphere_summer_solstice_day= 14;
-static const float g_planet_rotation_axis_inclination= 22.5f * m_Math::FM_PI / 180.0f;
-static const float g_global_world_latitude= 40.0f * m_Math::FM_PI / 180.0f;
+static constexpr const unsigned int g_day_duration_ticks= 12 /*min*/ * 60 /*sec*/ * g_updates_frequency;
+static constexpr const unsigned int g_days_in_year= 32;
+static constexpr const unsigned int g_northern_hemisphere_summer_solstice_day= 14;
+static constexpr const float g_planet_rotation_axis_inclination= 23.439281f * m_Math::FM_PI / 180.0f;
+static constexpr const float g_global_world_latitude= 40.0f * m_Math::FM_PI / 180.0f;
+
+// day of spring equinox
+// some time after sunrise.
+static constexpr const unsigned int g_world_start_tick=
+	( g_days_in_year + g_northern_hemisphere_summer_solstice_day - g_days_in_year / 4 ) %
+	g_days_in_year *
+	g_day_duration_ticks +
+	g_day_duration_ticks / 4 + g_day_duration_ticks / 16;
 
 static const char g_world_name[]= "world";
 
@@ -28,7 +36,7 @@ h_World::h_World(
 		g_days_in_year,
 		g_planet_rotation_axis_inclination,
 		g_northern_hemisphere_summer_solstice_day )
-	, phys_tick_count_(0)
+	, phys_tick_count_( g_world_start_tick )
 	, terminated_(false)
 {
 	InitNormalBlocks();
