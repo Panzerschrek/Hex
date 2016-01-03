@@ -509,6 +509,47 @@ void r_WorldRenderer::CalculateLight()
 	lighting_data_.sun_direction= m_Vec3( 0.7f, 0.8f, 0.6f );
 
 	lighting_data_.sky_color= R_SKYBOX_COLOR * daynight_k;
+
+	static const float c_world_latitude= m_Math::FM_PI4;
+	// Direction to polar star
+	static const m_Vec3 c_sky_axis( 0.0f, std::cos(c_world_latitude), std::sin(c_world_latitude) );
+
+	// l = 2 * pi = arcsin( sin(sun_elevation_abowe_world_equator) / sin(pi * 0.5 - c_world_latitude) )
+	// night_duration= 2.0f * arcsin( sin(0.5f * l) / cos(sun_elevation_abowe_world_equator))
+
+	// [0; 2 * pi ]
+	float night_duration_angle=
+		float(night_duration) / float(ticks_in_day) * m_Math::FM_2PI;
+
+	float best_err= 100500.0f;
+	float best_b= 0.0f;
+	const float b_step = m_Math::FM_PI2 / 64.0f;
+	for( float b= b_step; b < m_Math::FM_PI2; b+= b_step )
+	{
+		float sin_k= std::sin(b) / std::sin( m_Math::FM_PI2 - c_world_latitude );
+		if( sin_k > 1.0f ) continue;
+		float l= m_Math::FM_PI - 2.0f * std::asin( sin_k );
+
+		float night_duration=
+			2.0f *
+			std::asin(
+				std::sin(0.5f * l) /
+				std::cos(b) );
+
+		float err= std::abs(night_duration - night_duration_angle);
+		if( err < best_err )
+		{
+			best_b= b;
+			best_err= err;
+		}
+	}
+
+	static bool printed= false;
+	if( !printed )
+	{
+		printed= true;
+		h_Console::Info( "b is ", best_b, " err is ", best_err );
+	}
 }
 
 void r_WorldRenderer::Draw()
