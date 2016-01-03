@@ -10,7 +10,12 @@
 
 static const unsigned int g_updates_frequency= 15;
 static const unsigned int g_update_inrerval_ms= 1000 / g_updates_frequency;
+
 static const unsigned int g_day_duration_ticks= 12 /*min*/ * 60 /*sec*/ * g_updates_frequency;
+static const unsigned int g_days_in_year= 32;
+static const unsigned int g_northern_hemisphere_summer_solstice_day= 14;
+static const float g_planet_rotation_axis_inclination= 22.5f * m_Math::FM_PI / 180.0f;
+static const float g_global_world_latitude= 40.0f * m_Math::FM_PI / 180.0f;
 
 static const char g_world_name[]= "world";
 
@@ -18,6 +23,11 @@ h_World::h_World(
 	const h_SettingsPtr& settings )
 	: settings_( settings )
 	, chunk_loader_( g_world_name )
+	, calendar_(
+		g_day_duration_ticks,
+		g_days_in_year,
+		g_planet_rotation_axis_inclination,
+		g_northern_hemisphere_summer_solstice_day )
 	, phys_tick_count_(0)
 	, terminated_(false)
 {
@@ -143,20 +153,19 @@ void h_World::Save()
 	chunk_loader_.ForceSaveAllChunks();
 }
 
-unsigned int h_World::GetTimeOfDay() const
+unsigned int h_World::GetTimeOfYear() const
 {
-	return phys_tick_count_ % g_day_duration_ticks;
+	return phys_tick_count_ % ( g_day_duration_ticks * g_days_in_year );
 }
 
-unsigned int h_World::TicksInDay() const
+const h_Calendar& h_World::GetCalendar() const
 {
-	return g_day_duration_ticks;
+	return calendar_;
 }
 
-unsigned int h_World::GetNightDuration() const
+float h_World::GetGlobalWorldLatitude() const
 {
-	// TODO - different night duration for different seasons
-	return g_day_duration_ticks * 7 / 16;
+	return g_global_world_latitude;
 }
 
 void h_World::TestMobSetTargetPosition( int x, int y, int z )

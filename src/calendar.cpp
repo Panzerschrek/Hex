@@ -3,6 +3,8 @@
 #include "math_lib/m_math.h"
 #include "math_lib/assert.hpp"
 
+#include "matrix.hpp"
+
 #include "calendar.hpp"
 
 #include "console.hpp"
@@ -24,19 +26,31 @@ h_Calendar::h_Calendar(
 	rotation_axis_.z= +std::cos(rotation_axis_angle_);
 }
 
+unsigned int h_Calendar::GetTicksInDay() const
+{
+	return ticks_in_day_;
+}
+
+unsigned int h_Calendar::GetDaysInYear() const
+{
+	return solar_days_in_year_;
+}
+
+const m_Vec3& h_Calendar::GetRotationAxis() const
+{
+	return rotation_axis_;
+}
+
+// Maybe, unfinished.
+// Can contain bugs.
 unsigned int h_Calendar::GetNightLength( unsigned int day, float latitude ) const
 {
-	day%= solar_days_in_year;
+	day%= solar_days_in_year_;
 
 	const float c_one_plus_eps= 1.0f + 0.01f;
 
-	float day_angle= m_Math::FM_2PI * float(day) / float(solar_days_in_year_);
 	m_Vec3 hemisphere_local_rotation_axis= latitude > 0.0f ? rotation_axis_ : -rotation_axis_;
-
-	m_Vec3 vec_from_planet_to_star_at_currend_day(
-		-std::cos(day_angle),
-		-std::sin(day_angle),
-		0.0f);
+	m_Vec3 vec_from_planet_to_star_at_currend_day= GetVectorFromPlanetToStar( day * ticks_in_day_ );
 
 	float angle_between_rotation_axis_and_direction_to_star=
 		std::acos( hemisphere_local_rotation_axis * vec_from_planet_to_star_at_currend_day );
@@ -67,9 +81,55 @@ unsigned int h_Calendar::GetNightLength( unsigned int day, float latitude ) cons
 		2.0f * std::asin( sin_equation2 );
 	if( l > m_Math::FM_PI ) night_duration= m_Math::FM_2PI - night_duration;
 
-	//h_Console::Info(
-	//	"axis angle: ", angle_between_rotation_axis_and_direction_to_star * 180.0f / m_Math::FM_PI,
-	//	" l: ", l );
-
 	return (unsigned int)( night_duration / m_Math::FM_2PI * float(ticks_in_day_) );
+}
+
+// Maybe, unfinished.
+// Can contain bugs.
+float h_Calendar::GetSkySphereRotation( unsigned int ticks ) const
+{
+	ticks%= ticks_in_day_ * solar_days_in_year_;
+
+	return m_Math::FM_2PI * float(ticks) / float( solar_days_in_year_ + 1 );
+}
+
+// Maybe, unfinished.
+// Can contain bugs.
+m_Vec3 h_Calendar::GetSunVector( unsigned int ticks, float latitude ) const
+{
+	ticks%= ticks_in_day_ * solar_days_in_year_;
+
+	unsigned int day= ticks / ticks_in_day_;
+	unsigned int time= ticks % ticks_in_day_;
+
+	m_Vec3 vec_from_planet_to_star_at_currend_day= GetVectorFromPlanetToStar( day * ticks_in_day_ );
+
+	float angle_between_rotation_axis_and_direction_to_star=
+		std::acos( rotation_axis_ * vec_from_planet_to_star_at_currend_day );
+
+	float gamma= (angle_between_rotation_axis_and_direction_to_star - latitude);
+	m_Vec3 local_sun_vector_at_midnight(
+		0.0f,
+		+std::cos(gamma),
+		-std::sin(gamma) );
+
+	m_Vec3 local_rotation_axis(
+		0.0f,
+		std::cos(latitude),
+		std::sin(latitude));
+
+	m_Mat4 mat;
+	mat.Roatate( local_rotation_axis, -m_Math::FM_2PI * float(time) / float(ticks_in_day_) );
+
+	return local_sun_vector_at_midnight * mat;
+}
+
+m_Vec3 h_Calendar::GetVectorFromPlanetToStar( unsigned int ticks ) const
+{
+	float angle= m_Math::FM_2PI * float(ticks) / float(solar_days_in_year_ * ticks_in_day_);
+
+	return m_Vec3(
+		-std::cos(angle),
+		-std::sin(angle),
+		0.0f);
 }

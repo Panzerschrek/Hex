@@ -51,7 +51,8 @@ HEADERS += \
     ../src/math_lib/fixed.hpp \
     ../src/world_generator/noise.hpp \
 	../src/world_generator/rivers.hpp \
-    ../src/path_finder.hpp
+    ../src/path_finder.hpp \
+    ../src/calendar.hpp
 
 SOURCES += \
     ../src/block.cpp \
@@ -93,7 +94,8 @@ SOURCES += \
     ../src/world_generator/world_generator.cpp \
     ../src/world_generator/noise.cpp \
 	../src/world_generator/rivers.cpp \
-    ../src/path_finder.cpp
+    ../src/path_finder.cpp \
+    ../src/calendar.cpp
 
 
 QT += widgets opengl
