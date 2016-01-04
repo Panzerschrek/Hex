@@ -13,6 +13,7 @@
 #include "math_lib/assert.hpp"
 #include "world_action.hpp"
 #include "chunk_loader.hpp"
+#include "calendar.hpp"
 
 #include "vec.hpp"
 
@@ -57,12 +58,11 @@ public:
 	//returns light level of back-backleft upper vertex of prism X16. coordinates - relative
 	void GetBackVertexLight( short x, short y, short z, unsigned char* out_light ) const;
 
-	// Time in ticks. 0 - Midnight. TicksInDay()/2 - midday.
-	// Sun have maximum elevation at midday.
-	unsigned int GetTimeOfDay() const;
-	unsigned int TicksInDay() const;
-	// Night - time, when sun is below horizon.
-	unsigned int GetNightDuration() const;
+	// Time of year, in ticks. 0 - midnight of first year day.
+	unsigned int GetTimeOfYear() const;
+	const h_Calendar& GetCalendar() const;
+	// Latitude of "World" on planet. [-pi; pi]
+	float GetGlobalWorldLatitude() const;
 
 	// Set global coordinates of test mob.
 	// THREAD UNSAFE. REMOVE THIS.
@@ -143,6 +143,8 @@ private:
 	int longitude_, latitude_;
 
 	m_Rand phys_processes_rand_;
+
+	h_Calendar calendar_;
 
 	r_IWorldRendererWeakPtr renderer_;
 	h_PlayerWeakPtr player_;

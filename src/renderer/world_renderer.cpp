@@ -478,27 +478,19 @@ void r_WorldRenderer::CalculateMatrices()
 
 void r_WorldRenderer::CalculateLight()
 {
-	unsigned int daytime= world_->GetTimeOfDay();
-	unsigned int ticks_in_day= world_->TicksInDay();
-	unsigned int night_duration= world_->GetNightDuration();
-	unsigned int sunrise_time= night_duration / 2;
-	unsigned int sunset_time= ticks_in_day - night_duration / 2;
+	lighting_data_.sun_direction=
+		world_->GetCalendar().GetSunVector( world_->GetTimeOfYear(), world_->GetGlobalWorldLatitude() );
 
-	// Time, when sun is below horizon, but light level is greater, then in night.
-	unsigned int dawn_duration= ticks_in_day / 32;
+	const float c_twilight_below_horizon= -0.1f;
+	const float c_twilight_above_horizon= 0.05f;
 
 	float daynight_k; // 0 - night, 1 - day
-
-	if( daytime <= sunrise_time - dawn_duration )
-		daynight_k= 0.0f;
-	else if( daytime <= sunrise_time )
-		daynight_k= 1.0f - float(sunrise_time - daytime) / float(dawn_duration);
-	else if( daytime <= sunset_time )
+	if( lighting_data_.sun_direction.z > c_twilight_above_horizon )
 		daynight_k= 1.0f;
-	else if( daytime <= sunset_time + dawn_duration )
-		daynight_k= 1.0f - float(daytime - sunset_time) / float(dawn_duration);
-	else
+	else if( lighting_data_.sun_direction.z < c_twilight_below_horizon)
 		daynight_k= 0.0f;
+	else
+		daynight_k= (lighting_data_.sun_direction.z - c_twilight_below_horizon) / ( c_twilight_above_horizon - c_twilight_below_horizon );
 
 	m_Vec3 sky_light=
 		R_DAY_SKY_LIGHT_COLOR * daynight_k +
@@ -506,7 +498,6 @@ void r_WorldRenderer::CalculateLight()
 
 	lighting_data_.current_sun_light= sky_light / float ( H_MAX_SUN_LIGHT * 16 );
 	lighting_data_.current_fire_light= R_FIRE_LIGHT_COLOR / float ( H_MAX_FIRE_LIGHT * 16 );
-	lighting_data_.sun_direction= m_Vec3( 0.7f, 0.8f, 0.6f );
 
 	lighting_data_.sky_color= R_SKYBOX_COLOR * daynight_k;
 }
@@ -587,6 +578,18 @@ void r_WorldRenderer::Draw()
 			"cam pos: %4.1f %4.1f %4.1f cam ang: %1.2f %1.2f %1.2f",
 			cam_pos_.x, cam_pos_.y, cam_pos_.z,
 			cam_ang_.x, cam_ang_.y, cam_ang_.z );
+
+		unsigned int ticks_in_day= world_->GetCalendar().GetTicksInDay();
+		unsigned int day_ticks= world_->GetTimeOfYear() % ticks_in_day;
+
+		text_manager_->AddMultiText( 0, i++, text_scale, r_Text::default_color,
+			"time: day %d %d:%d",
+			world_->GetTimeOfYear() / ticks_in_day,
+			day_ticks * 24 / ticks_in_day,
+			day_ticks * 60 * 24 / ticks_in_day % 60 );
+
+		text_manager_->AddMultiText( 0, i++, text_scale, r_Text::default_color,
+			"sun z: %f", lighting_data_.sun_direction.z );
 
 		//text_manager->AddMultiText( 0, 11, text_scale, r_Text::default_color, "quick brown fox jumps over the lazy dog\nQUICK BROWN FOX JUMPS OVER THE LAZY DOG\n9876543210-+/\\" );
 		//text_manager->AddMultiText( 0, 0, 8.0f, r_Text::default_color, "#A@Kli\nO01-eN" );

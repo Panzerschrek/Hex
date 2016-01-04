@@ -1,0 +1,8 @@
+Godovoj çikl
+* Planeta vrascajetsä vokrug odinocnoj zvezdy po krugovoj orbite.
+* Napravlenije vrascenija vokrug zvezdy - protiv casovoj strelki, jesli smotretj s severa.
+* Napravlenije vrascenija vokrug svojej osi - protiv casovoj strelki, jesli smotretj s severa.
+* Za god na planete prohodit çeloje kolicestvo solnecnyh sutok = "N".
+* Kak sledstvije predyduscih punktov, planeta delajet "N+1" oborotov vokrug svojej osi(zvözdnyje sutki) za god.
+* Planeta dvižetsä po orbite diskretno, s šagom ravnym odnomu solnecnomu dnü.
+
