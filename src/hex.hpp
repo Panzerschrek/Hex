@@ -50,14 +50,8 @@
 
 #define H_MAX_TEXTURE_SCALE 4
 
-
 #define H_MAX_SUN_LIGHT 8
 #define H_MAX_FIRE_LIGHT 13
-
-#define H_MAX_SCREEN_WIDTH 4096
-#define H_MIN_SCREEN_WIDTH 320
-#define H_MAX_SCREEN_HEIGHT 4096
-#define H_MIN_SCREEN_HEIGHT 240
 
 // Put new block types at the end of list.
 enum h_BlockType : unsigned short

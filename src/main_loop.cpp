@@ -14,6 +14,10 @@
 #include "ui/main_menu.hpp"
 #include "ui/ingame_menu.hpp"
 
+static const constexpr int g_min_screen_width = 640;
+static const constexpr int g_min_screen_height= 480;
+static const constexpr int g_max_screen_width = 4096;
+static const constexpr int g_max_screen_height= 4096;
 
 static ui_MouseButton MouseKey( const QMouseEvent* e )
 {
@@ -45,6 +49,8 @@ void h_MainLoop::Start()
 	format.setProfile( QGLFormat::CoreProfile );
 
 	bool vsync= settings->GetBool( h_SettingsKeys::vsync, true );
+	settings->SetSetting( h_SettingsKeys::vsync, vsync );
+
 	format.setSwapInterval( vsync ? 1 : 0 );
 
 	new h_MainLoop( settings, format );
@@ -56,12 +62,15 @@ h_MainLoop::h_MainLoop(
 	: QGLWidget( format )
 	, settings_(settings)
 	, game_started_(false)
-{	
+{
 	if (!settings_->IsValue(h_SettingsKeys::screen_width ) ) settings_->SetSetting( h_SettingsKeys::screen_width , 640 );
 	if (!settings_->IsValue(h_SettingsKeys::screen_height) ) settings_->SetSetting( h_SettingsKeys::screen_height, 480 );
 
-	screen_width_=  std::min( std::max( settings_->GetInt( h_SettingsKeys::screen_width ), H_MIN_SCREEN_WIDTH ), H_MAX_SCREEN_WIDTH  );
-	screen_height_= std::min( std::max( settings_->GetInt( h_SettingsKeys::screen_height), H_MIN_SCREEN_HEIGHT), H_MAX_SCREEN_HEIGHT );
+	screen_width_=  std::min( std::max( settings_->GetInt( h_SettingsKeys::screen_width  ), g_min_screen_width ), g_max_screen_width  );
+	screen_height_= std::min( std::max( settings_->GetInt( h_SettingsKeys::screen_height ), g_min_screen_height), g_max_screen_height );
+
+	settings_->SetSetting( h_SettingsKeys::screen_width , screen_width_  );
+	settings_->SetSetting( h_SettingsKeys::screen_height, screen_height_ );
 
 	move( 0, 0 );
 	setFixedSize( screen_width_, screen_height_ );

@@ -44,7 +44,7 @@ h_World::h_World(
 	chunk_number_x_= std::max( std::min( settings_->GetInt( h_SettingsKeys::chunk_number_x, 14 ), H_MAX_CHUNKS ), H_MIN_CHUNKS );
 	chunk_number_y_= std::max( std::min( settings_->GetInt( h_SettingsKeys::chunk_number_y, 12 ), H_MAX_CHUNKS ), H_MIN_CHUNKS );
 	longitude_= -(chunk_number_x_/2);
-	latitude_= -(chunk_number_y_/2);
+	latitude_ = -(chunk_number_y_/2);
 
 	// Active area margins. Minimal active area have size 5.
 	active_area_margins_[0]=
@@ -60,6 +60,10 @@ h_World::h_World(
 				settings_->GetInt( h_SettingsKeys::active_area_margins_y, 2 ),
 				int(chunk_number_y_ / 2 - 2) ) );
 
+	settings_->SetSetting( h_SettingsKeys::chunk_number_x, (int)chunk_number_x_ );
+	settings_->SetSetting( h_SettingsKeys::chunk_number_y, (int)chunk_number_y_ );
+	settings_->SetSetting( h_SettingsKeys::active_area_margins_x, (int)active_area_margins_[0] );
+	settings_->SetSetting( h_SettingsKeys::active_area_margins_y, (int)active_area_margins_[1] );
 
 	g_WorldGenerationParameters parameters;
 	parameters.world_dir= g_world_name;
