@@ -14,9 +14,6 @@ class h_MainLoop final : public QGLWidget
 public:
 	static void Start();
 
-	virtual QSize minimumSizeHint() const;
-	virtual QSize sizeHint() const;
-
 protected:
 	h_MainLoop( const h_SettingsPtr& settings, const QGLFormat& format );
 	virtual ~h_MainLoop() override;
@@ -30,8 +27,6 @@ protected:
 	virtual void mouseMoveEvent(QMouseEvent* e) override;
 	virtual void keyPressEvent(QKeyEvent* e) override;
 	virtual void keyReleaseEvent(QKeyEvent* e) override;
-	virtual void focusInEvent(QFocusEvent* e) override;
-	virtual void focusOutEvent(QFocusEvent* e) override;
 	virtual void closeEvent(QCloseEvent* e) override;
 
 	virtual void initializeOverlayGL() override;
@@ -49,7 +44,6 @@ private:
 private:
 	h_SettingsPtr settings_;
 
-	QMainWindow* window_;
 	QCursor cursor_;
 	bool in_focus_;
 

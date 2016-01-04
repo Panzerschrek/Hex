@@ -7,6 +7,7 @@
 #include "world_generator/world_generator.hpp"
 #include "chunk_phys_mesh.hpp"
 #include "path_finder.hpp"
+#include "console.hpp"
 
 static constexpr const unsigned int g_updates_frequency= 15;
 static constexpr const unsigned int g_update_inrerval_ms= 1000 / g_updates_frequency;
@@ -37,7 +38,6 @@ h_World::h_World(
 		g_planet_rotation_axis_inclination,
 		g_northern_hemisphere_summer_solstice_day )
 	, phys_tick_count_( g_world_start_tick )
-	, terminated_(false)
 {
 	InitNormalBlocks();
 
@@ -84,18 +84,15 @@ h_World::h_World(
 
 h_World::~h_World()
 {
-	if( phys_thread_ )
-	{
-		terminated_.store(true);
-		phys_thread_->join();
-		phys_thread_.reset();
-	}
+	H_ASSERT(!phys_thread_);
 
 	for( unsigned int x= 0; x< chunk_number_x_; x++ )
 		for( unsigned int y= 0; y< chunk_number_y_; y++ )
 		{
-			SaveChunk( GetChunk(x,y) );
-			delete GetChunk(x,y);
+			h_Chunk* ch= GetChunk(x,y);
+			SaveChunk( ch );
+			chunk_loader_.FreeChunkData( ch->Longitude(), ch->Latitude() );
+			delete ch;
 		}
 }
 
@@ -148,9 +145,37 @@ void h_World::Blast( short x, short y, short z, short radius )
 	UpdateInRadius( x, y, radius );
 }
 
-void h_World::StartUpdates()
+void h_World::StartUpdates( h_Player* player, r_IWorldRenderer* renderer )
 {
+	H_ASSERT( player );
+	H_ASSERT( renderer );
+	H_ASSERT( !player_ );
+	H_ASSERT( !renderer_ );
+	H_ASSERT( !phys_thread_ );
+
+	player_= player;
+	renderer_= renderer;
+
+	phys_thread_need_stop_.store(false);
 	phys_thread_.reset( new std::thread( &h_World::PhysTick, this ) );
+
+	h_Console::Info( "World updates started" );
+}
+
+void h_World::StopUpdates()
+{
+	H_ASSERT( phys_thread_ );
+
+	H_ASSERT( player_ );
+	H_ASSERT( renderer_ );
+	player_= nullptr;
+	renderer_= nullptr;
+
+	phys_thread_need_stop_.store(true);
+	phys_thread_->join();
+	phys_thread_.reset();
+
+	h_Console::Info( "World updates stopped" );
 }
 
 void h_World::Save()
@@ -289,10 +314,6 @@ void h_World::FlushActionQueue()
 
 void h_World::UpdateInRadius( short x, short y, short r )
 {
-	r_IWorldRendererPtr renderer= renderer_.lock();
-	if( renderer == nullptr )
-		return;
-
 	short x_min, x_max, y_min, y_max;
 	x_min= ClampX( x - r );
 	x_max= ClampX( x + r );
@@ -305,15 +326,11 @@ void h_World::UpdateInRadius( short x, short y, short r )
 	y_max>>= H_CHUNK_WIDTH_LOG2;
 	for( short i= x_min; i<= x_max; i++ )
 		for( short j= y_min; j<= y_max; j++ )
-			renderer->UpdateChunk( i, j );
+			renderer_->UpdateChunk( i, j );
 }
 
 void h_World::UpdateWaterInRadius( short x, short y, short r )
 {
-	r_IWorldRendererPtr renderer= renderer_.lock();
-	if( renderer == nullptr )
-		return;
-
 	short x_min, x_max, y_min, y_max;
 	x_min= ClampX( x - r );
 	x_max= ClampX( x + r );
@@ -326,7 +343,7 @@ void h_World::UpdateWaterInRadius( short x, short y, short r )
 	y_max>>= H_CHUNK_WIDTH_LOG2;
 	for( short i= x_min; i<= x_max; i++ )
 		for( short j= y_min; j<= y_max; j++ )
-			renderer->UpdateChunkWater( i, j );
+			renderer_->UpdateChunkWater( i, j );
 }
 
 void h_World::MoveWorld( h_WorldMoveDirection dir )
@@ -422,46 +439,42 @@ void h_World::MoveWorld( h_WorldMoveDirection dir )
 	};
 
 	// Mark for renderer near-border chunks as updated.
-	r_IWorldRendererPtr renderer= renderer_.lock();
-	if( renderer != nullptr )
+	renderer_->UpdateWorldPosition( longitude_, latitude_ );
+
+	switch( dir )
 	{
-		renderer->UpdateWorldPosition( longitude_, latitude_ );
-
-		switch( dir )
+	case NORTH:
+		for( i= 0; i< chunk_number_x_; i++ )
 		{
-		case NORTH:
-			for( i= 0; i< chunk_number_x_; i++ )
-			{
-				renderer->UpdateChunk( i, chunk_number_y_ - 2, true );
-				renderer->UpdateChunkWater( i, chunk_number_y_ - 2, true );
-			}
-			break;
+			renderer_->UpdateChunk( i, chunk_number_y_ - 2, true );
+			renderer_->UpdateChunkWater( i, chunk_number_y_ - 2, true );
+		}
+		break;
 
-		case SOUTH:
-			for( i= 0; i< chunk_number_x_; i++ )
-			{
-				renderer->UpdateChunk( i, 1, true );
-				renderer->UpdateChunkWater( i, 1, true );
-			}
-			break;
+	case SOUTH:
+		for( i= 0; i< chunk_number_x_; i++ )
+		{
+			renderer_->UpdateChunk( i, 1, true );
+			renderer_->UpdateChunkWater( i, 1, true );
+		}
+		break;
 
-		case EAST:
-			for( j= 0; j< chunk_number_y_; j++ )
-			{
-				renderer->UpdateChunk( chunk_number_x_ - 2, j, true );
-				renderer->UpdateChunkWater( chunk_number_x_ - 2, j, true );
-			}
-			break;
+	case EAST:
+		for( j= 0; j< chunk_number_y_; j++ )
+		{
+			renderer_->UpdateChunk( chunk_number_x_ - 2, j, true );
+			renderer_->UpdateChunkWater( chunk_number_x_ - 2, j, true );
+		}
+		break;
 
-		case WEST:
-			for( j= 0; j< chunk_number_y_; j++ )
-			{
-				renderer->UpdateChunk( 1, j, true );
-				renderer->UpdateChunkWater( 1, j, true );
-			}
-			break;
-		};
-	}
+	case WEST:
+		for( j= 0; j< chunk_number_y_; j++ )
+		{
+			renderer_->UpdateChunk( 1, j, true );
+			renderer_->UpdateChunkWater( 1, j, true );
+		}
+		break;
+	};
 }
 
 void h_World::SaveChunk( h_Chunk* ch )
@@ -623,29 +636,31 @@ bool h_World::CanBuild( short x, short y, short z ) const
 
 void h_World::PhysTick()
 {
-	while(!terminated_.load())
+	while(!phys_thread_need_stop_.load())
 	{
+		H_ASSERT( player_ );
+		H_ASSERT( renderer_ );
+
 		TestMobTick();
 
 		int64_t t0_ms = clock() * 1000 / CLOCKS_PER_SEC;
 
-		h_PlayerPtr player= player_.lock();
 
 		FlushActionQueue();
 		WaterPhysTick();
 		RelightWaterModifedChunksLight();
 
-		if( player )
+		// player logic
 		{
-			player->Lock();
+			player_->Lock();
 			short player_coord_global[2];
-			GetHexogonCoord( player->Pos().xy(), &player_coord_global[0], &player_coord_global[1] );
-			player->Unlock();
+			GetHexogonCoord( player_->Pos().xy(), &player_coord_global[0], &player_coord_global[1] );
+			player_->Unlock();
 
 			int player_coord[3];
 			player_coord[0]= player_coord_global[0] - Longitude() * H_CHUNK_WIDTH;
 			player_coord[1]= player_coord_global[1] - Latitude () * H_CHUNK_WIDTH;
-			player_coord[2]= int(player->Pos().z + H_PLAYER_EYE_LEVEL);
+			player_coord[2]= int(player_->Pos().z + H_PLAYER_EYE_LEVEL);
 			h_ChunkPhysMesh player_phys_mesh=
 				BuildPhysMesh(
 					player_coord[0] - 5, player_coord[0] + 5,
@@ -661,15 +676,14 @@ void h_World::PhysTick()
 			else if( player_coord[0]/H_CHUNK_WIDTH < int(chunk_number_x_/2-2) )
 				MoveWorld( WEST );
 
-			player->Lock();
-			player->SetCollisionMesh( std::move(player_phys_mesh) );
-			player->Unlock();
+			player_->Lock();
+			player_->SetCollisionMesh( std::move(player_phys_mesh) );
+			player_->Unlock();
 		}
 
 		phys_tick_count_++;
 
-		if( r_IWorldRendererPtr renderer= renderer_.lock() )
-			renderer->Update();
+		renderer_->Update();
 
 		int64_t t1_ms= clock() * 1000 / CLOCKS_PER_SEC;
 		unsigned int dt_ms= (unsigned int)(t1_ms - t0_ms);
@@ -786,14 +800,11 @@ void h_World::WaterPhysTick()
 			}//for all water blocks in chunk
 			if( chunk_modifed )
 			{
-				if( r_IWorldRendererPtr renderer= renderer_.lock() )
-				{
-					renderer->UpdateChunkWater( i  , j   );
-					renderer->UpdateChunkWater( i-1, j   );
-					renderer->UpdateChunkWater( i+1, j   );
-					renderer->UpdateChunkWater( i  , j-1 );
-					renderer->UpdateChunkWater( i  , j+1 );
-				}
+				renderer_->UpdateChunkWater( i  , j   );
+				renderer_->UpdateChunkWater( i-1, j   );
+				renderer_->UpdateChunkWater( i+1, j   );
+				renderer_->UpdateChunkWater( i  , j-1 );
+				renderer_->UpdateChunkWater( i  , j+1 );
 
 				ch->need_update_light_= true;
 			}

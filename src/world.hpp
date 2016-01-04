@@ -45,9 +45,10 @@ public:
 	//ACHTUNG! This function unfinished. It ignores destruction of light sources. also, danger of stack owerflow. time ~ 6^radius
 	void Blast( short x, short y, short z, short radius );
 
-	void SetPlayer( const h_PlayerWeakPtr& player );
-	void SetRenderer( const r_IWorldRendererWeakPtr& renderer );
-	void StartUpdates(); // start main phys loop of world
+	// start main phys loop of world
+	// "player" and "renderer" must be valid before StopUpdates call.
+	void StartUpdates( h_Player* player, r_IWorldRenderer* renderer );
+	void StopUpdates();
 
 	void Save();//save world data to disk
 
@@ -146,14 +147,14 @@ private:
 
 	h_Calendar calendar_;
 
-	r_IWorldRendererWeakPtr renderer_;
-	h_PlayerWeakPtr player_;
+	r_IWorldRenderer* renderer_= nullptr;
+	h_Player* player_= nullptr;
 
 	h_Block normal_blocks_[ NUM_BLOCK_TYPES ];
 
 	unsigned int phys_tick_count_;
 	std::unique_ptr< std::thread > phys_thread_;
-	std::atomic<bool> terminated_;
+	std::atomic<bool> phys_thread_need_stop_;
 
 	//queue 0 - for enqueue, queue 1 - for dequeue
 	std::queue< h_WorldAction > action_queue_[2];
@@ -207,16 +208,6 @@ inline const h_Chunk* h_World::GetChunk( short X, short Y ) const
 inline h_Block* h_World::NormalBlock( h_BlockType block_type )
 {
 	return &normal_blocks_[ (int)block_type ];
-}
-
-inline void h_World::SetPlayer( const h_PlayerWeakPtr& player )
-{
-	player_= player;
-}
-
-inline void h_World::SetRenderer( const r_IWorldRendererWeakPtr& renderer)
-{
-	renderer_= renderer;
 }
 
 inline short h_World::ClampX( short x ) const

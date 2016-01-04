@@ -97,6 +97,8 @@ ui_IngameMenu::ui_IngameMenu(
 ui_IngameMenu::~ui_IngameMenu()
 {
 	delete block_type_text_;
+
+	ui_CursorHandler::GrabMouse( false );
 }
 
 ui_MouseButtonMask ui_IngameMenu::AcceptedMouseButtons() const

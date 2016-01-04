@@ -684,10 +684,6 @@ void h_World::RelightWaterModifedChunksLight()
 {
 	const unsigned int c_inv_desiret_chunk_update_chance = 2;
 
-	r_IWorldRendererPtr renderer= renderer_.lock();
-	if( renderer == nullptr )
-		return;
-
 	unsigned int chunk_count= 0;
 	h_Chunk* ch;
 	short X, Y;
@@ -732,15 +728,12 @@ void h_World::RelightWaterModifedChunksLight()
 						}
 					ch->need_update_light_= false;
 
-					if( renderer != nullptr )
-					{
-						renderer->UpdateChunk( i, j );
-						renderer->UpdateChunk( i+1, j+1 );
-						renderer->UpdateChunk( i+1, j-1 );
-						renderer->UpdateChunk( i-1, j+1 );
-						renderer->UpdateChunk( i-1, j-1 );
-						renderer->UpdateChunkWater( i, j );
-					}
+					renderer_->UpdateChunk( i, j );
+					renderer_->UpdateChunk( i+1, j+1 );
+					renderer_->UpdateChunk( i+1, j-1 );
+					renderer_->UpdateChunk( i-1, j+1 );
+					renderer_->UpdateChunk( i-1, j-1 );
+					renderer_->UpdateChunkWater( i, j );
 				}//if rand
 			}//if need update light
 		}

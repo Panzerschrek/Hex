@@ -6,7 +6,7 @@
 Siljnyje ukazateli na vseh nih hranit h_MainLoop.
 h_WorldRenderer hranit siljnyje ukazateli na h_World i h_Player.
 h_Player hranit siljnyj ukazatelj na h_World.
-h_World hranit slabyje ukazateli na h_Player i h_WorldRenderer.
+h_World hranit golyje ukazateli na h_Player i r_WorldRenderer, poka aktiven potok obnovlenij mira.
 ui_IngameMenu hranit siljnyj ukazatelj na h_Player.
 
 ^ Primecanije:
@@ -17,8 +17,10 @@ Porädok sozdanija:
 * h_World
 * h_Player
 * h_WorldRenderer
+* ui_IngameMenu
 
 Porädok razrušenija:
+* ui_IngameMenu
 * h_WorldRenderer
 * h_Player
 * h_World

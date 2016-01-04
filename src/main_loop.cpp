@@ -50,54 +50,40 @@ void h_MainLoop::Start()
 	new h_MainLoop( settings, format );
 }
 
-QSize h_MainLoop::minimumSizeHint() const
-{
-	return QSize( screen_width_, screen_height_ );
-}
-
-QSize h_MainLoop::sizeHint() const
-{
-	return QSize( screen_width_, screen_height_ );
-}
-
 h_MainLoop::h_MainLoop(
 	const h_SettingsPtr& settings,
 	const QGLFormat& format )
-	: QGLWidget( format, nullptr )
+	: QGLWidget( format )
 	, settings_(settings)
-	, in_focus_(false)
 	, game_started_(false)
-{
-	window_= new QMainWindow( nullptr );
-
-	window_->move( 0, 0 );
-	window_->setWindowTitle( "Hex" );
-	window_->setWindowIcon( QIcon( "src/hex-logo.ico" ) );
-
-	window_->setCentralWidget( this );
-	window_->setContentsMargins( 0, 0, 0, 0 );
-
+{	
 	if (!settings_->IsValue(h_SettingsKeys::screen_width ) ) settings_->SetSetting( h_SettingsKeys::screen_width , 640 );
 	if (!settings_->IsValue(h_SettingsKeys::screen_height) ) settings_->SetSetting( h_SettingsKeys::screen_height, 480 );
 
 	screen_width_=  std::min( std::max( settings_->GetInt( h_SettingsKeys::screen_width ), H_MIN_SCREEN_WIDTH ), H_MAX_SCREEN_WIDTH  );
 	screen_height_= std::min( std::max( settings_->GetInt( h_SettingsKeys::screen_height), H_MIN_SCREEN_HEIGHT), H_MAX_SCREEN_HEIGHT );
 
-	QWidget::setFixedSize( screen_width_, screen_height_ );
-	window_->setFocusPolicy( Qt::ClickFocus );
-	QWidget::setFocusPolicy( Qt::ClickFocus );
-	QWidget::setFocus();
+	move( 0, 0 );
+	setFixedSize( screen_width_, screen_height_ );
 
-	window_->show();
-	window_->setFixedSize( window_->size() );
+	setAttribute( Qt::WA_DeleteOnClose, true );
+	setAttribute( Qt::WA_QuitOnClose, true );
 
-	QWidget::setAutoFillBackground( false );
+	setWindowTitle( "Hex" );
+	setWindowIcon( QIcon( "src/hex-logo.ico" ) );
 
-	//window->setWindowState( Qt::WindowFullScreen );
+	setFocusPolicy( Qt::ClickFocus );
+	setAutoFillBackground( false );
+
+	setFocus();
+	show();
+
+	h_Console::Info( "MainLoop started" );
 }
 
 h_MainLoop::~h_MainLoop()
 {
+	h_Console::Info( "MainLoop destoryed" );
 }
 
 void h_MainLoop::initializeGL()
@@ -177,7 +163,7 @@ void h_MainLoop::UpdateCursor()
 	if( !game_started_ )
 		return;
 
-	if( in_focus_ && ui_CursorHandler::IsMouseGrabbed() )
+	if( hasFocus() && ui_CursorHandler::IsMouseGrabbed() )
 	{
 		if( cursor_.shape() != Qt::BlankCursor )
 		{
@@ -284,19 +270,20 @@ void h_MainLoop::keyReleaseEvent(QKeyEvent* e)
 	ProcessMenuKey( e, false );
 }
 
-void h_MainLoop::focusInEvent( QFocusEvent * )
+void h_MainLoop::closeEvent( QCloseEvent* e )
 {
-	in_focus_= true;
-}
+	e->accept();
 
-void h_MainLoop::focusOutEvent( QFocusEvent * )
-{
-	in_focus_= false;
-}
+	if( game_started_ )
+	{
+		world_->StopUpdates();
 
-void h_MainLoop::closeEvent(QCloseEvent* )
-{
-	Quit();
+		game_started_= false;
+		root_menu_.reset();
+		world_renderer_.reset();
+		player_.reset();
+		world_.reset();
+	}
 }
 
 void h_MainLoop::initializeOverlayGL() {}
@@ -307,12 +294,7 @@ void h_MainLoop::paintOverlayGL(){}
 
 void h_MainLoop::Quit()
 {
-	game_started_= false;
-	world_renderer_.reset();
-	player_.reset();
-	world_.reset();
-
-	window_->close();
+	close();
 }
 
 void h_MainLoop::StartGame()
@@ -321,15 +303,12 @@ void h_MainLoop::StartGame()
 	{
 		world_= std::make_shared<h_World>( settings_ );
 		player_= std::make_shared<h_Player>( world_ );
+
 		world_renderer_= std::make_shared<r_WorldRenderer>( settings_, world_, player_ );
-
-		world_->SetPlayer( player_ );
-		world_->SetRenderer( world_renderer_ );
-
 		world_renderer_->SetViewportSize( screen_width_, screen_height_ );
 		world_renderer_->InitGL();
 
-		world_->StartUpdates();
+		world_->StartUpdates( player_.get(), world_renderer_.get() );
 
 		game_started_= true;
 
