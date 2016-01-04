@@ -470,7 +470,9 @@ void r_WorldRenderer::CalculateMatrices()
 	basis_change[6]= 1.0f;
 	basis_change[9]= 1.0f;
 	basis_change[10]= 0.0f;
-	view_matrix_= translate * rotate_z * rotate_x * basis_change * perspective;
+
+	rotation_matrix_= rotate_z * rotate_x * basis_change * perspective;
+	view_matrix_= translate * rotation_matrix_;
 
 	block_scale_matrix_= scale;
 	block_final_matrix_= block_scale_matrix_ * view_matrix_;
@@ -808,17 +810,15 @@ void r_WorldRenderer::DrawWorld()
 void r_WorldRenderer::DrawSky()
 {
 	static const GLenum state_blend_mode[]= { GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA };
-	static const float state_clear_color[]= { 0.0f, 0.0f, 0.0f, 0.0f };
 	static const r_OGLState state(
 		false, false, true, false,
 		state_blend_mode,
-		state_clear_color,
+		r_OGLState::default_clear_color,
 		1.0f, GL_FRONT, GL_TRUE );
 	r_OGLStateManager::UpdateState( state );
 
 	skybox_shader_.Bind();
-	skybox_shader_.Uniform( "cam_pos", cam_pos_ );
-	skybox_shader_.Uniform( "view_matrix", view_matrix_ );
+	skybox_shader_.Uniform( "view_matrix", rotation_matrix_ );
 	skybox_shader_.Uniform( "sky_color", lighting_data_.sky_color );
 
 	skybox_vbo_.Bind();
@@ -839,9 +839,8 @@ void r_WorldRenderer::DrawSun()
 	sun_texture_.Bind(0);
 
 	sun_shader_.Bind();
-	sun_shader_.Uniform( "view_matrix", view_matrix_ );
+	sun_shader_.Uniform( "view_matrix", rotation_matrix_ );
 	sun_shader_.Uniform( "sun_vector", lighting_data_.sun_direction );
-	sun_shader_.Uniform( "cam_pos", cam_pos_ );
 	sun_shader_.Uniform( "tex", 0 );
 
 	glDrawArrays( GL_POINTS, 0, 1 );

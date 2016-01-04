@@ -17,7 +17,6 @@
 #include "weather_effects_particle_manager.hpp"
 
 #include "matrix.hpp"
-#include "../math_lib/collection.hpp"
 
 class r_WorldRenderer final : public r_IWorldRenderer
 {
@@ -123,7 +122,11 @@ private:
 
 	//matrices and vectors
 	float fov_x_, fov_y_;
-	m_Mat4 view_matrix_, block_scale_matrix_, block_final_matrix_, water_final_matrix_;
+	m_Mat4 rotation_matrix_; // camera rotation * basis change * perspective
+	m_Mat4 view_matrix_; // translate * rotation_matrix_
+	m_Mat4 block_scale_matrix_;
+	m_Mat4 block_final_matrix_;
+	m_Mat4 water_final_matrix_;
 	m_Vec3 cam_ang_, cam_pos_;
 
 	struct
