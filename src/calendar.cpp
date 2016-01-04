@@ -36,11 +36,6 @@ unsigned int h_Calendar::GetDaysInYear() const
 	return solar_days_in_year_;
 }
 
-const m_Vec3& h_Calendar::GetRotationAxis() const
-{
-	return rotation_axis_;
-}
-
 // Maybe, unfinished.
 // Can contain bugs.
 unsigned int h_Calendar::GetNightLength( unsigned int day, float latitude ) const
@@ -84,13 +79,25 @@ unsigned int h_Calendar::GetNightLength( unsigned int day, float latitude ) cons
 	return (unsigned int)( night_duration / m_Math::FM_2PI * float(ticks_in_day_) );
 }
 
+m_Vec3 h_Calendar::GetLocalRotationAxis( float latitude ) const
+{
+	return m_Vec3(
+		0.0f,
+		std::cos(latitude),
+		std::sin(latitude) );
+}
+
 // Maybe, unfinished.
 // Can contain bugs.
 float h_Calendar::GetSkySphereRotation( unsigned int ticks ) const
 {
 	ticks%= ticks_in_day_ * solar_days_in_year_;
 
-	return m_Math::FM_2PI * float(ticks) / float( solar_days_in_year_ + 1 );
+	unsigned int ticks_in_stellar_day_= uint64_t(ticks_in_day_) * solar_days_in_year_ / (solar_days_in_year_ + 1);
+	return -
+		m_Math::FM_2PI *
+		float(ticks) /
+		float(ticks_in_stellar_day_);
 }
 
 // Maybe, unfinished.
@@ -113,13 +120,8 @@ m_Vec3 h_Calendar::GetSunVector( unsigned int ticks, float latitude ) const
 		+std::cos(gamma),
 		-std::sin(gamma) );
 
-	m_Vec3 local_rotation_axis(
-		0.0f,
-		std::cos(latitude),
-		std::sin(latitude));
-
 	m_Mat4 mat;
-	mat.Roatate( local_rotation_axis, -m_Math::FM_2PI * float(time) / float(ticks_in_day_) );
+	mat.Rotate( GetLocalRotationAxis(latitude), -m_Math::FM_2PI * float(time) / float(ticks_in_day_) );
 
 	return local_sun_vector_at_midnight * mat;
 }

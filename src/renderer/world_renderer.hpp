@@ -68,6 +68,7 @@ private:
 	void DrawWater();
 
 	void DrawSky();
+	void DrawStars();
 	void DrawSun();
 	void DrawConsole();
 
@@ -90,6 +91,7 @@ private:
 	r_GLSLProgram build_prism_shader_;
 	r_GLSLProgram water_shader_;
 	r_GLSLProgram skybox_shader_;
+	r_GLSLProgram stars_shader_;
 	r_GLSLProgram sun_shader_;
 	r_GLSLProgram console_bg_shader_;
 	r_GLSLProgram crosshair_shader_;
@@ -98,6 +100,7 @@ private:
 	//VBO
 	r_PolygonBuffer build_prism_vbo_;
 	r_PolygonBuffer skybox_vbo_;
+	r_PolygonBuffer stars_vbo_;
 
 	struct
 	{
@@ -105,6 +108,7 @@ private:
 		m_Vec3 current_fire_light;
 		m_Vec3 sun_direction;
 		m_Vec3 sky_color;
+		float stars_brightness;
 	} lighting_data_;
 
 	//framebuffers

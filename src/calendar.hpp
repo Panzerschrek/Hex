@@ -23,10 +23,10 @@ public:
 
 	unsigned int GetTicksInDay() const;
 	unsigned int GetDaysInYear() const;
-	const m_Vec3& GetRotationAxis() const;
 	// Out - in ticks
 	unsigned int GetNightLength( unsigned int day, float latitude ) const;
 
+	m_Vec3 GetLocalRotationAxis( float latitude ) const;
 	float GetSkySphereRotation( unsigned int ticks ) const;
 	// Get local sun vector direction
 	m_Vec3 GetSunVector( unsigned int ticks, float latitude ) const;

@@ -23,6 +23,16 @@ struct r_ClipPlane
 	float dist;
 };
 
+struct r_StarVertex
+{
+	short pos[3];
+	// Byte 0 - brightness
+	// Byte 1 - spectre class. 0 - brown dwarf, 255 - blue giant
+	unsigned char brightness_spectre[2];
+};
+
+static_assert( sizeof(r_StarVertex) == 8, "Unexpected struct size" );
+
 static const float g_build_prism_vertices[]=
 {
 	0.0f, 0.0f, 0.0f,  2.0f, 0.0f, 0.0f,   3.0f, 1.0f, 0.0f,
@@ -502,6 +512,7 @@ void r_WorldRenderer::CalculateLight()
 	lighting_data_.current_fire_light= R_FIRE_LIGHT_COLOR / float ( H_MAX_FIRE_LIGHT * 16 );
 
 	lighting_data_.sky_color= R_SKYBOX_COLOR * daynight_k;
+	lighting_data_.stars_brightness= 1.0f - daynight_k;
 }
 
 void r_WorldRenderer::Draw()
@@ -519,6 +530,7 @@ void r_WorldRenderer::Draw()
 
 	DrawWorld();
 	DrawSky();
+	DrawStars();
 	DrawSun();
 	//weather_effects_particle_manager_.Draw( view_matrix_, cam_pos_ );
 	DrawWater();
@@ -823,6 +835,34 @@ void r_WorldRenderer::DrawSky()
 
 	skybox_vbo_.Bind();
 	skybox_vbo_.Show();
+}
+
+void r_WorldRenderer::DrawStars()
+{
+	if( lighting_data_.stars_brightness < 0.01f )
+		return;
+
+	static const GLenum state_blend_mode[]= { GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA };
+	static const r_OGLState state(
+		true, false, true, false,
+		state_blend_mode );
+	r_OGLStateManager::UpdateState( state );
+
+	glPointSize( 1.0f );
+
+	const h_Calendar& calendar= world_->GetCalendar();
+
+	m_Mat4 sky_rotation_matrix;
+	sky_rotation_matrix.Rotate(
+		calendar.GetLocalRotationAxis( world_->GetGlobalWorldLatitude() ),
+		calendar.GetSkySphereRotation( world_->GetTimeOfYear() ) );
+
+	stars_shader_.Bind();
+	stars_shader_.Uniform( "view_matrix", sky_rotation_matrix * rotation_matrix_ );
+	stars_shader_.Uniform( "brightness", lighting_data_.stars_brightness );
+
+	stars_vbo_.Bind();
+	stars_vbo_.Show();
 }
 
 void r_WorldRenderer::DrawSun()
@@ -1158,6 +1198,11 @@ void r_WorldRenderer::LoadShaders()
 	skybox_shader_.SetAttribLocation( "coord", 0 );
 	skybox_shader_.Create();
 
+	if( !stars_shader_.Load( "shaders/stars_frag.glsl", "shaders/stars_vert.glsl" ) )
+		h_Console::Error( "stars shader not found" );
+	stars_shader_.SetAttribLocation( "coord", 0 );
+	stars_shader_.SetAttribLocation( "birghtness_spectre", 1 );
+	stars_shader_.Create();
 
 	if( !sun_shader_.Load( "shaders/sun_frag.glsl",  "shaders/sun_vert.glsl", nullptr ) )
 		h_Console::Error( "sun shader not found" );
@@ -1219,6 +1264,50 @@ void r_WorldRenderer::InitVertexBuffers()
 	skybox_vbo_.VertexData( sky_vertices, sizeof(short) * 8 * 3, sizeof(short) * 3 );
 	skybox_vbo_.IndexData( sky_indeces, sizeof(unsigned short) * 36, GL_UNSIGNED_SHORT, GL_TRIANGLES );
 	skybox_vbo_.VertexAttribPointer( 0, 3, GL_SHORT, false, 0 );
+
+	{
+		m_Rand randomizer;
+
+		unsigned int stars_count= 2048;
+		unsigned int i= 0;
+		std::vector<r_StarVertex> stars(stars_count);
+
+		{ // Make polar star
+			m_Vec3 polar_direction= world_->GetCalendar().GetLocalRotationAxis( world_->GetGlobalWorldLatitude() );
+			stars[0].pos[0]= short( polar_direction.x * 32767.0f );
+			stars[0].pos[1]= short( polar_direction.y * 32767.0f );
+			stars[0].pos[2]= short( polar_direction.z * 32767.0f );
+			stars[0].brightness_spectre[0]= 255;
+			stars[0].brightness_spectre[1]= 255;
+			i++;
+		}
+		while( i < stars_count )
+		{
+			r_StarVertex& star= stars[i];
+			star.pos[0]= randomizer.RandI( -32768, 32768 );
+			star.pos[1]= randomizer.RandI( -32768, 32768 );
+			star.pos[2]= randomizer.RandI( -32768, 32768 );
+			unsigned int square_vec_length=
+				((unsigned int) star.pos[0]) * ((unsigned int) star.pos[0]) +
+				((unsigned int) star.pos[1]) * ((unsigned int) star.pos[1]) +
+				((unsigned int) star.pos[2]) * ((unsigned int) star.pos[2]);
+			if( square_vec_length > 32767u * 32767u ) continue;
+
+			// Make more dark stars and less bright stars
+			star.brightness_spectre[0]= (unsigned char) ( std::pow( randomizer.RandF(0.1f, 1.0f), 1.3f ) * 250.0f );
+			// Make more brown dwarfs and less blue giants
+			star.brightness_spectre[1]= (unsigned char) ( std::pow( randomizer.RandF(0.1f, 1.0f), 1.4f ) * 240.0f );
+
+			i++;
+		}
+
+		stars_vbo_.VertexData( stars.data(), stars_count * sizeof(r_StarVertex), sizeof(r_StarVertex) );
+		stars_vbo_.SetPrimitiveType( GL_POINTS );
+
+		r_StarVertex v;
+		stars_vbo_.VertexAttribPointer( 0, 3, GL_SHORT, true, ((char*)v.pos) - ((char*)&v) );
+		stars_vbo_.VertexAttribPointer( 1, 2, GL_UNSIGNED_BYTE, true, ((char*)v.brightness_spectre) - ((char*)&v) );
+	}
 
 	weather_effects_particle_manager_.Create( 65536*2, m_Vec3(72.0f, 72.0f, 96.0f) );
 }
