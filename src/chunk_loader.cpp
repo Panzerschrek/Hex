@@ -11,11 +11,13 @@ static int GetChunkIndexInRegion( int longitude, int latitude )
 	return rel_lon + rel_lat * H_WORLD_REGION_SIZE_X;
 }
 
-h_RegionData::h_RegionData()
+h_RegionData::h_RegionData( int in_longitude, int in_latitude )
+	: longitude(in_longitude)
+	, latitude (in_latitude )
+	, chunks_used(0)
 {
 	for( bool& flag : chunks_used_flags )
 		flag= false;
-	chunks_used= 0;
 }
 
 h_ChunkLoader::h_ChunkLoader( QString world_directory )
@@ -76,20 +78,20 @@ h_RegionData& h_ChunkLoader::GetRegionForCoordinates( int longitude, int latitud
 	for( h_RegionDataPtr& region : regions_ )
 	{
 		if(
-			region->header.longitude == region_longitude &&
-			region->header.latitude  == region_latitude )
+			region->longitude == region_longitude &&
+			region->latitude  == region_latitude )
 			return *region;
 	}
 
 	//here load new region from disk
-	h_RegionDataPtr new_region( new h_RegionData() );
-	LoadRegion( region_longitude, region_latitude, *new_region );
+	h_RegionDataPtr new_region( new h_RegionData( region_longitude, region_latitude ) );
+	LoadRegion( *new_region );
 	regions_.push_back( std::move(new_region) );
 
 	return *regions_.back();
 }
 
-void h_ChunkLoader::GetRegionFileName( QString& out_name, int reg_longitude, int reg_latitude )
+void h_ChunkLoader::GetRegionFileName( QString& out_name, int reg_longitude, int reg_latitude ) const
 {
 	out_name= regions_path_ + "/lon_";
 	out_name+= QString::number( reg_longitude ) + "_lat_";
@@ -97,27 +99,28 @@ void h_ChunkLoader::GetRegionFileName( QString& out_name, int reg_longitude, int
 	//for example: "world/lon_42_lat_-34_.region"
 }
 
-void h_ChunkLoader::LoadRegion( int longitude, int latitude, h_RegionData& region )
+void h_ChunkLoader::LoadRegion( h_RegionData& region )
 {
 	//todo: add reading of file with unicode name
 	QString file_name;
-	GetRegionFileName( file_name, longitude, latitude );
+	GetRegionFileName( file_name, region.longitude, region.latitude );
 	FILE* f= fopen( file_name.toLocal8Bit().constData(), "rb" );
 	if( f == nullptr )
 	{
 		//make new region, with no chunks
-		region.header.longitude= longitude;
-		region.header.latitude = latitude;
-		for( int i= 0; i< H_WORLD_REGION_SIZE_X * H_WORLD_REGION_SIZE_Y; i++ )
-			region.chunk_data[i].resize(0);
+		h_Console::Info( "Region file for coordinates ", region.longitude, " ", region.latitude,  " not found." );
 		return;
 	}
 
-	fread( &region.header, 1, sizeof(HEXREGION_header), f );
+	HEXREGION_header header;
+	fread( &header, 1, sizeof(HEXREGION_header), f );
+
+	H_ASSERT( region.longitude == header.longitude );
+	H_ASSERT( region.latitude  == header.latitude  );
 
 	for( unsigned int i= 0; i< H_WORLD_REGION_SIZE_X * H_WORLD_REGION_SIZE_Y; i++ )
 	{
-		int chunk_data_size= region.header.chunk_lumps[i].size;
+		int chunk_data_size= header.chunk_lumps[i].size;
 		if( chunk_data_size == 0 )
 			continue;
 
@@ -128,11 +131,11 @@ void h_ChunkLoader::LoadRegion( int longitude, int latitude, h_RegionData& regio
 	fclose(f);
 }
 
-void h_ChunkLoader::SaveRegion( h_RegionData& region )
+void h_ChunkLoader::SaveRegion( const h_RegionData& region ) const
 {
 	//todo: add reading of file with unicode name
 	QString file_name;
-	GetRegionFileName( file_name, region.header.longitude, region.header.latitude );
+	GetRegionFileName( file_name, region.longitude, region.latitude );
 	FILE* f= fopen( file_name.toLocal8Bit().constData(), "wb" );
 	if( f == nullptr )
 	{
@@ -141,15 +144,19 @@ void h_ChunkLoader::SaveRegion( h_RegionData& region )
 		return;
 	}
 
+	HEXREGION_header header;
+	header.longitude= region.longitude;
+	header.latitude = region.latitude ;
+
 	//write to header size of compressed chunks
 	for( unsigned int i= 0; i< H_WORLD_REGION_SIZE_X * H_WORLD_REGION_SIZE_Y; i++ )
-		region.header.chunk_lumps[i].size= region.chunk_data[i].size();
+		header.chunk_lumps[i].size= region.chunk_data[i].size();
 
-	fwrite( &region.header, 1, sizeof(HEXREGION_header), f );
+	fwrite( &header, 1, sizeof(HEXREGION_header), f );
 
 	for( unsigned int i= 0; i< H_WORLD_REGION_SIZE_X * H_WORLD_REGION_SIZE_Y; i++ )
 	{
-		int chunk_data_size= region.header.chunk_lumps[i].size;
+		int chunk_data_size= header.chunk_lumps[i].size;
 		if( chunk_data_size == 0 )
 			continue;
 
@@ -159,8 +166,8 @@ void h_ChunkLoader::SaveRegion( h_RegionData& region )
 	fclose(f);
 }
 
-void h_ChunkLoader::ForceSaveAllChunks()
+void h_ChunkLoader::ForceSaveAllChunks() const
 {
-	for( h_RegionDataPtr& region : regions_ )
+	for( const h_RegionDataPtr& region : regions_ )
 		SaveRegion( *region );
 }

@@ -18,7 +18,7 @@ class h_Chunk
 public:
 
 	h_Chunk( h_World* world, int longitude, int latitude, const g_WorldGenerator* generator );
-	h_Chunk( h_World* world, const HEXCHUNK_header* header, QDataStream& stream  );
+	h_Chunk( h_World* world, const HEXCHUNK_header& header, QDataStream& stream  );
 
 	~h_Chunk();
 

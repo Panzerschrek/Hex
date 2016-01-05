@@ -510,7 +510,7 @@ h_Chunk* h_World::LoadChunk( int lon, int lat )
 	HEXCHUNK_header header;
 	header.Read( stream );
 
-	return new h_Chunk( this, &header, stream );
+	return new h_Chunk( this, header, stream );
 }
 
 h_ChunkPhysMesh h_World::BuildPhysMesh( short x_min, short x_max, short y_min, short y_max, short z_min, short z_max )

@@ -442,10 +442,10 @@ h_Chunk::h_Chunk( h_World* world, int longitude, int latitude, const g_WorldGene
 
 }
 
-h_Chunk::h_Chunk( h_World* world, const HEXCHUNK_header* header, QDataStream& stream )
+h_Chunk::h_Chunk( h_World* world, const HEXCHUNK_header& header, QDataStream& stream )
 	: world_(world)
-	, longitude_(header->longitude)
-	, latitude_ (header->latitude )
+	, longitude_(header.longitude)
+	, latitude_ (header.latitude )
 	, need_update_light_(false)
 {
 	GenChunkFromFile( stream );

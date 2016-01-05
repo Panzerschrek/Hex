@@ -48,7 +48,7 @@ struct HEXREGION_header
 
 	//cordinates of region beginning. each chunk in region has coordinates, greather ot equal than this
 	short longitude;
-	short latitude;
+	short latitude ;
 
 	//if lump.size is zero, chunk does not exist
 	FileLump chunk_lumps[ H_WORLD_REGION_SIZE_X * H_WORLD_REGION_SIZE_Y ];
