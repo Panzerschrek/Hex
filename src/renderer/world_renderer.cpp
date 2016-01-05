@@ -545,7 +545,7 @@ void r_WorldRenderer::Draw()
 		static const r_OGLState state(
 			false, false, false, false,
 			state_blend_mode );
-		r_OGLStateManager::SetState( state );
+		r_OGLStateManager::UpdateState( state );
 
 		supersampling_final_shader_.Bind();
 		supersampling_buffer_.GetTextures()[0].Bind(0);
@@ -619,12 +619,9 @@ void r_WorldRenderer::Draw()
 void r_WorldRenderer::DrawConsole()
 {
 	static const GLenum state_blend_mode[]= { GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA };
-	static const float state_clear_color[]= { 0.0f, 0.0f, 0.0f, 0.0f };
 	static const r_OGLState state(
 		false, false, true, false,
-		state_blend_mode,
-		state_clear_color,
-		1.0f, GL_FRONT, GL_TRUE );
+		state_blend_mode );
 
 	h_Console::Move( 0.016f );
 
@@ -796,12 +793,10 @@ unsigned int r_WorldRenderer::DrawClusterMatrix( r_WVB* wvb, unsigned int triang
 void r_WorldRenderer::DrawWorld()
 {
 	static const GLenum state_blend_mode[]= { GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA };
-	static const float state_clear_color[]= { 0.0f, 0.0f, 0.0f, 0.0f };
 	static const r_OGLState state(
 		false, true, true, false,
 		state_blend_mode,
-		state_clear_color,
-		1.0f, GL_FRONT, GL_TRUE );
+		r_OGLState::default_clear_color );
 	r_OGLStateManager::UpdateState( state );
 
 	texture_manager_.BindTextureArray( 0 );
@@ -825,8 +820,7 @@ void r_WorldRenderer::DrawSky()
 	static const r_OGLState state(
 		false, false, true, false,
 		state_blend_mode,
-		r_OGLState::default_clear_color,
-		1.0f, GL_FRONT, GL_TRUE );
+		r_OGLState::default_clear_color );
 	r_OGLStateManager::UpdateState( state );
 
 	skybox_shader_.Bind();
@@ -868,12 +862,10 @@ void r_WorldRenderer::DrawStars()
 void r_WorldRenderer::DrawSun()
 {
 	static const GLenum state_blend_mode[]= { GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA };
-	static const float state_clear_color[]= { 0.0f, 0.0f, 0.0f, 0.0f };
 	static const r_OGLState state(
 		true, false, true, true,
 		state_blend_mode,
-		state_clear_color,
-		1.0f, GL_FRONT, GL_TRUE );
+		r_OGLState::default_clear_color );
 	r_OGLStateManager::UpdateState( state );
 
 	sun_texture_.Bind(0);
@@ -889,12 +881,10 @@ void r_WorldRenderer::DrawSun()
 void r_WorldRenderer::DrawWater()
 {
 	static const GLenum state_blend_mode[]= { GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA };
-	static const float state_clear_color[]= { 0.0f, 0.0f, 0.0f, 0.0f };
 	static const r_OGLState state(
 		true, false, true, false,
 		state_blend_mode,
-		state_clear_color,
-		1.0f, GL_FRONT, GL_TRUE );
+		r_OGLState::default_clear_color );
 	r_OGLStateManager::UpdateState( state );
 
 	water_texture_.Bind(0);
@@ -919,12 +909,13 @@ void r_WorldRenderer::DrawWater()
 void r_WorldRenderer::DrawBuildPrism()
 {
 	static const GLenum state_blend_mode[]= { GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA };
-	static const float state_clear_color[]= { 0.0f, 0.0f, 0.0f, 0.0f };
 	static const r_OGLState state(
 		true, false, true, false,
 		state_blend_mode,
-		state_clear_color,
-		1.0f, GL_FRONT, GL_FALSE );
+		r_OGLState::default_clear_color,
+		r_OGLState::default_clear_depth,
+		r_OGLState::default_cull_face_mode,
+		false );
 
 	if( player_->BuildDirection() == DIRECTION_UNKNOWN )
 		return;
@@ -979,12 +970,13 @@ void r_WorldRenderer::DrawBuildPrism()
 void r_WorldRenderer::DrawTestMob()
 {
 	static const GLenum state_blend_mode[]= { GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA };
-	static const float state_clear_color[]= { 0.0f, 0.0f, 0.0f, 0.0f };
 	static const r_OGLState state(
 		true, false, true, false,
 		state_blend_mode,
-		state_clear_color,
-		1.0f, GL_FRONT, GL_FALSE );
+		r_OGLState::default_clear_color,
+		r_OGLState::default_clear_depth,
+		r_OGLState::default_cull_face_mode,
+		false );
 
 	r_OGLStateManager::UpdateState( state );
 
@@ -1007,12 +999,13 @@ void r_WorldRenderer::DrawTestMob()
 void r_WorldRenderer::DrawCrosshair()
 {
 	static const GLenum state_blend_mode[]= { GL_ONE, GL_ONE_MINUS_SRC_COLOR };
-	static const float state_clear_color[]= { 0.0f, 0.0f, 0.0f, 0.0f };
 	static const r_OGLState state(
 		true, false, false, false,
 		state_blend_mode,
-		state_clear_color,
-		1.0f, GL_FRONT, GL_FALSE );
+		r_OGLState::default_clear_color,
+		r_OGLState::default_clear_depth,
+		r_OGLState::default_cull_face_mode,
+		false );
 
 	r_OGLStateManager::UpdateState( state );
 

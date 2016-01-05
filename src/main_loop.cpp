@@ -107,9 +107,6 @@ void h_MainLoop::initializeGL()
 			h_Console::Warning( "Function ", name, " not found" );
 		});
 
-	r_OGLState state;
-	state.InitialState();
-	r_OGLStateManager::SetState( state );
 
 	r_Framebuffer::SetScreenFramebufferSize( screen_width_, screen_height_ );
 }
@@ -131,7 +128,6 @@ void h_MainLoop::paintGL()
 		player_->Tick();
 		player_->Unlock();
 		world_renderer_->Draw();
-
 	}
 	else
 		UpdateCursor();
@@ -146,9 +142,9 @@ void h_MainLoop::paintGL()
 	m_Mat4 mat;
 	mat.Identity();
 
-	mat[0]= 2.0f / float( screen_width_ );
+	mat[ 0]=  2.0f / float( screen_width_ );
 	mat[12]= -1.0f;
-	mat[5]= -2.0f / float( screen_height_ );
+	mat[ 5]= -2.0f / float( screen_height_ );
 	mat[13]= 1.0f;
 	ui_painter_->SetMatrix( mat );
 

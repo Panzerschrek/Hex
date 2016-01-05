@@ -45,7 +45,6 @@ private:
 	h_SettingsPtr settings_;
 
 	QCursor cursor_;
-	bool in_focus_;
 
 	int screen_width_, screen_height_;
 
