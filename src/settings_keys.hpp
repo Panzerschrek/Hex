@@ -11,7 +11,7 @@ extern const char* const screen_height;
 
 // Renderer keys
 extern const char* const show_debug_info;
-extern const char* const texture_size;
+extern const char* const textures_detalization;
 extern const char* const filter_textures;
 extern const char* const lighting_only;
 

@@ -354,6 +354,10 @@ public:
 	{
 		return slider_pos_;
 	}
+	int SliderDiscretPos() const
+	{
+		return int( slider_pos_ * float(slider_inv_step_) + 0.5f);
+	}
 
 	virtual void Draw( ui_Painter* painter ) const override;
 	virtual void CursorPress( int x, int y, ui_MouseButton button, bool pressed ) override;

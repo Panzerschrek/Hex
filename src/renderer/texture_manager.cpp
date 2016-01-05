@@ -115,7 +115,7 @@ static void DrawNullTexture( QImage& img, const char* text= nullptr )
 }
 
 r_TextureManager::r_TextureManager()
-	: texture_size_( R_MAX_TEXTURE_RESOLUTION )
+	: texture_detalization_( 0 )
 	, filter_textures_( true )
 {
 	InitTextureTable();
@@ -134,6 +134,8 @@ void r_TextureManager::InitTextureTable()
 
 void r_TextureManager::LoadTextures()
 {
+	unsigned int texture_size= 1 << (R_MAX_TEXTURE_RESOLUTION_LOG2 - texture_detalization_);
+
 	unsigned int tex_id= 0;
 	QSize required_texture_size( R_MAX_TEXTURE_RESOLUTION, R_MAX_TEXTURE_RESOLUTION );
 	std::vector<unsigned char> tmp_data( R_MAX_TEXTURE_RESOLUTION * R_MAX_TEXTURE_RESOLUTION * 4 );
@@ -157,7 +159,7 @@ void r_TextureManager::LoadTextures()
 	glBindTexture( GL_TEXTURE_2D_ARRAY, texture_array_ );
 	glTexImage3D(
 		GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8,
-		texture_size_, texture_size_, texture_layers,
+		texture_size, texture_size, texture_layers,
 		0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr );
 
 	QImage img( required_texture_size, QImage::Format_RGBA8888 );
@@ -167,9 +169,9 @@ void r_TextureManager::LoadTextures()
 		GL_TEXTURE_2D_ARRAY,
 		0, 0, 0,
 		tex_id,
-		texture_size_, texture_size_,
+		texture_size, texture_size,
 		1, GL_RGBA, GL_UNSIGNED_BYTE,
-		RescaleAndPrepareTexture( img.bits(), tmp_data.data(), texture_size_ ) );
+		RescaleAndPrepareTexture( img.bits(), tmp_data.data(), texture_size ) );
 
 	//for each texture
 	for( const QJsonValue arr_val : arr )
@@ -206,9 +208,9 @@ void r_TextureManager::LoadTextures()
 			GL_TEXTURE_2D_ARRAY,
 			0, 0, 0,
 			tex_id,
-			texture_size_, texture_size_,
+			texture_size, texture_size,
 			1, GL_RGBA, GL_UNSIGNED_BYTE,
-			RescaleAndPrepareTexture( img.bits(), tmp_data.data(), texture_size_ ) );
+			RescaleAndPrepareTexture( img.bits(), tmp_data.data(), texture_size ) );
 
 		val= obj[ "scale" ];
 		if( val.isDouble() )
@@ -260,13 +262,9 @@ void r_TextureManager::BindTextureArray( unsigned int unit )
 	glBindTexture( GL_TEXTURE_2D_ARRAY, texture_array_ );
 }
 
-void r_TextureManager::SetTextureSize( unsigned int size )
+void r_TextureManager::SetTextureDetalization( unsigned int detalization )
 {
-	// Ceil to nearest power of two
-	texture_size_= R_MIN_TEXTURE_RESOLUTION;
-	while( texture_size_ < size ) texture_size_<<= 1;
-
-	texture_size_= std::min( texture_size_, (unsigned int)R_MAX_TEXTURE_RESOLUTION );
+	texture_detalization_= std::min( detalization, (unsigned int)(R_MAX_TEXTURE_RESOLUTION_LOG2 - R_MIN_TEXTURE_RESOLUTION_LOG2) );
 }
 
 void r_TextureManager::SetFiltration( bool filter_textures )

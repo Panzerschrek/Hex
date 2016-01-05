@@ -15,7 +15,9 @@ public:
 	void LoadTextures();
 
 	void BindTextureArray( unsigned int unit= 0 );
-	void SetTextureSize( unsigned int size );
+
+	// Detail level. 0 - maximum, 1 - half resolution, 2 - quater resolution
+	void SetTextureDetalization( unsigned int detalization );
 	void SetFiltration( bool filter_textures );
 
 private:
@@ -30,7 +32,7 @@ private:
 	// TODO - clear OpenGL resources
 	GLuint texture_array_;
 
-	unsigned int texture_size_;
+	unsigned int texture_detalization_;
 	bool filter_textures_;
 };
 

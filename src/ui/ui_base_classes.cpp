@@ -633,6 +633,7 @@ void ui_Slider::CursorPress( int x, int y, ui_MouseButton button, bool pressed )
 		int real_bar_size= SizeX() - 2 * ( ArrowSize() + ArrowOffset() );
 
 		slider_pos_= float(rel_pos) / float(real_bar_size);
+		slider_pos_= float( int(slider_pos_ * float(slider_inv_step_) + 0.5f) ) / float(slider_inv_step_);
 	}
 
 	if( callback_ ) callback_();

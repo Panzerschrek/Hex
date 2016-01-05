@@ -9,7 +9,7 @@ const char* const screen_width = "screen_width" ;
 const char* const screen_height= "screen_height";
 
 const char* const show_debug_info= "show_debug_info";
-const char* const texture_size= "texture_size";
+const char* const textures_detalization= "textures_detalization";
 const char* const filter_textures= "filter_textures";
 const char* const lighting_only= "lighting_only";
 

@@ -135,7 +135,7 @@ void h_MainLoop::paintGL()
 	if( !ui_painter_ )
 		ui_painter_.reset( new ui_Painter() );
 	if( !root_menu_ )
-		root_menu_.reset( new ui_MainMenu( this, screen_width_, screen_height_ ) );
+		root_menu_.reset( new ui_MainMenu( this, settings_, screen_width_, screen_height_ ) );
 
 	if( root_menu_ ) root_menu_->Tick();
 

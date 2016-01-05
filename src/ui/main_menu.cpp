@@ -1,6 +1,9 @@
 #include "../hex.hpp"
 
 #include "../main_loop.hpp"
+#include "../settings.hpp"
+#include "../settings_keys.hpp"
+#include "../renderer/rendering_constants.hpp"
 #include "ui_painter.hpp"
 #include "styles.hpp"
 
@@ -9,8 +12,12 @@
 /*
 ------------ui_SettingsMenu---------------
 */
-ui_SettingsMenu::ui_SettingsMenu( ui_MenuBase* parent, int x, int y, int sx, int sy )
+
+static const int g_textures_size_step= R_MAX_TEXTURE_RESOLUTION_LOG2 - R_MIN_TEXTURE_RESOLUTION_LOG2;
+
+ui_SettingsMenu::ui_SettingsMenu( ui_MenuBase* parent, const h_SettingsPtr settings, int x, int y, int sx, int sy )
 	: ui_MenuBase( parent, x, y, sx, sy )
+	, settings_(settings)
 {
 	int button_shift_y= ui_MenuBase::size_y_/(ui_Base::CellSize()) - 2;
 
@@ -22,21 +29,25 @@ ui_SettingsMenu::ui_SettingsMenu( ui_MenuBase* parent, int x, int y, int sx, int
 
 	int punkt_row= center_cell_y-4;
 
-	text_textures_size_= new ui_Text( "Textures size: 1", center_cell_x-10, punkt_row, 10, 1, c_ui_texts_style );
+	text_textures_size_= new ui_Text( "", center_cell_x-10, punkt_row, 10, 1, c_ui_texts_style );
 	slider_textures_size_= new ui_Slider( center_cell_x, punkt_row, 8, 1.0f, c_ui_main_style );
-	slider_textures_size_->SetInvStep( 3 );
+	slider_textures_size_->SetInvStep( g_textures_size_step );
 	slider_textures_size_->SetCallback( [this] { OnTexturesSizeSlider(); } );
+
+	slider_textures_size_->SetSliderPos(
+		1.0f - float(settings_->GetInt(h_SettingsKeys::textures_detalization)) / float(g_textures_size_step) );
+	OnTexturesSizeSlider();
 
 	punkt_row++;
 
-	text_textures_filtration_= new ui_Text( "Textures filter:", center_cell_x-10, punkt_row, 10, 1, c_ui_texts_style );
-	button_textures_fitration_= new ui_Button( "linear", center_cell_x, punkt_row, 8, 1, c_ui_main_style );
+	//text_textures_filtration_= new ui_Text( "Textures filter:", center_cell_x-10, punkt_row, 10, 1, c_ui_texts_style );
+	//button_textures_fitration_= new ui_Button( "linear", center_cell_x, punkt_row, 8, 1, c_ui_main_style );
 
 	ui_MenuBase::elements_.push_back( button_back_ );
 	ui_MenuBase::elements_.push_back( text_textures_size_ );
 	ui_MenuBase::elements_.push_back( slider_textures_size_ );
-	ui_MenuBase::elements_.push_back( text_textures_filtration_ );
-	ui_MenuBase::elements_.push_back( button_textures_fitration_ );
+	//ui_MenuBase::elements_.push_back( text_textures_filtration_ );
+	//ui_MenuBase::elements_.push_back( button_textures_fitration_ );
 
 }
 
@@ -45,37 +56,37 @@ ui_SettingsMenu::~ui_SettingsMenu()
 	delete button_back_;
 	delete text_textures_size_;
 	delete slider_textures_size_;
-	delete text_textures_filtration_;
-	delete button_textures_fitration_;
+	//delete text_textures_filtration_;
+	//delete button_textures_fitration_;
 }
 
 void ui_SettingsMenu::OnBackButton()
 {
 	parent_menu_->SetActive( true );
-	printf( "active" );
 	this->Kill();
 }
 
 void ui_SettingsMenu::OnTexturesSizeSlider()
 {
-	int i_pos= int(roundf(slider_textures_size_->SliderPos() * 3));
-	slider_textures_size_->SetSliderPos( float(i_pos) / 3.0f );
+	int i_pos= slider_textures_size_->SliderDiscretPos();
 
-	i_pos= 3-i_pos;
-	int size= 1<<i_pos;
+	i_pos= g_textures_size_step - i_pos;
 
 	char text[48];
-	sprintf( text, "Textures size: 1/%d", size );
+	sprintf( text, "Textures size: 1/%d", 1 << i_pos );
 	text_textures_size_->SetText( text );
+
+	settings_->SetSetting( h_SettingsKeys::textures_detalization, i_pos );
 }
 
 /*
 ---------ui_MainMenu---------------
 */
 
-ui_MainMenu::ui_MainMenu( h_MainLoop* main_loop, int sx, int sy )
+ui_MainMenu::ui_MainMenu( h_MainLoop* main_loop, const h_SettingsPtr& settings, int sx, int sy )
 	: ui_MenuBase( nullptr, 0, 0, sx, sy )
 	, main_loop_(main_loop)
+	, settings_(settings)
 {
 	const int button_size= 10;
 	int button_shift_x= ui_MenuBase::size_x_/(ui_Base::CellSize()*2) - button_size/2;
@@ -117,7 +128,7 @@ void ui_MainMenu::OnPlayButton()
 
 void ui_MainMenu::OnSettingsButton()
 {
-	child_menu_= new ui_SettingsMenu( this, 0, 0, size_x_, size_y_ );
+	child_menu_= new ui_SettingsMenu( this, settings_, 0, 0, size_x_, size_y_ );
 	this->SetActive( false );
 	this->SetVisible( false );
 }

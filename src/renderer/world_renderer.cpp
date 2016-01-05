@@ -1307,7 +1307,7 @@ void r_WorldRenderer::InitVertexBuffers()
 
 void r_WorldRenderer::LoadTextures()
 {
-	texture_manager_.SetTextureSize( settings_->GetInt( h_SettingsKeys::texture_size, R_MAX_TEXTURE_RESOLUTION ) );
+	texture_manager_.SetTextureDetalization( settings_->GetInt( h_SettingsKeys::textures_detalization ) );
 
 	texture_manager_.SetFiltration( settings_->GetBool( h_SettingsKeys::filter_textures, true ) );
 	texture_manager_.LoadTextures();

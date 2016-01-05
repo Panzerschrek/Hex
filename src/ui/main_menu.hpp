@@ -6,7 +6,7 @@ class h_MainLoop;
 class ui_SettingsMenu : public ui_MenuBase
 {
 public:
-	ui_SettingsMenu( ui_MenuBase* parent, int x, int y, int sx, int sy );
+	ui_SettingsMenu( ui_MenuBase* parent, const h_SettingsPtr settings, int x, int y, int sx, int sy );
 	virtual ~ui_SettingsMenu() override;
 
 	virtual void Tick() override {}
@@ -16,6 +16,8 @@ private:
 	void OnTexturesSizeSlider();
 
 private:
+	h_SettingsPtr settings_;
+
 	ui_Button* button_back_;
 
 	ui_Text* text_textures_size_;
@@ -28,7 +30,7 @@ private:
 class ui_MainMenu : public ui_MenuBase
 {
 public:
-	ui_MainMenu( h_MainLoop* main_loop, int sx, int sy );
+	ui_MainMenu( h_MainLoop* main_loop, const h_SettingsPtr& settings, int sx, int sy );
 	virtual ~ui_MainMenu() override;
 
 	virtual void KeyPress( ui_Key key ) override;
@@ -40,11 +42,12 @@ private:
 	void OnQuitButton();
 
 private:
+	h_MainLoop * const main_loop_;
+	h_SettingsPtr settings_;
+
 	ui_Button* button_play_;
 	ui_Button* button_settings_;
 	ui_Button* button_quit_;
 	ui_Text* game_title_;
 	ui_Text* game_subtitle_;
-
-	h_MainLoop * const main_loop_;
 };

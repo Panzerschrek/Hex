@@ -9,6 +9,6 @@
     "screen_height": "768",
     "screen_width": "1024",
     "show_debug_info": "1",
-    "texture_size": "32",
+    "textures_detalization": "3",
     "vsync": "1"
 }
