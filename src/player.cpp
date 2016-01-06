@@ -1,5 +1,6 @@
 #include "player.hpp"
 #include "block_collision.hpp"
+#include "world_header.hpp"
 #include "world.hpp"
 
 static const float g_acceleration= 40.0f;
@@ -24,23 +25,28 @@ static const m_Vec3 g_block_normals[8]=
 };
 
 
-h_Player::h_Player( const h_WorldPtr& world  )
+h_Player::h_Player(
+	const h_WorldPtr& world,
+	const h_WorldHeaderPtr& world_header )
 	: world_(world)
-	, pos_()
+	, world_header_(world_header)
+	, pos_( world_header->player.x, world_header->player.y, world_header->player.z )
 	, speed_( 0.0f, 0.0f, 0.0f )
 	, vertical_speed_(0.0f)
 	, is_flying_(false)
 	, in_air_(true)
-	, view_angle_( 0.0f, 0.0f, 0.0f )
+	, view_angle_( world_header->player.rotation_x, 0.0f, world_header->player.rotation_z )
 	, prev_move_time_(0)
 	, build_direction_( DIRECTION_UNKNOWN )
 	, build_block_( BLOCK_UNKNOWN )
 	, player_data_mutex_()
 	, phys_mesh_()
 {
-	pos_.x= ( world->Longitude() + world->ChunkNumberX()/2 ) * H_SPACE_SCALE_VECTOR_X * float( H_CHUNK_WIDTH );
-	pos_.y= ( world->Latitude () + world->ChunkNumberY()/2 ) * H_SPACE_SCALE_VECTOR_Y * float( H_CHUNK_WIDTH );
-	pos_.z= float(H_CHUNK_HEIGHT/2 + 10);
+	if( pos_.z <= 0.0f )
+	{
+		// TODO - fetch data from world, place player on ground level
+		pos_.z= 125.0f;
+	}
 
 	build_pos_= pos_;
 	discret_build_pos_[0]= discret_build_pos_[1]= discret_build_pos_[2]= 0;
@@ -48,6 +54,11 @@ h_Player::h_Player( const h_WorldPtr& world  )
 
 h_Player::~h_Player()
 {
+	world_header_->player.x= pos_.x;
+	world_header_->player.y= pos_.y;
+	world_header_->player.z= pos_.z;
+	world_header_->player.rotation_x= view_angle_.x;
+	world_header_->player.rotation_z= view_angle_.z;
 }
 
 void h_Player::SetCollisionMesh( h_ChunkPhysMesh mesh )

@@ -129,6 +129,8 @@
 		<Unit filename="src\world_generator\rivers.hpp" />
 		<Unit filename="src\world_generator\world_generator.cpp" />
 		<Unit filename="src\world_generator\world_generator.hpp" />
+		<Unit filename="src\world_header.cpp" />
+		<Unit filename="src\world_header.hpp" />
 		<Unit filename="src\world_lighting.cpp" />
 		<Unit filename="src\world_loading.cpp" />
 		<Unit filename="src\world_loading.hpp" />

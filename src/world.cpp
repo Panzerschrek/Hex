@@ -5,6 +5,7 @@
 #include "settings.hpp"
 #include "settings_keys.hpp"
 #include "world_generator/world_generator.hpp"
+#include "world_header.hpp"
 #include "chunk_phys_mesh.hpp"
 #include "path_finder.hpp"
 #include "console.hpp"
@@ -26,25 +27,24 @@ static constexpr const unsigned int g_world_start_tick=
 	g_day_duration_ticks +
 	g_day_duration_ticks / 4 + g_day_duration_ticks / 16;
 
-static const char g_world_name[]= "world";
-
 h_World::h_World(
-	const h_SettingsPtr& settings )
+	const h_SettingsPtr& settings,
+	const h_WorldHeaderPtr& header,
+	const char* world_directory )
 	: settings_( settings )
-	, chunk_loader_( g_world_name )
+	, header_( header )
+	, chunk_loader_( world_directory )
 	, calendar_(
 		g_day_duration_ticks,
 		g_days_in_year,
 		g_planet_rotation_axis_inclination,
 		g_northern_hemisphere_summer_solstice_day )
-	, phys_tick_count_( g_world_start_tick )
+	, phys_tick_count_( header->ticks != 0 ? header->ticks : g_world_start_tick )
 {
 	InitNormalBlocks();
 
 	chunk_number_x_= std::max( std::min( settings_->GetInt( h_SettingsKeys::chunk_number_x, 14 ), H_MAX_CHUNKS ), H_MIN_CHUNKS );
 	chunk_number_y_= std::max( std::min( settings_->GetInt( h_SettingsKeys::chunk_number_y, 12 ), H_MAX_CHUNKS ), H_MIN_CHUNKS );
-	longitude_= -(chunk_number_x_/2);
-	latitude_ = -(chunk_number_y_/2);
 
 	// Active area margins. Minimal active area have size 5.
 	active_area_margins_[0]=
@@ -65,8 +65,18 @@ h_World::h_World(
 	settings_->SetSetting( h_SettingsKeys::active_area_margins_x, (int)active_area_margins_[0] );
 	settings_->SetSetting( h_SettingsKeys::active_area_margins_y, (int)active_area_margins_[1] );
 
+	{ // Move world to player position
+		short player_xy[2];
+		GetHexogonCoord( m_Vec2(header_->player.x, header->player.y), &player_xy[0], &player_xy[1] );
+		int player_longitude= ( player_xy[0] + (H_CHUNK_WIDTH >> 1) ) >> H_CHUNK_WIDTH_LOG2;
+		int player_latitude = ( player_xy[1] + (H_CHUNK_WIDTH >> 1) ) >> H_CHUNK_WIDTH_LOG2;
+
+		longitude_= player_longitude - chunk_number_x_/2;
+		latitude_ = player_latitude  - chunk_number_y_/2;
+	}
+
 	g_WorldGenerationParameters parameters;
-	parameters.world_dir= g_world_name;
+	parameters.world_dir= world_directory;
 	parameters.size[0]= parameters.size[1]= 512;
 	parameters.cell_size_log2= 0;
 	parameters.seed= 24;
@@ -88,6 +98,8 @@ h_World::h_World(
 
 h_World::~h_World()
 {
+	header_->ticks= phys_tick_count_;
+
 	H_ASSERT(!phys_thread_);
 
 	for( unsigned int x= 0; x< chunk_number_x_; x++ )
@@ -671,13 +683,16 @@ void h_World::PhysTick()
 					player_coord[1] - 6, player_coord[1] + 6,
 					player_coord[2] - 5, player_coord[2] + 5 );
 
-			if( player_coord[1]/H_CHUNK_WIDTH > int(chunk_number_y_/2+2) )
+			int player_chunk_x= ( player_coord[0] + (H_CHUNK_WIDTH>>1) ) >> H_CHUNK_WIDTH_LOG2;
+			int player_chunk_y= ( player_coord[1] + (H_CHUNK_WIDTH>>1) ) >> H_CHUNK_WIDTH_LOG2;
+
+			if( player_chunk_y > int(chunk_number_y_/2+2) )
 				MoveWorld( NORTH );
-			else if( player_coord[1]/H_CHUNK_WIDTH < int(chunk_number_y_/2-2) )
+			else if( player_chunk_y < int(chunk_number_y_/2-2) )
 				MoveWorld( SOUTH );
-			if( player_coord[0]/H_CHUNK_WIDTH > int(chunk_number_x_/2+2) )
+			if( player_chunk_x > int(chunk_number_x_/2+2) )
 				MoveWorld( EAST );
-			else if( player_coord[0]/H_CHUNK_WIDTH < int(chunk_number_x_/2-2) )
+			else if( player_chunk_x < int(chunk_number_x_/2-2) )
 				MoveWorld( WEST );
 
 			player_->Lock();

@@ -22,7 +22,10 @@ class h_World
 	friend class h_Chunk;
 
 public:
-	h_World( const h_SettingsPtr& settings );
+	h_World(
+		const h_SettingsPtr& settings,
+		const h_WorldHeaderPtr& header,
+		const char* world_directory );
 	~h_World();
 
 	h_Chunk* GetChunk( short X, short Y );//relative chunk coordinates
@@ -131,6 +134,7 @@ private:
 
 private:
 	const h_SettingsPtr settings_;
+	const h_WorldHeaderPtr header_;
 
 	h_ChunkLoader chunk_loader_;
 	std::unique_ptr<g_WorldGenerator> world_generator_;

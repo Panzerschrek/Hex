@@ -1,23 +1,26 @@
 #include "main_loop.hpp"
 #include "renderer/world_renderer.hpp"
 #include "world.hpp"
+#include "world_header.hpp"
 #include "player.hpp"
 
 #include "settings.hpp"
 #include "settings_keys.hpp"
 #include "console.hpp"
 
-#include "ui/ui_base_classes.hpp"
-#include "ui/ui_painter.hpp"
-#include "ogl_state_manager.hpp"
-
 #include "ui/main_menu.hpp"
 #include "ui/ingame_menu.hpp"
+#include "ui/ui_painter.hpp"
+
+#include "ogl_state_manager.hpp"
+
 
 static const constexpr int g_min_screen_width = 640;
 static const constexpr int g_min_screen_height= 480;
 static const constexpr int g_max_screen_width = 4096;
 static const constexpr int g_max_screen_height= 4096;
+
+static const char g_world_directory[]= "world";
 
 static ui_MouseButton MouseKey( const QMouseEvent* e )
 {
@@ -288,6 +291,9 @@ void h_MainLoop::closeEvent( QCloseEvent* e )
 		world_renderer_.reset();
 		player_.reset();
 		world_.reset();
+
+		world_header_->Save( g_world_directory );
+		world_header_.reset();
 	}
 }
 
@@ -306,8 +312,11 @@ void h_MainLoop::StartGame()
 {
 	if( !game_started_ )
 	{
-		world_= std::make_shared<h_World>( settings_ );
-		player_= std::make_shared<h_Player>( world_ );
+		world_header_= std::make_shared<h_WorldHeader>();
+		world_header_->Load( g_world_directory );
+
+		world_= std::make_shared<h_World>( settings_, world_header_, g_world_directory );
+		player_= std::make_shared<h_Player>( world_, world_header_ );
 
 		world_renderer_= std::make_shared<r_WorldRenderer>( settings_, world_, player_ );
 		world_renderer_->SetViewportSize( screen_width_, screen_height_ );

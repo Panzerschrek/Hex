@@ -11,7 +11,7 @@
 class h_Player
 {
 public:
-	h_Player( const h_WorldPtr& world );
+	h_Player( const h_WorldPtr& world, const h_WorldHeaderPtr& world_header );
 	~h_Player();
 
 	void Move( const m_Vec3& direction );
@@ -45,6 +45,7 @@ private:
 
 private:
 	const h_WorldPtr world_;
+	const h_WorldHeaderPtr world_header_;
 	m_Vec3 pos_;
 	m_Vec3 speed_;
 	float vertical_speed_;

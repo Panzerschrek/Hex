@@ -48,6 +48,7 @@ private:
 
 	int screen_width_, screen_height_;
 
+	h_WorldHeaderPtr world_header_;
 	r_WorldRendererPtr world_renderer_;
 	h_WorldPtr world_;
 	h_PlayerPtr player_;
