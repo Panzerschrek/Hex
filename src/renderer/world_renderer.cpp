@@ -11,7 +11,7 @@
 #include "img_utils.hpp"
 #include "chunk_info.hpp"
 #include "wvb.hpp"
-#include "../math_lib/m_math.h"
+#include "../math_lib/math.hpp"
 #include "../math_lib/assert.hpp"
 
 #include "../player.hpp"

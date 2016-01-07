@@ -1,8 +1,8 @@
 #include <limits>
 #include <cmath>
 
-#include "../math_lib/rand.h"
-#include "../math_lib/m_math.h"
+#include "../math_lib/rand.hpp"
+#include "../math_lib/math.hpp"
 
 #include "world_generator.hpp"
 

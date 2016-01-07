@@ -9,7 +9,7 @@
 #include "fwd.hpp"
 #include "block.hpp"
 #include "chunk.hpp"
-#include "math_lib/rand.h"
+#include "math_lib/rand.hpp"
 #include "math_lib/assert.hpp"
 #include "world_action.hpp"
 #include "chunk_loader.hpp"

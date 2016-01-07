@@ -4,7 +4,7 @@
 #include "weather_effects_particle_manager.hpp"
 
 #include "img_utils.hpp"
-#include "../math_lib/rand.h"
+#include "../math_lib/rand.hpp"
 #include "../console.hpp"
 #include "ogl_state_manager.hpp"
 

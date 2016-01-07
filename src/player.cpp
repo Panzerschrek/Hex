@@ -125,11 +125,11 @@ void h_Player::Rotate( const m_Vec3& delta )
 {
 	view_angle_+= delta;
 
-	if( view_angle_.z < 0.0f ) view_angle_.z+= m_Math::FM_2PI;
-	else if( view_angle_.z > m_Math::FM_2PI ) view_angle_.z-= m_Math::FM_2PI;
+	if( view_angle_.z < 0.0f ) view_angle_.z+= m_Math::two_pi;
+	else if( view_angle_.z > m_Math::two_pi ) view_angle_.z-= m_Math::two_pi;
 
-	if( view_angle_.x > m_Math::FM_PI2 ) view_angle_.x= m_Math::FM_PI2;
-	else if( view_angle_.x < -m_Math::FM_PI2 ) view_angle_.x= -m_Math::FM_PI2;
+	if( view_angle_.x > m_Math::pi_2 ) view_angle_.x= m_Math::pi_2;
+	else if( view_angle_.x < -m_Math::pi_2 ) view_angle_.x= -m_Math::pi_2;
 }
 
 void h_Player::ToggleFly()

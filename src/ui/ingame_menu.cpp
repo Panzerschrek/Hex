@@ -1,7 +1,7 @@
 #include <cmath>
 
 #include "vec.hpp"
-#include "../math_lib/m_math.h"
+#include "../math_lib/math.hpp"
 
 #include "../block.hpp"
 #include "../player.hpp"
@@ -204,13 +204,13 @@ void ui_IngameMenu::Tick()
 		}
 		if( keys_[ g_left_key ] )
 		{
-			move_direction.y-= std::cos( cam_ang_z - m_Math::FM_PI2 );
-			move_direction.x+= std::sin( cam_ang_z - m_Math::FM_PI2 );
+			move_direction.y-= std::cos( cam_ang_z - m_Math::pi_2 );
+			move_direction.x+= std::sin( cam_ang_z - m_Math::pi_2 );
 		}
 		if( keys_[ g_right_key ] )
 		{
-			move_direction.y-= std::cos( cam_ang_z + m_Math::FM_PI2 );
-			move_direction.x+= std::sin( cam_ang_z + m_Math::FM_PI2 );
+			move_direction.y-= std::cos( cam_ang_z + m_Math::pi_2 );
+			move_direction.x+= std::sin( cam_ang_z + m_Math::pi_2 );
 		}
 
 		if( keys_[ g_jump_key ] ) move_direction.z+= 1.0f;

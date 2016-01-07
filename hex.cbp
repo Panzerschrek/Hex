@@ -77,10 +77,10 @@
 		<Unit filename="src\math_lib\assert.hpp" />
 		<Unit filename="src\math_lib\collection.hpp" />
 		<Unit filename="src\math_lib\fixed.hpp" />
-		<Unit filename="src\math_lib\m_math.cpp" />
-		<Unit filename="src\math_lib\m_math.h" />
+		<Unit filename="src\math_lib\math.cpp" />
+		<Unit filename="src\math_lib\math.hpp" />
 		<Unit filename="src\math_lib\rand.cpp" />
-		<Unit filename="src\math_lib\rand.h" />
+		<Unit filename="src\math_lib\rand.hpp" />
 		<Unit filename="src\math_lib\small_objects_allocator.hpp" />
 		<Unit filename="src\moc\moc_main_loop.cpp" />
 		<Unit filename="src\path_finder.cpp" />

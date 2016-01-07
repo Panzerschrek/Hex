@@ -1,7 +1,7 @@
 #include "chunk.hpp"
 #include "world.hpp"
 #include "math_lib/assert.hpp"
-#include "math_lib/rand.h"
+#include "math_lib/rand.hpp"
 #include "world_generator/world_generator.hpp"
 
 // Check point in chunk relative coordinates.

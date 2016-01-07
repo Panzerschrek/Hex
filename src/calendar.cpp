@@ -1,6 +1,6 @@
 #include <cmath>
 
-#include "math_lib/m_math.h"
+#include "math_lib/math.hpp"
 #include "math_lib/assert.hpp"
 
 #include "matrix.hpp"
@@ -19,7 +19,7 @@ h_Calendar::h_Calendar(
 	, rotation_axis_angle_(rotation_axis_angle)
 	, summer_solstice_day_(summer_solstice_day)
 {
-	float angle_to_summer_solstice_day= m_Math::FM_2PI * float(summer_solstice_day_) / float(solar_days_in_year_);
+	float angle_to_summer_solstice_day= m_Math::two_pi * float(summer_solstice_day_) / float(solar_days_in_year_);
 
 	rotation_axis_.x= -std::sin(rotation_axis_angle_) * std::cos(angle_to_summer_solstice_day);
 	rotation_axis_.y= -std::sin(rotation_axis_angle_) * std::sin(angle_to_summer_solstice_day);
@@ -50,8 +50,8 @@ unsigned int h_Calendar::GetNightLength( unsigned int day, float latitude ) cons
 	float angle_between_rotation_axis_and_direction_to_star=
 		std::acos( hemisphere_local_rotation_axis * vec_from_planet_to_star_at_currend_day );
 
-	float alpha= m_Math::FM_PI2 - latitude;
-	float beta= m_Math::FM_PI2 - angle_between_rotation_axis_and_direction_to_star;
+	float alpha= m_Math::pi_2 - latitude;
+	float beta= m_Math::pi_2 - angle_between_rotation_axis_and_direction_to_star;
 
 	float sin_equation= std::sin( beta ) / std::sin( alpha );
 	if( std::abs(sin_equation) > c_one_plus_eps )
@@ -60,7 +60,7 @@ unsigned int h_Calendar::GetNightLength( unsigned int day, float latitude ) cons
 	if( sin_equation > 1.0f ) sin_equation= 1.0f;
 	else if( sin_equation < -1.0f ) sin_equation= -1.0f;
 
-	float l= m_Math::FM_PI - 2.0f * std::asin( sin_equation ); // TODO: + or - before asin
+	float l= m_Math::pi - 2.0f * std::asin( sin_equation ); // TODO: + or - before asin
 
 	float sin_equation2= std::sin( l * 0.5f ) / std::cos( beta );
 	if( std::abs(sin_equation2) > c_one_plus_eps )
@@ -74,9 +74,9 @@ unsigned int h_Calendar::GetNightLength( unsigned int day, float latitude ) cons
 
 	float night_duration=
 		2.0f * std::asin( sin_equation2 );
-	if( l > m_Math::FM_PI ) night_duration= m_Math::FM_2PI - night_duration;
+	if( l > m_Math::pi ) night_duration= m_Math::two_pi - night_duration;
 
-	return (unsigned int)( night_duration / m_Math::FM_2PI * float(ticks_in_day_) );
+	return (unsigned int)( night_duration / m_Math::two_pi * float(ticks_in_day_) );
 }
 
 m_Vec3 h_Calendar::GetLocalRotationAxis( float latitude ) const
@@ -95,7 +95,7 @@ float h_Calendar::GetSkySphereRotation( unsigned int ticks ) const
 
 	unsigned int ticks_in_stellar_day_= uint64_t(ticks_in_day_) * solar_days_in_year_ / (solar_days_in_year_ + 1);
 	return -
-		m_Math::FM_2PI *
+		m_Math::two_pi *
 		float(ticks) /
 		float(ticks_in_stellar_day_);
 }
@@ -121,14 +121,14 @@ m_Vec3 h_Calendar::GetSunVector( unsigned int ticks, float latitude ) const
 		-std::sin(gamma) );
 
 	m_Mat4 mat;
-	mat.Rotate( GetLocalRotationAxis(latitude), -m_Math::FM_2PI * float(time) / float(ticks_in_day_) );
+	mat.Rotate( GetLocalRotationAxis(latitude), -m_Math::two_pi * float(time) / float(ticks_in_day_) );
 
 	return local_sun_vector_at_midnight * mat;
 }
 
 m_Vec3 h_Calendar::GetVectorFromPlanetToStar( unsigned int ticks ) const
 {
-	float angle= m_Math::FM_2PI * float(ticks) / float(solar_days_in_year_ * ticks_in_day_);
+	float angle= m_Math::two_pi * float(ticks) / float(solar_days_in_year_ * ticks_in_day_);
 
 	return m_Vec3(
 		-std::cos(angle),

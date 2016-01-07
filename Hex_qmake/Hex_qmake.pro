@@ -19,8 +19,6 @@ HEADERS += \
     ../src/math_lib/allocation_free_set.hpp \
     ../src/math_lib/assert.hpp \
     ../src/math_lib/collection.hpp \
-    ../src/math_lib/m_math.h \
-    ../src/math_lib/rand.h \
     ../src/math_lib/small_objects_allocator.hpp \
     ../src/renderer/chunk_data_cache.hpp \
     ../src/renderer/i_world_renderer.hpp \
@@ -53,7 +51,9 @@ HEADERS += \
 	../src/world_generator/rivers.hpp \
     ../src/path_finder.hpp \
     ../src/calendar.hpp \
-    ../src/world_header.hpp
+    ../src/world_header.hpp \
+    ../src/math_lib/math.hpp \
+    ../src/math_lib/rand.hpp
 
 SOURCES += \
     ../src/block.cpp \
@@ -71,7 +71,6 @@ SOURCES += \
     ../src/world.cpp \
     ../src/world_lighting.cpp \
     ../src/world_loading.cpp \
-    ../src/math_lib/m_math.cpp \
     ../src/math_lib/rand.cpp \
     ../src/renderer/chunk_data_cache.cpp \
     ../src/renderer/chunk_info.cpp \
@@ -97,7 +96,8 @@ SOURCES += \
 	../src/world_generator/rivers.cpp \
     ../src/path_finder.cpp \
     ../src/calendar.cpp \
-    ../src/world_header.cpp
+    ../src/world_header.cpp \
+    ../src/math_lib/math.cpp
 
 
 QT += widgets opengl

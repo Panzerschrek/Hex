@@ -5,7 +5,7 @@
 #include "hex.hpp"
 #include "fwd.hpp"
 #include "vec.hpp"
-#include "math_lib/m_math.h"
+#include "math_lib/math.hpp"
 #include "chunk_phys_mesh.hpp"
 
 class h_Player

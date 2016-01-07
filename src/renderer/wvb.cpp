@@ -1,5 +1,5 @@
 #include "../math_lib/assert.hpp"
-#include "../math_lib/m_math.h"
+#include "../math_lib/math.hpp"
 #include "wvb.hpp"
 
 #define H_BUFFER_OBJECT_NOT_CREATED 0xFFFFFFFF

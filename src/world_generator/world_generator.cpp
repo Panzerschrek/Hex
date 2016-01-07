@@ -7,8 +7,8 @@
 
 #include "../hex.hpp"
 #include "../math_lib/assert.hpp"
-#include "../math_lib/m_math.h"
-#include "../math_lib/rand.h"
+#include "../math_lib/math.hpp"
+#include "../math_lib/rand.hpp"
 
 #include "noise.hpp"
 

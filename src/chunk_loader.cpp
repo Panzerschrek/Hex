@@ -2,7 +2,7 @@
 #include "console.hpp"
 
 #include "math_lib/assert.hpp"
-#include "math_lib/m_math.h"
+#include "math_lib/math.hpp"
 
 static int GetChunkIndexInRegion( int longitude, int latitude )
 {
