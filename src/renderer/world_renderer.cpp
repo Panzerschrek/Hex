@@ -842,7 +842,7 @@ void r_WorldRenderer::DrawStars()
 		state_blend_mode );
 	r_OGLStateManager::UpdateState( state );
 
-	glPointSize( 1.0f );
+	glPointSize( float(pixel_size_) );
 
 	const h_Calendar& calendar= world_->GetCalendar();
 
