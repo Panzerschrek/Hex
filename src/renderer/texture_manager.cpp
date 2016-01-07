@@ -155,14 +155,18 @@ void r_TextureManager::LoadTextures()
 	{
 		const char* config_file_name= "textures/textures.json";
 		QFile f( config_file_name );
-		if( !f.open( QIODevice::ReadOnly ) )
-			h_Console::Error( "fatal error, textures config file \"%s\" not found", config_file_name );
-		QByteArray ba= f.readAll();
-		f.close();
+		if( f.open( QIODevice::ReadOnly ) )
+		{
+			QByteArray ba= f.readAll();
+			f.close();
 
-		QJsonDocument doc= QJsonDocument::fromJson( ba );
-		ValidateTexturesConfig( doc );
-		arr= doc.array();
+			QJsonDocument doc= QJsonDocument::fromJson( ba );
+			ValidateTexturesConfig( doc );
+			arr= doc.array();
+		}
+		else
+			h_Console::Error( "fatal error, textures config file \"", config_file_name, "\" not found" );
+
 	}
 	unsigned texture_layers= std::min( arr.size() + 1, R_MAX_TEXTURES );
 
