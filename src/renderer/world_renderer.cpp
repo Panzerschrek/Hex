@@ -638,7 +638,7 @@ void r_WorldRenderer::DrawConsole()
 	console_bg_texture_.Bind(0);
 
 	glDrawArrays( GL_POINTS, 0, 1 );
-	h_Console::Draw( text_manager_ );
+	h_Console::Draw( text_manager_.get() );
 	text_manager_->Draw();
 }
 
@@ -828,7 +828,7 @@ void r_WorldRenderer::DrawSky()
 	skybox_shader_.Uniform( "sky_color", lighting_data_.sky_color );
 
 	skybox_vbo_.Bind();
-	skybox_vbo_.Show();
+	skybox_vbo_.Draw();
 }
 
 void r_WorldRenderer::DrawStars()
@@ -856,7 +856,7 @@ void r_WorldRenderer::DrawStars()
 	stars_shader_.Uniform( "brightness", lighting_data_.stars_brightness );
 
 	stars_vbo_.Bind();
-	stars_vbo_.Show();
+	stars_vbo_.Draw();
 }
 
 void r_WorldRenderer::DrawSun()
@@ -964,7 +964,7 @@ void r_WorldRenderer::DrawBuildPrism()
 	build_prism_shader_.Uniform( "cam_pos", cam_pos_ );
 
 	build_prism_vbo_.Bind();
-	build_prism_vbo_.Show();
+	build_prism_vbo_.Draw();
 }
 
 void r_WorldRenderer::DrawTestMob()
@@ -993,7 +993,7 @@ void r_WorldRenderer::DrawTestMob()
 	build_prism_shader_.Uniform( "cam_pos", cam_pos_ );
 
 	build_prism_vbo_.Bind();
-	build_prism_vbo_.Show();
+	build_prism_vbo_.Draw();
 }
 
 void r_WorldRenderer::DrawCrosshair()
@@ -1140,12 +1140,12 @@ void r_WorldRenderer::InitGL()
 		glEnable( GL_MULTISAMPLE );
 	//glEnable( GL_SAMPLE_ALPHA_TO_COVERAGE );
 
-
 	LoadShaders();
 	InitFrameBuffers();
 	LoadTextures();
 
-	text_manager_= new r_Text( /*"textures/fixedsys8x18.bmp"*//*"textures/DejaVuSansMono12.bmp"*/"textures/mono_font_sdf.tga" );
+	text_manager_.reset(
+		new r_Text( /*"textures/fixedsys8x18.bmp"*//*"textures/DejaVuSansMono12.bmp"*/"textures/mono_font_sdf.tga" ) );
 	text_manager_->SetViewport( viewport_width_, viewport_height_ );
 
 	InitVertexBuffers();
@@ -1221,11 +1221,12 @@ void r_WorldRenderer::InitFrameBuffers()
 {
 	if( use_supersampling_ )
 	{
-		supersampling_buffer_.Create(
-			std::vector<r_Texture::PixelFormat>{ r_Texture::PixelFormat::RGBA8 },
-			r_Texture::PixelFormat::Depth24Stencil8,
-			viewport_width_  * 2,
-			viewport_height_ * 2 );
+		supersampling_buffer_=
+			r_Framebuffer(
+				std::vector<r_Texture::PixelFormat>{ r_Texture::PixelFormat::RGBA8 },
+				r_Texture::PixelFormat::Depth24Stencil8,
+				viewport_width_  * 2,
+				viewport_height_ * 2 );
 	}
 }
 

@@ -155,7 +155,7 @@ private:
 	std::mutex world_vertex_buffer_mutex_;
 
 	//text out
-	r_Text* text_manager_;
+	std::unique_ptr<r_Text> text_manager_;
 
 	r_WeatherEffectsParticleManager weather_effects_particle_manager_;
 

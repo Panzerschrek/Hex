@@ -167,6 +167,14 @@ r_WVB::r_WVB(
 				std::make_shared<r_WorldVBOCluster>();
 }
 
+r_WVB::~r_WVB()
+{
+	if( index_buffer_ != H_BUFFER_OBJECT_NOT_CREATED )
+	{
+		glDeleteBuffers( 1, &index_buffer_ );
+	}
+}
+
 GLuint r_WVB::GetIndexBuffer()
 {
 	if( index_buffer_ == H_BUFFER_OBJECT_NOT_CREATED )

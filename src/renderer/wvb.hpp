@@ -93,6 +93,8 @@ public:
 		std::vector<unsigned short> indeces,
 		r_VertexFormat vertex_format );
 
+	~r_WVB();
+
 	// Call in GPU thread. Returns index buffer, and, maybe, create it, if it not exist.
 	GLuint GetIndexBuffer();
 

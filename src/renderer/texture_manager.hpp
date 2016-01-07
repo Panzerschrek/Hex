@@ -7,6 +7,7 @@ class r_TextureManager
 {
 public:
 	r_TextureManager();
+	~r_TextureManager();
 
 	static unsigned char GetTextureId( h_BlockType block_type, unsigned char normal_id );
 	static unsigned char GetTextureScale( unsigned char tex_id );

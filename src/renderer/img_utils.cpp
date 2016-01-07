@@ -30,7 +30,7 @@ static void MakeStub( r_Texture* texture )
 			data[ind+1]= 12;
 			data[ind+2]= 245;
 		}
-	texture->Create( r_Texture::PixelFormat::RGBA8, stub_tex_size, stub_tex_size, data );
+	*texture= r_Texture( r_Texture::PixelFormat::RGBA8, stub_tex_size, stub_tex_size, data );
 }
 
 void r_ImgUtils::RGBA8_To_BRGA8( const unsigned char* in, unsigned char* out, int width, int height )
@@ -175,17 +175,17 @@ void r_ImgUtils::LoadTexture( r_Texture* texture, const char* filename )
 		std::vector<unsigned char> tmp_data( img.width() * img.height() );
 		R1_To_R8( img.constBits(), tmp_data.data(), img.width(), img.height() );
 		RGBA8_MirrorVertical( img.bits(), img.width(), img.height() );
-		texture->Create( r_Texture::PixelFormat::R8, img.width(), img.height(), tmp_data.data() );
+		*texture= r_Texture( r_Texture::PixelFormat::R8, img.width(), img.height(), tmp_data.data() );
 	}
 	else if( img.depth() == 8 )
 	{
 		RGBA8_MirrorVertical( img.bits(), img.width(), img.height() );
-		texture->Create( r_Texture::PixelFormat::R8, img.width(), img.height(), img.bits() );
+		*texture= r_Texture( r_Texture::PixelFormat::R8, img.width(), img.height(), img.bits() );
 	}
 	else if( img.depth() == 32 )
 	{
 		RGBA8_MirrorVerticalAndSwapRB( img.bits(), img.width(), img.height() );
-		texture->Create( r_Texture::PixelFormat::RGBA8, img.width(), img.height(), img.bits() );
+		*texture= r_Texture( r_Texture::PixelFormat::RGBA8, img.width(), img.height(), img.bits() );
 	}
 	else
 		MakeStub(texture);

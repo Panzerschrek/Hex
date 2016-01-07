@@ -34,5 +34,5 @@ public:
 private:
 	r_GLSLProgram ui_shader;
 	r_PolygonBuffer ui_vbo;
-	r_Text* text_manager;
+	std::unique_ptr<r_Text> text_manager;
 };

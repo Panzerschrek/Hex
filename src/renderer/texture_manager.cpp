@@ -15,6 +15,8 @@ unsigned char r_TextureManager::texture_table_[ NUM_BLOCK_TYPES * 8 ];
 bool r_TextureManager::texture_mode_table_[ NUM_BLOCK_TYPES * 8 ];
 unsigned char r_TextureManager::texture_scale_table_[ NUM_BLOCK_TYPES * 8 ];
 
+static const GLuint c_texture_not_created= std::numeric_limits<GLuint>::max();
+
 static void ValidateTexturesConfig( const QJsonDocument& doc )
 {
 	h_Console::Info( "Validate textures config." );
@@ -115,10 +117,19 @@ static void DrawNullTexture( QImage& img, const char* text= nullptr )
 }
 
 r_TextureManager::r_TextureManager()
-	: texture_detalization_( 0 )
+	: texture_array_( c_texture_not_created )
+	, texture_detalization_( 0 )
 	, filter_textures_( true )
 {
 	InitTextureTable();
+}
+
+r_TextureManager::~r_TextureManager()
+{
+	if( texture_array_ != c_texture_not_created )
+	{
+		glDeleteTextures( 1, &texture_array_ );
+	}
 }
 
 void r_TextureManager::InitTextureTable()
