@@ -2,7 +2,7 @@
 
 #include <QImage>
 #include "texture.hpp"
-
+#include "../console.hpp"
 
 static void MakeStub( r_Texture* texture )
 {
@@ -166,6 +166,7 @@ void r_ImgUtils::LoadTexture( r_Texture* texture, const char* filename )
 
 	if ( img.isNull() )
 	{
+		h_Console::Warning( "Can not load texture: \"", filename, "\"" );
 		MakeStub(texture);
 		goto after_creating;
 	}
@@ -188,7 +189,10 @@ void r_ImgUtils::LoadTexture( r_Texture* texture, const char* filename )
 		*texture= r_Texture( r_Texture::PixelFormat::RGBA8, img.width(), img.height(), img.bits() );
 	}
 	else
+	{
+		h_Console::Warning( "Can not convert texture: \"", filename, "\"" );
 		MakeStub(texture);
+	}
 
 after_creating:
 	texture->SetFiltration( r_Texture::Filtration::LinearMipmapLinear, r_Texture::Filtration::Linear );
