@@ -2,26 +2,10 @@
 #include <memory>
 #include <vector>
 
-#include "world_loading.hpp"
+#include <QByteArray>
+#include <QString>
 
-//struct for loaded region data. chunks are compressed
-struct h_RegionData
-{
-	const int longitude;
-	const int latitude ;
-
-	unsigned int chunks_used;
-	bool chunks_used_flags[ H_WORLD_REGION_SIZE_X * H_WORLD_REGION_SIZE_Y ];
-
-	//data of each chunk in region ( each chunk stored separatly ). Data is compressed
-	QByteArray chunk_data[ H_WORLD_REGION_SIZE_X * H_WORLD_REGION_SIZE_Y ];
-
-	h_RegionData( int in_longitude, int in_latitude );
-};
-
-typedef std::unique_ptr<h_RegionData> h_RegionDataPtr;
-
-class h_ChunkLoader
+class h_ChunkLoader final
 {
 public:
 	h_ChunkLoader( QString world_directory );
@@ -36,15 +20,18 @@ public:
 	void ForceSaveAllChunks() const;
 
 private:
+	struct RegionData;
+	typedef std::unique_ptr<RegionData> RegionDataPtr;
+
+private:
 	//find loaded region or loads it
-	h_RegionData& GetRegionForCoordinates( int longitude, int latitude );
-	void LoadRegion( h_RegionData& region );
-	void SaveRegion( const h_RegionData& region ) const;
+	RegionData& GetRegionForCoordinates( int longitude, int latitude );
+	void LoadRegion( RegionData& region );
+	void SaveRegion( const RegionData& region ) const;
 
 	void GetRegionFileName( QString& out_name, int reg_longitude, int reg_latitude ) const;
 
 private:
-	std::vector< h_RegionDataPtr > regions_;
+	std::vector< RegionDataPtr > regions_;
 	QString regions_path_;
-
 };

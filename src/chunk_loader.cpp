@@ -1,4 +1,5 @@
 #include "chunk_loader.hpp"
+#include "world_loading.hpp"
 #include "console.hpp"
 
 #include "math_lib/assert.hpp"
@@ -11,14 +12,27 @@ static int GetChunkIndexInRegion( int longitude, int latitude )
 	return rel_lon + rel_lat * H_WORLD_REGION_SIZE_X;
 }
 
-h_RegionData::h_RegionData( int in_longitude, int in_latitude )
-	: longitude(in_longitude)
-	, latitude (in_latitude )
-	, chunks_used(0)
+//struct for loaded region data. chunks are compressed
+struct h_ChunkLoader::RegionData final
 {
-	for( bool& flag : chunks_used_flags )
-		flag= false;
-}
+	const int longitude;
+	const int latitude ;
+
+	unsigned int chunks_used;
+	bool chunks_used_flags[ H_WORLD_REGION_SIZE_X * H_WORLD_REGION_SIZE_Y ];
+
+	//data of each chunk in region ( each chunk stored separatly ). Data is compressed
+	QByteArray chunk_data[ H_WORLD_REGION_SIZE_X * H_WORLD_REGION_SIZE_Y ];
+
+	RegionData( int in_longitude, int in_latitude )
+		: longitude(in_longitude)
+		, latitude (in_latitude )
+		, chunks_used(0)
+	{
+		for( bool& flag : chunks_used_flags )
+			flag= false;
+	}
+};
 
 h_ChunkLoader::h_ChunkLoader( QString world_directory )
 	: regions_path_(world_directory)
@@ -31,7 +45,7 @@ h_ChunkLoader::~h_ChunkLoader()
 
 QByteArray& h_ChunkLoader::GetChunkData( int longitude, int latitude )
 {
-	h_RegionData& reg= GetRegionForCoordinates( longitude, latitude );
+	RegionData& reg= GetRegionForCoordinates( longitude, latitude );
 	int ind= GetChunkIndexInRegion( longitude, latitude );
 
 	if( !reg.chunks_used_flags[ind] )
@@ -44,7 +58,7 @@ QByteArray& h_ChunkLoader::GetChunkData( int longitude, int latitude )
 
 void h_ChunkLoader::FreeChunkData( int longitude, int latitude )
 {
-	h_RegionData& reg= GetRegionForCoordinates( longitude, latitude );
+	RegionData& reg= GetRegionForCoordinates( longitude, latitude );
 	int ind= GetChunkIndexInRegion( longitude, latitude );
 
 	if( reg.chunks_used_flags[ind] )
@@ -56,7 +70,7 @@ void h_ChunkLoader::FreeChunkData( int longitude, int latitude )
 	if( reg.chunks_used == 0 )
 	{
 		//free region here
-		for( h_RegionDataPtr& region : regions_ )
+		for( RegionDataPtr& region : regions_ )
 		{
 			if( region.get() == &reg )
 			{
@@ -70,12 +84,12 @@ void h_ChunkLoader::FreeChunkData( int longitude, int latitude )
 	}
 }
 
-h_RegionData& h_ChunkLoader::GetRegionForCoordinates( int longitude, int latitude )
+h_ChunkLoader::RegionData& h_ChunkLoader::GetRegionForCoordinates( int longitude, int latitude )
 {
 	int region_longitude= m_Math::DivNonNegativeRemainder( longitude, H_WORLD_REGION_SIZE_X ) * H_WORLD_REGION_SIZE_X;
 	int region_latitude = m_Math::DivNonNegativeRemainder( latitude , H_WORLD_REGION_SIZE_Y ) * H_WORLD_REGION_SIZE_Y;
 
-	for( h_RegionDataPtr& region : regions_ )
+	for( RegionDataPtr& region : regions_ )
 	{
 		if(
 			region->longitude == region_longitude &&
@@ -84,7 +98,7 @@ h_RegionData& h_ChunkLoader::GetRegionForCoordinates( int longitude, int latitud
 	}
 
 	//here load new region from disk
-	h_RegionDataPtr new_region( new h_RegionData( region_longitude, region_latitude ) );
+	RegionDataPtr new_region( new RegionData( region_longitude, region_latitude ) );
 	LoadRegion( *new_region );
 	regions_.push_back( std::move(new_region) );
 
@@ -99,7 +113,7 @@ void h_ChunkLoader::GetRegionFileName( QString& out_name, int reg_longitude, int
 	//for example: "world/lon_42_lat_-34_.region"
 }
 
-void h_ChunkLoader::LoadRegion( h_RegionData& region )
+void h_ChunkLoader::LoadRegion( RegionData& region )
 {
 	//todo: add reading of file with unicode name
 	QString file_name;
@@ -131,7 +145,7 @@ void h_ChunkLoader::LoadRegion( h_RegionData& region )
 	fclose(f);
 }
 
-void h_ChunkLoader::SaveRegion( const h_RegionData& region ) const
+void h_ChunkLoader::SaveRegion( const RegionData& region ) const
 {
 	//todo: add reading of file with unicode name
 	QString file_name;
@@ -168,6 +182,6 @@ void h_ChunkLoader::SaveRegion( const h_RegionData& region ) const
 
 void h_ChunkLoader::ForceSaveAllChunks() const
 {
-	for( const h_RegionDataPtr& region : regions_ )
+	for( const RegionDataPtr& region : regions_ )
 		SaveRegion( *region );
 }
