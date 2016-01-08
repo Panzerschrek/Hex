@@ -164,6 +164,19 @@
 			"blockside": "universal"
 		}
 	]
+},
+
+{
+	"filename": "sand.jpg",
+	"scale": 2,
+	"blocks":
+	[
+		{
+			"blockname": "sand",
+			"blockside": "universal"
+		}
+	]
+
 }
 
 ]
