@@ -120,8 +120,8 @@ void ui_IngameMenu::CursorPress(int x, int y, ui_MouseButton button, bool presse
 			player_->Build();
 		else if( button == ui_MouseButton::Left )
 			player_->Dig();
-		else if( button == ui_MouseButton::Middle )
-			player_->TestMobSetPosition();
+		//else if( button == ui_MouseButton::Middle )
+		//	player_->TestMobSetPosition();
 	}
 }
 

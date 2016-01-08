@@ -535,7 +535,7 @@ void r_WorldRenderer::Draw()
 	//weather_effects_particle_manager_.Draw( view_matrix_, cam_pos_ );
 	DrawWater();
 	DrawBuildPrism();
-	DrawTestMob();
+	//DrawTestMob();
 
 	if( use_supersampling_ )
 	{
