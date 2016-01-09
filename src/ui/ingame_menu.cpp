@@ -41,19 +41,19 @@ public:
 		ui_Text* title= new ui_Text("Select block:", column, row, 12, 1, title_style );
 		ui_MenuBase::elements_.push_back(title);
 
-		for( unsigned short i= AIR+1; i < NUM_BLOCK_TYPES; i++ )
+		for( unsigned int i= ((unsigned int)h_BlockType::Air) + 1; i < (unsigned int)h_BlockType::NumBlockTypes; i++ )
 		{
 			ui_Button* button=
 				new ui_Button(
-				h_Block::GetBlockName(h_BlockType(i)),
-				column, row + 1 + (i-(AIR+1)),
-				8, 1,
-				c_ui_main_style );
+					h_Block::GetBlockName(static_cast<h_BlockType>(i)),
+					column, row + 1 + ( i - (((unsigned int)h_BlockType::Air) + 1 ) ),
+					8, 1,
+					c_ui_main_style );
 
 			button->SetCallback(
 				[this, i]
 				{
-					block_select_callback_(h_BlockType(i));
+					block_select_callback_(static_cast<h_BlockType>(i));
 				});
 
 			ui_MenuBase::elements_.push_back(button);
@@ -89,7 +89,7 @@ ui_IngameMenu::ui_IngameMenu(
 	ui_Style title_style= c_ui_texts_style;
 	title_style.text_alignment= ui_Style::TextAlignment::Left;
 	block_type_text_= new ui_Text("", 1, row, 20, 1, title_style );
-	OnBlockSelected( BLOCK_UNKNOWN );
+	OnBlockSelected( h_BlockType::Unknown );
 
 	ui_MenuBase::elements_.push_back(block_type_text_);
 }
@@ -224,7 +224,7 @@ void ui_IngameMenu::OnBlockSelected( h_BlockType block_type )
 {
 	player_->SetBuildBlock( block_type );
 
-	if( block_type == BLOCK_UNKNOWN )
+	if( block_type == h_BlockType::Unknown )
 		block_type_text_->SetText("");
 	else
 	{

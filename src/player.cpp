@@ -37,8 +37,8 @@ h_Player::h_Player(
 	, in_air_(true)
 	, view_angle_( world_header->player.rotation_x, 0.0f, world_header->player.rotation_z )
 	, prev_move_time_(0)
-	, build_direction_( DIRECTION_UNKNOWN )
-	, build_block_( BLOCK_UNKNOWN )
+	, build_direction_( h_Direction::Unknown )
+	, build_block_( h_BlockType::Unknown )
 	, player_data_mutex_()
 	, phys_mesh_()
 {
@@ -162,7 +162,7 @@ void h_Player::Tick()
 
 void h_Player::Build()
 {
-	if( build_block_ != BLOCK_UNKNOWN && build_direction_ != DIRECTION_UNKNOWN )
+	if( build_block_ != h_BlockType::Unknown && build_direction_ != h_Direction::Unknown )
 	{
 		world_->AddBuildEvent(
 			discret_build_pos_[0] - world_->Longitude() * H_CHUNK_WIDTH,
@@ -173,7 +173,7 @@ void h_Player::Build()
 
 void h_Player::Dig()
 {
-	if( build_direction_ != DIRECTION_UNKNOWN )
+	if( build_direction_ != h_Direction::Unknown )
 	{
 		short dig_pos[3]=
 		{
@@ -184,34 +184,34 @@ void h_Player::Dig()
 
 		switch( build_direction_ )
 		{
-		case UP:
+		case h_Direction::Up:
 			dig_pos[2]--;
 			break;
-		case DOWN:
+		case h_Direction::Down:
 			dig_pos[2]++;
 			break;
 
-		case FORWARD:
+		case h_Direction::Forward:
 			dig_pos[1]--;
 			break;
-		case BACK:
+		case h_Direction::Back:
 			dig_pos[1]++;
 			break;
 
-		case FORWARD_RIGHT:
+		case h_Direction::ForwardRight:
 			dig_pos[1]-= (dig_pos[0]&1);
 			dig_pos[0]--;
 			break;
-		case BACK_RIGHT:
+		case h_Direction::BackRight:
 			dig_pos[1]+= ((dig_pos[0]+1)&1);
 			dig_pos[0]--;
 			break;
 
-		case FORWARD_LEFT:
+		case h_Direction::ForwardLeft:
 			dig_pos[1]-= (dig_pos[0]&1);
 			dig_pos[0]++;
 			break;
-		case BACK_LEFT:
+		case h_Direction::BackLeft:
 			dig_pos[1]+= ((dig_pos[0]+1)&1);
 			dig_pos[0]++;
 			break;
@@ -228,7 +228,7 @@ void h_Player::Dig()
 
 void h_Player::TestMobSetPosition()
 {
-	if( build_direction_ != DIRECTION_UNKNOWN )
+	if( build_direction_ != h_Direction::Unknown )
 	{
 		world_->TestMobSetTargetPosition( discret_build_pos_[0], discret_build_pos_[1], discret_build_pos_[2] );
 	}
@@ -244,7 +244,7 @@ void h_Player::UpdateBuildPos()
 	m_Vec3 eye_pos= pos_;
 	eye_pos.z+= H_PLAYER_EYE_LEVEL;
 	float dst= std::numeric_limits<float>::max();
-	h_Direction block_dir= DIRECTION_UNKNOWN;
+	h_Direction block_dir= h_Direction::Unknown;
 
 	m_Vec3 intersect_pos;
 	m_Vec3 candidate_pos;
@@ -253,7 +253,7 @@ void h_Player::UpdateBuildPos()
 
 	for( const p_UpperBlockFace& face : phys_mesh_.upper_block_faces )
 	{
-		n= g_block_normals[ face.dir ];
+		n= g_block_normals[ static_cast<size_t>(face.dir) ];
 
 		triangle[0]= m_Vec3( face.edge[0].x, face.edge[0].y, face.z );
 		triangle[1]= m_Vec3( face.edge[1].x, face.edge[1].y, face.z );
@@ -314,7 +314,7 @@ void h_Player::UpdateBuildPos()
 
 	for( const p_BlockSide& side : phys_mesh_.block_sides )
 	{
-		n= g_block_normals[ side.dir ];
+		n= g_block_normals[ static_cast<size_t>(side.dir) ];
 
 		triangle[0]= m_Vec3( side.edge[0].x, side.edge[0].y, side.z );
 		triangle[1]= m_Vec3( side.edge[1].x, side.edge[1].y, side.z );
@@ -345,15 +345,15 @@ void h_Player::UpdateBuildPos()
 		}
 	}
 
-	if( block_dir == DIRECTION_UNKNOWN ||
+	if( block_dir == h_Direction::Unknown ||
 		(intersect_pos - eye_pos).SquareLength() > g_max_build_distance * g_max_build_distance )
 	{
-		build_direction_= DIRECTION_UNKNOWN;
+		build_direction_= h_Direction::Unknown;
 		return;
 	}
 
 	// Fix accuracy.
-	intersect_pos+= g_block_normals[ block_dir ] * 0.1f;
+	intersect_pos+= g_block_normals[ static_cast<size_t>(block_dir) ] * 0.1f;
 
 	short new_x, new_y, new_z;
 	GetHexogonCoord( intersect_pos.xy(), &new_x, &new_y );
@@ -379,7 +379,7 @@ void h_Player::MoveInternal( const m_Vec3& delta )
 	{
 		if( delta.z > c_eps )
 		{
-			if( face.dir == DOWN &&
+			if( face.dir == h_Direction::Down &&
 				face.z >= (pos_.z + H_PLAYER_HEIGHT) &&
 				face.z < (new_pos.z + H_PLAYER_HEIGHT) &&
 				face.HasCollisionWithCircle( new_pos.xy(), H_PLAYER_RADIUS ) )
@@ -390,7 +390,7 @@ void h_Player::MoveInternal( const m_Vec3& delta )
 		}
 		else if( delta.z < -c_eps )
 		{
-			if( face.dir == UP &&
+			if( face.dir == h_Direction::Up &&
 				face.z <= pos_.z &&
 				face.z > new_pos.z &&
 				face.HasCollisionWithCircle( new_pos.xy(), H_PLAYER_RADIUS ) )
@@ -413,7 +413,8 @@ void h_Player::MoveInternal( const m_Vec3& delta )
 				new_pos.y= collide_pos.y;
 
 				// Zero speed component, perpendicalar to this side.
-				speed_-= ( speed_ * g_block_normals[side.dir] ) * g_block_normals[side.dir];
+				const m_Vec3& normal= g_block_normals[ static_cast<size_t>(side.dir) ];
+				speed_-= ( speed_ * normal ) * normal;
 			}
 		}
 	}
@@ -422,7 +423,7 @@ void h_Player::MoveInternal( const m_Vec3& delta )
 	in_air_= true;
 	for( const p_UpperBlockFace& face : phys_mesh_.upper_block_faces )
 	{
-		if( face.dir == UP &&
+		if( face.dir == h_Direction::Up &&
 			new_pos.z <= face.z + c_on_ground_eps &&
 			new_pos.z > face.z &&
 			face.HasCollisionWithCircle( new_pos.xy(), H_PLAYER_RADIUS ) )
@@ -431,7 +432,7 @@ void h_Player::MoveInternal( const m_Vec3& delta )
 			vertical_speed_= 0.0f;
 			break;
 		}
-		if (face.dir == DOWN &&
+		if( face.dir == h_Direction::Down &&
 			new_pos.z + H_PLAYER_HEIGHT >= face.z - c_on_ground_eps &&
 			new_pos.z + H_PLAYER_HEIGHT < face.z &&
 			face.HasCollisionWithCircle( new_pos.xy(), H_PLAYER_RADIUS ) )

@@ -917,7 +917,7 @@ void r_WorldRenderer::DrawBuildPrism()
 		r_OGLState::default_cull_face_mode,
 		false );
 
-	if( player_->BuildDirection() == DIRECTION_UNKNOWN )
+	if( player_->BuildDirection() == h_Direction::Unknown )
 		return;
 
 	r_OGLStateManager::UpdateState( state );
@@ -932,31 +932,31 @@ void r_WorldRenderer::DrawBuildPrism()
 	for( int i= 0; i < 12; i++ ) alpha[i]= 0.15f;
 	switch( player_->BuildDirection() )
 	{
-		case DOWN:
+		case h_Direction::Down:
 			alpha[6]= alpha[7]= alpha[8]= alpha[9]= alpha[10]= alpha[11]= 1.0f;
 			break;
-		case UP:
+		case h_Direction::Up:
 			alpha[0]= alpha[1]= alpha[2]= alpha[3]= alpha[ 4]= alpha[ 5]= 1.0f;
 			break;
-		case BACK:
+		case h_Direction::Back:
 			alpha[4]= alpha[3]= alpha[ 9]= alpha[10]= 1.0f;
 			break;
-		case FORWARD:
+		case h_Direction::Forward:
 			alpha[0]= alpha[1]= alpha[ 6]= alpha[ 7]= 1.0f;
 			break;
-		case BACK_LEFT:
+		case h_Direction::BackLeft:
 			alpha[2]= alpha[3]= alpha[ 8]= alpha[ 9]= 1.0f;
 			break;
-		case FORWARD_LEFT:
+		case h_Direction::ForwardLeft:
 			alpha[1]= alpha[2]= alpha[ 7]= alpha[ 8]= 1.0f;
 			break;
-		case BACK_RIGHT:
+		case h_Direction::BackRight:
 			alpha[4]= alpha[5]= alpha[10]= alpha[11]= 1.0f;
 			break;
-		case FORWARD_RIGHT:
+		case h_Direction::ForwardRight:
 			alpha[0]= alpha[5]= alpha[ 6]= alpha[11]= 1.0f;
 			break;
-		case DIRECTION_UNKNOWN:
+		case h_Direction::Unknown:
 			break;
 	};
 

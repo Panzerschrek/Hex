@@ -40,20 +40,20 @@ void h_Chunk::GenChunk( const g_WorldGenerator* generator )
 			soil_h= 4;
 
 			// TODO - optimize
-			SetBlockAndTransparency( x, y, 0, world_->NormalBlock( SPHERICAL_BLOCK), TRANSPARENCY_SOLID );
-			SetBlockAndTransparency( x, y, H_CHUNK_HEIGHT-1, world_->NormalBlock( SPHERICAL_BLOCK), TRANSPARENCY_SOLID );
+			SetBlockAndTransparency( x, y, 0, world_->NormalBlock( h_BlockType::SphericalBlock), TRANSPARENCY_SOLID );
+			SetBlockAndTransparency( x, y, H_CHUNK_HEIGHT-1, world_->NormalBlock( h_BlockType::SphericalBlock ), TRANSPARENCY_SOLID );
 			for( z= 1; z< h - soil_h; z++ )
-				SetBlockAndTransparency( x, y, z, world_->NormalBlock( STONE ), TRANSPARENCY_SOLID );
+				SetBlockAndTransparency( x, y, z, world_->NormalBlock( h_BlockType::Stone ), TRANSPARENCY_SOLID );
 
 			for( ; z< h; z++ )
-				SetBlockAndTransparency( x, y, z, world_->NormalBlock( SOIL ), TRANSPARENCY_SOLID );
+				SetBlockAndTransparency( x, y, z, world_->NormalBlock( h_BlockType::Soil ), TRANSPARENCY_SOLID );
 
 			//if( !( longitude == -1 && latitude == -1 ) )
 			for( ; z<= sea_level; z++ )
-				SetBlockAndTransparency( x, y, z, world_->NormalBlock( WATER ), TRANSPARENCY_LIQUID );
+				SetBlockAndTransparency( x, y, z, world_->NormalBlock( h_BlockType::Water ), TRANSPARENCY_LIQUID );
 
 			for( ; z< H_CHUNK_HEIGHT-1; z++ )
-				SetBlockAndTransparency( x, y, z, world_->NormalBlock( AIR ), TRANSPARENCY_AIR );
+				SetBlockAndTransparency( x, y, z, world_->NormalBlock( h_BlockType::Air ), TRANSPARENCY_AIR );
 		}//for y
 	}//for x
 }
@@ -76,21 +76,21 @@ void h_Chunk::GenChunkFromFile( QDataStream& stream )
 
 		switch(block_id)
 		{
-		case AIR:
-		case SPHERICAL_BLOCK:
-		case STONE:
-		case SOIL:
-		case WOOD:
-		case GRASS:
-		case SAND:
-		case FOLIAGE:
-		case BRICK:
+		case h_BlockType::Air:
+		case h_BlockType::SphericalBlock:
+		case h_BlockType::Stone:
+		case h_BlockType::Soil:
+		case h_BlockType::Wood:
+		case h_BlockType::Grass:
+		case h_BlockType::Sand:
+		case h_BlockType::Foliage:
+		case h_BlockType::Brick:
 			blocks_[i]= b= world_->NormalBlock(block_id);
 			transparency_[i]= b->Transparency();
 			break;
 
-		case FIRE_STONE:
-			blocks_[i]= light_source= new h_LightSource( FIRE_STONE, H_MAX_FIRE_LIGHT );
+		case h_BlockType::FireStone:
+			blocks_[i]= light_source= new h_LightSource( h_BlockType::FireStone, H_MAX_FIRE_LIGHT );
 			light_source_list_.Add( light_source );
 			transparency_[i]= blocks_[i]->Transparency();
 
@@ -99,7 +99,7 @@ void h_Chunk::GenChunkFromFile( QDataStream& stream )
 			light_source->z_= i & (H_CHUNK_HEIGHT-1);
 			break;
 
-		case WATER:
+		case h_BlockType::Water:
 			liquid_block= water_blocks_allocator_.New();
 			blocks_[i]= liquid_block;
 			transparency_[i]= TRANSPARENCY_LIQUID;
@@ -120,7 +120,6 @@ void h_Chunk::GenChunkFromFile( QDataStream& stream )
 	}//for blocks in
 }
 
-
 void h_Chunk::SaveChunkToFile( QDataStream& stream )
 {
 	for( int i= 0; i< H_CHUNK_WIDTH * H_CHUNK_WIDTH * H_CHUNK_HEIGHT; i++ )
@@ -131,23 +130,24 @@ void h_Chunk::SaveChunkToFile( QDataStream& stream )
 
 		switch(b->Type())
 		{
-		case AIR:
-		case SPHERICAL_BLOCK:
-		case STONE:
-		case SOIL:
-		case WOOD:
-		case GRASS:
-		case SAND:
-		case FOLIAGE:
-		case FIRE_STONE:
-		case BRICK:
+		case h_BlockType::Air:
+		case h_BlockType::SphericalBlock:
+		case h_BlockType::Stone:
+		case h_BlockType::Soil:
+		case h_BlockType::Wood:
+		case h_BlockType::Grass:
+		case h_BlockType::Sand:
+		case h_BlockType::Foliage:
+		case h_BlockType::FireStone:
+		case h_BlockType::Brick:
 			break;
 
-		case WATER:
+		case h_BlockType::Water:
 			stream << ((h_LiquidBlock*)b)->LiquidLevel();
 			break;
 
-		default:
+		case h_BlockType::NumBlockTypes:
+		case h_BlockType::Unknown:
 			break;
 		};
 	}
@@ -184,30 +184,30 @@ void h_Chunk::PlantTree( short x, short y, short z )
 		if( InChunkBorders( x, y ) )
 		{
 			SetTransparency( x, y, h, TRANSPARENCY_SOLID );
-			SetBlock( x, y, h, world_->NormalBlock( WOOD ) );
+			SetBlock( x, y, h, world_->NormalBlock( h_BlockType::Wood ) );
 		}
 
 		if( h - z > 1 )
 		{
 			if( InChunkBorders( x, y + 1 ) )
-				SetBlockAndTransparency( x, y + 1, h, world_->NormalBlock( FOLIAGE ), TRANSPARENCY_GREENERY );
+				SetBlockAndTransparency( x, y + 1, h, world_->NormalBlock( h_BlockType::Foliage ), TRANSPARENCY_GREENERY );
 
 			if( InChunkBorders( x, y - 1 ) )
-				SetBlockAndTransparency( x, y - 1, h, world_->NormalBlock( FOLIAGE ), TRANSPARENCY_GREENERY );
+				SetBlockAndTransparency( x, y - 1, h, world_->NormalBlock( h_BlockType::Foliage ), TRANSPARENCY_GREENERY );
 
 			if( InChunkBorders( x + 1, y + ((x+1)&1) ) )
-				SetBlockAndTransparency( x + 1, y + ((x+1)&1), h, world_->NormalBlock( FOLIAGE ), TRANSPARENCY_GREENERY );
+				SetBlockAndTransparency( x + 1, y + ((x+1)&1), h, world_->NormalBlock( h_BlockType::Foliage ), TRANSPARENCY_GREENERY );
 			if( InChunkBorders( x + 1, y - (x&1) ) )
-				SetBlockAndTransparency( x + 1, y - (x&1), h, world_->NormalBlock( FOLIAGE ), TRANSPARENCY_GREENERY );
+				SetBlockAndTransparency( x + 1, y - (x&1), h, world_->NormalBlock( h_BlockType::Foliage ), TRANSPARENCY_GREENERY );
 
 			if( InChunkBorders( x - 1, y + ((x+1)&1) ) )
-				SetBlockAndTransparency( x - 1, y + ((x+1)&1), h, world_->NormalBlock( FOLIAGE ), TRANSPARENCY_GREENERY );
+				SetBlockAndTransparency( x - 1, y + ((x+1)&1), h, world_->NormalBlock( h_BlockType::Foliage ), TRANSPARENCY_GREENERY );
 			if( InChunkBorders( x - 1, y - (x&1) ) )
-				SetBlockAndTransparency( x - 1, y - (x&1), h, world_->NormalBlock( FOLIAGE ), TRANSPARENCY_GREENERY );
+				SetBlockAndTransparency( x - 1, y - (x&1), h, world_->NormalBlock( h_BlockType::Foliage ), TRANSPARENCY_GREENERY );
 		}
 	}
 	if( InChunkBorders( x, y ) )
-		SetBlockAndTransparency( x, y, h, world_->NormalBlock( FOLIAGE ), TRANSPARENCY_GREENERY );
+		SetBlockAndTransparency( x, y, h, world_->NormalBlock( h_BlockType::Foliage ), TRANSPARENCY_GREENERY );
 }
 
 void h_Chunk::PlantBigTree( short x, short y, short z )
@@ -215,15 +215,15 @@ void h_Chunk::PlantBigTree( short x, short y, short z )
 	for( short zz= z; zz< z+7; zz++ )
 	{
 		if( InChunkBorders( x, y ) )
-			SetBlockAndTransparency( x, y, zz, world_->NormalBlock( WOOD ),  TRANSPARENCY_SOLID );
+			SetBlockAndTransparency( x, y, zz, world_->NormalBlock( h_BlockType::Wood ),  TRANSPARENCY_SOLID );
 		if( InChunkBorders( x+1, y+((x+1)&1) ) )
-			SetBlockAndTransparency( x+1, y+((x+1)&1), zz, world_->NormalBlock( WOOD ),  TRANSPARENCY_SOLID );
+			SetBlockAndTransparency( x+1, y+((x+1)&1), zz, world_->NormalBlock( h_BlockType::Wood ),  TRANSPARENCY_SOLID );
 		if( InChunkBorders( x+1, y-(x&1) ) )
-			SetBlockAndTransparency( x+1, y-(x&1), zz, world_->NormalBlock( WOOD ),  TRANSPARENCY_SOLID );
+			SetBlockAndTransparency( x+1, y-(x&1), zz, world_->NormalBlock( h_BlockType::Wood ),  TRANSPARENCY_SOLID );
 	}
 	for( short zz= z+7; zz< z+9; zz++ )
 	{
-		h_Block* b= world_->NormalBlock( FOLIAGE );
+		h_Block* b= world_->NormalBlock( h_BlockType::Foliage );
 		if( InChunkBorders( x, y ) )
 			SetBlockAndTransparency( x, y, zz, b,  TRANSPARENCY_GREENERY );
 		if( InChunkBorders( x+1, y+((x+1)&1) ) )
@@ -235,7 +235,7 @@ void h_Chunk::PlantBigTree( short x, short y, short z )
 
 	for( short zz= z+2; zz< z+8; zz++ )
 	{
-		h_Block* b= world_->NormalBlock( FOLIAGE );
+		h_Block* b= world_->NormalBlock( h_BlockType::Foliage );
 		if( InChunkBorders( x, y+1 ) )
 			SetBlockAndTransparency( x, y+1, zz, b,  TRANSPARENCY_GREENERY );
 		if( InChunkBorders( x, y-1 ) )
@@ -257,7 +257,7 @@ void h_Chunk::PlantBigTree( short x, short y, short z )
 	}
 	for( short zz= z+3; zz< z+7; zz++ )
 	{
-		h_Block* b= world_->NormalBlock( FOLIAGE );
+		h_Block* b= world_->NormalBlock( h_BlockType::Foliage );
 		if( InChunkBorders( x, y+2 ) )
 			SetBlockAndTransparency( x, y+2, zz, b,  TRANSPARENCY_GREENERY );
 		if( InChunkBorders( x, y-2 ) )
@@ -276,7 +276,7 @@ void h_Chunk::PlantBigTree( short x, short y, short z )
 
 	for( short zz= z+4; zz< z+6; zz++ )
 	{
-		h_Block* b= world_->NormalBlock( FOLIAGE );
+		h_Block* b= world_->NormalBlock( h_BlockType::Foliage );
 		if( InChunkBorders( x-2, y ) )
 			SetBlockAndTransparency( x-2, y, zz, b,  TRANSPARENCY_GREENERY );
 		if( InChunkBorders( x-2, y-1 ) )
@@ -311,11 +311,11 @@ void h_Chunk::PlantGrass()
 		for( y= 0; y< H_CHUNK_WIDTH; y++ )
 		{
 			for( z= H_CHUNK_HEIGHT - 2; z> 0; z-- )
-				if ( GetBlock( x, y, z )->Type() != AIR )
+				if ( GetBlock( x, y, z )->Type() != h_BlockType::Air )
 					break;
 
-			if( GetBlock( x, y, z )->Type() == SOIL )
-				SetBlockAndTransparency( x, y, z, world_->NormalBlock( GRASS ), TRANSPARENCY_SOLID );
+			if( GetBlock( x, y, z )->Type() == h_BlockType::Soil )
+				SetBlockAndTransparency( x, y, z, world_->NormalBlock( h_BlockType::Grass ), TRANSPARENCY_SOLID );
 		}
 	}
 }
@@ -324,7 +324,7 @@ unsigned int h_Chunk::CalculateWaterBlockCount()
 {
 	unsigned int c= 0;
 	for( unsigned int i= 0; i< H_CHUNK_WIDTH * H_CHUNK_WIDTH * H_CHUNK_HEIGHT; i++ )
-		if( blocks_[i]->Type() == WATER )
+		if( blocks_[i]->Type() == h_BlockType::Water )
 			c++;
 	return c;
 }
@@ -336,7 +336,7 @@ void h_Chunk::GenWaterBlocks()
 	for( y= 0; y< H_CHUNK_WIDTH; y++ )
 	for( z= 0; z< H_CHUNK_HEIGHT; z++, addr++ )
 	{
-		if( blocks_[ addr ]->Type() == WATER )
+		if( blocks_[ addr ]->Type() == h_BlockType::Water )
 		{
 			h_LiquidBlock* block= water_blocks_allocator_.New();
 			block->x_= x;
@@ -397,7 +397,7 @@ void h_Chunk::MakeLight()
 
 			for( z= H_CHUNK_HEIGHT-2; z> 0; z--, addr-- )
 			{
-				if( blocks_[ addr ]->Type() != AIR )
+				if( blocks_[ addr ]->Type() != h_BlockType::Air )
 					break;
 				sun_light_map_[ addr ]= H_MAX_SUN_LIGHT;
 				fire_light_map_[ addr ]= 0;
@@ -420,7 +420,7 @@ void h_Chunk::SunRelight()
 
 			for( z= H_CHUNK_HEIGHT-2; z> 0; z--, addr-- )
 			{
-				if( blocks_[ addr ]->Type() != AIR )
+				if( blocks_[ addr ]->Type() != h_BlockType::Air )
 					break;
 				sun_light_map_[ addr ]= H_MAX_SUN_LIGHT;
 			}
@@ -460,7 +460,7 @@ unsigned int h_Chunk::GetWaterColumnHeight( short x, short y, short z )
 {
 	unsigned int h= (z-1) * H_MAX_WATER_LEVEL;
 	unsigned int addr= BlockAddr( x, y, z );
-	while(  blocks_[addr]->Type() == WATER )
+	while(  blocks_[addr]->Type() == h_BlockType::Water )
 	{
 		unsigned int level= ((h_LiquidBlock*)blocks_[addr])->LiquidLevel();
 		if( level > H_MAX_WATER_LEVEL )

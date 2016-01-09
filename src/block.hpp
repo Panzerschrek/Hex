@@ -9,7 +9,7 @@ public:
 	static const char* GetBlockName( h_BlockType type );
 	static h_Direction GetDirectionByName( const char* name );
 
-	h_Block( h_BlockType type= AIR, unsigned short additional_data= 0 );
+	h_Block( h_BlockType type= h_BlockType::Air, unsigned short additional_data= 0 );
 	~h_Block() {}
 
 	h_BlockType Type() const;
@@ -58,7 +58,7 @@ inline h_LiquidBlock::h_LiquidBlock( h_BlockType type, unsigned short liquid_lev
 }
 
 inline h_LiquidBlock::h_LiquidBlock()
-	: h_Block( WATER, H_MAX_WATER_LEVEL )
+	: h_Block( h_BlockType::Water, H_MAX_WATER_LEVEL )
 {
 }
 

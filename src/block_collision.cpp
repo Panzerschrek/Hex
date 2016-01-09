@@ -75,10 +75,10 @@ static bool TriangleIntersectWithCircle( const m_Vec2* triangle, const m_Vec2& c
 }
 
 p_UpperBlockFace::p_UpperBlockFace( short x, short y, short in_z, h_Direction in_dir )
-	: z( float( in_dir == UP ? in_z : in_z - 1 ) )
+	: z( float( in_dir == h_Direction::Up ? in_z : in_z - 1 ) )
 	, dir(in_dir)
 {
-	H_ASSERT( in_dir == UP || in_dir == DOWN );
+	H_ASSERT( in_dir == h_Direction::Up || in_dir == h_Direction::Down );
 
 	edge[0].x= float(x) * H_SPACE_SCALE_VECTOR_X;
 	edge[1].x= edge[5].x= edge[0].x + 0.5f * H_HEXAGON_EDGE_SIZE;
@@ -127,40 +127,40 @@ p_BlockSide::p_BlockSide( short x, short y, short in_z, h_Direction in_dir )
 {
 	switch( dir )
 	{
-	case FORWARD:
+	case h_Direction::Forward:
 		edge[0].x= float(x) * H_SPACE_SCALE_VECTOR_X + 1.5f * H_HEXAGON_EDGE_SIZE;
 		edge[1].x= edge[0].x - H_HEXAGON_EDGE_SIZE;
 		edge[0].y= edge[1].y= float(y) + 0.5f * float( (x+1)&1 ) + 1.0f;
 		break;
 
-	case BACK:
+	case h_Direction::Back:
 		edge[0].x= float(x) * H_SPACE_SCALE_VECTOR_X + 0.5f * H_HEXAGON_EDGE_SIZE;
 		edge[1].x= edge[0].x + H_HEXAGON_EDGE_SIZE;
 		edge[0].y= edge[1].y= float(y) + 0.5f * float( (x+1)&1 );
 		break;
 
-	case FORWARD_RIGHT:
+	case h_Direction::ForwardRight:
 		edge[0].x= float(x) * H_SPACE_SCALE_VECTOR_X + H_HEXAGON_EDGE_SIZE * 2.0f;
 		edge[1].x= edge[0].x - 0.5f * H_HEXAGON_EDGE_SIZE;
 		edge[0].y= float(y) + 0.5f * float( (x+1)&1 ) + 0.5f;
 		edge[1].y= edge[0].y + 0.5f;
 		break;
 
-	case BACK_LEFT:
+	case h_Direction::BackLeft:
 		edge[0].x= float(x) * H_SPACE_SCALE_VECTOR_X;
 		edge[1].x= edge[0].x + 0.5f * H_HEXAGON_EDGE_SIZE;
 		edge[0].y= float(y) + 0.5f * float( (x+1)&1 ) + 0.5f;
 		edge[1].y= edge[0].y - 0.5f;
 		break;
 
-	case FORWARD_LEFT:
+	case h_Direction::ForwardLeft:
 		edge[0].x= float(x) * H_SPACE_SCALE_VECTOR_X + H_HEXAGON_EDGE_SIZE * 0.5f;
 		edge[1].x= edge[0].x - 0.5f * H_HEXAGON_EDGE_SIZE;
 		edge[0].y= float(y) + 0.5f * float( (x+1)&1 ) + 1.0f;
 		edge[1].y= edge[0].y - 0.5f;
 		break;
 
-	case BACK_RIGHT:
+	case h_Direction::BackRight:
 		edge[0].x= float(x) * H_SPACE_SCALE_VECTOR_X  + 1.5f * H_HEXAGON_EDGE_SIZE;
 		edge[1].x= edge[0].x + 0.5f * H_HEXAGON_EDGE_SIZE;
 		edge[0].y= float(y) + 0.5f * float( (x+1)&1 );

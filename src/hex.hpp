@@ -54,21 +54,22 @@
 #define H_MAX_FIRE_LIGHT 13
 
 // Put new block types at the end of list.
-enum h_BlockType : unsigned short
+enum class h_BlockType : unsigned short
 {
-	AIR= 0,//MUST BE ZERO
-	SPHERICAL_BLOCK,
-	STONE,
-	SOIL,
-	WOOD,
-	GRASS,
-	WATER,
-	SAND,
-	FOLIAGE,
-	FIRE_STONE,
-	BRICK,
-	NUM_BLOCK_TYPES,
-	BLOCK_UNKNOWN= 65535
+	Air= 0,//MUST BE 0
+	SphericalBlock= 1, // MUST BE 1
+	Stone,
+	Soil,
+	Wood,
+	Grass,
+	Water,
+	Sand,
+	Foliage,
+	FireStone,
+	Brick,
+
+	NumBlockTypes,
+	Unknown= 65535
 };
 
 /* COORDINATE SYSTEM:
@@ -104,22 +105,21 @@ bl \______/ br
 
 */
 
-enum h_Direction:
-unsigned char
+enum class h_Direction : unsigned char
 {
-	FORWARD= 0, //y+1
-	BACK,       //y-1
+	Forward= 0, //y+1
+	Back,       //y-1
 
-	FORWARD_RIGHT= 2, //x+1 y+?
-	BACK_LEFT,        //x-1 y-?
+	ForwardRight= 2, //x+1 y+?
+	BackLeft,        //x-1 y-?
 
-	FORWARD_LEFT= 4,  //x-1 y+?
-	BACK_RIGHT,       //x+1 y-?
+	ForwardLeft= 4,  //x-1 y+?
+	BackRight,       //x+1 y-?
 
-	UP= 6, //z+1
-	DOWN,  //z-1
+	Up= 6, //z+1
+	Down,  //z-1
 
-	DIRECTION_UNKNOWN= 255
+	Unknown= 255
 };
 
 enum h_TransparencyType:

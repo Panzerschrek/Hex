@@ -25,12 +25,11 @@ private:
 	void InitTextureTable();
 
 private:
-	static unsigned char texture_table_[ NUM_BLOCK_TYPES * 8 ];
-	static bool texture_mode_table_[ NUM_BLOCK_TYPES * 8 ]; // if( true ) - mode per block, else mode - projection
-	static unsigned char texture_scale_table_[ NUM_BLOCK_TYPES * 8 ];
+	static unsigned char texture_table_[ size_t(h_BlockType::NumBlockTypes) * 8 ];
+	static bool texture_mode_table_[ size_t(h_BlockType::NumBlockTypes) * 8 ]; // if( true ) - mode per block, else mode - projection
+	static unsigned char texture_scale_table_[ size_t(h_BlockType::NumBlockTypes) * 8 ];
 
 	// OpenGL id for array texture
-	// TODO - clear OpenGL resources
 	GLuint texture_array_;
 
 	unsigned int texture_detalization_;
@@ -39,7 +38,7 @@ private:
 
 inline unsigned char r_TextureManager::GetTextureId( h_BlockType block_type, unsigned char normal_id )
 {
-	return texture_table_[ ( block_type << 3 ) | normal_id ];
+	return texture_table_[ ( static_cast<size_t>(block_type) << 3 ) | normal_id ];
 }
 
 inline  bool r_TextureManager::TexturePerBlock( unsigned char tex_id )

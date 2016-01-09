@@ -154,7 +154,7 @@ private:
 	r_IWorldRenderer* renderer_= nullptr;
 	h_Player* player_= nullptr;
 
-	h_Block normal_blocks_[ NUM_BLOCK_TYPES ];
+	h_Block normal_blocks_[ size_t(h_BlockType::NumBlockTypes) ];
 
 	unsigned int phys_tick_count_;
 	std::unique_ptr< std::thread > phys_thread_;

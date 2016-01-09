@@ -21,7 +21,7 @@ void r_ChunkInfo::GetWaterHexCount()
 	{
 		const h_LiquidBlock* b= *iter;
 		h_BlockType type= chunk_->GetBlock( b->x_, b->y_, b->z_ + 1 )->Type();
-		if( type == AIR || ( b->LiquidLevel() < H_MAX_WATER_LEVEL && type != WATER ) )
+		if( type == h_BlockType::Air || ( b->LiquidLevel() < H_MAX_WATER_LEVEL && type != h_BlockType::Water ) )
 			hex_count++;
 	}
 
@@ -59,7 +59,7 @@ void r_ChunkInfo::BuildWaterSurfaceMesh()
 			b= *iter;
 
 			h_BlockType type= chunk_->GetBlock( b->x_, b->y_, b->z_ + 1 )->Type();
-			if( type == AIR || ( b->LiquidLevel() < H_MAX_WATER_LEVEL && type != WATER ) )
+			if( type == h_BlockType::Air || ( b->LiquidLevel() < H_MAX_WATER_LEVEL && type != h_BlockType::Water ) )
 			{
 				v[0].coord[0]= 3 * ( b->x_ + X );
 				v[1].coord[0]= v[5].coord[0]= v[0].coord[0] + 1;
@@ -88,11 +88,11 @@ void r_ChunkInfo::BuildWaterSurfaceMesh()
 										   global_y >> H_CHUNK_WIDTH_LOG2 )
 					)-> GetBlock( nearby_block_x, nearby_block_y, b->z_ );
 				b3= ch->GetBlock( nearby_block_x, nearby_block_y, b->z_ + 1 );
-				if( b3->Type() == WATER )
+				if( b3->Type() == h_BlockType::Water )
 					upper_block_is_water[1]= upper_block_is_water[2]= true;
-				else if( b2->Type() == AIR )
+				else if( b2->Type() == h_BlockType::Air )
 					nearby_block_is_air[1]= nearby_block_is_air[2]= true;
-				else if( b2->Type() == WATER )
+				else if( b2->Type() == h_BlockType::Water )
 				{
 					vertex_water_level[1]+= ((h_LiquidBlock*)b2)->LiquidLevel();
 					vertex_water_level[2]+= ((h_LiquidBlock*)b2)->LiquidLevel();
@@ -109,11 +109,11 @@ void r_ChunkInfo::BuildWaterSurfaceMesh()
 										   global_y >> H_CHUNK_WIDTH_LOG2 )
 					)-> GetBlock( nearby_block_x, nearby_block_y, b->z_ );
 				b3= ch->GetBlock( nearby_block_x, nearby_block_y, b->z_ + 1 );
-				if( b3->Type() == WATER )
+				if( b3->Type() == h_BlockType::Water )
 					upper_block_is_water[4]= upper_block_is_water[5]= true;
-				else if( b2->Type() == AIR )
+				else if( b2->Type() == h_BlockType::Air )
 					nearby_block_is_air[4]= nearby_block_is_air[5]= true;
-				else if( b2->Type() == WATER )
+				else if( b2->Type() == h_BlockType::Water )
 				{
 					vertex_water_level[4]+= ((h_LiquidBlock*)b2)->LiquidLevel();
 					vertex_water_level[5]+= ((h_LiquidBlock*)b2)->LiquidLevel();
@@ -130,11 +130,11 @@ void r_ChunkInfo::BuildWaterSurfaceMesh()
 										   global_y >> H_CHUNK_WIDTH_LOG2 )
 					)-> GetBlock( nearby_block_x, nearby_block_y, b->z_ );
 				b3= ch->GetBlock( nearby_block_x, nearby_block_y, b->z_ + 1 );
-				if( b3->Type() == WATER )
+				if( b3->Type() == h_BlockType::Water )
 					upper_block_is_water[2]= upper_block_is_water[3]= true;
-				else if( b2->Type() == AIR )
+				else if( b2->Type() == h_BlockType::Air )
 					nearby_block_is_air[2]= nearby_block_is_air[3]= true;
-				else if( b2->Type() == WATER )
+				else if( b2->Type() == h_BlockType::Water )
 				{
 					vertex_water_level[2]+= ((h_LiquidBlock*)b2)->LiquidLevel();
 					vertex_water_level[3]+= ((h_LiquidBlock*)b2)->LiquidLevel();
@@ -151,11 +151,11 @@ void r_ChunkInfo::BuildWaterSurfaceMesh()
 										   global_y >> H_CHUNK_WIDTH_LOG2 )
 					)-> GetBlock( nearby_block_x, nearby_block_y, b->z_ );
 				b3= ch->GetBlock( nearby_block_x, nearby_block_y, b->z_ + 1 );
-				if( b3->Type() == WATER )
+				if( b3->Type() == h_BlockType::Water )
 					upper_block_is_water[0]= upper_block_is_water[5]= true;
-				else if( b2->Type() == AIR )
+				else if( b2->Type() == h_BlockType::Air )
 					nearby_block_is_air[0]= nearby_block_is_air[5]= true;
-				else if( b2->Type() == WATER )
+				else if( b2->Type() == h_BlockType::Water )
 				{
 					vertex_water_level[0]+= ((h_LiquidBlock*)b2)->LiquidLevel();
 					vertex_water_level[5]+= ((h_LiquidBlock*)b2)->LiquidLevel();
@@ -172,11 +172,11 @@ void r_ChunkInfo::BuildWaterSurfaceMesh()
 										   global_y >> H_CHUNK_WIDTH_LOG2 )
 					)-> GetBlock( nearby_block_x, nearby_block_y, b->z_ );
 				b3= ch->GetBlock( nearby_block_x, nearby_block_y, b->z_ + 1 );
-				if( b3->Type() == WATER )
+				if( b3->Type() == h_BlockType::Water )
 					upper_block_is_water[3]= upper_block_is_water[4]= true;
-				else if( b2->Type() == AIR )
+				else if( b2->Type() == h_BlockType::Air )
 					nearby_block_is_air[3]= nearby_block_is_air[4]= true;
-				else if( b2->Type() == WATER )
+				else if( b2->Type() == h_BlockType::Water )
 				{
 					vertex_water_level[3]+= ((h_LiquidBlock*)b2)->LiquidLevel();
 					vertex_water_level[4]+= ((h_LiquidBlock*)b2)->LiquidLevel();
@@ -192,11 +192,11 @@ void r_ChunkInfo::BuildWaterSurfaceMesh()
 										   global_y >> H_CHUNK_WIDTH_LOG2 )
 					)-> GetBlock( nearby_block_x, nearby_block_y, b->z_ );
 				b3= ch->GetBlock( nearby_block_x, nearby_block_y, b->z_ + 1 );
-				if( b3->Type() == WATER )
+				if( b3->Type() == h_BlockType::Water )
 					upper_block_is_water[0]= upper_block_is_water[1]= true;
-				else if( b2->Type() == AIR )
+				else if( b2->Type() == h_BlockType::Air )
 					nearby_block_is_air[0]= nearby_block_is_air[1]= true;
-				else if( b2->Type() == WATER )
+				else if( b2->Type() == h_BlockType::Water )
 				{
 					vertex_water_level[0]+= ((h_LiquidBlock*)b2)->LiquidLevel();
 					vertex_water_level[1]+= ((h_LiquidBlock*)b2)->LiquidLevel();
@@ -239,7 +239,7 @@ void r_ChunkInfo::BuildWaterSurfaceMesh()
 			b= *iter;
 
 			h_BlockType type= chunk_->GetBlock( b->x_, b->y_, b->z_ + 1 )->Type();
-			if( type  == AIR || ( b->LiquidLevel() < H_MAX_WATER_LEVEL && type != WATER ) )
+			if( type  == h_BlockType::Air || ( b->LiquidLevel() < H_MAX_WATER_LEVEL && type != h_BlockType::Water ) )
 			{
 				v[0].coord[0]= 3 * ( b->x_ + X );
 				v[1].coord[0]= v[5].coord[0]= v[0].coord[0] + 1;
@@ -639,14 +639,14 @@ void r_ChunkInfo::BuildChunkMesh()
 			{
 				if( t > t_up )
 				{
-					normal_id= DOWN;
+					normal_id= static_cast<unsigned char>(h_Direction::Down);
 					b= b_p[z+1];
 					light[0]= ls_p[z];
 					light[1]= lf_p[z];
 				}
 				else
 				{
-					normal_id= UP;
+					normal_id= static_cast<unsigned char>(h_Direction::Up);
 					b= b_p[z];
 					light[0]= ls_p[z+1];
 					light[1]= lf_p[z+1];
@@ -709,7 +709,7 @@ void r_ChunkInfo::BuildChunkMesh()
 				v[5]= v[0];
 				v[6]= v[3];
 
-				if( normal_id == DOWN )
+				if( normal_id == static_cast<unsigned char>(h_Direction::Down) )
 				{
 					std::swap( v[1], v[3] );
 					std::swap( v[5], v[7] );
@@ -721,14 +721,14 @@ void r_ChunkInfo::BuildChunkMesh()
 			{
 				if( t > t_fr )
 				{
-					normal_id= BACK_LEFT;
+					normal_id= static_cast<unsigned char>(h_Direction::BackLeft);
 					b= b_fr_p[z];
 					light[0]= ls_p[z];
 					light[1]= lf_p[z];
 				}
 				else
 				{
-					normal_id= FORWARD_RIGHT;
+					normal_id= static_cast<unsigned char>(h_Direction::ForwardRight);
 					b= b_p[z];
 					light[0]= ls_fr_p[z];
 					light[1]= lf_fr_p[z];
@@ -768,7 +768,7 @@ void r_ChunkInfo::BuildChunkMesh()
 					w->GetBackVertexLight( x + relative_X + 1, y + relative_Y + ((x+1)&1), z-1, v[3].light  );
 				}
 				v[0].normal_id= v[1].normal_id= v[2].normal_id= v[3].normal_id= normal_id;
-				if( normal_id == BACK_LEFT )
+				if( normal_id == static_cast<unsigned char>(h_Direction::BackLeft) )
 					std::swap( v[1], v[3] );
 
 				v+=4;
@@ -778,14 +778,14 @@ void r_ChunkInfo::BuildChunkMesh()
 			{
 				if( t > t_br )
 				{
-					normal_id= FORWARD_LEFT;
+					normal_id= static_cast<unsigned char>(h_Direction::ForwardLeft);
 					b= b_br_p[z];
 					light[0]= ls_p[z];
 					light[1]= lf_p[z];
 				}
 				else
 				{
-					normal_id= BACK_RIGHT;
+					normal_id= static_cast<unsigned char>(h_Direction::BackRight);
 					b= b_p[z];
 					light[0]= ls_br_p[z];
 					light[1]= lf_br_p[z];
@@ -825,7 +825,7 @@ void r_ChunkInfo::BuildChunkMesh()
 					w->GetForwardVertexLight( x + relative_X, y + relative_Y - 1, z, v[1].light );
 				}
 				v[0].normal_id= v[1].normal_id= v[2].normal_id= v[3].normal_id= normal_id;
-				if( normal_id == BACK_RIGHT )
+				if( normal_id == static_cast<unsigned char>(h_Direction::BackRight) )
 					std::swap( v[1], v[3] );
 
 				v+=4;
@@ -835,14 +835,14 @@ void r_ChunkInfo::BuildChunkMesh()
 			{
 				if( t > t_f )
 				{
-					normal_id= BACK;
+					normal_id= static_cast<unsigned char>(h_Direction::Back);
 					b= b_f_p[z];
 					light[0]= ls_p[z];
 					light[1]= lf_p[z];
 				}
 				else
 				{
-					normal_id= FORWARD;
+					normal_id= static_cast<unsigned char>(h_Direction::Forward);
 					b= b_p[z];
 					light[0]= ls_f_p[z];
 					light[1]= lf_f_p[z];
@@ -881,7 +881,7 @@ void r_ChunkInfo::BuildChunkMesh()
 					w->GetForwardVertexLight( x + relative_X, y + relative_Y, z, v[3].light  );
 				}
 				v[0].normal_id= v[1].normal_id= v[2].normal_id= v[3].normal_id= normal_id;
-				if( normal_id == BACK )
+				if( normal_id == static_cast<unsigned char>(h_Direction::Back) )
 					std::swap( v[1], v[3] );
 
 				v+= 4;

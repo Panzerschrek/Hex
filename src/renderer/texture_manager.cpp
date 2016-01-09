@@ -11,9 +11,9 @@
 #include <QFile>
 #include <QPainter>
 
-unsigned char r_TextureManager::texture_table_[ NUM_BLOCK_TYPES * 8 ];
-bool r_TextureManager::texture_mode_table_[ NUM_BLOCK_TYPES * 8 ];
-unsigned char r_TextureManager::texture_scale_table_[ NUM_BLOCK_TYPES * 8 ];
+unsigned char r_TextureManager::texture_table_[ size_t(h_BlockType::NumBlockTypes) * 8 ];
+bool r_TextureManager::texture_mode_table_[ size_t(h_BlockType::NumBlockTypes) * 8 ];
+unsigned char r_TextureManager::texture_scale_table_[ size_t(h_BlockType::NumBlockTypes) * 8 ];
 
 static const GLuint c_texture_not_created= std::numeric_limits<GLuint>::max();
 
@@ -134,13 +134,12 @@ r_TextureManager::~r_TextureManager()
 
 void r_TextureManager::InitTextureTable()
 {
-	unsigned int i;
-	for( i= 0; i< NUM_BLOCK_TYPES * 8; i++ )
-		texture_table_[i]= 0;
-	for( i= 0; i< NUM_BLOCK_TYPES * 8; i++ )
-		texture_mode_table_[i]= false;
-	for( i= 0; i< NUM_BLOCK_TYPES * 8; i++ )
-		texture_scale_table_[i]= H_MAX_TEXTURE_SCALE;
+	for( unsigned char& tex : texture_table_ )
+		tex= 0;
+	for( bool& tex_mode : texture_mode_table_ )
+		tex_mode= false;
+	for( unsigned char& tex_scale : texture_scale_table_ )
+		tex_scale= H_MAX_TEXTURE_SCALE;
 }
 
 void r_TextureManager::LoadTextures()
@@ -246,15 +245,15 @@ void r_TextureManager::LoadTextures()
 			QString blockside= block_obj[ "blockside" ].toString();
 
 			h_BlockType t= h_Block::GetGetBlockTypeByName( blockname.toLocal8Bit().data() );
-			if( t == BLOCK_UNKNOWN ) continue;
+			if( t == h_BlockType::Unknown ) continue;
 
 			if( blockside == "universal" )
-				for( int k= 0; k< 8; k++ )
-					texture_table_[ (t<<3) | k ]= tex_id;
+				for( unsigned int k= 0; k< 8; k++ )
+					texture_table_[ ( static_cast<unsigned int>(t) << 3 ) | k ]= tex_id;
 
 			h_Direction d= h_Block::GetDirectionByName( blockside.toLocal8Bit().data() );
-			if( d != DIRECTION_UNKNOWN )
-				texture_table_[ (t<<3) | d ]= tex_id;
+			if( d != h_Direction::Unknown )
+				texture_table_[ ( static_cast<unsigned int>(t) << 3 ) | static_cast<unsigned int>(d) ]= tex_id;
 		}//for blocks
 	}//for textures
 

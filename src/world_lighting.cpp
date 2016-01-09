@@ -253,7 +253,7 @@ short h_World::RelightBlockAdd( short x, short y, short z )
 			unsigned char* sun_light_map= ch->sun_light_map_ + BlockAddr( local_i, local_j, H_CHUNK_HEIGHT-2 );
 			for( k= H_CHUNK_HEIGHT-2; k> 0; k--, sun_light_map-- )
 			{
-				if( ch->GetBlock( local_i, local_j, k )->Type() != AIR )
+				if( ch->GetBlock( local_i, local_j, k )->Type() != h_BlockType::Air )
 					break;
 				sun_light_map[0]= H_MAX_SUN_LIGHT;
 			}
@@ -342,7 +342,7 @@ void h_World::RelightBlockRemove( short x, short y, short z )
 	unsigned char* lightmap= &ch->sun_light_map_[ BlockAddr( x1, y1, H_CHUNK_HEIGHT-2 ) ];
 	for( z1= H_CHUNK_HEIGHT-2; z1>0 ; z1--, lightmap-- )
 	{
-		if( ch->GetBlock( x1, y1, z1 )->Type() != AIR )
+		if( ch->GetBlock( x1, y1, z1 )->Type() != h_BlockType::Air )
 			break;
 		*lightmap= H_MAX_SUN_LIGHT;
 	}

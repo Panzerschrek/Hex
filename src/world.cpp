@@ -240,35 +240,35 @@ void h_World::Build( short x, short y, short z, h_BlockType block_type )
 
 	x&= H_CHUNK_WIDTH - 1;
 	y&= H_CHUNK_WIDTH - 1;
-	if( block_type == WATER )
+	if( block_type == h_BlockType::Water )
 	{
 		h_LiquidBlock* b;
 		h_Chunk* ch=GetChunk( X, Y );
-		ch-> SetBlockAndTransparency( x, y, z, b= ch->NewWaterBlock(),
-									  TRANSPARENCY_LIQUID );
+		ch-> SetBlockAndTransparency(
+			x, y, z,
+			b= ch->NewWaterBlock(), TRANSPARENCY_LIQUID );
 
 		b->x_= x;
 		b->y_= y;
 		b->z_= z;
 	}
-	else if( block_type == FIRE_STONE )
+	else if( block_type == h_BlockType::FireStone )
 	{
 		h_Chunk* ch=GetChunk( X, Y );
-		h_LightSource* s= ch->NewLightSource( x, y, z, FIRE_STONE );
+		h_LightSource* s= ch->NewLightSource( x, y, z, h_BlockType::FireStone );
 		s->SetLightLevel( H_MAX_FIRE_LIGHT );
 		ch->SetBlockAndTransparency( x, y, z, s, TRANSPARENCY_SOLID );
 		AddFireLight_r( x + X* H_CHUNK_WIDTH, y + Y* H_CHUNK_WIDTH, z, H_MAX_FIRE_LIGHT );
 	}
 	else
 		GetChunk( X, Y )->
-		SetBlockAndTransparency( x, y, z, NormalBlock( block_type ),
-								 NormalBlock( block_type )->Transparency() );
+		SetBlockAndTransparency(
+			x, y, z,
+			NormalBlock( block_type ),
+			NormalBlock( block_type )->Transparency() );
 
 	short r= 1;
-	if( block_type == WATER )
-	{
-	}
-	else
+	if( block_type != h_BlockType::Water )
 		r= RelightBlockAdd( X * H_CHUNK_WIDTH + x,Y * H_CHUNK_WIDTH + y, z ) + 1;
 
 	UpdateInRadius( X * H_CHUNK_WIDTH + x,Y * H_CHUNK_WIDTH + y, r );
@@ -285,15 +285,16 @@ void h_World::Destroy( short x, short y, short z )
 	y&= H_CHUNK_WIDTH - 1;
 
 	h_Chunk* ch=GetChunk( X, Y );
-	if( ch->GetBlock( x, y, z )->Type() == WATER )
+	if( ch->GetBlock( x, y, z )->Type() == h_BlockType::Water )
 	{
 
 	}
-	else if( ch->GetBlock( x, y, z )->Type() == FIRE_STONE )
+	else if( ch->GetBlock( x, y, z )->Type() == h_BlockType::FireStone )
 	{
 		ch->DeleteLightSource( x, y, z );
-		ch->SetBlockAndTransparency( x, y, z, NormalBlock( AIR ),
-									 TRANSPARENCY_AIR );
+		ch->SetBlockAndTransparency(
+			x, y, z,
+			NormalBlock( h_BlockType::Air ), TRANSPARENCY_AIR );
 		RelightBlockAdd( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), z );
 		RelightBlockRemove( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), z );
 		UpdateInRadius( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), H_MAX_FIRE_LIGHT );
@@ -301,10 +302,10 @@ void h_World::Destroy( short x, short y, short z )
 	}
 	else
 	{
-		ch->SetBlockAndTransparency( x, y, z, NormalBlock( AIR ),
-									 TRANSPARENCY_AIR );
+		ch->SetBlockAndTransparency(
+			x, y, z,
+			NormalBlock( h_BlockType::Air ), TRANSPARENCY_AIR );
 		RelightBlockRemove( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), z );
-		//AddFireLight_r( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), z, 10 );
 		UpdateInRadius( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), H_MAX_SUN_LIGHT );
 		UpdateWaterInRadius( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), H_MAX_SUN_LIGHT );
 	}
@@ -578,30 +579,30 @@ h_ChunkPhysMesh h_World::BuildPhysMesh( short x_min, short x_max, short y_min, s
 			if( t != t_up )
 			{
 				if( t > t_up )
-					phys_mesh.upper_block_faces.emplace_back( x + X, y + Y, z + 1, DOWN );
+					phys_mesh.upper_block_faces.emplace_back( x + X, y + Y, z + 1, h_Direction::Down );
 				else
-					phys_mesh.upper_block_faces.emplace_back( x + X, y + Y, z, UP );
+					phys_mesh.upper_block_faces.emplace_back( x + X, y + Y, z, h_Direction::Up );
 			}
 			if( t != t_fr )
 			{
 				if( t > t_fr )
-					phys_mesh.block_sides.emplace_back( x + X + 1, y + Y + ((x+1)&1), z-1, BACK_LEFT );
+					phys_mesh.block_sides.emplace_back( x + X + 1, y + Y + ((x+1)&1), z-1, h_Direction::BackLeft );
 				else
-					phys_mesh.block_sides.emplace_back( x + X, y + Y, z-1, FORWARD_RIGHT );
+					phys_mesh.block_sides.emplace_back( x + X, y + Y, z-1, h_Direction::ForwardRight );
 			}
 			if( t != t_br )
 			{
 				if( t > t_br )
-					phys_mesh.block_sides.emplace_back( x + X + 1, y + Y - (x&1), z-1, FORWARD_LEFT );
+					phys_mesh.block_sides.emplace_back( x + X + 1, y + Y - (x&1), z-1, h_Direction::ForwardLeft );
 				else
-					phys_mesh.block_sides.emplace_back( x + X, y + Y, z-1, BACK_RIGHT );
+					phys_mesh.block_sides.emplace_back( x + X, y + Y, z-1, h_Direction::BackRight );
 			}
 			if( t!= t_f )
 			{
 				if( t > t_f )
-					phys_mesh.block_sides.emplace_back( x + X, y + Y + 1, z-1, BACK );
+					phys_mesh.block_sides.emplace_back( x + X, y + Y + 1, z-1, h_Direction::Back );
 				else
-					phys_mesh.block_sides.emplace_back( x + X, y + Y, z-1, FORWARD );
+					phys_mesh.block_sides.emplace_back( x + X, y + Y, z-1, h_Direction::Forward );
 			}
 		} // for z
 	} // for xy
@@ -618,10 +619,10 @@ void h_World::BlastBlock_r( short x, short y, short z, short blast_power )
 	unsigned int addr;
 
 	addr= BlockAddr( x&(H_CHUNK_WIDTH-1), y&(H_CHUNK_WIDTH-1), z );
-	if( ch->blocks_[addr]->Type() != WATER )
+	if( ch->blocks_[addr]->Type() != h_BlockType::Water )
 	{
 		//ch->SetBlockAndTransparency( local_x, local_y, z, NormalBlock(AIR), TRANSPARENCY_AIR );
-		ch->blocks_[ addr ]= NormalBlock(AIR);
+		ch->blocks_[ addr ]= NormalBlock(h_BlockType::Air);
 		ch->transparency_[ addr ]= TRANSPARENCY_AIR;
 	}
 
@@ -646,8 +647,9 @@ bool h_World::InBorders( short x, short y, short z ) const
 
 bool h_World::CanBuild( short x, short y, short z ) const
 {
-	return GetChunk( x>> H_CHUNK_WIDTH_LOG2, y>> H_CHUNK_WIDTH_LOG2 )->
-		   GetBlock( x% H_CHUNK_WIDTH, y% H_CHUNK_WIDTH, z )->Type() == AIR;
+	return
+		GetChunk( x>> H_CHUNK_WIDTH_LOG2, y>> H_CHUNK_WIDTH_LOG2 )->
+		GetBlock( x & (H_CHUNK_WIDTH - 1), y & (H_CHUNK_WIDTH - 1), z )->Type() == h_BlockType::Air;
 }
 
 void h_World::PhysTick()
@@ -759,18 +761,18 @@ void h_World::WaterPhysTick()
 			{
 				b= *iter;
 
-				if( ch->GetBlock( b->x_, b->y_, b->z_ - 1 )->Type() == AIR )
+				if( ch->GetBlock( b->x_, b->y_, b->z_ - 1 )->Type() == h_BlockType::Air )
 				{
 					b->z_--;
 					ch->SetBlockAndTransparency( b->x_, b->y_, b->z_    , b, TRANSPARENCY_LIQUID );
-					ch->SetBlockAndTransparency( b->x_, b->y_, b->z_ + 1, NormalBlock( AIR ), TRANSPARENCY_AIR );
+					ch->SetBlockAndTransparency( b->x_, b->y_, b->z_ + 1, NormalBlock( h_BlockType::Air ), TRANSPARENCY_AIR );
 					chunk_modifed= true;
 				}
 				else
 				{
 					//water flow down
 					h_LiquidBlock* b2= (h_LiquidBlock*)ch->GetBlock( b->x_, b->y_, b->z_ - 1 );
-					if( b2->Type() == WATER )
+					if( b2->Type() == h_BlockType::Water )
 					{
 						int level_delta= std::min(int(H_MAX_WATER_LEVEL - b2->LiquidLevel()), int(b->LiquidLevel()));
 						if( level_delta > 0 )
@@ -809,10 +811,10 @@ void h_World::WaterPhysTick()
 						chunk_modifed= true;
 
 					if( b->LiquidLevel() == 0 ||
-						( b->LiquidLevel() < 16 && ch->GetBlock( b->x_, b->y_, b->z_-1 )->Type() != WATER ) )
+						( b->LiquidLevel() < 16 && ch->GetBlock( b->x_, b->y_, b->z_-1 )->Type() != h_BlockType::Water ) )
 					{
 						iter.RemoveCurrent();
-						ch->SetBlockAndTransparency( b->x_, b->y_, b->z_, NormalBlock( AIR ), TRANSPARENCY_AIR );
+						ch->SetBlockAndTransparency( b->x_, b->y_, b->z_, NormalBlock( h_BlockType::Air ), TRANSPARENCY_AIR );
 						ch->DeleteWaterBlock( b );
 					}
 				}// if down block not air
@@ -834,8 +836,8 @@ bool h_World::WaterFlow( h_LiquidBlock* from, short to_x, short to_y, short to_z
 {
 	h_Chunk* ch= GetChunk( to_x >> H_CHUNK_WIDTH_LOG2, to_y >> H_CHUNK_WIDTH_LOG2 );
 	h_LiquidBlock* b2= (h_LiquidBlock*)ch->GetBlock( to_x & ( H_CHUNK_WIDTH-1 ), to_y & ( H_CHUNK_WIDTH-1 ), to_z );
-	unsigned char type= b2->Type();
-	if( type == AIR )
+	h_BlockType type= b2->Type();
+	if( type == h_BlockType::Air )
 	{
 		if( from->LiquidLevel() > 1 )
 		{
@@ -851,7 +853,7 @@ bool h_World::WaterFlow( h_LiquidBlock* from, short to_x, short to_y, short to_z
 			return true;
 		}
 	}
-	else if( type == WATER )
+	else if( type == h_BlockType::Water )
 	{
 		short water_level_delta= from->LiquidLevel() - b2->LiquidLevel();
 		if( water_level_delta > 1 )
@@ -867,7 +869,6 @@ bool h_World::WaterFlow( h_LiquidBlock* from, short to_x, short to_y, short to_z
 
 void h_World::InitNormalBlocks()
 {
-	int i;
-	for( i= 0; i< NUM_BLOCK_TYPES; i++ )
-		new ( normal_blocks_ + i ) h_Block( h_BlockType(i) );
+	for( size_t i= 0; i < size_t(h_BlockType::NumBlockTypes); i++ )
+		new ( normal_blocks_ + i ) h_Block( h_BlockType( static_cast<h_BlockType>(i) ) );
 }

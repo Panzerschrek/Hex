@@ -6,7 +6,7 @@
 	"blocks":
 	[
 		{
-			"blockname": "grass",
+			"blockname": "Grass",
 			"blockside": "up"
 		}
 	]
@@ -18,7 +18,7 @@
 	"blocks":
 	[
 		{
-			"blockname": "foliage",
+			"blockname": "Foliage",
 			"blockside": "universal"
 		}
 	]
@@ -31,7 +31,7 @@
 	"blocks":
 	[
 		{
-			"blockname": "stone",
+			"blockname": "Stone",
 			"blockside": "universal"
 		}
 	]
@@ -44,7 +44,7 @@
 	"blocks":
 	[
 		{
-			"blockname": "fire_stone",
+			"blockname": "FireStone",
 			"blockside": "universal"
 		}
 	]
@@ -57,27 +57,27 @@
 	"blocks":
 	[
 		{
-			"blockname": "wood",
+			"blockname": "Wood",
 			"blockside": "forward"
 		},
 		{
-			"blockname": "wood",
+			"blockname": "Wood",
 			"blockside": "back"
 		},
 		{
-			"blockname": "wood",
+			"blockname": "Wood",
 			"blockside": "forward_right"
 		},
 		{
-			"blockname": "wood",
+			"blockname": "Wood",
 			"blockside": "back_right"
 		},
 		{
-			"blockname": "wood",
+			"blockname": "Wood",
 			"blockside": "forward_left"
 		},
 		{
-			"blockname": "wood",
+			"blockname": "Wood",
 			"blockside": "back_left"
 		}
 	]
@@ -90,35 +90,35 @@
 	"blocks":
 	[
 		{
-			"blockname": "soil",
+			"blockname": "Soil",
 			"blockside": "universal"
 		},
 		{
-			"blockname": "grass",
+			"blockname": "Grass",
 			"blockside": "back"
 		},
 		{
-			"blockname": "grass",
+			"blockname": "Grass",
 			"blockside": "forward"
 		},
 		{
-			"blockname": "grass",
+			"blockname": "Grass",
 			"blockside": "forward_right"
 		},
 		{
-			"blockname": "grass",
+			"blockname": "Grass",
 			"blockside": "back_right"
 		},
 		{
-			"blockname": "grass",
+			"blockname": "Grass",
 			"blockside": "forward_left"
 		},
 		{
-			"blockname": "grass",
+			"blockname": "Grass",
 			"blockside": "back_left"
 		},
 		{
-			"blockname": "grass",
+			"blockname": "Grass",
 			"blockside": "down"
 		}
 
@@ -131,11 +131,11 @@
 	"blocks":
 	[
 		{
-			"blockname": "wood",
+			"blockname": "Wood",
 			"blockside": "up"
 		},
 		{
-			"blockname": "wood",
+			"blockname": "Wood",
 			"blockside": "down"
 		}
 	]
@@ -148,7 +148,7 @@
 	"blocks":
 	[
 		{
-			"blockname": "spherical_block",
+			"blockname": "SphericalBlock",
 			"blockside": "universal"
 		}
 	]
@@ -160,7 +160,7 @@
 	"blocks":
 	[
 		{
-			"blockname": "brick",
+			"blockname": "Brick",
 			"blockside": "universal"
 		}
 	]
@@ -172,7 +172,7 @@
 	"blocks":
 	[
 		{
-			"blockname": "sand",
+			"blockname": "Sand",
 			"blockside": "universal"
 		}
 	]
