@@ -12,7 +12,7 @@ inline static bool InChunkBorders( int x, int y )
 		y >= 0 && y < H_CHUNK_WIDTH;
 }
 
-const std::vector<h_FailingBlock>& h_Chunk::GetFailingBlocks() const
+const std::vector<h_FailingBlock*>& h_Chunk::GetFailingBlocks() const
 {
 	return failing_blocks_;
 }
@@ -392,6 +392,50 @@ void h_Chunk::DeleteLightSource( short x, short y, short z )
 		}
 }
 
+void h_Chunk::ProcessFailingBlocks()
+{
+	for( unsigned int i= 0; i < failing_blocks_.size(); )
+	{
+		h_FailingBlock* b= failing_blocks_[i];
+
+		unsigned char old_z= b->GetZ() >> 16;
+		b->Tick();
+		unsigned char new_z= b->GetZ() >> 16;
+
+		if( old_z != new_z )
+		{
+			unsigned int block_addr= BlockAddr( b->GetX(), b->GetY(), 0 );
+			int global_x= b->GetX() + ( (longitude_ - world_->Longitude()) << H_CHUNK_WIDTH_LOG2 );
+			int global_y= b->GetY() + ( (latitude_  - world_->Latitude ()) << H_CHUNK_WIDTH_LOG2 );
+
+			if( blocks_[ block_addr + old_z - 1 ]->Type() != h_BlockType::Air )
+			{
+				blocks_[ block_addr + old_z ]= b->GetBlock();
+				transparency_[ block_addr + old_z ]= b->GetBlock()->Transparency();
+
+				world_->RelightBlockAdd( global_x, global_y, old_z );
+				world_->UpdateInRadius( global_x, global_y, old_z );
+
+				if( i != failing_blocks_.size() - 1 )
+					failing_blocks_[i]= failing_blocks_.back();
+				failing_blocks_.pop_back();
+				failing_blocks_alocatior_.Delete( b );
+
+				continue;
+			}
+			else
+			{
+				blocks_[ block_addr + old_z ]= world_->NormalBlock( h_BlockType::Air );
+				blocks_[ block_addr + new_z ]= b;
+			}
+
+			// Check block, upper for this, which can start fail.
+			world_->CheckFailingBlock( global_x, global_y, old_z + 1 );
+		}
+		i++;
+	}
+}
+
 void h_Chunk::MakeLight()
 {
 	for( unsigned int x= 0; x< H_CHUNK_WIDTH; x++ )
@@ -444,11 +488,6 @@ h_Chunk::h_Chunk( h_World* world, int longitude, int latitude, const g_WorldGene
 	PlantTrees( generator );
 	GenWaterBlocks();
 	MakeLight();
-
-	failing_blocks_.emplace_back(
-		world_->NormalBlock( h_BlockType::Sand ),
-		0, 0, 90,
-		0 );
 }
 
 h_Chunk::h_Chunk( h_World* world, const HEXCHUNK_header& header, QDataStream& stream )
@@ -459,11 +498,6 @@ h_Chunk::h_Chunk( h_World* world, const HEXCHUNK_header& header, QDataStream& st
 {
 	GenChunkFromFile( stream );
 	MakeLight();
-
-	failing_blocks_.emplace_back(
-		world_->NormalBlock( h_BlockType::Sand ),
-		0, 0, 90,
-		0 );
 }
 
 h_Chunk::~h_Chunk()

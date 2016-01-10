@@ -47,18 +47,17 @@ public:
 	unsigned char x_, y_, z_, reserved_; // relative light source block coordinates ( in chunk )
 };
 
-class h_FailingBlock
+class h_FailingBlock : public h_Block
 {
 public:
 	h_FailingBlock(
 		h_Block* block,
-		unsigned char x, unsigned char y, unsigned char z,
-		unsigned int failig_start_tick );
+		unsigned char x, unsigned char y, unsigned char z );
 
 	h_Block* GetBlock();
 	const h_Block* GetBlock() const;
 
-	void CalcZ( unsigned int tick );
+	void Tick();
 
 	unsigned char GetX() const;
 	unsigned char GetY() const;
@@ -68,15 +67,6 @@ private:
 	h_Block* block_;
 	unsigned char x_, y_;
 	unsigned char failing_start_z_;
-	unsigned int failig_start_tick_;
+	unsigned int failig_start_ticks_;
 	fixed16_t z_;
-};
-
-class h_FailingBlockStub : public h_Block
-{
-public:
-	h_FailingBlockStub();
-
-	h_FailingBlock* upper_block;
-	h_FailingBlock* lower_block;
 };

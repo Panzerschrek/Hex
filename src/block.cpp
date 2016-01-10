@@ -21,7 +21,7 @@ static const char* const g_block_names[ size_t(h_BlockType::NumBlockTypes) ]=
 	MACRO_TO_STR(Foliage),
 	MACRO_TO_STR(FireStone),
 	MACRO_TO_STR(Brick),
-	MACRO_TO_STR(FailingBlockStub),
+	MACRO_TO_STR(FailingBlock),
 };
 
 static const char* const g_block_type_unknown= "Unknown";
@@ -116,7 +116,7 @@ h_TransparencyType h_Block::Transparency() const
 	case h_BlockType::FireStone:
 		return TRANSPARENCY_SOLID;
 
-	case h_BlockType::FailingBlockStub:
+	case h_BlockType::FailingBlock:
 		return TRANSPARENCY_AIR;
 
 	default:
@@ -185,14 +185,19 @@ void h_LightSource::SetLightLevel( unsigned char level )
 
 h_FailingBlock::h_FailingBlock(
 	h_Block* block,
-	unsigned char x, unsigned char y, unsigned char z,
-	unsigned int failig_start_tick )
-	: block_(block)
+	unsigned char x, unsigned char y, unsigned char z )
+	: h_Block(h_BlockType::FailingBlock)
+	, block_(block)
 	, x_(x), y_(y)
 	, failing_start_z_(z)
-	, failig_start_tick_(failig_start_tick)
+	, failig_start_ticks_(0)
 	, z_( z << 16 )
-{}
+{
+	H_ASSERT( block->Type() != h_BlockType::FailingBlock );
+	H_ASSERT( x < H_CHUNK_WIDTH );
+	H_ASSERT( y < H_CHUNK_WIDTH );
+	H_ASSERT( x >= 1 && x < H_CHUNK_HEIGHT - 1 );
+}
 
 h_Block* h_FailingBlock::GetBlock()
 {
@@ -204,15 +209,21 @@ const h_Block* h_FailingBlock::GetBlock() const
 	return block_;
 }
 
-void h_FailingBlock::CalcZ( unsigned int tick )
-{
-	static const fixed16_t c_acceleration= 1 << 15;
-	static const unsigned int c_tick_of_max_speed= 60;
+void h_FailingBlock::Tick()
+{	
+	static const fixed16_t c_acceleration= 3 << 8;
+	static const unsigned int c_tick_of_max_speed= 40;
 
-	unsigned int dt= std::min( tick - failig_start_tick_, c_tick_of_max_speed );
+	failig_start_ticks_++;
 
 	// S= a * t^2 / 2
-	fixed16_t dz= m_Fixed16Mul( c_acceleration, (dt * dt) << 16 ) >> 1;
+	fixed16_t dz;
+	if( failig_start_ticks_ <= c_tick_of_max_speed )
+		dz= ( c_acceleration * (failig_start_ticks_ * failig_start_ticks_) ) >> 1;
+	else
+		dz=
+			( ( c_acceleration * (c_tick_of_max_speed * c_tick_of_max_speed) ) >> 1 ) +
+			( c_tick_of_max_speed * c_acceleration ) * ( failig_start_ticks_ - c_tick_of_max_speed );
 
 	z_= ( failing_start_z_ << 16 ) - dz;
 }
@@ -231,12 +242,3 @@ fixed16_t h_FailingBlock::GetZ() const
 {
 	return z_;
 }
-
-/*
-----------------h_FailingBlockStub--------------
-*/
-
-h_FailingBlockStub::h_FailingBlockStub()
-	: upper_block( nullptr )
-	, lower_block( nullptr )
-{}

@@ -91,6 +91,17 @@ h_World::h_World(
 
 	LightWorld();
 
+	{
+		h_Chunk* ch= chunks_[ chunk_number_x_ / 2 + (chunk_number_y_ / 2) * H_MAX_CHUNKS ];
+
+		unsigned char x= 1, y= 2, z= 125;
+
+		h_FailingBlock* block= ch->failing_blocks_alocatior_.New( NormalBlock(h_BlockType::Sand), x, y, z );
+		ch->failing_blocks_.push_back(block);
+
+		ch->SetBlockAndTransparency( x, y, z, block, TRANSPARENCY_AIR );
+	}
+
 	test_mob_target_pos_[0]= test_mob_discret_pos_[0]= 0;
 	test_mob_target_pos_[1]= test_mob_discret_pos_[1]= 0;
 	test_mob_target_pos_[2]= test_mob_discret_pos_[2]= 72;
@@ -273,6 +284,8 @@ void h_World::Build( short x, short y, short z, h_BlockType block_type )
 
 	UpdateInRadius( X * H_CHUNK_WIDTH + x,Y * H_CHUNK_WIDTH + y, r );
 	UpdateWaterInRadius( X * H_CHUNK_WIDTH + x,Y * H_CHUNK_WIDTH + y, r );
+
+	CheckFailingBlock( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), z );
 }
 
 void h_World::Destroy( short x, short y, short z )
@@ -309,6 +322,8 @@ void h_World::Destroy( short x, short y, short z )
 		UpdateInRadius( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), H_MAX_SUN_LIGHT );
 		UpdateWaterInRadius( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), H_MAX_SUN_LIGHT );
 	}
+
+	CheckFailingBlock( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), z + 1 );
 }
 
 void h_World::FlushActionQueue()
@@ -326,6 +341,32 @@ void h_World::FlushActionQueue()
 			Build( act.coord[0], act.coord[1], act.coord[2], act.block_type );
 		else if( act.type == ACTION_DESTROY )
 			Destroy( act.coord[0], act.coord[1], act.coord[2] );
+	}
+}
+
+void h_World::CheckFailingBlock( short x, short y, short z )
+{
+	short X= x>> H_CHUNK_WIDTH_LOG2;
+	short Y= y>> H_CHUNK_WIDTH_LOG2;
+	x&= H_CHUNK_WIDTH - 1;
+	y&= H_CHUNK_WIDTH - 1;
+
+	h_Chunk* ch= GetChunk( X, Y );
+
+	while(true)
+	{
+		h_Block* b= ch->GetBlock( x, y, z );
+		if( b->Type() == h_BlockType::Sand && z >= 1 && ch->GetBlock( x, y, z - 1)->Type() == h_BlockType::Air )
+		{
+			h_FailingBlock* failing_block= ch->failing_blocks_alocatior_.New( b, x, y, z );
+			ch->failing_blocks_.push_back(failing_block);
+			ch->SetBlockAndTransparency( x, y, z, failing_block, TRANSPARENCY_AIR );
+			RelightBlockRemove( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), z );
+
+			z++;
+			if( z < H_CHUNK_HEIGHT - 1 ) continue;
+		}
+		break;
 	}
 }
 
@@ -666,6 +707,11 @@ void h_World::PhysTick()
 
 		FlushActionQueue();
 		WaterPhysTick();
+		{
+			for( unsigned int y= active_area_margins_[1]; y < chunk_number_y_ - active_area_margins_[1]; y++ )
+			for( unsigned int x= active_area_margins_[0]; x < chunk_number_x_ - active_area_margins_[0]; x++ )
+				GetChunk( x, y )->ProcessFailingBlocks();
+		}
 		RelightWaterModifedChunksLight();
 
 		// player logic
