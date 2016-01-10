@@ -413,8 +413,9 @@ void h_Chunk::ProcessFailingBlocks()
 				blocks_[ block_addr + old_z ]= b->GetBlock();
 				transparency_[ block_addr + old_z ]= b->GetBlock()->Transparency();
 
-				world_->RelightBlockAdd( global_x, global_y, old_z );
-				world_->UpdateInRadius( global_x, global_y, old_z );
+				world_->UpdateInRadius(
+					global_x, global_y,
+					world_->RelightBlockAdd( global_x, global_y, old_z ) );
 
 				if( i != failing_blocks_.size() - 1 )
 					failing_blocks_[i]= failing_blocks_.back();

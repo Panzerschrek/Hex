@@ -348,25 +348,21 @@ void h_World::CheckFailingBlock( short x, short y, short z )
 {
 	short X= x>> H_CHUNK_WIDTH_LOG2;
 	short Y= y>> H_CHUNK_WIDTH_LOG2;
-	x&= H_CHUNK_WIDTH - 1;
-	y&= H_CHUNK_WIDTH - 1;
+	short local_x= x & (H_CHUNK_WIDTH - 1);
+	short local_y= y & (H_CHUNK_WIDTH - 1);
 
 	h_Chunk* ch= GetChunk( X, Y );
 
-	while(true)
+	h_Block* b= ch->GetBlock( local_x, local_y, z );
+	if( b->Type() == h_BlockType::Sand && z >= 1 && ch->GetBlock( local_x, local_y, z - 1)->Type() == h_BlockType::Air )
 	{
-		h_Block* b= ch->GetBlock( x, y, z );
-		if( b->Type() == h_BlockType::Sand && z >= 1 && ch->GetBlock( x, y, z - 1)->Type() == h_BlockType::Air )
-		{
-			h_FailingBlock* failing_block= ch->failing_blocks_alocatior_.New( b, x, y, z );
-			ch->failing_blocks_.push_back(failing_block);
-			ch->SetBlockAndTransparency( x, y, z, failing_block, TRANSPARENCY_AIR );
-			RelightBlockRemove( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), z );
+		h_FailingBlock* failing_block= ch->failing_blocks_alocatior_.New( b, local_x, local_y, z );
+		ch->failing_blocks_.push_back(failing_block);
+		ch->SetBlockAndTransparency( local_x, local_y, z, failing_block, TRANSPARENCY_AIR );
 
-			z++;
-			if( z < H_CHUNK_HEIGHT - 1 ) continue;
-		}
-		break;
+		RelightBlockRemove( x, y, z );
+		UpdateInRadius( x , y, H_MAX_FIRE_LIGHT );
+		UpdateWaterInRadius( x, y, H_MAX_FIRE_LIGHT );
 	}
 }
 
