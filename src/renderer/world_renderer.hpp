@@ -18,6 +18,8 @@
 
 #include "matrix.hpp"
 
+struct r_WorldVertex;
+
 class r_WorldRenderer final : public r_IWorldRenderer
 {
 public:
@@ -51,6 +53,9 @@ private:
 	void MoveChunkMatrix( int longitude, int latitude );
 	// Coordinates - in chunks matrix.
 	bool NeedRebuildChunkInThisTick( unsigned int x, unsigned int y );
+
+	// CPU thread. Reads failing blocks from world and places it in failing_blocks_vertices_
+	void BuildFailingBlocks();
 
 	void UpdateGPUData();
 
@@ -98,6 +103,9 @@ private:
 	r_GLSLProgram supersampling_final_shader_;
 
 	//VBO
+	r_PolygonBuffer failing_blocks_vbo_;
+	unsigned int failing_blocks_vertex_count_;
+
 	r_PolygonBuffer build_prism_vbo_;
 	r_PolygonBuffer skybox_vbo_;
 	r_PolygonBuffer stars_vbo_;
@@ -149,6 +157,7 @@ private:
 		// Longitude + latitude
 		int matrix_position[2];
 	} chunks_info_for_drawing_;
+	std::vector<r_WorldVertex> failing_blocks_vertices_;
 
 	std::unique_ptr<r_WVB> world_vertex_buffer_;
 	std::unique_ptr<r_WVB> world_water_vertex_buffer_;

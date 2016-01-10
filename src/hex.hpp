@@ -68,6 +68,8 @@ enum class h_BlockType : unsigned short
 	FireStone,
 	Brick,
 
+	FailingBlockStub,
+
 	NumBlockTypes,
 	Unknown= 65535
 };

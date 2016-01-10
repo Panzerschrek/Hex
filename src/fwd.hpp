@@ -45,3 +45,5 @@ class ui_MenuBase;
 class h_Block;
 class h_LiquidBlock;
 class h_LightSource;
+class h_FailingBlock;
+class h_FailingBlockStub;

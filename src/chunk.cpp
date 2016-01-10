@@ -12,6 +12,11 @@ inline static bool InChunkBorders( int x, int y )
 		y >= 0 && y < H_CHUNK_WIDTH;
 }
 
+const std::vector<h_FailingBlock>& h_Chunk::GetFailingBlocks() const
+{
+	return failing_blocks_;
+}
+
 bool h_Chunk::IsEdgeChunk() const
 {
 	return
@@ -440,6 +445,10 @@ h_Chunk::h_Chunk( h_World* world, int longitude, int latitude, const g_WorldGene
 	GenWaterBlocks();
 	MakeLight();
 
+	failing_blocks_.emplace_back(
+		world_->NormalBlock( h_BlockType::Sand ),
+		0, 0, 90,
+		0 );
 }
 
 h_Chunk::h_Chunk( h_World* world, const HEXCHUNK_header& header, QDataStream& stream )
@@ -450,6 +459,11 @@ h_Chunk::h_Chunk( h_World* world, const HEXCHUNK_header& header, QDataStream& st
 {
 	GenChunkFromFile( stream );
 	MakeLight();
+
+	failing_blocks_.emplace_back(
+		world_->NormalBlock( h_BlockType::Sand ),
+		0, 0, 90,
+		0 );
 }
 
 h_Chunk::~h_Chunk()

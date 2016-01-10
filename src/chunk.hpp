@@ -1,4 +1,6 @@
 #pragma once
+#include <vector>
+
 #include "hex.hpp"
 #include "fwd.hpp"
 #include "block.hpp"
@@ -29,6 +31,8 @@ public:
 	h_Block* GetBlock( short x, short y, short z );
 	const h_Block* GetBlock( short x, short y, short z ) const;
 	const h_Block* const* GetBlocksData() const;
+
+	const std::vector<h_FailingBlock>& GetFailingBlocks() const;
 
 	const m_Collection< h_LiquidBlock* >* GetWaterList() const;
 	const m_Collection< h_LightSource* >* GetLightSourceList() const;
@@ -95,6 +99,8 @@ private:
 	{
 		m_Collection< h_LiquidBlock* > water_block_list;
 	}water_blocks_data;
+
+	std::vector<h_FailingBlock> failing_blocks_;
 
 	//light management
 	m_Collection< h_LightSource* > light_source_list_;
