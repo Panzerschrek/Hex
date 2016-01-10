@@ -15,7 +15,7 @@ static constexpr const unsigned int g_update_inrerval_ms= 1000 / g_updates_frequ
 
 static constexpr const unsigned int g_day_duration_ticks= 12 /*min*/ * 60 /*sec*/ * g_updates_frequency;
 static constexpr const unsigned int g_days_in_year= 32;
-static constexpr const unsigned int g_northern_hemisphere_summer_solstice_day= 14;
+static constexpr const unsigned int g_northern_hemisphere_summer_solstice_day= g_days_in_year / 4;
 static constexpr const float g_planet_rotation_axis_inclination= 23.439281f * m_Math::deg2rad;
 static constexpr const float g_global_world_latitude= 40.0f * m_Math::deg2rad;
 
