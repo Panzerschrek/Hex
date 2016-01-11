@@ -24,4 +24,6 @@ private:
 	r_PolygonBuffer vbo_;
 	r_GLSLProgram shader_;
 	r_Texture particle_texture_;
+
+	uint64_t startup_time_;
 };

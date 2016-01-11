@@ -6,10 +6,12 @@
 #include "img_utils.hpp"
 #include "../math_lib/rand.hpp"
 #include "../console.hpp"
+#include "../time.hpp"
 #include "ogl_state_manager.hpp"
 
 r_WeatherEffectsParticleManager::r_WeatherEffectsParticleManager()
 	: particles_count_(0)
+	, startup_time_(hGetTimeMS())
 {
 }
 
@@ -65,7 +67,7 @@ void r_WeatherEffectsParticleManager::Draw( const m_Mat4& view_matrix, const m_V
 	particle_texture_.Bind(0);
 
 	shader_.Bind();
-	shader_.Uniform( "particle_coord_delta", float(clock()) / float(CLOCKS_PER_SEC) * m_Vec3( 0.0f, 0.0f, -2.8f ) );
+	shader_.Uniform( "particle_coord_delta", float(hGetTimeMS() - startup_time_) * 0.001f * m_Vec3( 0.0f, 0.0f, -2.8f ) );
 	shader_.Uniform( "particle_zone_coord", cam_pos - rain_zone_size_ * 0.5f );
 	shader_.Uniform( "particle_zone_size", rain_zone_size_ );
 	shader_.Uniform( "mat", view_matrix );

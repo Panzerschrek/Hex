@@ -2,6 +2,7 @@
 #include "block_collision.hpp"
 #include "world_header.hpp"
 #include "world.hpp"
+#include "time.hpp"
 
 static const float g_acceleration= 40.0f;
 static const float g_deceleration= 40.0f;
@@ -36,7 +37,7 @@ h_Player::h_Player(
 	, is_flying_(false)
 	, in_air_(true)
 	, view_angle_( world_header->player.rotation_x, 0.0f, world_header->player.rotation_z )
-	, prev_move_time_(0)
+	, prev_move_time_ms_(0)
 	, build_direction_( h_Direction::Unknown )
 	, build_block_( h_BlockType::Unknown )
 	, player_data_mutex_()
@@ -68,10 +69,10 @@ void h_Player::SetCollisionMesh( h_ChunkPhysMesh mesh )
 
 void h_Player::Move( const m_Vec3& direction )
 {
-	clock_t current_time= std::clock();
-	if( prev_move_time_ == 0 ) prev_move_time_= current_time;
-	float dt= float(current_time - prev_move_time_) / float(CLOCKS_PER_SEC);
-	prev_move_time_= current_time;
+	uint64_t current_time_ms = hGetTimeMS();
+	if( prev_move_time_ms_ == 0 ) prev_move_time_ms_= current_time_ms;
+	float dt_s= float(current_time_ms - prev_move_time_ms_) / 1000.0f;
+	prev_move_time_ms_= current_time_ms;
 
 	const float c_eps= 0.001f;
 
@@ -84,7 +85,7 @@ void h_Player::Move( const m_Vec3& direction )
 	if( move_delta_length > c_eps )
 	{
 		m_Vec3 acceleration_vec= ( use_ground_acceleration ? g_acceleration : g_air_acceleration ) / move_delta_length * move_delta;
-		speed_+= acceleration_vec * dt;
+		speed_+= acceleration_vec * dt_s;
 	}
 
 	float speed_value= speed_.Length();
@@ -98,7 +99,7 @@ void h_Player::Move( const m_Vec3& direction )
 			m_Vec3 deceleration_vec= speed_;
 			deceleration_vec.Normalize();
 
-			float d_speed= std::min( dt * ( use_ground_acceleration ? g_deceleration : g_air_deceleration ), speed_value );
+			float d_speed= std::min( dt_s * ( use_ground_acceleration ? g_deceleration : g_air_deceleration ), speed_value );
 			speed_-= deceleration_vec * d_speed;
 		}
 	}
@@ -112,13 +113,13 @@ void h_Player::Move( const m_Vec3& direction )
 	{
 		speed_.z= 0.0f;
 
-		vertical_speed_+= g_vertical_acceleration * dt;
+		vertical_speed_+= g_vertical_acceleration * dt_s;
 		if( vertical_speed_ > g_max_vertical_speed ) vertical_speed_= g_max_vertical_speed;
 		else if( -vertical_speed_ > g_max_vertical_speed ) vertical_speed_= -g_max_vertical_speed;
 	}
 	else vertical_speed_= 0.0f;
 
-	MoveInternal( m_Vec3( speed_.x, speed_.y, speed_.z + vertical_speed_ ) * dt );
+	MoveInternal( m_Vec3( speed_.x, speed_.y, speed_.z + vertical_speed_ ) * dt_s );
 }
 
 void h_Player::Rotate( const m_Vec3& delta )
