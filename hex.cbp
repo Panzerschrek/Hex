@@ -111,6 +111,8 @@
 		<Unit filename="src\settings_keys.hpp" />
 		<Unit filename="src\ticks_counter.cpp" />
 		<Unit filename="src\ticks_counter.hpp" />
+		<Unit filename="src\time.cpp" />
+		<Unit filename="src\time.hpp" />
 		<Unit filename="src\ui\ingame_menu.cpp" />
 		<Unit filename="src\ui\ingame_menu.hpp" />
 		<Unit filename="src\ui\main_menu.cpp" />

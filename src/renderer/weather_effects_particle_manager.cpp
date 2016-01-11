@@ -6,7 +6,7 @@
 #include "img_utils.hpp"
 #include "../math_lib/rand.hpp"
 #include "../console.hpp"
-#include "../ticks_counter.hpp"
+#include "../time.hpp"
 #include "ogl_state_manager.hpp"
 
 r_WeatherEffectsParticleManager::r_WeatherEffectsParticleManager()

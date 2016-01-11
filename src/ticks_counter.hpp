@@ -1,10 +1,6 @@
 #pragma once
 #include <chrono>
 
-// Returns time (in milliseconds) sinse some time point.
-// Use it for intervals calculation.
-uint64_t hGetTimeMS();
-
 class h_TicksCounter
 {
 public:

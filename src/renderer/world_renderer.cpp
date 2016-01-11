@@ -7,6 +7,7 @@
 #include "../console.hpp"
 #include "../settings.hpp"
 #include "../settings_keys.hpp"
+#include "../time.hpp"
 #include "ogl_state_manager.hpp"
 #include "img_utils.hpp"
 #include "chunk_info.hpp"

@@ -53,7 +53,8 @@ HEADERS += \
     ../src/calendar.hpp \
     ../src/world_header.hpp \
     ../src/math_lib/math.hpp \
-    ../src/math_lib/rand.hpp
+    ../src/math_lib/rand.hpp \
+    ../src/time.hpp
 
 SOURCES += \
     ../src/block.cpp \
@@ -97,7 +98,8 @@ SOURCES += \
     ../src/path_finder.cpp \
     ../src/calendar.cpp \
     ../src/world_header.cpp \
-    ../src/math_lib/math.cpp
+    ../src/math_lib/math.cpp \
+    ../src/time.cpp
 
 
 QT += widgets opengl

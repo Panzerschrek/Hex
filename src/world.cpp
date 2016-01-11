@@ -11,7 +11,7 @@
 #include "chunk_phys_mesh.hpp"
 #include "path_finder.hpp"
 #include "console.hpp"
-#include "ticks_counter.hpp"
+#include "time.hpp"
 
 static constexpr const unsigned int g_updates_frequency= 15;
 static constexpr const unsigned int g_update_inrerval_ms= 1000 / g_updates_frequency;
@@ -711,7 +711,7 @@ void h_World::PhysTick()
 		uint64_t t1_ms= hGetTimeMS();
 		unsigned int dt_ms= (unsigned int)(t1_ms - t0_ms);
 		if (dt_ms < g_update_inrerval_ms)
-			std::this_thread::sleep_for(std::chrono::milliseconds(g_update_inrerval_ms - dt_ms));
+			hSleep( g_update_inrerval_ms - dt_ms );
 	}
 }
 

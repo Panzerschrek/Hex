@@ -1,9 +1,5 @@
+#include "time.hpp"
 #include "ticks_counter.hpp"
-
-uint64_t hGetTimeMS()
-{
-	return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
-}
 
 h_TicksCounter::h_TicksCounter(unsigned int frequency_calc_interval_ms)
 	: frequency_calc_interval_ms_(frequency_calc_interval_ms)
