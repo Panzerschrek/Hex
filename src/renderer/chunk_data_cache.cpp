@@ -1,4 +1,5 @@
 #include <cstdio>
+#include <cstring>
 
 #include "chunk_data_cache.hpp"
 

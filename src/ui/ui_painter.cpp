@@ -1,3 +1,5 @@
+#include <cstring>
+
 #include "../hex.hpp"
 
 #include "ui_painter.hpp"

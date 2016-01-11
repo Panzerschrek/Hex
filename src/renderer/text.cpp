@@ -1,3 +1,5 @@
+#include <cstdarg>
+
 #include "ogl_state_manager.hpp"
 
 #include "../console.hpp"
