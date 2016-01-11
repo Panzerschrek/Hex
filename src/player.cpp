@@ -2,6 +2,7 @@
 #include "block_collision.hpp"
 #include "world_header.hpp"
 #include "world.hpp"
+#include "ticks_counter.hpp"
 
 static const float g_acceleration= 40.0f;
 static const float g_deceleration= 40.0f;
@@ -36,7 +37,7 @@ h_Player::h_Player(
 	, is_flying_(false)
 	, in_air_(true)
 	, view_angle_( world_header->player.rotation_x, 0.0f, world_header->player.rotation_z )
-	, prev_move_time_(0)
+	, prev_move_time_ms_(0)
 	, build_direction_( h_Direction::Unknown )
 	, build_block_( h_BlockType::Unknown )
 	, player_data_mutex_()
@@ -68,10 +69,10 @@ void h_Player::SetCollisionMesh( h_ChunkPhysMesh mesh )
 
 void h_Player::Move( const m_Vec3& direction )
 {
-	clock_t current_time= std::clock();
-	if( prev_move_time_ == 0 ) prev_move_time_= current_time;
-	float dt= float(current_time - prev_move_time_) / float(CLOCKS_PER_SEC);
-	prev_move_time_= current_time;
+	uint64_t current_time_ms = hGetTimeMS();
+	if( prev_move_time_ms_ == 0 ) prev_move_time_ms_= current_time_ms;
+	float dt= float(current_time_ms - prev_move_time_ms_) / 1000.0f;
+	prev_move_time_ms_= current_time_ms;
 
 	const float c_eps= 0.001f;
 

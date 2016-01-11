@@ -1,6 +1,5 @@
 #pragma once
 #include <mutex>
-#include <ctime>
 
 #include "../hex.hpp"
 #include "../fwd.hpp"
@@ -159,7 +158,7 @@ private:
 
 	r_WeatherEffectsParticleManager weather_effects_particle_manager_;
 
-	time_t startup_time_;
+	uint64_t startup_time_;
 };
 
 inline void r_WorldRenderer::SetViewportSize( unsigned int viewport_width, unsigned int viewport_height )

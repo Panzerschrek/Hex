@@ -60,7 +60,7 @@ r_WorldRenderer::r_WorldRenderer(
 	: settings_(settings)
 	, world_(world)
 	, player_(player)
-	, startup_time_(clock())
+	, startup_time_(hGetTimeMS())
 {
 	use_supersampling_=
 		!strcmp(
@@ -896,7 +896,7 @@ void r_WorldRenderer::DrawWater()
 	water_final_matrix_= water_matrix * block_final_matrix_;
 	water_shader_.Uniform( "view_matrix", water_final_matrix_ );
 	water_shader_.Uniform( "tex", 0 );
-	water_shader_.Uniform( "time", float( (clock() - startup_time_) * 1000 / CLOCKS_PER_SEC) * 0.001f );
+	water_shader_.Uniform( "time", float(hGetTimeMS() - startup_time_) * 0.001f );
 
 	water_shader_.Uniform( "sun_light_color", lighting_data_.current_sun_light );
 	water_shader_.Uniform( "fire_light_color", lighting_data_.current_fire_light );

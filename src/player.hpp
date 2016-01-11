@@ -1,5 +1,4 @@
 #pragma once
-#include <ctime>
 #include <mutex>
 
 #include "hex.hpp"
@@ -53,7 +52,7 @@ private:
 	bool in_air_;
 	m_Vec3 view_angle_;
 
-	clock_t prev_move_time_;
+	uint64_t prev_move_time_ms_;
 
 	m_Vec3 build_pos_;
 	short discret_build_pos_[3]; // World space build position.
