@@ -29,13 +29,6 @@
 
 #define H_CHUNK_INITIAL_WATER_BLOCK_COUNT 256u
 
-
-//scale vector for transformation of generated blocks
-#define H_BLOCK_SCALE_VECTOR_X 0.2886751345f
-#define H_BLOCK_SCALE_VECTOR_Y 0.5f
-#define H_BLOCK_SCALE_VECTOR_Z 1.0f
-
-
 #define H_HEXAGON_EDGE_SIZE 0.5773502691f
 #define H_HEXAGON_INNER_RADIUS 0.5f
 

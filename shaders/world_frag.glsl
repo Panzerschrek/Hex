@@ -14,49 +14,7 @@ in vec2 f_light;
 
 out vec4 color;
 
-const float H_SPACE_SCALE_VECTOR_X= 0.8660254037;
-const float H_INV_SPACE_SCALE_VECTOR_X= 1.15470053;
-const float H_HEXAGON_EDGE_SIZE= 0.5773502691;
-const vec3 TEX_COORD_SCALER= vec3( 1.0, H_INV_SPACE_SCALE_VECTOR_X, 1.0001 );
-
-ivec2 GetHexagonTexCoord( vec2 tex_coord )
-{
-	tex_coord.xy= tex_coord.yx;
-
-	ivec2 candidate_cells[3];
-
-	candidate_cells[0].x= int( floor( tex_coord.x / H_SPACE_SCALE_VECTOR_X ) );
-	float y_delta= 0.5 * float((candidate_cells[0].x+1)&1);
-	candidate_cells[0].y= int( floor( tex_coord.y  - y_delta )  );
-
-	candidate_cells[1].x= candidate_cells[0].x - 1;
-	candidate_cells[1].y= candidate_cells[0].y - (candidate_cells[0].x&1);
-	candidate_cells[2].x= candidate_cells[1].x;
-	candidate_cells[2].y= candidate_cells[1].y + 1;
-
-	vec2 center_pos[3];
-
-	center_pos[0].x= float( candidate_cells[0].x ) * H_SPACE_SCALE_VECTOR_X + H_HEXAGON_EDGE_SIZE;
-	center_pos[0].y= float( candidate_cells[0].y ) + y_delta + 0.5;
-	center_pos[1].x= center_pos[2].x= center_pos[0].x - H_SPACE_SCALE_VECTOR_X;
-	center_pos[1].y= center_pos[0].y - 0.5;
-	center_pos[2].y= center_pos[0].y + 0.5;
-
-	int nearest_cell= 0;
-	float dst_min= 256.0;
-	for( int i= 0; i< 3; i++ )
-	{
-		vec2 v= center_pos[i] - tex_coord;
-		float dst= dot(v,v);
-		if( dst < dst_min )
-		{
-			dst_min= dst;
-			nearest_cell= i;
-		}
-	}
-
-	return candidate_cells[ nearest_cell ].yx;
-}
+const float H_SQRT3= sqrt(3.0);
 
 ivec2 GetHexagonTexCoordY( vec2 tex_coord )
 {
@@ -65,7 +23,7 @@ ivec2 GetHexagonTexCoordY( vec2 tex_coord )
 	ivec2 nearest_cell;
 	vec2 d;
 
-	tex_coord_dransformed.y= tex_coord.y / H_SPACE_SCALE_VECTOR_X;
+	tex_coord_dransformed.y= tex_coord.y;
 	tex_coord_transformed_floor.y= floor( tex_coord_dransformed.y );
 	nearest_cell.y= int( tex_coord_transformed_floor.y );
 	d.y= tex_coord_dransformed.y - tex_coord_transformed_floor.y;
@@ -75,11 +33,11 @@ ivec2 GetHexagonTexCoordY( vec2 tex_coord )
 	nearest_cell.x= int( tex_coord_transformed_floor.x );
 	d.x= tex_coord_dransformed.x - tex_coord_transformed_floor.x;
 
-	if( d.x > 0.5 + (2.0 * H_SPACE_SCALE_VECTOR_X) * d.y )
+	if( d.x > 0.5 + H_SQRT3 * d.y )
 		return ivec2( nearest_cell.x + ((nearest_cell.y^1)&1), nearest_cell.y - 1 );
 
 	else
-	if( d.x < 0.5 - (2.0 * H_SPACE_SCALE_VECTOR_X) * d.y )
+	if( d.x < 0.5 - H_SQRT3 * d.y )
 		return ivec2( nearest_cell.x - (nearest_cell.y&1), nearest_cell.y - 1 );
 
 	else
@@ -88,12 +46,13 @@ ivec2 GetHexagonTexCoordY( vec2 tex_coord )
 
 vec4 SimpleFetch()
 {
-	return texture( tex, f_tex_coord * TEX_COORD_SCALER );
+	return texture( tex, f_tex_coord );
 }
 
 vec4 HexagonFetch()
 {
-	float lod= textureQueryLod( tex, f_tex_coord.xy * TEX_COORD_SCALER.xy ).x;
+	//float lod= textureQueryLod( tex, f_tex_coord.xy ).x;
+	float lod= 0.0;
 
 	if( lod <= 0.5 )
 	{
