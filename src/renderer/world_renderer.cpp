@@ -463,9 +463,9 @@ void r_WorldRenderer::CalculateMatrices()
 	translate.Translate( -cam_pos_ );
 
 	static const m_Vec3 s_vector(
-		H_BLOCK_SCALE_VECTOR_X,
-		H_BLOCK_SCALE_VECTOR_Y,
-		H_BLOCK_SCALE_VECTOR_Z );//hexogonal prism scale vector. DO NOT TOUCH!
+		H_SPACE_SCALE_VECTOR_X / 3.0f,
+		0.5f,
+		1.0f );//hexogonal prism scale vector. DO NOT TOUCH!
 	scale.Scale( s_vector );
 
 	perspective.PerspectiveProjection(
@@ -1163,10 +1163,11 @@ void r_WorldRenderer::LoadShaders()
 	world_shader_.SetAttribLocation( "tex_coord", 1 );
 	world_shader_.SetAttribLocation( "normal", 2 );
 	world_shader_.SetAttribLocation( "light", 3 );
-	sprintf( define_str, "TEX_SCALE_VECTOR vec3( %1.8f, %1.8f, %1.8f )",
-			 0.25f / float( H_MAX_TEXTURE_SCALE ),
-			 0.25f * sqrt(3.0f) / float( H_MAX_TEXTURE_SCALE ),
-			 1.0f );
+	sprintf(
+		define_str, "TEX_SCALE_VECTOR vec3( %1.8f, %1.8f, %1.8f )",
+		1.0f / float( 4 * H_TEXTURE_SCALE_MULTIPLIER ),
+		1.0f / float( 2 * H_TEXTURE_SCALE_MULTIPLIER ),
+		1.0f );
 	world_shader_.Define( define_str );
 	if( settings_->GetBool( h_SettingsKeys::lighting_only ) )
 	{

@@ -139,7 +139,7 @@ void r_TextureManager::InitTextureTable()
 	for( bool& tex_mode : texture_mode_table_ )
 		tex_mode= false;
 	for( unsigned char& tex_scale : texture_scale_table_ )
-		tex_scale= H_MAX_TEXTURE_SCALE;
+		tex_scale= H_TEXTURE_SCALE_MULTIPLIER;
 }
 
 void r_TextureManager::LoadTextures()
@@ -228,7 +228,7 @@ void r_TextureManager::LoadTextures()
 
 		val= obj[ "scale" ];
 		if( val.isDouble() )
-			texture_scale_table_[ tex_id ]= std::min( std::max( val.toInt(), 1 ), H_MAX_TEXTURE_SCALE * H_MAX_TEXTURE_SCALE );
+			texture_scale_table_[ tex_id ]= std::min( std::max( val.toInt(), 1 ), H_TEXTURE_SCALE_MULTIPLIER * H_TEXTURE_MAX_SCALE );
 
 		val= obj[ "perblock" ];
 		if( val.isBool() )

@@ -10,6 +10,11 @@ public:
 	~r_TextureManager();
 
 	static unsigned char GetTextureId( h_BlockType block_type, unsigned char normal_id );
+
+	// Scale, divedid by 4.
+	// 4 means 1 texture per block.
+	// 1 means 1 texture for 4 blocks.
+	// 16 means 4 textures per block.
 	static unsigned char GetTextureScale( unsigned char tex_id );
 	static bool TexturePerBlock( unsigned char tex_id );
 

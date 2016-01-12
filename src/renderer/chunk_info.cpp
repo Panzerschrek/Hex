@@ -669,12 +669,12 @@ void r_ChunkInfo::BuildChunkMesh()
 				if( r_TextureManager::TexturePerBlock( tex_id ) )
 				{
 					v[0].tex_coord[0]= 0;
-					v[1].tex_coord[0]= v[4].tex_coord[0]= 1*H_MAX_TEXTURE_SCALE;
-					v[2].tex_coord[0]= v[7].tex_coord[0]= 3*H_MAX_TEXTURE_SCALE;
-					v[3].tex_coord[0]= 4*H_MAX_TEXTURE_SCALE;
+					v[1].tex_coord[0]= v[4].tex_coord[0]= 1*H_TEXTURE_SCALE_MULTIPLIER;
+					v[2].tex_coord[0]= v[7].tex_coord[0]= 3*H_TEXTURE_SCALE_MULTIPLIER;
+					v[3].tex_coord[0]= 4*H_TEXTURE_SCALE_MULTIPLIER;
 
-					v[0].tex_coord[1]= v[3].tex_coord[1]= 1*H_MAX_TEXTURE_SCALE;
-					v[1].tex_coord[1]= v[2].tex_coord[1]= 2*H_MAX_TEXTURE_SCALE;
+					v[0].tex_coord[1]= v[3].tex_coord[1]= 1*H_TEXTURE_SCALE_MULTIPLIER;
+					v[1].tex_coord[1]= v[2].tex_coord[1]= 2*H_TEXTURE_SCALE_MULTIPLIER;
 					v[7].tex_coord[1]= v[4].tex_coord[1]= 0;
 				}
 				else
