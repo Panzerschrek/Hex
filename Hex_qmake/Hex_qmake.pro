@@ -20,7 +20,6 @@ HEADERS += \
     ../src/math_lib/assert.hpp \
     ../src/math_lib/collection.hpp \
     ../src/math_lib/small_objects_allocator.hpp \
-    ../src/renderer/chunk_data_cache.hpp \
     ../src/renderer/i_world_renderer.hpp \
     ../src/renderer/img_utils.hpp \
     ../src/renderer/rendering_constants.hpp \
@@ -73,7 +72,6 @@ SOURCES += \
     ../src/world_lighting.cpp \
     ../src/world_loading.cpp \
     ../src/math_lib/rand.cpp \
-    ../src/renderer/chunk_data_cache.cpp \
     ../src/renderer/chunk_info.cpp \
     ../src/renderer/img_utils.cpp \
     ../src/renderer/text.cpp \

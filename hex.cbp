@@ -87,8 +87,6 @@
 		<Unit filename="src\path_finder.hpp" />
 		<Unit filename="src\player.cpp" />
 		<Unit filename="src\player.hpp" />
-		<Unit filename="src\renderer\chunk_data_cache.cpp" />
-		<Unit filename="src\renderer\chunk_data_cache.hpp" />
 		<Unit filename="src\renderer\chunk_info.cpp" />
 		<Unit filename="src\renderer\chunk_info.hpp" />
 		<Unit filename="src\renderer\i_world_renderer.hpp" />
