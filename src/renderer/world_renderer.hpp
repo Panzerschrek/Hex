@@ -5,7 +5,6 @@
 #include "../fwd.hpp"
 #include "../ticks_counter.hpp"
 #include "i_world_renderer.hpp"
-#include "chunk_data_cache.hpp"
 
 #include "texture.hpp"
 #include "framebuffer.hpp"
