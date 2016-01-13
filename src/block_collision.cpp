@@ -289,8 +289,8 @@ void GetHexogonCoord( const m_Vec2& pos, short* x, short* y )
 	short nearest_y= short( floor_y );
 	float dy= transformed_y - floor_y;
 
-	// Upper part   y=  0.5 + sqrt(3) * x
-	// Lower part   y=  0.5 - sqrt(3) * x
+	// Upper part   y=  0.5 + 1.5 * x
+	// Lower part   y=  0.5 - 1.5 * x
 	/*
 	_____________
 	|  /         |\
@@ -300,13 +300,13 @@ void GetHexogonCoord( const m_Vec2& pos, short* x, short* y )
 	| \          | /
 	|__\_________|/
 	*/
-	if( dy > 0.5f + (2.0f * H_SPACE_SCALE_VECTOR_X) * dx )
+	if( dy > 0.5f + 1.5f * dx )
 	{
 		*x= nearest_x - 1;
 		*y= nearest_y + ((nearest_x^1)&1);
 	}
 	else
-	if( dy < 0.5f - (2.0f * H_SPACE_SCALE_VECTOR_X) * dx )
+	if( dy < 0.5f - 1.5f * dx )
 	{
 		*x= nearest_x - 1;
 		*y= nearest_y - (nearest_x&1);

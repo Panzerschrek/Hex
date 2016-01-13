@@ -14,8 +14,6 @@ in vec2 f_light;
 
 out vec4 color;
 
-const float H_SQRT3= sqrt(3.0);
-
 ivec2 GetHexagonTexCoordY( vec2 tex_coord )
 {
 	vec2 tex_coord_dransformed;
@@ -33,11 +31,11 @@ ivec2 GetHexagonTexCoordY( vec2 tex_coord )
 	nearest_cell.x= int( tex_coord_transformed_floor.x );
 	d.x= tex_coord_dransformed.x - tex_coord_transformed_floor.x;
 
-	if( d.x > 0.5 + H_SQRT3 * d.y )
+	if( d.x > 0.5 + 1.5 * d.y )
 		return ivec2( nearest_cell.x + ((nearest_cell.y^1)&1), nearest_cell.y - 1 );
 
 	else
-	if( d.x < 0.5 - H_SQRT3 * d.y )
+	if( d.x < 0.5 - 1.5 * d.y )
 		return ivec2( nearest_cell.x - (nearest_cell.y&1), nearest_cell.y - 1 );
 
 	else
