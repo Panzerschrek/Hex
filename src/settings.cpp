@@ -5,6 +5,8 @@
 #include <QJsonObject>
 #include <QJsonArray>
 
+#include "console.hpp"
+
 static bool hStrToInt( const char* str, int* i )
 {
 	int sign = 1;
@@ -65,19 +67,20 @@ static bool hStrToFloat( const char* str, float* f )
 	return true;
 }
 
-h_Settings::h_Settings(const char* file_name)
+h_Settings::h_Settings( const char* file_name )
 	: file_name_(file_name)
 {
-	//TODO - handle reading errors
-
 	QFile f( QString::fromStdString(file_name_) );
-	if( !f.open( QIODevice::ReadOnly ) ) return;
+	if( !f.open( QIODevice::ReadOnly ) )
+	{
+		h_Console::Warning( "can not read file \"", file_name_, "\"" );
+		return;
+	}
 
 	QByteArray ba= f.readAll();
 	f.close();
 
-	QJsonParseError err;
-	QJsonDocument doc= QJsonDocument::fromJson( ba, &err );
+	QJsonDocument doc= QJsonDocument::fromJson( ba );
 
 	if (doc.isObject())
 	{
@@ -96,11 +99,17 @@ h_Settings::~h_Settings()
 			QString::fromStdString(key_value_pair.second);
 
 	QJsonDocument doc(obj);
-	QByteArray ba = doc.toJson();
+	QByteArray ba= doc.toJson();
 
-	FILE* f= fopen( file_name_.data(), "wb" );
-	fwrite( ba.data(), 1, ba.size(), f );
-	fclose(f);
+	QFile f( QString::fromStdString(file_name_) );
+	if( !f.open( QIODevice::WriteOnly ) )
+	{
+		h_Console::Warning( "can not write file \"", file_name_, "\"" );
+		return;
+	}
+
+	f.write( ba );
+	f.close();
 }
 
 void h_Settings::SetSetting( const char* name, const char* value )
@@ -186,7 +195,6 @@ bool h_Settings::GetBool( const char* name, bool default_value ) const
 ------------------h_Settings::h_SettingsStringContainer-----------------------
 */
 
-
 h_Settings::h_SettingsStringContainer::h_SettingsStringContainer( const char* str )
 	: c_str_(str), str_()
 {
@@ -194,7 +202,7 @@ h_Settings::h_SettingsStringContainer::h_SettingsStringContainer( const char* st
 
 h_Settings::h_SettingsStringContainer::h_SettingsStringContainer( const h_SettingsStringContainer& other )
 	: c_str_(nullptr)
-	, str_( other.c_str_ == nullptr ? other.str_ : other.c_str_ )
+	, str_( other.c_str_ ? other.c_str_ : other.str_ )
 {
 }
 
@@ -207,37 +215,9 @@ h_Settings::h_SettingsStringContainer::~h_SettingsStringContainer()
 {
 }
 
-bool h_Settings::h_SettingsStringContainer::operator == ( const h_SettingsStringContainer& other) const
+bool h_Settings::h_SettingsStringContainer::operator < ( const h_SettingsStringContainer& other ) const
 {
 	const char* this_c_str= c_str_ ? c_str_ : str_.c_str();
 	const char* other_c_str= other.c_str_ ? other.c_str_ : other.str_.c_str();
-	return strcmp( this_c_str, other_c_str ) == 0;
-}
-
-bool h_Settings::h_SettingsStringContainer::operator != ( const h_SettingsStringContainer& other) const
-{
-	return !(*this == other);
-}
-bool h_Settings::h_SettingsStringContainer::operator > ( const h_SettingsStringContainer& other) const
-{
-	const char* this_c_str= c_str_ ? c_str_ : str_.c_str();
-	const char* other_c_str= other.c_str_ ? other.c_str_ : other.str_.c_str();
-	return strcmp( this_c_str, other_c_str ) > 0;
-}
-
-bool h_Settings::h_SettingsStringContainer::operator <=( const h_SettingsStringContainer& other) const
-{
-	return !(*this > other);
-}
-
-bool h_Settings::h_SettingsStringContainer::operator < ( const h_SettingsStringContainer& other) const
-{
-	return !(*this >=  other);
-}
-
-bool h_Settings::h_SettingsStringContainer::operator >= ( const h_SettingsStringContainer& other) const
-{
-	const char* this_c_str= c_str_ ? c_str_ : str_.c_str();
-	const char* other_c_str= other.c_str_ ? other.c_str_ : other.str_.c_str();
-	return strcmp( this_c_str, other_c_str ) >= 0;
+	return strcmp( this_c_str, other_c_str ) < 0;
 }

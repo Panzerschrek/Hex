@@ -9,7 +9,7 @@
 class h_Settings
 {
 public:
-	h_Settings(const char* file_name);
+	explicit h_Settings( const char* file_name );
 	~h_Settings();
 
 	void SetSetting( const char* name, const char* value );
@@ -44,12 +44,7 @@ private:
 
 		explicit operator std::string() const;
 
-		bool operator == ( const h_SettingsStringContainer& other) const;
-		bool operator != ( const h_SettingsStringContainer& other) const;
-		bool operator >  ( const h_SettingsStringContainer& other) const;
-		bool operator <= ( const h_SettingsStringContainer& other) const;
-		bool operator <  ( const h_SettingsStringContainer& other) const;
-		bool operator >= ( const h_SettingsStringContainer& other) const;
+		bool operator < ( const h_SettingsStringContainer& other ) const;
 
 	private:
 		void operator=(const h_SettingsStringContainer& other )= delete;
