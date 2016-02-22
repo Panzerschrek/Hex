@@ -276,6 +276,8 @@ void h_World::Build( short x, short y, short z, h_BlockType block_type )
 
 	UpdateInRadius( X * H_CHUNK_WIDTH + x,Y * H_CHUNK_WIDTH + y, r );
 	UpdateWaterInRadius( X * H_CHUNK_WIDTH + x,Y * H_CHUNK_WIDTH + y, r );
+
+	CheckFailingBlock( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), z );
 }
 
 void h_World::Destroy( short x, short y, short z )
@@ -312,6 +314,8 @@ void h_World::Destroy( short x, short y, short z )
 		UpdateInRadius( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), H_MAX_SUN_LIGHT );
 		UpdateWaterInRadius( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), H_MAX_SUN_LIGHT );
 	}
+
+	CheckFailingBlock( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), z + 1 );
 }
 
 void h_World::FlushActionQueue()
@@ -329,6 +333,28 @@ void h_World::FlushActionQueue()
 			Build( act.coord[0], act.coord[1], act.coord[2], act.block_type );
 		else if( act.type == ACTION_DESTROY )
 			Destroy( act.coord[0], act.coord[1], act.coord[2] );
+	}
+}
+
+void h_World::CheckFailingBlock( short x, short y, short z )
+{
+	short X= x>> H_CHUNK_WIDTH_LOG2;
+	short Y= y>> H_CHUNK_WIDTH_LOG2;
+	short local_x= x & (H_CHUNK_WIDTH - 1);
+	short local_y= y & (H_CHUNK_WIDTH - 1);
+
+	h_Chunk* ch= GetChunk( X, Y );
+
+	h_Block* b= ch->GetBlock( local_x, local_y, z );
+	if( b->Type() == h_BlockType::Sand && z >= 1 && ch->GetBlock( local_x, local_y, z - 1)->Type() == h_BlockType::Air )
+	{
+		h_FailingBlock* failing_block= ch->failing_blocks_alocatior_.New( b, local_x, local_y, z );
+		ch->failing_blocks_.push_back(failing_block);
+		ch->SetBlockAndTransparency( local_x, local_y, z, failing_block, TRANSPARENCY_AIR );
+
+		RelightBlockRemove( x, y, z );
+		UpdateInRadius( x , y, H_MAX_FIRE_LIGHT );
+		UpdateWaterInRadius( x, y, H_MAX_FIRE_LIGHT );
 	}
 }
 
@@ -668,6 +694,11 @@ void h_World::PhysTick()
 
 		FlushActionQueue();
 		WaterPhysTick();
+		{
+			for( unsigned int y= active_area_margins_[1]; y < chunk_number_y_ - active_area_margins_[1]; y++ )
+			for( unsigned int x= active_area_margins_[0]; x < chunk_number_x_ - active_area_margins_[0]; x++ )
+				GetChunk( x, y )->ProcessFailingBlocks();
+		}
 		RelightWaterModifedChunksLight();
 
 		// player logic

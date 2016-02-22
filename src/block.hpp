@@ -1,10 +1,10 @@
 #pragma once
 #include "hex.hpp"
+#include "math_lib/fixed.hpp"
 
 class h_Block
 {
 public:
-
 	static h_BlockType GetGetBlockTypeByName( const char* name );
 	static const char* GetBlockName( h_BlockType type );
 	static h_Direction GetDirectionByName( const char* name );
@@ -21,22 +21,6 @@ protected:
 	unsigned short additional_data_;//for water level\etc.
 };
 
-inline h_BlockType h_Block::Type() const
-{
-	return type_;
-}
-
-inline unsigned short h_Block::AdditionalData() const
-{
-	return additional_data_;
-}
-
-inline h_Block::h_Block( h_BlockType type, unsigned short additional_data )
-	: type_(type)
-	, additional_data_(additional_data)
-{
-}
-
 class h_LiquidBlock: public h_Block
 {
 	// h_Block::additional_data_ in this class is water pressure
@@ -52,58 +36,37 @@ public:
 	unsigned char x_, y_, z_, reserved_; // relative liquid block coordinates ( in chunk )
 };
 
-inline h_LiquidBlock::h_LiquidBlock( h_BlockType type, unsigned short liquid_level )
-	: h_Block( type, liquid_level )
-{
-}
-
-inline h_LiquidBlock::h_LiquidBlock()
-	: h_Block( h_BlockType::Water, H_MAX_WATER_LEVEL )
-{
-}
-
-inline unsigned short h_LiquidBlock::LiquidLevel() const
-{
-	return additional_data_;
-}
-
-inline void h_LiquidBlock::SetLiquidLevel( unsigned short l )
-{
-	additional_data_= l;
-}
-
-inline void h_LiquidBlock::IncreaseLiquidLevel( unsigned short l )
-{
-	additional_data_+= l;
-}
-inline void h_LiquidBlock::DecreaseLiquidLevel( unsigned short l )
-{
-	additional_data_-= l;
-}
-
-
 class h_LightSource : public h_Block
 {
 	//h_Block::AdditionalData in this class is light power
 public:
 	h_LightSource( h_BlockType type, unsigned char light_level= H_MAX_FIRE_LIGHT );
-	unsigned char LightLevel();
+	unsigned char LightLevel() const;
 	void SetLightLevel( unsigned char level );
 
 	unsigned char x_, y_, z_, reserved_; // relative light source block coordinates ( in chunk )
 };
 
-inline h_LightSource::h_LightSource( h_BlockType type, unsigned char light_level )
-	: h_Block( type, light_level )
+class h_FailingBlock : public h_Block
 {
-}
+public:
+	h_FailingBlock(
+		h_Block* block,
+		unsigned char x, unsigned char y, unsigned char z );
 
-inline unsigned char h_LightSource::LightLevel()
-{
-	return h_Block::additional_data_;
-}
+	h_Block* GetBlock();
+	const h_Block* GetBlock() const;
 
-inline void h_LightSource::SetLightLevel( unsigned char level )
-{
-	h_Block::additional_data_= level;
-}
+	void Tick();
+
+	unsigned char GetX() const;
+	unsigned char GetY() const;
+	fixed16_t GetZ() const;
+
+private:
+	h_Block* block_;
+	unsigned char x_, y_;
+	unsigned char failing_start_z_;
+	unsigned int failig_start_ticks_;
+	fixed16_t z_;
+};

@@ -78,6 +78,8 @@ private:
 	void Destroy( short x, short y, short z );
 	void FlushActionQueue();
 
+	void CheckFailingBlock( short x, short y, short z );
+
 	void UpdateInRadius( short x, short y, short r );//update chunks in square [x-r;x+r] [y-r;x+r]
 	void UpdateWaterInRadius( short x, short y, short r );//update chunks water in square [x-r;x+r] [y-r;x+r]
 

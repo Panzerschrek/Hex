@@ -1,4 +1,6 @@
 #pragma once
+#include <vector>
+
 #include "hex.hpp"
 #include "fwd.hpp"
 #include "block.hpp"
@@ -30,11 +32,12 @@ public:
 	const h_Block* GetBlock( short x, short y, short z ) const;
 	const h_Block* const* GetBlocksData() const;
 
+	const std::vector<h_FailingBlock*>& GetFailingBlocks() const;
+
 	const m_Collection< h_LiquidBlock* >* GetWaterList() const;
 	const m_Collection< h_LightSource* >* GetLightSourceList() const;
 	h_World* GetWorld();
 	const h_World* GetWorld() const;
-
 
 	short Longitude() const;
 	short Latitude() const;
@@ -51,6 +54,9 @@ public:
 	const unsigned char* GetFireLightData() const;
 
 private:
+	void SaveBlock( QDataStream& stream, const h_Block* block );
+	h_Block* LoadBlock( QDataStream& stream, unsigned int block_addr );
+
 	void GenChunk( const g_WorldGenerator* generator );
 
 	//chunk save\load
@@ -75,6 +81,8 @@ private:
 	h_LightSource* NewLightSource( short x, short y, short z, h_BlockType type );
 	void DeleteLightSource( short x, short y, short z );
 
+	void ProcessFailingBlocks();
+
 	void SetSunLightLevel( short x, short y, short z, unsigned char l );
 	void SetFireLightLevel( short x, short y, short z, unsigned char l );
 
@@ -95,6 +103,9 @@ private:
 	{
 		m_Collection< h_LiquidBlock* > water_block_list;
 	}water_blocks_data;
+
+	SmallObjectsAllocator< h_FailingBlock, 32, unsigned char > failing_blocks_alocatior_;
+	std::vector<h_FailingBlock*> failing_blocks_;
 
 	//light management
 	m_Collection< h_LightSource* > light_source_list_;

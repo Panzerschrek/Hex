@@ -54,6 +54,60 @@ static const unsigned short g_build_prism_indeces[]=
 
 static const char* const g_supersampling_antialiasing_key_value= "ss";
 
+static std::vector<unsigned short> GetQuadsIndeces()
+{
+	unsigned int quad_count= 65536 / 6 - 1;
+	std::vector<unsigned short> indeces( quad_count * 6 );
+
+	for( unsigned int i= 0, v= 0; i< quad_count * 6; i+= 6, v+= 4 )
+	{
+		indeces[i+0]= v + 0; indeces[i+1]= v + 1; indeces[i+2]= v + 2;
+		indeces[i+3]= v + 0; indeces[i+4]= v + 2; indeces[i+5]= v + 3;
+	}
+
+	return indeces;
+}
+
+static r_VertexFormat GetWorldVertexFormat()
+{
+	r_VertexFormat format;
+
+	format.vertex_size= sizeof(r_WorldVertex);
+
+	r_WorldVertex v;
+	r_VertexFormat::Attribute attrib;
+
+	attrib.type= r_VertexFormat::Attribute::TypeInShader::Real;
+	attrib.input_type= GL_SHORT;
+	attrib.components= 3;
+	attrib.offset= (char*)v.coord - (char*)&v;
+	attrib.normalized= false;
+	format.attributes.push_back(attrib);
+
+	attrib.type= r_VertexFormat::Attribute::TypeInShader::Real;
+	attrib.input_type= GL_SHORT;
+	attrib.components= 3;
+	attrib.offset= (char*)v.tex_coord - (char*)&v;
+	attrib.normalized= false;
+	format.attributes.push_back(attrib);
+
+	attrib.type= r_VertexFormat::Attribute::TypeInShader::Integer;
+	attrib.input_type= GL_UNSIGNED_BYTE;
+	attrib.components= 1;
+	attrib.offset= (char*)&v.normal_id - (char*)&v;
+	attrib.normalized= false;
+	format.attributes.push_back(attrib);
+
+	attrib.type= r_VertexFormat::Attribute::TypeInShader::Real;
+	attrib.input_type= GL_UNSIGNED_BYTE;
+	attrib.components= 2;
+	attrib.offset= (char*)v.light - (char*)&v;
+	attrib.normalized= false;
+	format.attributes.push_back(attrib);
+
+	return format;
+}
+
 r_WorldRenderer::r_WorldRenderer(
 	const h_SettingsPtr& settings,
 	const h_WorldConstPtr& world ,
@@ -91,57 +145,14 @@ r_WorldRenderer::r_WorldRenderer(
 	unsigned int world_water_cluster_size[2] { 5, 4 };
 	// Create world vertex buffer
 	{
-		// Quad indexation
-		unsigned int quad_count= 65536 / 6 - 1;
-		std::vector<unsigned short> indeces( quad_count * 6 );
-		for( unsigned int i= 0, v= 0; i< quad_count * 6; i+= 6, v+= 4 )
-		{
-			indeces[i+0]= v + 0; indeces[i+1]= v + 1; indeces[i+2]= v + 2;
-			indeces[i+3]= v + 0; indeces[i+4]= v + 2; indeces[i+5]= v + 3;
-		}
-
-		r_VertexFormat format;
-		format.vertex_size= sizeof(r_WorldVertex);
-
-		r_WorldVertex v;
-		r_VertexFormat::Attribute attrib;
-
-		attrib.type= r_VertexFormat::Attribute::TypeInShader::Real;
-		attrib.input_type= GL_SHORT;
-		attrib.components= 3;
-		attrib.offset= (char*)v.coord - (char*)&v;
-		attrib.normalized= false;
-		format.attributes.push_back(attrib);
-
-		attrib.type= r_VertexFormat::Attribute::TypeInShader::Real;
-		attrib.input_type= GL_SHORT;
-		attrib.components= 3;
-		attrib.offset= (char*)v.tex_coord - (char*)&v;
-		attrib.normalized= false;
-		format.attributes.push_back(attrib);
-
-		attrib.type= r_VertexFormat::Attribute::TypeInShader::Integer;
-		attrib.input_type= GL_UNSIGNED_BYTE;
-		attrib.components= 1;
-		attrib.offset= (char*)&v.normal_id - (char*)&v;
-		attrib.normalized= false;
-		format.attributes.push_back(attrib);
-
-		attrib.type= r_VertexFormat::Attribute::TypeInShader::Real;
-		attrib.input_type= GL_UNSIGNED_BYTE;
-		attrib.components= 2;
-		attrib.offset= (char*)v.light - (char*)&v;
-		attrib.normalized= false;
-		format.attributes.push_back(attrib);
-
 		world_vertex_buffer_.reset(
 			new r_WVB(
 				world_cluster_size[0],
 				world_cluster_size[1],
 				world_->ChunkNumberX() / world_cluster_size[0] + 2,
 				world_->ChunkNumberY() / world_cluster_size[1] + 2,
-				std::move(indeces),
-				std::move(format) ));
+				GetQuadsIndeces(),
+				GetWorldVertexFormat() ));
 	}
 
 	// Create World water vertex buffr
@@ -383,6 +394,8 @@ void r_WorldRenderer::Update()
 			segment.updated= true;
 		}
 	} // for chunks matrix
+
+	BuildFailingBlocks();
 
 	// Not thread safe. writes here, reads in GPU thread.
 	chunks_updates_counter_.Tick( chunks_rebuilded );
@@ -813,6 +826,13 @@ void r_WorldRenderer::DrawWorld()
 
 	unsigned int vertex_count= DrawClusterMatrix( world_vertex_buffer_.get(), 2, 4 );
 	world_quads_in_frame_= vertex_count / 4;
+
+	m_Mat4 z_scale_matrix;
+	z_scale_matrix.Scale( m_Vec3( 1.0f, 1.0f, 1.0f / 256.0f ) );
+	world_shader_.Uniform( "view_matrix", z_scale_matrix *  block_final_matrix_ );
+
+	failing_blocks_vbo_.Bind();
+	glDrawElements( GL_TRIANGLES, failing_blocks_vertex_count_ / 4 * 6, GL_UNSIGNED_SHORT, nullptr );
 }
 
 void r_WorldRenderer::DrawSky()
@@ -1114,6 +1134,18 @@ bool r_WorldRenderer::NeedRebuildChunkInThisTick( unsigned int x, unsigned int y
 	return b == (ticks & 3);
 }
 
+void r_WorldRenderer::BuildFailingBlocks()
+{
+	failing_blocks_vertices_.clear();
+
+	// Scan chunks matrix, rebuild updated chunks.
+	for( unsigned int y= 0; y < chunks_info_.matrix_size[1]; y++ )
+	for( unsigned int x= 0; x < chunks_info_.matrix_size[0]; x++ )
+		rBuildChunkFailingBlocks(
+			*chunks_info_.chunk_matrix[ x + y * chunks_info_.matrix_size[0] ],
+			failing_blocks_vertices_ );
+}
+
 void r_WorldRenderer::UpdateGPUData()
 {
 	std::unique_lock<std::mutex> lock(world_vertex_buffer_mutex_);
@@ -1133,6 +1165,9 @@ void r_WorldRenderer::UpdateGPUData()
 			cluster->UpdateVBO( wvb->cluster_size_[0], wvb->cluster_size_[1] );
 		}
 	}
+
+	failing_blocks_vbo_.VertexData( failing_blocks_vertices_.data(), failing_blocks_vertices_.size() * sizeof(r_WorldVertex), sizeof(r_WorldVertex) );
+	failing_blocks_vertex_count_= failing_blocks_vertices_.size();
 }
 
 void r_WorldRenderer::InitGL()
@@ -1303,6 +1338,31 @@ void r_WorldRenderer::InitVertexBuffers()
 		r_StarVertex v;
 		stars_vbo_.VertexAttribPointer( 0, 3, GL_SHORT, true, ((char*)v.pos) - ((char*)&v) );
 		stars_vbo_.VertexAttribPointer( 1, 2, GL_UNSIGNED_BYTE, true, ((char*)v.brightness_spectre) - ((char*)&v) );
+	}
+
+	{
+		std::vector<unsigned short> indeces= GetQuadsIndeces();
+
+		failing_blocks_vbo_.IndexData( indeces.data(), indeces.size() * sizeof(unsigned short), GL_UNSIGNED_SHORT, GL_TRIANGLES );
+		failing_blocks_vbo_.VertexData( nullptr, 6 * sizeof(r_WorldVertex), sizeof(r_WorldVertex) );
+
+		r_VertexFormat vertex_format= GetWorldVertexFormat();
+		unsigned int i= 0;
+		for( const r_VertexFormat::Attribute& attribute : vertex_format.attributes )
+		{
+			if( attribute.type == r_VertexFormat::Attribute::TypeInShader::Integer )
+				failing_blocks_vbo_.VertexAttribPointerInt(
+					i,
+					attribute.components, attribute.input_type,
+					attribute.offset );
+			else
+				failing_blocks_vbo_.VertexAttribPointer(
+					i,
+					attribute.components, attribute.input_type, attribute.normalized,
+					attribute.offset );
+
+			i++;
+		}
 	}
 
 	weather_effects_particle_manager_.Create( 65536*2, m_Vec3(72.0f, 72.0f, 96.0f) );
