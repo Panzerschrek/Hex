@@ -39,7 +39,6 @@ public:
 	h_World* GetWorld();
 	const h_World* GetWorld() const;
 
-
 	short Longitude() const;
 	short Latitude() const;
 	bool IsEdgeChunk() const;
@@ -55,6 +54,9 @@ public:
 	const unsigned char* GetFireLightData() const;
 
 private:
+	void SaveBlock( QDataStream& stream, const h_Block* block );
+	h_Block* LoadBlock( QDataStream& stream, unsigned int block_addr );
+
 	void GenChunk( const g_WorldGenerator* generator );
 
 	//chunk save\load

@@ -196,7 +196,7 @@ h_FailingBlock::h_FailingBlock(
 	H_ASSERT( block->Type() != h_BlockType::FailingBlock );
 	H_ASSERT( x < H_CHUNK_WIDTH );
 	H_ASSERT( y < H_CHUNK_WIDTH );
-	H_ASSERT( x >= 1 && x < H_CHUNK_HEIGHT - 1 );
+	H_ASSERT( z >= 1 && z < H_CHUNK_HEIGHT - 1 );
 }
 
 h_Block* h_FailingBlock::GetBlock()

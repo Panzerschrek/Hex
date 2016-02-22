@@ -25,6 +25,121 @@ bool h_Chunk::IsEdgeChunk() const
 		latitude_  == ( world_->Latitude () + int(world_->ChunkNumberY()) - 1 );
 }
 
+void h_Chunk::SaveBlock( QDataStream& stream, const h_Block* block )
+{
+	stream << ((unsigned short)block->Type());
+
+	switch(block->Type())
+	{
+	case h_BlockType::Air:
+	case h_BlockType::SphericalBlock:
+	case h_BlockType::Stone:
+	case h_BlockType::Soil:
+	case h_BlockType::Wood:
+	case h_BlockType::Grass:
+	case h_BlockType::Sand:
+	case h_BlockType::Foliage:
+	case h_BlockType::FireStone:
+	case h_BlockType::Brick:
+		break;
+
+	case h_BlockType::Water:
+		stream << static_cast< const h_LiquidBlock*>(block)->LiquidLevel();
+		break;
+
+	case h_BlockType::FailingBlock:
+		{
+			const h_FailingBlock* failing_block= static_cast<const h_FailingBlock*>(block);
+			SaveBlock( stream, failing_block->GetBlock() );
+
+			// TODO - save other failing block data
+		}
+		break;
+
+	case h_BlockType::NumBlockTypes:
+	case h_BlockType::Unknown:
+		break;
+	};
+}
+
+h_Block* h_Chunk::LoadBlock( QDataStream& stream, unsigned int block_addr )
+{
+	unsigned short s_block_id;
+	//HACK. if block type basic integer type changed, this must be changed too
+	stream >> s_block_id;
+	h_BlockType block_id= (h_BlockType)s_block_id;
+
+	h_Block* block;
+
+	switch(block_id)
+	{
+	case h_BlockType::Air:
+	case h_BlockType::SphericalBlock:
+	case h_BlockType::Stone:
+	case h_BlockType::Soil:
+	case h_BlockType::Wood:
+	case h_BlockType::Grass:
+	case h_BlockType::Sand:
+	case h_BlockType::Foliage:
+	case h_BlockType::Brick:
+		block= world_->NormalBlock(block_id);
+		break;
+
+	case h_BlockType::FireStone:
+		{
+			h_LightSource* light_source= new h_LightSource( h_BlockType::FireStone, H_MAX_FIRE_LIGHT );
+			light_source->x_= block_addr >> (H_CHUNK_WIDTH_LOG2 + H_CHUNK_HEIGHT_LOG2);
+			light_source->y_= (block_addr >> H_CHUNK_HEIGHT_LOG2) & (H_CHUNK_WIDTH-1);
+			light_source->z_= block_addr & (H_CHUNK_HEIGHT-1);
+
+			light_source_list_.Add( light_source );
+
+			block= light_source;
+		}
+		break;
+
+	case h_BlockType::Water:
+		{
+			h_LiquidBlock* liquid_block= water_blocks_allocator_.New();
+
+			unsigned short water_level;
+			stream >> water_level;
+
+			liquid_block->x_= block_addr >> (H_CHUNK_WIDTH_LOG2 + H_CHUNK_HEIGHT_LOG2);
+			liquid_block->y_= (block_addr >> H_CHUNK_HEIGHT_LOG2) & (H_CHUNK_WIDTH-1);
+			liquid_block->z_= block_addr & (H_CHUNK_HEIGHT-1);
+
+			liquid_block->SetLiquidLevel( water_level );
+			water_blocks_data.water_block_list.Add( liquid_block );
+
+			block= liquid_block;
+		}
+		break;
+
+	case h_BlockType::FailingBlock:
+		{
+			h_FailingBlock* failing_block=
+				failing_blocks_alocatior_.New(
+					LoadBlock( stream, block_addr ),
+					block_addr >> (H_CHUNK_WIDTH_LOG2 + H_CHUNK_HEIGHT_LOG2),
+					(block_addr >> H_CHUNK_HEIGHT_LOG2) & (H_CHUNK_WIDTH-1),
+					block_addr & (H_CHUNK_HEIGHT-1) );
+
+			failing_blocks_.push_back( failing_block );
+
+			block= failing_block;
+		}
+		break;
+
+	default:
+		H_ASSERT(false);
+		block= world_->NormalBlock(h_BlockType::Air);
+		break;
+	};
+
+	return block;
+}
+
 void h_Chunk::GenChunk( const g_WorldGenerator* generator )
 {
 	short x, y, z;
@@ -65,98 +180,18 @@ void h_Chunk::GenChunk( const g_WorldGenerator* generator )
 
 void h_Chunk::GenChunkFromFile( QDataStream& stream )
 {
-	h_LiquidBlock* liquid_block;
-
 	for( int i= 0; i< H_CHUNK_WIDTH * H_CHUNK_WIDTH * H_CHUNK_HEIGHT; i++ )
 	{
-		h_BlockType block_id;
-		unsigned short s_block_id;
-		//HACK. if block type basic integer type changed, this must be changed too
-		stream >> s_block_id;
-		block_id= (h_BlockType)s_block_id;
-
-		unsigned short water_level;
-		h_LightSource* light_source;
-		h_Block* b;
-
-		switch(block_id)
-		{
-		case h_BlockType::Air:
-		case h_BlockType::SphericalBlock:
-		case h_BlockType::Stone:
-		case h_BlockType::Soil:
-		case h_BlockType::Wood:
-		case h_BlockType::Grass:
-		case h_BlockType::Sand:
-		case h_BlockType::Foliage:
-		case h_BlockType::Brick:
-			blocks_[i]= b= world_->NormalBlock(block_id);
-			transparency_[i]= b->Transparency();
-			break;
-
-		case h_BlockType::FireStone:
-			blocks_[i]= light_source= new h_LightSource( h_BlockType::FireStone, H_MAX_FIRE_LIGHT );
-			light_source_list_.Add( light_source );
-			transparency_[i]= blocks_[i]->Transparency();
-
-			light_source->x_= i >> (H_CHUNK_WIDTH_LOG2 + H_CHUNK_HEIGHT_LOG2);
-			light_source->y_= (i>>H_CHUNK_HEIGHT_LOG2) & (H_CHUNK_WIDTH-1);
-			light_source->z_= i & (H_CHUNK_HEIGHT-1);
-			break;
-
-		case h_BlockType::Water:
-			liquid_block= water_blocks_allocator_.New();
-			blocks_[i]= liquid_block;
-			transparency_[i]= TRANSPARENCY_LIQUID;
-			stream >> water_level;
-
-			liquid_block->x_= i >> (H_CHUNK_WIDTH_LOG2 + H_CHUNK_HEIGHT_LOG2);
-			liquid_block->y_= (i>>H_CHUNK_HEIGHT_LOG2) & (H_CHUNK_WIDTH-1);
-			liquid_block->z_= i & (H_CHUNK_HEIGHT-1);
-
-			liquid_block->SetLiquidLevel( water_level );
-			water_blocks_data.water_block_list.Add( liquid_block );
-			break;
-
-		default:
-			H_ASSERT(false);
-			break;
-		};
-	}//for blocks in
+		h_Block* block= LoadBlock( stream, i );
+		blocks_[i]= block;
+		transparency_[i]= block->Transparency();
+	}
 }
 
 void h_Chunk::SaveChunkToFile( QDataStream& stream )
 {
 	for( int i= 0; i< H_CHUNK_WIDTH * H_CHUNK_WIDTH * H_CHUNK_HEIGHT; i++ )
-	{
-		h_Block* b= blocks_[i];
-
-		stream << ((unsigned short)b->Type());
-
-		switch(b->Type())
-		{
-		case h_BlockType::Air:
-		case h_BlockType::SphericalBlock:
-		case h_BlockType::Stone:
-		case h_BlockType::Soil:
-		case h_BlockType::Wood:
-		case h_BlockType::Grass:
-		case h_BlockType::Sand:
-		case h_BlockType::Foliage:
-		case h_BlockType::FireStone:
-		case h_BlockType::Brick:
-			break;
-
-		case h_BlockType::Water:
-			stream << ((h_LiquidBlock*)b)->LiquidLevel();
-			break;
-
-		case h_BlockType::NumBlockTypes:
-		case h_BlockType::Unknown:
-			break;
-		};
-	}
-
+		SaveBlock( stream, blocks_[i] );
 }
 
 void h_Chunk::PlantTrees( const g_WorldGenerator* generator )

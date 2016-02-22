@@ -91,17 +91,6 @@ h_World::h_World(
 
 	LightWorld();
 
-	{
-		h_Chunk* ch= chunks_[ chunk_number_x_ / 2 + (chunk_number_y_ / 2) * H_MAX_CHUNKS ];
-
-		unsigned char x= 1, y= 2, z= 125;
-
-		h_FailingBlock* block= ch->failing_blocks_alocatior_.New( NormalBlock(h_BlockType::Sand), x, y, z );
-		ch->failing_blocks_.push_back(block);
-
-		ch->SetBlockAndTransparency( x, y, z, block, TRANSPARENCY_AIR );
-	}
-
 	test_mob_target_pos_[0]= test_mob_discret_pos_[0]= 0;
 	test_mob_target_pos_[1]= test_mob_discret_pos_[1]= 0;
 	test_mob_target_pos_[2]= test_mob_discret_pos_[2]= 72;
