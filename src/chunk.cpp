@@ -113,7 +113,7 @@ h_Block* h_Chunk::LoadBlock( QDataStream& stream, unsigned int block_addr )
 			light_source->y_= (block_addr >> H_CHUNK_HEIGHT_LOG2) & (H_CHUNK_WIDTH-1);
 			light_source->z_= block_addr & (H_CHUNK_HEIGHT-1);
 
-			light_source_list_.Add( light_source );
+			light_source_list_.push_back( light_source );
 
 			block= light_source;
 		}
@@ -470,25 +470,30 @@ void h_Chunk::DeleteWaterBlock( h_LiquidBlock* b )
 
 h_LightSource* h_Chunk::NewLightSource( short x, short y, short z, h_BlockType type )
 {
-	h_LightSource* s;
-	light_source_list_.Add( s= new h_LightSource( type ) );
+	h_LightSource* s= new h_LightSource( type );
+	light_source_list_.push_back(s);
 	s->x_= x;
 	s->y_= y;
 	s->z_= z;
 	return s;
 }
+
 void h_Chunk::DeleteLightSource( short x, short y, short z )
 {
-	h_LightSource* s= (h_LightSource*) GetBlock( x, y, z );
+	h_LightSource* s= static_cast<h_LightSource*>( GetBlock( x, y, z ) );
 
-	m_Collection< h_LightSource* >::Iterator it( &light_source_list_ );
-	for( it.Begin(); it.IsValid() ; it.Next() )
-		if( *it == s )
+	for( size_t i= 0; i < light_source_list_.size(); i++ )
+	{
+		if( light_source_list_[i] == s )
 		{
-			it.RemoveCurrent();
 			delete s;
+			if( i < light_source_list_.size() - 1 )
+				light_source_list_[i]= light_source_list_.back();
+
+			light_source_list_.pop_back();
 			break;
 		}
+	}
 }
 
 void h_Chunk::ProcessFailingBlocks()

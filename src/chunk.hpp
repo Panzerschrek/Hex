@@ -33,7 +33,7 @@ public:
 	const std::vector<h_FailingBlock*>& GetFailingBlocks() const;
 
 	const m_Collection< h_LiquidBlock* >* GetWaterList() const;
-	const m_Collection< h_LightSource* >* GetLightSourceList() const;
+	const std::vector< h_LightSource* >& GetLightSourceList() const;
 	h_World* GetWorld();
 	const h_World* GetWorld() const;
 
@@ -102,7 +102,7 @@ private:
 	std::vector<h_FailingBlock*> failing_blocks_;
 
 	//light management
-	m_Collection< h_LightSource* > light_source_list_;
+	std::vector< h_LightSource* > light_source_list_;
 
 	// Large arrays - put back.
 	h_Block* blocks_             [ H_CHUNK_WIDTH * H_CHUNK_WIDTH * H_CHUNK_HEIGHT ];
@@ -148,9 +148,9 @@ inline const m_Collection< h_LiquidBlock* >* h_Chunk::GetWaterList() const
 	return & water_block_list_;
 }
 
-inline const m_Collection< h_LightSource* >* h_Chunk::GetLightSourceList() const
+inline const std::vector<h_LightSource*>& h_Chunk::GetLightSourceList() const
 {
-	return &light_source_list_;
+	return light_source_list_;
 }
 
 inline const h_World* h_Chunk::GetWorld() const

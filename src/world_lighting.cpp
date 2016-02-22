@@ -175,10 +175,9 @@ void h_World::LightWorld()
 					for( short z= 1; z< H_CHUNK_HEIGHT - 1; z++ )
 						AddSunLight_r( X+x, Y+y, z, ch->SunLightLevel(x,y,z) );
 
-			int fire_light_count= ch->GetLightSourceList()->Size();
-			auto fire_lights= ch->GetLightSourceList()->Data();
-			for( int l= 0; l< fire_light_count; l++ )
-				AddFireLight_r( X+fire_lights[l]->x_, Y+fire_lights[l]->y_, fire_lights[l]->z_, fire_lights[l]->LightLevel() );
+			const std::vector< h_LightSource* >& light_sources= ch->GetLightSourceList();
+			for( const h_LightSource* source : light_sources )
+				AddFireLight_r( X + source->x_, Y + source->y_, source->z_, source->LightLevel() );
 		}
 
 	//north and south chunks
@@ -193,10 +192,9 @@ void h_World::LightWorld()
 					for( short z= 1; z< H_CHUNK_HEIGHT-1; z++ )
 						AddSunLightSafe_r( X+x, Y+y, z, ch->SunLightLevel(x,y,z) );
 
-			int fire_light_count= ch->GetLightSourceList()->Size();
-			auto fire_lights= ch->GetLightSourceList()->Data();
-			for( int l= 0; l< fire_light_count; l++ )
-				AddFireLightSafe_r( X+fire_lights[l]->x_, Y+fire_lights[l]->y_, fire_lights[l]->z_, fire_lights[l]->LightLevel() );
+			const std::vector< h_LightSource* >& light_sources= ch->GetLightSourceList();
+			for( const h_LightSource* source : light_sources )
+				AddFireLightSafe_r( X + source->x_, Y + source->y_, source->z_, source->LightLevel() );
 		}
 	}
 	//east and west chunks
@@ -211,10 +209,9 @@ void h_World::LightWorld()
 					for( short z= 1; z< H_CHUNK_HEIGHT-1; z++ )
 						AddSunLightSafe_r( X+x, Y+y, z, ch->SunLightLevel(x,y,z) );
 
-			int fire_light_count= ch->GetLightSourceList()->Size();
-			auto fire_lights= ch->GetLightSourceList()->Data();
-			for( int l= 0; l< fire_light_count; l++ )
-				AddFireLightSafe_r( X+fire_lights[l]->x_, Y+fire_lights[l]->y_, fire_lights[l]->z_, fire_lights[l]->LightLevel() );
+			const std::vector< h_LightSource* >& light_sources= ch->GetLightSourceList();
+			for( const h_LightSource* source : light_sources )
+				AddFireLightSafe_r( X + source->x_, Y + source->y_, source->z_, source->LightLevel() );
 		}
 	}
 }
@@ -645,17 +642,16 @@ void h_World::ShineFireLight( short x_min, short y_min, short z_min, short x_max
 
 	short i, j;
 	for( i= x_min; i<= x_max; i++ )
-		for( j= y_min; j<= y_max; j++ )
-		{
-			auto light_source_list= GetChunk( i, j )->GetLightSourceList();
-			h_LightSource** s= light_source_list->Data();
-			h_LightSource** s_end= s + light_source_list->Size();
-			short X, Y;
-			X= i<< H_CHUNK_WIDTH_LOG2;
-			Y= j<< H_CHUNK_WIDTH_LOG2;
-			for( ; s!= s_end; s++ )
-				AddFireLight_r( s[0]->x_ + X, s[0]->y_ + Y, s[0]->z_, s[0]->LightLevel() );
-		}
+	for( j= y_min; j<= y_max; j++ )
+	{
+		short X, Y;
+		X= i<< H_CHUNK_WIDTH_LOG2;
+		Y= j<< H_CHUNK_WIDTH_LOG2;
+
+		const std::vector< h_LightSource* >& light_sources= GetChunk( i, j )->GetLightSourceList();
+		for( const h_LightSource* source : light_sources )
+			AddFireLight_r( source->x_ + X, source->y_ + Y, source->z_, source->LightLevel() );
+	}
 }
 
 
@@ -672,11 +668,9 @@ void h_World::AddLightToBorderChunk( unsigned int X, unsigned int Y )
 				AddSunLightSafe_r( x+i, y+j, k, ch->SunLightLevel( i, j, k ) );
 
 	//add fire lights to border chunk
-	int fire_light_count= ch->GetLightSourceList()->Size();
-	auto fire_lights= ch->GetLightSourceList()->Data();
-	for( int l= 0; l< fire_light_count; l++ )
-		AddFireLightSafe_r( x+fire_lights[l]->x_, y+fire_lights[l]->y_, fire_lights[l]->z_, fire_lights[l]->LightLevel() );
-
+	const std::vector< h_LightSource* >& light_sources= ch->GetLightSourceList();
+	for( const h_LightSource* source : light_sources )
+		AddFireLightSafe_r( source->x_ + X, source->y_ + Y, source->z_, source->LightLevel() );
 }
 
 
