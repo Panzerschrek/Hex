@@ -20,7 +20,7 @@ struct m_FixedVec2
 template<int base>
 static fixed_base_t mFixedVec2Dot( const m_FixedVec2<base>& v0, const m_FixedVec2<base>& v1 )
 {
-	return m_FixedMul<base>( v0.x, v1.x ) + m_FixedMul<base>( v0.y, v1.y );
+	return mFixedMul<base>( v0.x, v1.x ) + mFixedMul<base>( v0.y, v1.y );
 }
 
 template<int base>
@@ -38,20 +38,20 @@ static bool LinesIntersection(
 	fixed_base_t k0= mFixedVec2Dot<base>( n0, line0v0 );
 	fixed_base_t k1= mFixedVec2Dot<base>( n1, line1v0 );
 
-	fixed_base_t d= m_FixedMul<base>( n0.x, n1.y ) - m_FixedMul<8>( n0.y, n1.x );
+	fixed_base_t d= mFixedMul<base>( n0.x, n1.y ) - mFixedMul<8>( n0.y, n1.x );
 	if( d == 0 ) return false;
 
-	result.x= m_FixedMul<base>( k0, n1.y ) - m_FixedMul<8>( k1, n0.y );
-	result.y= m_FixedMul<base>( k1, n0.x ) - m_FixedMul<8>( k0, n1.x );
-	result.x= m_FixedDiv<base>( result.x, d );
-	result.y= m_FixedDiv<base>( result.y, d );
+	result.x= mFixedMul<base>( k0, n1.y ) - mFixedMul<8>( k1, n0.y );
+	result.y= mFixedMul<base>( k1, n0.x ) - mFixedMul<8>( k0, n1.x );
+	result.x= mFixedDiv<base>( result.x, d );
+	result.y= mFixedDiv<base>( result.y, d );
 
 	VecType check_vec0{ result.x - line0v0.x, result.y - line0v0.y };
 	VecType check_vec1{ result.x - line1v0.x, result.y - line1v0.y };
 	fixed_base_t l0_vec_squre_len= mFixedVec2Dot<base>( l0_vec, l0_vec );
 	fixed_base_t l1_vec_squre_len= mFixedVec2Dot<base>( l1_vec, l1_vec );
-	fixed_base_t proj0= mFixedVec2Dot<8>( check_vec0, l0_vec );
-	fixed_base_t proj1= mFixedVec2Dot<8>( check_vec1, l1_vec );
+	fixed_base_t proj0= mFixedVec2Dot<base>( check_vec0, l0_vec );
+	fixed_base_t proj1= mFixedVec2Dot<base>( check_vec1, l1_vec );
 
 	return
 		proj0 >= 0 && proj0 < l0_vec_squre_len &&
@@ -83,9 +83,9 @@ static void FindNearestPointOnEdge(
 	}
 	else
 	{
-		fixed_base_t div= m_FixedDiv<base>( dot, line_square_length );
-		result_point.x= edgev0.x + m_FixedMul<base>( edge_vec.x, div );
-		result_point.y= edgev0.y + m_FixedMul<base>( edge_vec.y, div );
+		fixed_base_t div= mFixedDiv<base>( dot, line_square_length );
+		result_point.x= edgev0.x + mFixedMul<base>( edge_vec.x, div );
+		result_point.y= edgev0.y + mFixedMul<base>( edge_vec.y, div );
 
 		m_FixedVec2<base> vec_to_result_point{ point.x - result_point.x, point.y - result_point.y };
 		out_square_distance= mFixedVec2Dot<base>( vec_to_result_point, vec_to_result_point );

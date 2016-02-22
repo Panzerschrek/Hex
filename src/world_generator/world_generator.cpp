@@ -358,7 +358,7 @@ static void GenNoise(
 		// *dst= ( g_OctaveNoise( x, y, seed, c_octaves ) * mul) >> (8 + 8);
 		*dst=
 			( g_TriangularOctaveNoise(
-				m_FixedMul<c_world_scaler_base>( x, c_world_x_scaler ),
+				mFixedMul<c_world_scaler_base>( x, c_world_x_scaler ),
 				y,
 				seed,
 				c_octaves ) * mul) >> (8 + 8);
@@ -515,7 +515,7 @@ void g_WorldGenerator::DumpDebugResult()
 
 unsigned char g_WorldGenerator::GetGroundLevel( int x, int y ) const
 {
-	int x_corrected= m_FixedMul<c_world_scaler_base>( x, c_world_x_scaler );
+	int x_corrected= mFixedMul<c_world_scaler_base>( x, c_world_x_scaler );
 
 	// HACK. If not do this, borders, parallel to world X axi is to sharply.
 	int y_corrected= y - (x&1);
@@ -526,7 +526,7 @@ unsigned char g_WorldGenerator::GetGroundLevel( int x, int y ) const
 		(g_TriangularInterpolatedNoise( y_corrected, x, parameters_.seed, 4 ) >> 2) +
 		(g_TriangularInterpolatedNoise( y_corrected, x, parameters_.seed, 3 ) >> 3);
 	constexpr const fixed8_t c_noise_scaler= 65536 / ( (1<<8) + (1<<7) + (1<<6) + (1<<5) );
-	noise= m_FixedMul<8>( noise, c_noise_scaler );
+	noise= mFixedMul<8>( noise, c_noise_scaler );
 
 	x_corrected+= int(parameters_.size[0] / 2) << (H_CHUNK_WIDTH_LOG2 - parameters_.cell_size_log2);
 	y          += int(parameters_.size[1] / 2) << (H_CHUNK_WIDTH_LOG2 - parameters_.cell_size_log2);
@@ -534,7 +534,7 @@ unsigned char g_WorldGenerator::GetGroundLevel( int x, int y ) const
 	fixed8_t noise_amplitude;
 	fixed8_t hightmap_value= HeightmapValueInterpolated( x_corrected, y, noise_amplitude );
 
-	fixed8_t result= ( hightmap_value + ( m_FixedMul<8>( noise_amplitude, noise ) >> 8 ) ) >> 8;
+	fixed8_t result= ( hightmap_value + ( mFixedMul<8>( noise_amplitude, noise ) >> 8 ) ) >> 8;
 	return std::min( result, H_CHUNK_HEIGHT - 4 );
 }
 
@@ -547,7 +547,7 @@ void g_WorldGenerator::PlantTreesForChunk( int longitude, int latitude, const Pl
 {
 	// Coordinates in world homogenous space.
 	// TODO - here, maybe, are some problems.
-	int world_x= m_FixedMul<c_world_scaler_base>( longitude << H_CHUNK_WIDTH_LOG2, c_world_x_scaler );
+	int world_x= mFixedMul<c_world_scaler_base>( longitude << H_CHUNK_WIDTH_LOG2, c_world_x_scaler );
 	int world_y= latitude << H_CHUNK_WIDTH_LOG2;
 
 	// Coordinates inside matrix.
@@ -593,7 +593,7 @@ void g_WorldGenerator::PlantTreesForChunk( int longitude, int latitude, const Pl
 			else if( wrap_y < y ) tree_y-= grid_cell_size_to_tex_size_k[1];
 
 			// Space correction
-			tree_x= m_FixedMul<c_world_scaler_base>( tree_x, c_world_x_inv_scaler );
+			tree_x= mFixedMul<c_world_scaler_base>( tree_x, c_world_x_inv_scaler );
 
 			plant_tree_callback( tree_x, tree_y );
 		}
