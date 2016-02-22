@@ -329,7 +329,7 @@ ui_MenuBase::~ui_MenuBase()
 
 void ui_MenuBase::Draw( ui_Painter* painter )
 {
-	for( auto el : elements_ )
+	for( ui_Base* el : elements_ )
 	{
 		if( el->IsVisible() )
 			el->Draw( painter );

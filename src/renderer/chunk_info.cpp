@@ -12,7 +12,7 @@ r_ChunkInfo::r_ChunkInfo()
 
 void r_ChunkInfo::GetWaterHexCount()
 {
-	auto water_block_list= chunk_->GetWaterList();
+	const m_Collection< h_LiquidBlock* >* water_block_list= chunk_->GetWaterList();
 	m_Collection< h_LiquidBlock* >::ConstIterator iter( water_block_list );
 
 	unsigned int hex_count= 0;
@@ -30,7 +30,7 @@ void r_ChunkInfo::GetWaterHexCount()
 
 void r_ChunkInfo::BuildWaterSurfaceMesh()
 {
-	auto water_block_list= chunk_->GetWaterList();
+	const m_Collection< h_LiquidBlock* >* water_block_list= chunk_->GetWaterList();
 	m_Collection< h_LiquidBlock* >::ConstIterator iter( water_block_list );
 	const h_LiquidBlock* b;
 	r_WaterVertex* v;
