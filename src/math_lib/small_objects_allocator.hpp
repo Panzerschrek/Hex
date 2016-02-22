@@ -155,7 +155,7 @@ public:
 			blocks_.insert( &block->set_node_, block );
 			result= block->Alloc();
 
-			// Add new block to list of blocsk with empty space.
+			// Add new block to list of blocks with empty space.
 			if( !block->IsFull() )
 				not_full_blocks_list_.push_front( &block->list_node_, block );
 		}
@@ -176,7 +176,7 @@ public:
 	StoredType* New(Args... args)
 	{
 		StoredType* p= Alloc();
-		new(p) StoredType (args...);
+		new(p) StoredType (std::forward<Args>(args)...);
 		return p;
 	}
 
