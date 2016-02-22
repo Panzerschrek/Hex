@@ -10,7 +10,7 @@ struct r_WorldVertex
 	short coord[3];
 	short tex_coord[3];
 	unsigned char light[2];
-	unsigned char normal_id;
+	unsigned char normal_id; // unused
 	char reserved[1];
 };//16b struct
 

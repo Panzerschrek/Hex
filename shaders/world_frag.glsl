@@ -9,7 +9,6 @@ uniform vec3 ambient_light_color;
 
 in float f_color;
 in vec3 f_tex_coord;
-flat in vec3 f_normal;
 in vec2 f_light;
 
 out vec4 color;

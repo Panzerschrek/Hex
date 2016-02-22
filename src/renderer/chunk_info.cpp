@@ -689,7 +689,7 @@ void r_ChunkInfo::BuildChunkMesh()
 					v[7].tex_coord[1]= v[4].tex_coord[1]= v[0].tex_coord[1] - 1*tex_scale;
 				}
 
-				v[0].normal_id= v[1].normal_id= v[2].normal_id= v[3].normal_id= v[7].normal_id= v[4].normal_id= normal_id;
+				//v[0].normal_id= v[1].normal_id= v[2].normal_id= v[3].normal_id= v[7].normal_id= v[4].normal_id= normal_id;
 				v[0].tex_coord[2]= v[1].tex_coord[2]= v[2].tex_coord[2]= v[3].tex_coord[2]= v[7].tex_coord[2]= v[4].tex_coord[2]=
 				tex_id;
 				if( flat_lighting )
@@ -767,7 +767,7 @@ void r_ChunkInfo::BuildChunkMesh()
 					w->GetForwardVertexLight( x + relative_X, y + relative_Y, z-1, v[2].light  );
 					w->GetBackVertexLight( x + relative_X + 1, y + relative_Y + ((x+1)&1), z-1, v[3].light  );
 				}
-				v[0].normal_id= v[1].normal_id= v[2].normal_id= v[3].normal_id= normal_id;
+				//v[0].normal_id= v[1].normal_id= v[2].normal_id= v[3].normal_id= normal_id;
 				if( normal_id == static_cast<unsigned char>(h_Direction::BackLeft) )
 					std::swap( v[1], v[3] );
 
@@ -824,7 +824,7 @@ void r_ChunkInfo::BuildChunkMesh()
 					w->GetForwardVertexLight( x + relative_X, y + relative_Y - 1, z - 1, v[2].light );
 					w->GetForwardVertexLight( x + relative_X, y + relative_Y - 1, z, v[1].light );
 				}
-				v[0].normal_id= v[1].normal_id= v[2].normal_id= v[3].normal_id= normal_id;
+				//v[0].normal_id= v[1].normal_id= v[2].normal_id= v[3].normal_id= normal_id;
 				if( normal_id == static_cast<unsigned char>(h_Direction::BackRight) )
 					std::swap( v[1], v[3] );
 
@@ -880,7 +880,7 @@ void r_ChunkInfo::BuildChunkMesh()
 					w->GetForwardVertexLight( x + relative_X, y + relative_Y, z - 1, v[2].light  );
 					w->GetForwardVertexLight( x + relative_X, y + relative_Y, z, v[3].light  );
 				}
-				v[0].normal_id= v[1].normal_id= v[2].normal_id= v[3].normal_id= normal_id;
+				//v[0].normal_id= v[1].normal_id= v[2].normal_id= v[3].normal_id= normal_id;
 				if( normal_id == static_cast<unsigned char>(h_Direction::Back) )
 					std::swap( v[1], v[3] );
 

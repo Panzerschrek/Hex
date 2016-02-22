@@ -1196,7 +1196,7 @@ void r_WorldRenderer::LoadShaders()
 
 	world_shader_.SetAttribLocation( "coord", 0 );
 	world_shader_.SetAttribLocation( "tex_coord", 1 );
-	world_shader_.SetAttribLocation( "normal", 2 );
+	// world_shader_.SetAttribLocation( "normal", 2 );
 	world_shader_.SetAttribLocation( "light", 3 );
 	sprintf(
 		define_str, "TEX_SCALE_VECTOR vec3( %1.8f, %1.8f, %1.8f )",
