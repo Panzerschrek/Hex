@@ -14,11 +14,9 @@
 
 class h_Chunk
 {
-
 	friend class h_World;
 
 public:
-
 	h_Chunk( h_World* world, int longitude, int latitude, const g_WorldGenerator* generator );
 	h_Chunk( h_World* world, const HEXCHUNK_header& header, QDataStream& stream  );
 
@@ -50,7 +48,7 @@ public:
 	// Get sun and fire light levels. out_lights[0]= sun, out_lights[1]= fire
 	void GetLightsLevel( short x, short y, short z, unsigned char* out_lights ) const;
 
-	const unsigned char* GetSunLightData() const;
+	const unsigned char* GetSunLightData () const;
 	const unsigned char* GetFireLightData() const;
 
 private:
@@ -71,8 +69,6 @@ private:
 	void GenWaterBlocks();
 	void MakeLight();
 	void SunRelight();
-
-	void ReCalculateHeightmap();
 
 //water management
 	h_LiquidBlock* NewWaterBlock();
@@ -97,13 +93,11 @@ private:
 
 	bool need_update_light_;
 
-	//water management
+	// water management
 	SmallObjectsAllocator< h_LiquidBlock, 256, unsigned char > water_blocks_allocator_;
-	struct
-	{
-		m_Collection< h_LiquidBlock* > water_block_list;
-	}water_blocks_data;
+	m_Collection< h_LiquidBlock* > water_block_list_;
 
+	// failing blocks management
 	SmallObjectsAllocator< h_FailingBlock, 32, unsigned char > failing_blocks_alocatior_;
 	std::vector<h_FailingBlock*> failing_blocks_;
 
@@ -119,20 +113,14 @@ private:
 	unsigned char height_map_    [ H_CHUNK_WIDTH * H_CHUNK_WIDTH ];//z coordinates of first nonair block
 };
 
-
-inline const m_Collection< h_LiquidBlock* >* h_Chunk::GetWaterList() const
-{
-	return & water_blocks_data.water_block_list;
-}
-
-inline const m_Collection< h_LightSource* >* h_Chunk::GetLightSourceList() const
-{
-	return &light_source_list_;
-}
-
 inline unsigned char h_Chunk::Transparency( short x, short y, short z ) const
 {
 	return transparency_[ BlockAddr( x, y, z ) ];
+}
+
+inline const unsigned char* h_Chunk::GetTransparencyData() const
+{
+	return transparency_;
 }
 
 inline h_Block* h_Chunk::GetBlock( short x, short y, short z )
@@ -150,22 +138,39 @@ inline const h_Block* const* h_Chunk::GetBlocksData() const
 	return blocks_;
 }
 
-inline void h_Chunk::SetBlock( short x, short y, short z, h_Block* b )
+inline const std::vector<h_FailingBlock*>& h_Chunk::GetFailingBlocks() const
 {
-	blocks_[ BlockAddr( x, y, z ) ]= b;
+	return failing_blocks_;
 }
 
-inline void h_Chunk::SetTransparency( short x, short y, short z, h_TransparencyType t )
+inline const m_Collection< h_LiquidBlock* >* h_Chunk::GetWaterList() const
 {
-	transparency_[ BlockAddr( x, y, z ) ]= t;
+	return & water_block_list_;
 }
 
-inline void h_Chunk::SetBlockAndTransparency( short x, short y, short z, h_Block* b, h_TransparencyType t )
+inline const m_Collection< h_LightSource* >* h_Chunk::GetLightSourceList() const
 {
-	short addr= BlockAddr( x, y, z );
+	return &light_source_list_;
+}
 
-	transparency_[addr]= t;
-	blocks_[addr]= b;
+inline const h_World* h_Chunk::GetWorld() const
+{
+	return world_;
+}
+
+inline h_World* h_Chunk::GetWorld()
+{
+	return world_;
+}
+
+inline short h_Chunk::Longitude() const
+{
+	return longitude_;
+}
+
+inline short h_Chunk::Latitude () const
+{
+	return latitude_ ;
 }
 
 inline unsigned char h_Chunk::SunLightLevel( short x, short y, short z ) const
@@ -199,31 +204,26 @@ inline void h_Chunk::SetSunLightLevel( short x, short y, short z, unsigned char 
 {
 	sun_light_map_[ BlockAddr( x, y, z ) ]= l;
 }
+
 inline void h_Chunk::SetFireLightLevel( short x, short y, short z, unsigned char l )
 {
 	fire_light_map_[ BlockAddr( x, y, z ) ]= l;
 }
 
-inline const unsigned char* h_Chunk::GetTransparencyData() const
+inline void h_Chunk::SetBlock( short x, short y, short z, h_Block* b )
 {
-	return transparency_;
+	blocks_[ BlockAddr( x, y, z ) ]= b;
 }
 
-inline short h_Chunk::Longitude() const
+inline void h_Chunk::SetTransparency( short x, short y, short z, h_TransparencyType t )
 {
-	return longitude_;
-}
-inline short h_Chunk::Latitude () const
-{
-	return latitude_ ;
+	transparency_[ BlockAddr( x, y, z ) ]= t;
 }
 
-inline const h_World* h_Chunk::GetWorld() const
+inline void h_Chunk::SetBlockAndTransparency( short x, short y, short z, h_Block* b, h_TransparencyType t )
 {
-	return world_;
-}
+	short addr= BlockAddr( x, y, z );
 
-inline h_World* h_Chunk::GetWorld()
-{
-	return world_;
+	transparency_[addr]= t;
+	blocks_[addr]= b;
 }

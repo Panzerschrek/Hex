@@ -787,9 +787,9 @@ void h_World::WaterPhysTick()
 			if( ( ( ChunkCoordToQuadchunkX( ch->Longitude() ) ^ ChunkCoordToQuadchunkY( ch->Latitude() ) ) & 1 ) == (phys_tick_count_&1) )
 				continue;
 
-			auto l= & ch->water_blocks_data.water_block_list;
+			m_Collection< h_LiquidBlock* >& l= ch->water_block_list_;
 			h_LiquidBlock* b;
-			m_Collection< h_LiquidBlock* >::Iterator iter(l);
+			m_Collection< h_LiquidBlock* >::Iterator iter(&l);
 			for( iter.Begin(); iter.IsValid(); iter.Next() )
 			{
 				b= *iter;

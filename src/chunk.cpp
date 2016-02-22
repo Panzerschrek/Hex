@@ -12,9 +12,30 @@ inline static bool InChunkBorders( int x, int y )
 		y >= 0 && y < H_CHUNK_WIDTH;
 }
 
-const std::vector<h_FailingBlock*>& h_Chunk::GetFailingBlocks() const
+h_Chunk::h_Chunk( h_World* world, int longitude, int latitude, const g_WorldGenerator* generator )
+	: world_(world)
+	, longitude_(longitude), latitude_(latitude)
+	, need_update_light_(false)
 {
-	return failing_blocks_;
+	GenChunk( generator );
+	PlantGrass();
+	PlantTrees( generator );
+	GenWaterBlocks();
+	MakeLight();
+}
+
+h_Chunk::h_Chunk( h_World* world, const HEXCHUNK_header& header, QDataStream& stream )
+	: world_(world)
+	, longitude_(header.longitude)
+	, latitude_ (header.latitude )
+	, need_update_light_(false)
+{
+	GenChunkFromFile( stream );
+	MakeLight();
+}
+
+h_Chunk::~h_Chunk()
+{
 }
 
 bool h_Chunk::IsEdgeChunk() const
@@ -110,7 +131,7 @@ h_Block* h_Chunk::LoadBlock( QDataStream& stream, unsigned int block_addr )
 			liquid_block->z_= block_addr & (H_CHUNK_HEIGHT-1);
 
 			liquid_block->SetLiquidLevel( water_level );
-			water_blocks_data.water_block_list.Add( liquid_block );
+			water_block_list_.Add( liquid_block );
 
 			block= liquid_block;
 		}
@@ -384,15 +405,58 @@ void h_Chunk::GenWaterBlocks()
 			block->z_= z;
 			blocks_[ addr ]= block;
 			block->SetLiquidLevel( H_MAX_WATER_LEVEL );
-			water_blocks_data.water_block_list.Add( block );
+			water_block_list_.Add( block );
 		}
 	}
 }
 
+void h_Chunk::MakeLight()
+{
+	for( unsigned int x= 0; x< H_CHUNK_WIDTH; x++ )
+		for( unsigned int y= 0; y< H_CHUNK_WIDTH; y++ )
+		{
+			unsigned int addr= BlockAddr( x, y, H_CHUNK_HEIGHT-2 );
+			unsigned int z;
+
+			for( z= H_CHUNK_HEIGHT-2; z> 0; z--, addr-- )
+			{
+				if( blocks_[ addr ]->Type() != h_BlockType::Air )
+					break;
+				sun_light_map_[ addr ]= H_MAX_SUN_LIGHT;
+				fire_light_map_[ addr ]= 0;
+			}
+			for( ; z > 0; z--, addr-- )
+			{
+				sun_light_map_[ addr ]= 0;
+				fire_light_map_[ addr ]= 0;
+			}
+		}
+}
+
+void h_Chunk::SunRelight()
+{
+	for( unsigned int x= 0; x< H_CHUNK_WIDTH; x++ )
+		for( unsigned int y= 0; y< H_CHUNK_WIDTH; y++ )
+		{
+			unsigned int addr= BlockAddr( x, y, H_CHUNK_HEIGHT-2 );
+			unsigned int z;
+
+			for( z= H_CHUNK_HEIGHT-2; z> 0; z--, addr-- )
+			{
+				if( blocks_[ addr ]->Type() != h_BlockType::Air )
+					break;
+				sun_light_map_[ addr ]= H_MAX_SUN_LIGHT;
+			}
+			for( ; z > 0; z--, addr-- )
+				sun_light_map_[ addr ]= 0;
+		}
+}
+
+
 h_LiquidBlock* h_Chunk::NewWaterBlock()
 {
 	h_LiquidBlock* b= water_blocks_allocator_.New();
-	water_blocks_data.water_block_list.Add( b );
+	water_block_list_.Add( b );
 	return b;
 }
 
@@ -472,74 +536,6 @@ void h_Chunk::ProcessFailingBlocks()
 	}
 }
 
-void h_Chunk::MakeLight()
-{
-	for( unsigned int x= 0; x< H_CHUNK_WIDTH; x++ )
-		for( unsigned int y= 0; y< H_CHUNK_WIDTH; y++ )
-		{
-			unsigned int addr= BlockAddr( x, y, H_CHUNK_HEIGHT-2 );
-			unsigned int z;
-
-			for( z= H_CHUNK_HEIGHT-2; z> 0; z--, addr-- )
-			{
-				if( blocks_[ addr ]->Type() != h_BlockType::Air )
-					break;
-				sun_light_map_[ addr ]= H_MAX_SUN_LIGHT;
-				fire_light_map_[ addr ]= 0;
-			}
-			for( ; z > 0; z--, addr-- )
-			{
-				sun_light_map_[ addr ]= 0;
-				fire_light_map_[ addr ]= 0;
-			}
-		}
-}
-
-void h_Chunk::SunRelight()
-{
-	for( unsigned int x= 0; x< H_CHUNK_WIDTH; x++ )
-		for( unsigned int y= 0; y< H_CHUNK_WIDTH; y++ )
-		{
-			unsigned int addr= BlockAddr( x, y, H_CHUNK_HEIGHT-2 );
-			unsigned int z;
-
-			for( z= H_CHUNK_HEIGHT-2; z> 0; z--, addr-- )
-			{
-				if( blocks_[ addr ]->Type() != h_BlockType::Air )
-					break;
-				sun_light_map_[ addr ]= H_MAX_SUN_LIGHT;
-			}
-			for( ; z > 0; z--, addr-- )
-				sun_light_map_[ addr ]= 0;
-		}
-}
-
-h_Chunk::h_Chunk( h_World* world, int longitude, int latitude, const g_WorldGenerator* generator )
-	: world_(world)
-	, longitude_(longitude), latitude_(latitude)
-	, need_update_light_(false)
-{
-	GenChunk( generator );
-	PlantGrass();
-	PlantTrees( generator );
-	GenWaterBlocks();
-	MakeLight();
-}
-
-h_Chunk::h_Chunk( h_World* world, const HEXCHUNK_header& header, QDataStream& stream )
-	: world_(world)
-	, longitude_(header.longitude)
-	, latitude_ (header.latitude )
-	, need_update_light_(false)
-{
-	GenChunkFromFile( stream );
-	MakeLight();
-}
-
-h_Chunk::~h_Chunk()
-{
-}
-
 unsigned int h_Chunk::GetWaterColumnHeight( short x, short y, short z )
 {
 	unsigned int h= (z-1) * H_MAX_WATER_LEVEL;
@@ -553,24 +549,4 @@ unsigned int h_Chunk::GetWaterColumnHeight( short x, short y, short z )
 		addr++;
 	}
 	return h;
-}
-
-void h_Chunk::ReCalculateHeightmap()
-{
-	//TODO - Does this need?
-	/*
-	for( short y= 0; y< H_CHUNK_WIDTH; y++ )
-		for( short x= 0; x< H_CHUNK_WIDTH; y++ )
-		{
-			int addr= (H_CHUNK_HEIGHT-2) | ( y << H_CHUNK_HEIGHT_LOG2 ) | ( x << ( H_CHUNK_HEIGHT_LOG2 + H_CHUNK_WIDTH_LOG2 ) );
-			for( short z= H_CHUNK_HEIGHT-2; z>=0; z--, addr-- )
-			{
-				if( blocks[addr]->Type() != AIR )
-				{
-					height_map_[ x | (y<<H_CHUNK_WIDTH_LOG2) ]= z;
-					break;
-				}
-			}
-		}
-		*/
 }
