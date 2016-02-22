@@ -1,4 +1,7 @@
 #pragma once
+#include <vector>
+
+#include "../fwd.hpp"
 
 #pragma pack( push, 1 )
 
@@ -52,3 +55,5 @@ public:
 	const h_Chunk* chunk_;
 	const h_Chunk* chunk_front_, *chunk_right_, *chunk_back_right_, *chunk_back_;
 };
+
+void rBuildChunkFailingBlocks( const r_ChunkInfo& chunk_info, std::vector<r_WorldVertex>& out_vertices );

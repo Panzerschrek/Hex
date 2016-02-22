@@ -1140,70 +1140,9 @@ void r_WorldRenderer::BuildFailingBlocks()
 	// Scan chunks matrix, rebuild updated chunks.
 	for( unsigned int y= 0; y < chunks_info_.matrix_size[1]; y++ )
 	for( unsigned int x= 0; x < chunks_info_.matrix_size[0]; x++ )
-	{
-		r_ChunkInfo& chunk_info= *chunks_info_.chunk_matrix[ x + y * chunks_info_.matrix_size[0] ];
-
-		const std::vector<h_FailingBlock*>& failing_blocks= chunk_info.chunk_->GetFailingBlocks();
-
-		unsigned int vertex_count= failing_blocks.size() * 4 * 2 * 2;
-		failing_blocks_vertices_.resize( failing_blocks_vertices_.size() + vertex_count );
-		r_WorldVertex* v= failing_blocks_vertices_.data() + failing_blocks_vertices_.size() - vertex_count;
-
-		int X= chunk_info.chunk_->Longitude() << H_CHUNK_WIDTH_LOG2;
-		int Y= chunk_info.chunk_->Latitude () << H_CHUNK_WIDTH_LOG2;
-		for( h_FailingBlock* block : failing_blocks )
-		{
-			for( unsigned int side= 0; side < 2; side++ )
-			{
-				unsigned char tex_id=
-					r_TextureManager::GetTextureId(
-						block->GetBlock()->Type(),
-						static_cast<unsigned char>(h_Direction::Up) + side );
-				unsigned char tex_scale= r_TextureManager::GetTextureScale( tex_id );
-
-				v[0].coord[0]= 3 * ( block->GetX() + X );
-				v[1].coord[0]= v[4].coord[0]= v[0].coord[0] + 1;
-				v[2].coord[0]= v[7].coord[0]= v[0].coord[0] + 3;
-				v[3].coord[0]= v[0].coord[0] + 4;
-
-				v[0].coord[1]= v[3].coord[1]= 2 * ( block->GetY() + Y ) - (block->GetX()&1) + 2;
-				v[1].coord[1]= v[2].coord[1]= v[0].coord[1] + 1;
-				v[7].coord[1]= v[4].coord[1]= v[0].coord[1] - 1;
-
-				fixed8_t z= (block->GetZ() >> 8) - (side << 8);
-				v[0].coord[2]= v[1].coord[2]= v[2].coord[2]= v[3].coord[2]= v[7].coord[2]= v[4].coord[2]= z;
-
-				v[0].tex_coord[0]= tex_scale * v[0].coord[0];
-				v[1].tex_coord[0]= v[4].tex_coord[0]= v[0].tex_coord[0] + 1*tex_scale;
-				v[2].tex_coord[0]= v[7].tex_coord[0]= v[0].tex_coord[0] + 3*tex_scale;
-				v[3].tex_coord[0]= v[0].tex_coord[0] + 4*tex_scale;
-
-				v[0].tex_coord[1]= v[3].tex_coord[1]= tex_scale * v[0].coord[1];
-				v[1].tex_coord[1]= v[2].tex_coord[1]= v[0].tex_coord[1] + 1*tex_scale;
-				v[7].tex_coord[1]= v[4].tex_coord[1]= v[0].tex_coord[1] - 1*tex_scale;
-
-				v[0].tex_coord[2]= v[1].tex_coord[2]= v[2].tex_coord[2]= v[3].tex_coord[2]= v[7].tex_coord[2]= v[4].tex_coord[2]=
-					tex_id;
-
-				unsigned int addr= BlockAddr( block->GetX(), block->GetY(), z >> 8 );
-				v[0].light[0]= v[1].light[0]= v[2].light[0]= v[3].light[0]= v[7].light[0]= v[4].light[0]=
-					chunk_info.chunk_->GetSunLightData()[ addr ] << 4;
-				v[0].light[1]= v[1].light[1]= v[2].light[1]= v[3].light[1]= v[7].light[1]= v[4].light[1]=
-					chunk_info.chunk_->GetFireLightData()[ addr ] << 4;
-
-				v[5]= v[0];
-				v[6]= v[3];
-
-				if( side == 1 )
-				{
-					std::swap( v[1], v[3] );
-					std::swap( v[5], v[7] );
-				}
-
-				v+= 4 * 2;
-			}
-		} // for failing blocks in chunk
-	} // for chunks in matrix
+		rBuildChunkFailingBlocks(
+			*chunks_info_.chunk_matrix[ x + y * chunks_info_.matrix_size[0] ],
+			failing_blocks_vertices_ );
 }
 
 void r_WorldRenderer::UpdateGPUData()
