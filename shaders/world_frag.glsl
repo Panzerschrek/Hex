@@ -1,7 +1,5 @@
 #version 400
 
-uniform vec3 sun_vector;
-
 uniform sampler2DArray tex;
 uniform vec3 sun_light_color;
 uniform vec3 fire_light_color;

@@ -817,7 +817,6 @@ void r_WorldRenderer::DrawWorld()
 
 	world_shader_.Bind();
 	world_shader_.Uniform( "tex", 0 );
-	world_shader_.Uniform( "sun_vector", lighting_data_.sun_direction );
 	world_shader_.Uniform( "view_matrix", block_final_matrix_ );
 
 	world_shader_.Uniform( "sun_light_color", lighting_data_.current_sun_light );
@@ -826,6 +825,8 @@ void r_WorldRenderer::DrawWorld()
 
 	unsigned int vertex_count= DrawClusterMatrix( world_vertex_buffer_.get(), 2, 4 );
 	world_quads_in_frame_= vertex_count / 4;
+
+	// Failing blocks
 
 	m_Mat4 z_scale_matrix;
 	z_scale_matrix.Scale( m_Vec3( 1.0f, 1.0f, 1.0f / 256.0f ) );
@@ -913,7 +914,7 @@ void r_WorldRenderer::DrawWater()
 	water_shader_.Bind();
 
 	m_Mat4 water_matrix;
-	water_matrix.Scale( m_Vec3( 1.0f, 1.0f, 1.0f/ float( R_WATER_VERTICES_Z_SCALER ) ) );
+	water_matrix.Scale( m_Vec3( 1.0f, 1.0f, 1.0f / float( R_WATER_VERTICES_Z_SCALER ) ) );
 	water_final_matrix_= water_matrix * block_final_matrix_;
 	water_shader_.Uniform( "view_matrix", water_final_matrix_ );
 	water_shader_.Uniform( "tex", 0 );
