@@ -110,6 +110,11 @@ void h_MainLoop::initializeGL()
 			h_Console::Warning( "Function ", name, " not found" );
 		});
 
+	r_GLSLProgram::SetProgramBuildLogOutCallback(
+		[]( const char* out )
+		{
+			h_Console::Warning( out );
+		} );
 
 	r_Framebuffer::SetScreenFramebufferSize( screen_width_, screen_height_ );
 }
