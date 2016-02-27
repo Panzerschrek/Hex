@@ -53,6 +53,7 @@ static const unsigned short g_build_prism_indeces[]=
 };
 
 static const char* const g_supersampling_antialiasing_key_value= "ss";
+static const char* const g_depth_based_antialiasing_key_value= "depth_based";
 
 static std::vector<unsigned short> GetQuadsIndeces()
 {
@@ -117,11 +118,22 @@ r_WorldRenderer::r_WorldRenderer(
 	, player_(player)
 	, startup_time_(hGetTimeMS())
 {
-	use_supersampling_=
-		!strcmp(
-			settings_->GetString( h_SettingsKeys::antialiasing ),
-			g_supersampling_antialiasing_key_value );
-	pixel_size_= use_supersampling_ ? 2 : 1;
+	const char* antialiasing= settings_->GetString( h_SettingsKeys::antialiasing );
+	if( strcmp( antialiasing, g_supersampling_antialiasing_key_value ) == 0 )
+	{
+		antialiasing_= Antialiasing::SuperSampling2x2;
+		pixel_size_= 2;
+	}
+	else if( strcmp( antialiasing, g_depth_based_antialiasing_key_value ) == 0 )
+	{
+		antialiasing_= Antialiasing::DepthBased;
+		pixel_size_= 1;
+	}
+	else
+	{
+		antialiasing_= Antialiasing::Other;
+		pixel_size_= 1;
+	}
 
 	// Init chunk matrix
 	{
@@ -468,7 +480,7 @@ void r_WorldRenderer::CalculateMatrices()
 	cam_pos_.z+= H_PLAYER_EYE_LEVEL;
 	cam_ang_= player_->Angle();
 
-	m_Mat4 scale, translate, perspective, rotate_x, rotate_z, basis_change;
+	m_Mat4 scale, translate, rotate_x, rotate_z, basis_change;
 
 	fov_y_= 1.57f;
 	fov_x_= 2.0f * std::atan( float(viewport_width_) / float(viewport_height_) * std::tan( fov_y_ * 0.5f ) );
@@ -481,7 +493,7 @@ void r_WorldRenderer::CalculateMatrices()
 		1.0f );//hexogonal prism scale vector. DO NOT TOUCH!
 	scale.Scale( s_vector );
 
-	perspective.PerspectiveProjection(
+	perspective_matrix_.PerspectiveProjection(
 		float(viewport_width_)/float(viewport_height_), fov_y_,
 		0.5f*(H_PLAYER_HEIGHT - H_PLAYER_EYE_LEVEL),//znear
 		1024.0f );
@@ -495,7 +507,7 @@ void r_WorldRenderer::CalculateMatrices()
 	basis_change[9]= 1.0f;
 	basis_change[10]= 0.0f;
 
-	rotation_matrix_= rotate_z * rotate_x * basis_change * perspective;
+	rotation_matrix_= rotate_z * rotate_x * basis_change * perspective_matrix_;
 	view_matrix_= translate * rotation_matrix_;
 
 	block_scale_matrix_= scale;
@@ -536,9 +548,9 @@ void r_WorldRenderer::Draw()
 	CalculateLight();
 	CalculateChunksVisibility();
 
-	if( use_supersampling_ )
+	if( antialiasing_ == Antialiasing::SuperSampling2x2 || antialiasing_ == Antialiasing::DepthBased )
 	{
-		supersampling_buffer_.Bind();
+		additional_framebuffer_.Bind();
 		glClear( GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT );
 	}
 
@@ -551,7 +563,7 @@ void r_WorldRenderer::Draw()
 	DrawBuildPrism();
 	//DrawTestMob();
 
-	if( use_supersampling_ )
+	if( antialiasing_ == Antialiasing::SuperSampling2x2 )
 	{
 		r_Framebuffer::BindScreenFramebuffer();
 
@@ -562,8 +574,30 @@ void r_WorldRenderer::Draw()
 		r_OGLStateManager::UpdateState( state );
 
 		supersampling_final_shader_.Bind();
-		supersampling_buffer_.GetTextures()[0].Bind(0);
+		additional_framebuffer_.GetTextures()[0].Bind(0);
 		supersampling_final_shader_.Uniform( "frame_buffer", 0 );
+
+		glDrawArrays( GL_TRIANGLES, 0, 6 );
+	}
+	else if( antialiasing_ == Antialiasing::DepthBased  )
+	{
+		r_Framebuffer::BindScreenFramebuffer();
+
+		static const GLenum state_blend_mode[]= { GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA };
+		static const r_OGLState state(
+			false, false, false, false,
+			state_blend_mode );
+		r_OGLStateManager::UpdateState( state );
+
+		additional_framebuffer_.GetTextures()[0].Bind(0);
+		additional_framebuffer_.GetDepthTexture().Bind(1);
+
+		depth_based_antialiasing_shader_.Bind();
+
+		depth_based_antialiasing_shader_.Uniform( "frame_buffer", 0 );
+		depth_based_antialiasing_shader_.Uniform( "depth_buffer", 1 );
+		depth_based_antialiasing_shader_.Uniform( "perspective_matrix_10", perspective_matrix_.value[10] );
+
 		glDrawArrays( GL_TRIANGLES, 0, 6 );
 	}
 
@@ -1250,21 +1284,34 @@ void r_WorldRenderer::LoadShaders()
 		h_Console::Error( "crosshair shader not found" );
 	crosshair_shader_.Create();
 
-	if( !supersampling_final_shader_.Load( "shaders/supersampling_2x2_frag.glsl", "shaders/fullscreen_quad_vert.glsl", nullptr ) )
+	if( !supersampling_final_shader_.Load( "shaders/supersampling_2x2_frag.glsl", "shaders/fullscreen_quad_vert.glsl" ) )
 		h_Console::Error( "supersampling final shader not found" );
 	supersampling_final_shader_.Create();
+
+	if( !depth_based_antialiasing_shader_.Load( "shaders/depth_based_antialiasing_frag.glsl", "shaders/fullscreen_quad_vert.glsl" ) )
+		h_Console::Error( "depth based antialiasing shader not found" );
+	depth_based_antialiasing_shader_.Create();
 }
 
 void r_WorldRenderer::InitFrameBuffers()
 {
-	if( use_supersampling_ )
+	if( antialiasing_ == Antialiasing::SuperSampling2x2 )
 	{
-		supersampling_buffer_=
+		additional_framebuffer_=
 			r_Framebuffer(
 				std::vector<r_Texture::PixelFormat>{ r_Texture::PixelFormat::RGBA8 },
 				r_Texture::PixelFormat::Depth24Stencil8,
 				viewport_width_  * 2,
 				viewport_height_ * 2 );
+	}
+	else if( antialiasing_ == Antialiasing::DepthBased )
+	{
+		additional_framebuffer_=
+			r_Framebuffer(
+				std::vector<r_Texture::PixelFormat>{ r_Texture::PixelFormat::RGBA8 },
+				r_Texture::PixelFormat::Depth24Stencil8,
+				viewport_width_ ,
+				viewport_height_ );
 	}
 }
 

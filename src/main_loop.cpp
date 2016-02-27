@@ -1,3 +1,5 @@
+#include <cstring>
+
 #include "main_loop.hpp"
 #include "renderer/world_renderer.hpp"
 #include "world.hpp"
@@ -22,6 +24,22 @@ static const constexpr int g_max_screen_height= 4096;
 
 static const char g_world_directory[]= "world";
 
+static int GetSamples( const h_Settings& settings )
+{
+	const char* antialiasing= settings.GetString( h_SettingsKeys::antialiasing );
+
+	if( std::strcmp( antialiasing, "msaa 2x" ) == 0 )
+		return 2;
+	else if( std::strcmp( antialiasing, "msaa 4x" ) == 0 )
+		return 4;
+	else if( std::strcmp( antialiasing, "msaa 8x" ) == 0 )
+		return 8;
+	else if( std::strcmp( antialiasing, "msaa 16x" ) == 0 )
+		return 16;
+
+	return 0;
+}
+
 static ui_MouseButton MouseKey( const QMouseEvent* e )
 {
 	switch( e->button() )
@@ -44,9 +62,9 @@ void h_MainLoop::Start()
 
 	h_SettingsPtr settings= std::make_shared<h_Settings>( "config.json" );
 
-	int antialiasing= std::min( std::max( settings->GetInt( h_SettingsKeys::antialiasing, 4 ), 0 ), 16 );
-	if( antialiasing )
-		format.setSamples( antialiasing );
+	int samples= GetSamples( *settings );
+	if( samples )
+		format.setSamples( samples );
 
 	format.setVersion( 3, 3 );
 	format.setProfile( QGLFormat::CoreProfile );

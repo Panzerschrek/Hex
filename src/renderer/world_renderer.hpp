@@ -39,6 +39,13 @@ public:
 	void SetViewportSize( unsigned int viewport_width, unsigned int viewport_height );
 
 private:
+	enum class Antialiasing
+	{
+		SuperSampling2x2,
+		DepthBased,
+		Other,
+	};
+
 	r_WorldRenderer& operator=( const r_WorldRenderer& other ) = delete;
 
 	void LoadShaders();
@@ -99,6 +106,7 @@ private:
 	r_GLSLProgram console_bg_shader_;
 	r_GLSLProgram crosshair_shader_;
 	r_GLSLProgram supersampling_final_shader_;
+	r_GLSLProgram depth_based_antialiasing_shader_;
 
 	//VBO
 	r_PolygonBuffer failing_blocks_vbo_;
@@ -119,8 +127,8 @@ private:
 
 	//framebuffers
 	unsigned viewport_width_, viewport_height_;
-	r_Framebuffer supersampling_buffer_;
-	bool use_supersampling_;
+	r_Framebuffer additional_framebuffer_; // used in supersampling and depth based antialiasing
+	Antialiasing antialiasing_;
 	unsigned int pixel_size_;
 
 	//textures
@@ -132,6 +140,7 @@ private:
 
 	//matrices and vectors
 	float fov_x_, fov_y_;
+	m_Mat4 perspective_matrix_;
 	m_Mat4 rotation_matrix_; // camera rotation * basis change * perspective
 	m_Mat4 view_matrix_; // translate * rotation_matrix_
 	m_Mat4 block_scale_matrix_;
