@@ -1,5 +1,8 @@
 #include <cstring>
 
+#include <QApplication>
+#include <QDesktopWidget>
+
 #include "main_loop.hpp"
 #include "renderer/world_renderer.hpp"
 #include "world.hpp"
@@ -84,8 +87,10 @@ h_MainLoop::h_MainLoop(
 	, settings_(settings)
 	, game_started_(false)
 {
-	if (!settings_->IsValue(h_SettingsKeys::screen_width ) ) settings_->SetSetting( h_SettingsKeys::screen_width , 640 );
-	if (!settings_->IsValue(h_SettingsKeys::screen_height) ) settings_->SetSetting( h_SettingsKeys::screen_height, 480 );
+	QDesktopWidget* desktop= QApplication::desktop();
+
+	bool fullscreen= settings_->GetBool( h_SettingsKeys::fullscreen );
+	int screen_number= settings_->GetInt( h_SettingsKeys::screen_number, desktop->primaryScreen() );
 
 	screen_width_=  std::min( std::max( settings_->GetInt( h_SettingsKeys::screen_width  ), g_min_screen_width ), g_max_screen_width  );
 	screen_height_= std::min( std::max( settings_->GetInt( h_SettingsKeys::screen_height ), g_min_screen_height), g_max_screen_height );
@@ -93,8 +98,23 @@ h_MainLoop::h_MainLoop(
 	settings_->SetSetting( h_SettingsKeys::screen_width , screen_width_  );
 	settings_->SetSetting( h_SettingsKeys::screen_height, screen_height_ );
 
-	move( 0, 0 );
+	settings_->SetSetting( h_SettingsKeys::fullscreen, fullscreen );
+	settings_->SetSetting( h_SettingsKeys::screen_number, screen_number );
+
+	QRect screen_geometry= desktop->screenGeometry( screen_number );
+
+	if( fullscreen )
+	{
+		screen_width_ = screen_geometry.width ();
+		screen_height_= screen_geometry.height();
+	}
+
 	setFixedSize( screen_width_, screen_height_ );
+
+	if( fullscreen )
+		move( screen_geometry.topLeft() );
+	else
+		move( 0, 0 );
 
 	setAttribute( Qt::WA_DeleteOnClose, true );
 	setAttribute( Qt::WA_QuitOnClose, true );
@@ -104,6 +124,9 @@ h_MainLoop::h_MainLoop(
 
 	setFocusPolicy( Qt::ClickFocus );
 	setAutoFillBackground( false );
+
+	if( fullscreen )
+		showFullScreen();
 
 	setFocus();
 	show();

@@ -7,6 +7,8 @@ const char* const vsync= "vsync";
 const char* const antialiasing= "antialiasing";
 const char* const screen_width = "screen_width" ;
 const char* const screen_height= "screen_height";
+const char* const fullscreen= "fullscreen";
+const char* const screen_number= "screen_number";
 
 const char* const show_debug_info= "show_debug_info";
 const char* const textures_detalization= "textures_detalization";

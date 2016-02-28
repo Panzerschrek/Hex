@@ -42,7 +42,7 @@ private:
 	void ProcessMenuKey( QKeyEvent* e, bool pressed );
 
 private:
-	h_SettingsPtr settings_;
+	const h_SettingsPtr settings_;
 
 	QCursor cursor_;
 

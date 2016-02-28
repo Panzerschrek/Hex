@@ -8,6 +8,8 @@ extern const char* const vsync;
 extern const char* const antialiasing;
 extern const char* const screen_width ;
 extern const char* const screen_height;
+extern const char* const fullscreen;
+extern const char* const screen_number;
 
 // Renderer keys
 extern const char* const show_debug_info;
