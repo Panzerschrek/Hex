@@ -54,6 +54,7 @@ static const unsigned short g_build_prism_indeces[]=
 
 static const char* const g_supersampling_antialiasing_key_value= "ss";
 static const char* const g_depth_based_antialiasing_key_value= "depth_based";
+static const char* const g_fast_approximate_antialiasing_key_value= "fxaa";
 
 static std::vector<unsigned short> GetQuadsIndeces()
 {
@@ -127,6 +128,11 @@ r_WorldRenderer::r_WorldRenderer(
 	else if( strcmp( antialiasing, g_depth_based_antialiasing_key_value ) == 0 )
 	{
 		antialiasing_= Antialiasing::DepthBased;
+		pixel_size_= 1;
+	}
+	else if( strcmp( antialiasing, g_fast_approximate_antialiasing_key_value ) == 0 )
+	{
+		antialiasing_= Antialiasing::FastApproximate;
 		pixel_size_= 1;
 	}
 	else
@@ -548,7 +554,12 @@ void r_WorldRenderer::Draw()
 	CalculateLight();
 	CalculateChunksVisibility();
 
-	if( antialiasing_ == Antialiasing::SuperSampling2x2 || antialiasing_ == Antialiasing::DepthBased )
+	bool draw_to_additional_framebuffer=
+		antialiasing_ == Antialiasing::SuperSampling2x2 ||
+		antialiasing_ == Antialiasing::DepthBased ||
+		antialiasing_ == Antialiasing::FastApproximate;
+
+	if( draw_to_additional_framebuffer )
 	{
 		additional_framebuffer_.Bind();
 		glClear( GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT );
@@ -563,39 +574,46 @@ void r_WorldRenderer::Draw()
 	DrawBuildPrism();
 	//DrawTestMob();
 
-	if( antialiasing_ == Antialiasing::SuperSampling2x2 )
-	{
+	if( draw_to_additional_framebuffer )
 		r_Framebuffer::BindScreenFramebuffer();
 
-		static const GLenum state_blend_mode[]= { GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA };
-		static const r_OGLState state(
-			false, false, false, false,
-			state_blend_mode );
-		r_OGLStateManager::UpdateState( state );
+	static const GLenum postprocessing_state_blend_mode[]= { GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA };
+	static const r_OGLState postprocessing_state(
+		false, false, false, false,
+		postprocessing_state_blend_mode );
+
+	if( antialiasing_ == Antialiasing::SuperSampling2x2 )
+	{
+		r_OGLStateManager::UpdateState( postprocessing_state );
+
+		additional_framebuffer_.GetTextures()[0].Bind(0);
 
 		supersampling_final_shader_.Bind();
-		additional_framebuffer_.GetTextures()[0].Bind(0);
 		supersampling_final_shader_.Uniform( "frame_buffer", 0 );
 
 		glDrawArrays( GL_TRIANGLES, 0, 6 );
 	}
 	else if( antialiasing_ == Antialiasing::DepthBased  )
 	{
-		r_Framebuffer::BindScreenFramebuffer();
-
-		static const GLenum state_blend_mode[]= { GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA };
-		static const r_OGLState state(
-			false, false, false, false,
-			state_blend_mode );
-		r_OGLStateManager::UpdateState( state );
+		r_OGLStateManager::UpdateState( postprocessing_state );
 
 		additional_framebuffer_.GetTextures()[0].Bind(0);
 		additional_framebuffer_.GetDepthTexture().Bind(1);
 
 		depth_based_antialiasing_shader_.Bind();
-
 		depth_based_antialiasing_shader_.Uniform( "frame_buffer", 0 );
 		depth_based_antialiasing_shader_.Uniform( "depth_buffer", 1 );
+
+		glDrawArrays( GL_TRIANGLES, 0, 6 );
+	}
+	else if( antialiasing_ == Antialiasing::FastApproximate )
+	{
+		r_OGLStateManager::UpdateState( postprocessing_state );
+
+		additional_framebuffer_.GetTextures()[0].Bind(0);
+
+		fast_approximate_antialiasing_shader_.Bind();
+		fast_approximate_antialiasing_shader_.Uniform( "frame_buffer", 0 );
 
 		glDrawArrays( GL_TRIANGLES, 0, 6 );
 	}
@@ -1290,6 +1308,10 @@ void r_WorldRenderer::LoadShaders()
 	if( !depth_based_antialiasing_shader_.Load( "shaders/depth_based_antialiasing_frag.glsl", "shaders/fullscreen_quad_vert.glsl" ) )
 		h_Console::Error( "depth based antialiasing shader not found" );
 	depth_based_antialiasing_shader_.Create();
+
+	if( !fast_approximate_antialiasing_shader_.Load( "shaders/fxaa_frag.glsl", "shaders/fullscreen_quad_vert.glsl" ) )
+		h_Console::Error( "fast approximate antialiasing shader not found" );
+	fast_approximate_antialiasing_shader_.Create();
 }
 
 void r_WorldRenderer::InitFrameBuffers()
@@ -1311,6 +1333,19 @@ void r_WorldRenderer::InitFrameBuffers()
 				r_Texture::PixelFormat::Depth24Stencil8,
 				viewport_width_ ,
 				viewport_height_ );
+	}
+	else if( antialiasing_ == Antialiasing::FastApproximate )
+	{
+		additional_framebuffer_=
+			r_Framebuffer(
+				std::vector<r_Texture::PixelFormat>{ r_Texture::PixelFormat::RGBA8 },
+				r_Texture::PixelFormat::Depth24Stencil8,
+				viewport_width_ ,
+				viewport_height_ );
+
+		additional_framebuffer_.GetTextures().front().SetFiltration(
+			r_Texture::Filtration::Linear,
+			r_Texture::Filtration::Linear );
 	}
 }
 
