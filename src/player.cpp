@@ -374,6 +374,12 @@ void h_Player::MoveInternal( const m_Vec3& delta )
 	const float c_vertical_collision_eps= 0.001f;
 	const float c_on_ground_eps= 0.01f;
 
+	/* Reduce player radius for vertical collisions.
+	 * This approach fix bug, when player can stay on block,
+	 * where he can`t stay by logic of human, but stay, beacause calculation errors.
+	*/
+	const float c_vertical_collision_player_radius= H_PLAYER_RADIUS * 0.9f;
+
 	m_Vec3 new_pos= pos_ + delta;
 
 	for( const p_UpperBlockFace& face : phys_mesh_.upper_block_faces )
@@ -383,7 +389,7 @@ void h_Player::MoveInternal( const m_Vec3& delta )
 			if( face.dir == h_Direction::Down &&
 				face.z >= (pos_.z + H_PLAYER_HEIGHT) &&
 				face.z < (new_pos.z + H_PLAYER_HEIGHT) &&
-				face.HasCollisionWithCircle( new_pos.xy(), H_PLAYER_RADIUS ) )
+				face.HasCollisionWithCircle( new_pos.xy(), c_vertical_collision_player_radius ) )
 				{
 					new_pos.z= face.z - H_PLAYER_HEIGHT - c_vertical_collision_eps;
 					break;
@@ -394,7 +400,7 @@ void h_Player::MoveInternal( const m_Vec3& delta )
 			if( face.dir == h_Direction::Up &&
 				face.z <= pos_.z &&
 				face.z > new_pos.z &&
-				face.HasCollisionWithCircle( new_pos.xy(), H_PLAYER_RADIUS ) )
+				face.HasCollisionWithCircle( new_pos.xy(), c_vertical_collision_player_radius ) )
 			{
 				new_pos.z= face.z + c_vertical_collision_eps;
 				break;
@@ -427,7 +433,7 @@ void h_Player::MoveInternal( const m_Vec3& delta )
 		if( face.dir == h_Direction::Up &&
 			new_pos.z <= face.z + c_on_ground_eps &&
 			new_pos.z > face.z &&
-			face.HasCollisionWithCircle( new_pos.xy(), H_PLAYER_RADIUS ) )
+			face.HasCollisionWithCircle( new_pos.xy(), c_vertical_collision_player_radius ) )
 		{
 			in_air_= false;
 			vertical_speed_= 0.0f;
@@ -436,7 +442,7 @@ void h_Player::MoveInternal( const m_Vec3& delta )
 		if( face.dir == h_Direction::Down &&
 			new_pos.z + H_PLAYER_HEIGHT >= face.z - c_on_ground_eps &&
 			new_pos.z + H_PLAYER_HEIGHT < face.z &&
-			face.HasCollisionWithCircle( new_pos.xy(), H_PLAYER_RADIUS ) )
+			face.HasCollisionWithCircle( new_pos.xy(), c_vertical_collision_player_radius ) )
 		{
 			vertical_speed_= 0.0f;
 			break;
