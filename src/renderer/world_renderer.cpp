@@ -596,7 +596,6 @@ void r_WorldRenderer::Draw()
 
 		depth_based_antialiasing_shader_.Uniform( "frame_buffer", 0 );
 		depth_based_antialiasing_shader_.Uniform( "depth_buffer", 1 );
-		depth_based_antialiasing_shader_.Uniform( "perspective_matrix_10", perspective_matrix_.value[10] );
 
 		glDrawArrays( GL_TRIANGLES, 0, 6 );
 	}
