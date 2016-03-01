@@ -50,7 +50,7 @@ private:
 		float pos[2];
 		unsigned char color[4];
 		unsigned char tex_coord[2];
-		unsigned char texles_per_pixel[2]; // in 4.4 format
+		unsigned char reserved[2];
 	};
 	#pragma pack (pop)
 	static_assert(

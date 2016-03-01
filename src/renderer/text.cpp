@@ -82,11 +82,6 @@ void r_Text::AddText( float colomn, float row, float size, const unsigned char* 
 		ColorCopy( v[2].color, color );
 		ColorCopy( v[3].color, color );
 
-		v[0].texles_per_pixel[0]= v[0].texles_per_pixel[1]=
-		v[1].texles_per_pixel[0]= v[1].texles_per_pixel[1]=
-		v[2].texles_per_pixel[0]= v[2].texles_per_pixel[1]=
-		v[3].texles_per_pixel[0]= v[3].texles_per_pixel[1]= texels_per_pixel;
-
 		x+= dx;
 		v+= 4;
 		str++;
@@ -151,12 +146,6 @@ void r_Text::AddTextPixelCoords( float x, float y, float size, const unsigned ch
 		ColorCopy( v[2].color, color );
 		ColorCopy( v[3].color, color );
 
-		v[0].texles_per_pixel[0]= v[0].texles_per_pixel[1]=
-		v[1].texles_per_pixel[0]= v[1].texles_per_pixel[1]=
-		v[2].texles_per_pixel[0]= v[2].texles_per_pixel[1]=
-		v[3].texles_per_pixel[0]= v[3].texles_per_pixel[1]= texels_per_pixel;
-
-
 		x+= dx;
 		v+= 4;
 		str++;
@@ -219,8 +208,6 @@ r_Text::r_Text( const char* font_file )
 		text_vbo_.VertexAttribPointer( 1, 2, GL_UNSIGNED_BYTE, false, offset );//texture coordinates
 		offset= ((char*)v.color) - ((char*)&v);
 		text_vbo_.VertexAttribPointer( 2, 4, GL_UNSIGNED_BYTE, true, offset );//color
-		offset= ((char*)v.texles_per_pixel) - ((char*)&v);
-		text_vbo_.VertexAttribPointer( 3, 2, GL_UNSIGNED_BYTE, false, offset );// texels per pixel
 	}
 
 	if( !shader_.Load( "shaders/text_frag.glsl", "shaders/text_vert.glsl" ) )
@@ -229,7 +216,6 @@ r_Text::r_Text( const char* font_file )
 	shader_.SetAttribLocation( "coord", 0 );
 	shader_.SetAttribLocation( "tex_coord", 1 );
 	shader_.SetAttribLocation( "color", 2 );
-	shader_.SetAttribLocation( "texels_per_pixel", 3 );
 	shader_.Create();
 
 	r_ImgUtils::LoadTexture( &font_texture_, font_file );
