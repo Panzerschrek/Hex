@@ -4,6 +4,8 @@ TEMPLATE = app
 TARGET= $$OBJECTS_DIR/HexTest
 CONFIG+= console
 
+MAKEFILE= Makefile.tests
+
 # Run target after build
 QMAKE_POST_LINK= $$TARGET
 

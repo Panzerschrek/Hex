@@ -4,6 +4,8 @@ TEMPLATE= lib
 CONFIG+= staticlib
 TARGET= $$OBJECTS_DIR/hex_lib
 
+MAKEFILE= Makefile.hex_lib
+
 HEADERS += \
     ../src/block.hpp \
     ../src/block_collision.hpp \
