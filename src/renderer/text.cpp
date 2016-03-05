@@ -42,8 +42,6 @@ void r_Text::AddText( float colomn, float row, float size, const unsigned char* 
 	dx= (d_size * float(letter_width_ ) ) / viewport_width_;
 	dy= (d_size * float(letter_height_) ) / viewport_height_;
 
-	unsigned char texels_per_pixel= (unsigned char)( 16.0f / size );
-
 	r_TextVertex* v= vertices_.data() + vertex_buffer_pos_;
 	while( *str != 0 )
 	{
@@ -105,8 +103,6 @@ void r_Text::AddTextPixelCoords( float x, float y, float size, const unsigned ch
 	dy= 2.0f * size / viewport_height_ ;
 
 	y-= dy;
-
-	unsigned char texels_per_pixel= (unsigned char)( 16.0f * letter_height_ / size );
 
 	r_TextVertex* v= vertices_.data() + vertex_buffer_pos_;
 	while( *str != 0 )
