@@ -1,7 +1,13 @@
+include (common.pri)
+
+TEMPLATE= lib
+CONFIG+= staticlib
+TARGET= $$OBJECTS_DIR/hex_lib
+
 HEADERS += \
     ../src/block.hpp \
     ../src/block_collision.hpp \
-    ../src/chunk.hpp \
+	../src/chunk.hpp \
     ../src/chunk_loader.hpp \
     ../src/chunk_phys_mesh.hpp \
     ../src/console.hpp \
@@ -98,14 +104,3 @@ SOURCES += \
     ../src/world_header.cpp \
     ../src/math_lib/math.cpp \
     ../src/time.cpp
-
-
-QT += widgets opengl
-INCLUDEPATH = ../../panzer_ogl_lib
-QMAKE_CXXFLAGS += -std=c++11 -fno-exceptions
-
-debug {
-	DEFINES += DEBUG
-} else {
-	QMAKE_CXXFLAGS  += -O2 -s
-}

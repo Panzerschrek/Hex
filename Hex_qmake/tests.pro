@@ -1,7 +1,8 @@
+include (common.pri)
+
 TEMPLATE = app
+TARGET= $$OBJECTS_DIR/HexTest
 CONFIG += console
-CONFIG -= app_bundle
-CONFIG -= qt
 
 SOURCES += \
     ../src/test/test.cpp \
@@ -10,11 +11,5 @@ SOURCES += \
 HEADERS += \
     ../src/test/test.h
 
-QMAKE_CXXFLAGS += -std=c++11
-
-debug {
-} else {
-	QMAKE_CXXFLAGS  += -O2 -s
-}
-
-
+LIBS+= $$OBJECTS_DIR/libhex_lib.a
+LIBS+= libopengl32
