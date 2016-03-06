@@ -5,16 +5,17 @@ namespace m_Math
 
 int DivNonNegativeRemainder( int x, int y )
 {
-	int div= x/y;
-	if( div * y > x ) div--;
+	int mod= x % y;
+	int div= x / y;
+	if( mod < 0 ) div--;
 	return div;
 }
 
 int ModNonNegativeRemainder( int x, int y )
 {
-	int div= x/y;
-	if( div * y >x ) div--;
-	return x - div * y;
+	int mod= x % y;
+	if( mod < 0 ) mod+= y;
+	return mod;
 }
 
 int IntSqrt( int x )
@@ -37,7 +38,7 @@ int IntSqrt( int x )
 
 unsigned int NearestPowerOfTwoCeil( unsigned int x )
 {
-	if( x <= 1 ) return 0;
+	if( x <= 1 ) return 1;
 
 	unsigned int i= 1;
 	while( i < x ) i<<=1;
