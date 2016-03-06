@@ -12,7 +12,8 @@ QMAKE_POST_LINK= $$TARGET
 SOURCES += \
     ../src/test/test.cpp \
     ../src/test/test_test.cpp \
-    ../src/test/math_test.cpp
+    ../src/test/math_test.cpp \
+    ../src/test/calendar_test.cpp
 
 HEADERS += \
     ../src/test/test.h
