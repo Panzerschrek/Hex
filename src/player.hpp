@@ -26,6 +26,9 @@ public:
 
 	void Tick();
 
+	void PauseWorldUpdates();
+	void UnpauseWorldUpdates();
+
 	void SetBuildBlock( h_BlockType block_type );
 	h_BlockType BuildBlock() const;
 

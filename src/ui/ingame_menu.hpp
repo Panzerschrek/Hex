@@ -12,7 +12,8 @@ class ui_IngameMenu final : public ui_MenuBase
 public:
 	ui_IngameMenu(
 		int sx, int sy,
-		const h_PlayerPtr& player );
+		const h_PlayerPtr& player,
+		h_MainLoop& main_loop );
 
 	virtual ~ui_IngameMenu() override;
 
@@ -29,7 +30,8 @@ private:
 	void OnBlockSelected( h_BlockType block_type );
 
 private:
-	h_PlayerPtr player_;
+	h_MainLoop& main_loop_;
+	const h_PlayerPtr player_;
 
 	std::map<ui_Key, bool> keys_;
 

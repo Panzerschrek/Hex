@@ -161,6 +161,16 @@ void h_Player::Tick()
 	build_pos_.z= float( discret_build_pos_[2] ) - 1.0f;
 }
 
+void h_Player::PauseWorldUpdates()
+{
+	world_->PauseUpdates();
+}
+
+void h_Player::UnpauseWorldUpdates()
+{
+	world_->UnpauseUpdates();
+}
+
 void h_Player::Build()
 {
 	if( build_block_ != h_BlockType::Unknown && build_direction_ != h_Direction::Unknown )

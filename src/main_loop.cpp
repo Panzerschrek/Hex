@@ -131,6 +131,8 @@ h_MainLoop::h_MainLoop(
 	setFocus();
 	show();
 
+	QuitToMainMenu();
+
 	h_Console::Info( "MainLoop started" );
 }
 
@@ -170,6 +172,8 @@ void h_MainLoop::paintGL()
 {
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
+	root_menu_->Tick();
+
 	if( game_started_ )
 	{
 		player_->Lock();
@@ -183,10 +187,6 @@ void h_MainLoop::paintGL()
 
 	if( !ui_painter_ )
 		ui_painter_.reset( new ui_Painter() );
-	if( !root_menu_ )
-		root_menu_.reset( new ui_MainMenu( this, settings_, screen_width_, screen_height_ ) );
-
-	if( root_menu_ ) root_menu_->Tick();
 
 	m_Mat4 mat;
 	mat.Identity();
@@ -328,19 +328,7 @@ void h_MainLoop::closeEvent( QCloseEvent* e )
 {
 	e->accept();
 
-	if( game_started_ )
-	{
-		world_->StopUpdates();
-
-		game_started_= false;
-		root_menu_.reset();
-		world_renderer_.reset();
-		player_.reset();
-		world_.reset();
-
-		world_header_->Save( g_world_directory );
-		world_header_.reset();
-	}
+	QuitToMainMenu();
 }
 
 void h_MainLoop::initializeOverlayGL() {}
@@ -375,6 +363,29 @@ void h_MainLoop::StartGame()
 		root_menu_.reset(
 			new ui_IngameMenu(
 				screen_width_, screen_height_,
-				player_ ));
+				player_,
+				*this ));
 	}
+}
+
+void h_MainLoop::QuitToMainMenu()
+{
+	if( game_started_ )
+	{
+		world_->StopUpdates();
+
+		game_started_= false;
+		root_menu_.reset();
+		world_renderer_.reset();
+		player_.reset();
+		world_.reset();
+
+		world_header_->Save( g_world_directory );
+		world_header_.reset();
+
+		root_menu_.reset();
+	}
+
+	if( !root_menu_ )
+		root_menu_.reset( new ui_MainMenu( this, settings_, screen_width_, screen_height_ ) );
 }

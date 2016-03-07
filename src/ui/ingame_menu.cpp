@@ -4,8 +4,10 @@
 #include "../math_lib/math.hpp"
 
 #include "../block.hpp"
+#include "../main_loop.hpp"
 #include "../player.hpp"
 #include "styles.hpp"
+#include "ui_painter.hpp"
 
 #include "ingame_menu.hpp"
 
@@ -38,8 +40,8 @@ public:
 
 		ui_Style title_style= c_ui_texts_style;
 		title_style.text_alignment= ui_Style::TextAlignment::Left;
-		ui_Text* title= new ui_Text("Select block:", column, row, 12, 1, title_style );
-		ui_MenuBase::elements_.push_back(title);
+		title_.reset( new ui_Text("Select block:", column, row, 12, 1, title_style ) );
+		ui_MenuBase::elements_.push_back(title_.get());
 
 		for( unsigned int i= ((unsigned int)h_BlockType::Air) + 1; i < (unsigned int)h_BlockType::NumBlockTypes; i++ )
 		{
@@ -74,13 +76,83 @@ public:
 private:
 	const BlockSelectCallback block_select_callback_;
 
+	std::unique_ptr< ui_Text > title_;
 	std::vector< std::unique_ptr<ui_Button> > buttons_;
+};
+
+class ui_EscMenu final : public ui_MenuBase
+{
+public:
+	ui_EscMenu(
+		ui_MenuBase* parent,
+		int x, int y,
+		int sx, int sy,
+		h_MainLoop& main_loop )
+		: ui_MenuBase( parent, x, y, sx, sy )
+		, main_loop_(main_loop)
+	{
+		unsigned int row, column;
+		const unsigned int c_button_half_width= 5;
+		row= SizeY() / ui_Base::CellSize() / 2 - 1;
+		column= SizeX() / ui_Base::CellSize() / 2 - c_button_half_width;
+
+		resume_button_.reset( new ui_Button( "resume", column, row, c_button_half_width*2, 1, c_ui_texts_style ) );
+		resume_button_->SetCallback( [this]{ Kill(); } );
+		row++;
+
+		quit_to_main_menu_button_.reset( new ui_Button( "quit to main menu", column, row++, c_button_half_width*2, 1, c_ui_texts_style ) );
+		quit_to_main_menu_button_->SetCallback(
+		[this]
+		{
+			main_loop_.QuitToMainMenu();
+		} );
+
+		ui_MenuBase::elements_.push_back(resume_button_.get());
+		ui_MenuBase::elements_.push_back(quit_to_main_menu_button_.get());
+	}
+
+	virtual void Draw( ui_Painter* painter ) override
+	{
+		// Draw dark background.
+		static const unsigned char c_color[4]= { 0, 0, 0, 0x90 };
+
+		ui_Vertex v[6];
+		v[0].coord[0]= 0;
+		v[0].coord[1]= 0;
+		v[1].coord[0]= size_x_;
+		v[1].coord[1]= 0;
+		v[2].coord[0]= size_x_;
+		v[2].coord[1]= size_y_;
+		v[3].coord[0]= 0;
+		v[3].coord[1]= size_y_;
+		v[4]= v[0];
+		v[5]= v[2];
+
+		painter->DrawUITriangles( v, 6, c_color );
+		ui_MenuBase::Draw( painter );
+	}
+
+	virtual void KeyPress( ui_Key key ) override
+	{
+		if( key == ui_Key::Escape ) this->Kill();
+	}
+
+	virtual void Tick() override
+	{}
+
+private:
+	h_MainLoop& main_loop_;
+
+	std::unique_ptr<ui_Button> resume_button_;
+	std::unique_ptr<ui_Button> quit_to_main_menu_button_;
 };
 
 ui_IngameMenu::ui_IngameMenu(
 	int sx, int sy,
-	const h_PlayerPtr& player )
+	const h_PlayerPtr& player,
+	h_MainLoop& main_loop )
 	: ui_MenuBase( nullptr, 0, 0, sx, sy )
+	, main_loop_(main_loop)
 	, player_(player)
 {
 	int row= sy / ui_Base::CellSize() - 2;
@@ -142,8 +214,21 @@ void ui_IngameMenu::KeyPress( ui_Key key )
 				std::bind(&ui_IngameMenu::OnBlockSelected, this, std::placeholders::_1) ) );
 
 		this->SetActive( false );
-
 		for( auto& key : keys_ ) key.second= false;
+	}
+	else if( key == ui_Key::Escape )
+	{
+		child_menu_.reset(
+			new ui_EscMenu(
+				this,
+				0, 0,
+				size_x_, size_y_,
+				main_loop_ ) );
+
+		this->SetActive( false );
+		for( auto& key : keys_ ) key.second= false;
+
+		player_->PauseWorldUpdates();
 	}
 	else if( key == g_jump_key )
 		player_->Jump();
@@ -186,6 +271,8 @@ void ui_IngameMenu::Tick()
 
 	if( this->IsActive() )
 	{
+		player_->UnpauseWorldUpdates();
+
 		float cam_ang_z= player_->Angle().z;
 
 		if( keys_[ g_forward_key ] )

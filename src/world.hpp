@@ -48,10 +48,17 @@ public:
 	//ACHTUNG! This function unfinished. It ignores destruction of light sources. also, danger of stack owerflow. time ~ 6^radius
 	void Blast( short x, short y, short z, short radius );
 
-	// start main phys loop of world
+	// Start main phys loop of world.
+	// Call in ui thread.
 	// "player" and "renderer" must be valid before StopUpdates call.
 	void StartUpdates( h_Player* player, r_IWorldRenderer* renderer );
 	void StopUpdates();
+
+	// Pause/unpause world updates
+	// Call in ui thread.
+	// Must be called, when updates started.
+	void PauseUpdates();
+	void UnpauseUpdates();
 
 	void Save();//save world data to disk
 
@@ -161,6 +168,7 @@ private:
 	unsigned int phys_tick_count_;
 	std::unique_ptr< std::thread > phys_thread_;
 	std::atomic<bool> phys_thread_need_stop_;
+	std::atomic<bool> phys_thread_paused_;
 
 	//queue 0 - for enqueue, queue 1 - for dequeue
 	std::queue< h_WorldAction > action_queue_[2];

@@ -36,6 +36,7 @@ protected:
 public://main menu interface logic
 	void Quit();
 	void StartGame();
+	void QuitToMainMenu();
 
 private:
 	void UpdateCursor();

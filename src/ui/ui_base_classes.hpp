@@ -399,7 +399,7 @@ public:
 	int SizeX() const { return size_x_; }
 	int SizeY() const { return size_y_; }
 
-	void Draw( ui_Painter* painter );
+	virtual void Draw( ui_Painter* painter );
 	void SetActive( bool active );
 	void SetVisible( bool visible );
 

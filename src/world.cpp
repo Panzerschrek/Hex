@@ -15,6 +15,7 @@
 
 static constexpr const unsigned int g_updates_frequency= 15;
 static constexpr const unsigned int g_update_inrerval_ms= 1000 / g_updates_frequency;
+static constexpr const unsigned int g_sleep_interval_on_pause= g_update_inrerval_ms * 4;
 
 static constexpr const unsigned int g_day_duration_ticks= 12 /*min*/ * 60 /*sec*/ * g_updates_frequency;
 static constexpr const unsigned int g_days_in_year= 32;
@@ -43,6 +44,8 @@ h_World::h_World(
 		g_planet_rotation_axis_inclination,
 		g_northern_hemisphere_summer_solstice_day )
 	, phys_tick_count_( header->ticks != 0 ? header->ticks : g_world_start_tick )
+	, phys_thread_need_stop_(false)
+	, phys_thread_paused_(false)
 {
 	InitNormalBlocks();
 
@@ -176,6 +179,7 @@ void h_World::StartUpdates( h_Player* player, r_IWorldRenderer* renderer )
 	renderer_= renderer;
 
 	phys_thread_need_stop_.store(false);
+	phys_thread_paused_.store(false);
 	phys_thread_.reset( new std::thread( &h_World::PhysTick, this ) );
 
 	h_Console::Info( "World updates started" );
@@ -187,14 +191,30 @@ void h_World::StopUpdates()
 
 	H_ASSERT( player_ );
 	H_ASSERT( renderer_ );
-	player_= nullptr;
-	renderer_= nullptr;
 
 	phys_thread_need_stop_.store(true);
+	phys_thread_paused_.store(false);
 	phys_thread_->join();
 	phys_thread_.reset();
 
+	player_= nullptr;
+	renderer_= nullptr;
+
 	h_Console::Info( "World updates stopped" );
+}
+
+void h_World::PauseUpdates()
+{
+	H_ASSERT( phys_thread_ );
+
+	phys_thread_paused_.store(true);
+}
+
+void h_World::UnpauseUpdates()
+{
+	H_ASSERT( phys_thread_ );
+
+	phys_thread_paused_.store(false);
 }
 
 void h_World::Save()
@@ -685,6 +705,9 @@ void h_World::PhysTick()
 {
 	while(!phys_thread_need_stop_.load())
 	{
+		while(phys_thread_paused_.load())
+			hSleep( g_sleep_interval_on_pause );
+
 		H_ASSERT( player_ );
 		H_ASSERT( renderer_ );
 
