@@ -143,6 +143,8 @@ h_MainLoop::~h_MainLoop()
 
 void h_MainLoop::initializeGL()
 {
+	h_Console::Info( "Initialize OpenGL" );
+
 	GetGLFunctions(
 		[](const char* name)
 		{
@@ -160,6 +162,8 @@ void h_MainLoop::initializeGL()
 		} );
 
 	r_Framebuffer::SetScreenFramebufferSize( screen_width_, screen_height_ );
+
+	ui_painter_.reset( new ui_Painter() );
 }
 
 void h_MainLoop::resizeGL(int w , int h)
@@ -184,9 +188,6 @@ void h_MainLoop::paintGL()
 	}
 	else
 		UpdateCursor();
-
-	if( !ui_painter_ )
-		ui_painter_.reset( new ui_Painter() );
 
 	m_Mat4 mat;
 	mat.Identity();

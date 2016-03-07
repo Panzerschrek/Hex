@@ -22,17 +22,17 @@ public:
 	void SetMatrix( const m_Mat4& m );
 	//input - vertices in xy format
 	void DrawUITriangles(ui_Vertex* vertices, int vertex_count, const unsigned char* color );
+
+	// Draw centerd text. font_size - in pixels.
 	void DrawUIText( const char* text, float center_x, float center_y, float font_size, const unsigned char* font_color );
 
-	//coordinates - upper left corner of first letter
-	void DrawUITextLeft( const char* text, float x, float y, float font_size, const unsigned char* font_color );
-
+	// y - text top, x - text left, x_center - (top+bottom) / 2. font_size - in pixels
 	void DrawUITextPixelCoordsLeft( const char* text, float x, float y, float font_size, const unsigned char* font_color );
 	void DrawUITextPixelCoordsCenter( const char* text, float center_x, float y, float font_size, const unsigned char* font_color );
 	void DrawUITextPixelCoordsRight( const char* text, float x, float y, float font_size, const unsigned char* font_color );
 
 private:
-	r_GLSLProgram ui_shader;
-	r_PolygonBuffer ui_vbo;
-	std::unique_ptr<r_Text> text_manager;
+	r_GLSLProgram ui_shader_;
+	r_PolygonBuffer ui_vbo_;
+	std::unique_ptr<r_Text> text_manager_;
 };

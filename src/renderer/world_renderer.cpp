@@ -1232,9 +1232,7 @@ void r_WorldRenderer::InitGL()
 	InitFrameBuffers();
 	LoadTextures();
 
-	text_manager_.reset(
-		new r_Text( /*"textures/fixedsys8x18.bmp"*//*"textures/DejaVuSansMono12.bmp"*/"textures/mono_font_sdf.tga" ) );
-	text_manager_->SetViewport( viewport_width_, viewport_height_ );
+	text_manager_.reset( new r_Text( "textures/mono_font_sdf.tga" ) );
 
 	InitVertexBuffers();
 }

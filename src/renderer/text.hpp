@@ -26,16 +26,13 @@ class r_Text
 {
 public:
 	r_Text( const char* font_file );
-	~r_Text() {}
-	void AddText( float colomn, float row, float, const unsigned char* color, const char* text );
-	void AddMultiText( float colomn, float row, float, const unsigned char* color, const char* text, ... );
+	~r_Text();
+
+	void AddText( float column, float row, float size/*in letters*/, const unsigned char* color, const char* text );
+	void AddMultiText( float column, float row, float size /*in letters*/, const unsigned char* color, const char* text, ... );
 
 	void AddTextPixelCoords( float x, float y, float size/*in pixels*/, const unsigned char* color, const char* text );
 	void Draw();
-	void SetViewport( unsigned int x, unsigned int y );
-
-	unsigned int ColomnsInScreen() const;
-	unsigned int RowsInScreen() const;
 
 	float LetterWidth () const;
 	float LetterHeight() const;
@@ -64,7 +61,6 @@ private:
 
 	std::vector<r_TextVertex> vertices_;
 	unsigned int vertex_buffer_pos_;
-	float viewport_width_, viewport_height_;
 
 	unsigned int letter_width_, letter_height_;
 
@@ -72,22 +68,6 @@ private:
 	static const constexpr unsigned int c_letters_in_texture_= 96;
 	static const constexpr unsigned int c_text_buffer_size_= 8192;
 };
-
-inline void r_Text::SetViewport( unsigned int x, unsigned int y )
-{
-	viewport_width_= float(x);
-	viewport_height_= float(y);
-}
-
-inline unsigned int r_Text::ColomnsInScreen() const
-{
-	return viewport_width_ / letter_width_;
-}
-
-inline unsigned int r_Text::RowsInScreen() const
-{
-	return viewport_height_ / letter_height_;
-}
 
 inline float r_Text::LetterWidth () const
 {

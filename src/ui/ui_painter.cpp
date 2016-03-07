@@ -8,22 +8,22 @@
 
 ui_Painter::ui_Painter()
 {
-	ui_vbo.VertexData( nullptr, sizeof(ui_Vertex)*4096, sizeof(ui_Vertex) );
+	ui_vbo_.VertexData( nullptr, sizeof(ui_Vertex)*4096, sizeof(ui_Vertex) );
 
 	ui_Vertex vert;
 	int offset= ((char*)vert.coord) - ((char*)&vert);
-	ui_vbo.VertexAttribPointer( 0, 2, GL_SHORT, false, offset );
+	ui_vbo_.VertexAttribPointer( 0, 2, GL_SHORT, false, offset );
 	offset= ((char*)vert.color) - ((char*)&vert);
-	ui_vbo.VertexAttribPointer( 1, 4, GL_UNSIGNED_BYTE, true, offset );
+	ui_vbo_.VertexAttribPointer( 1, 4, GL_UNSIGNED_BYTE, true, offset );
 
-	ui_shader.Load( "shaders/ui_frag.glsl", "shaders/ui_vert.glsl" );
-	ui_shader.SetAttribLocation( "coord", 0 );
-	ui_shader.SetAttribLocation( "color", 1 );
-	ui_shader.Create();
+	ui_shader_.Load( "shaders/ui_frag.glsl", "shaders/ui_vert.glsl" );
+	ui_shader_.SetAttribLocation( "coord", 0 );
+	ui_shader_.SetAttribLocation( "color", 1 );
+	ui_shader_.Create();
 
 	//static const char*const font_files[]= { "textures/courier_new_18.bmp", "textures/courier_new_24.bmp", "textures/courier_new_32.bmp" };
 	//text_manager= new r_Text( font_files[1] );
-	text_manager.reset( new r_Text( "textures/mono_font_sdf.tga" ) );
+	text_manager_.reset( new r_Text( "textures/mono_font_sdf.tga" ) );
 }
 
 ui_Painter::~ui_Painter()
@@ -32,14 +32,13 @@ ui_Painter::~ui_Painter()
 
 void ui_Painter::SetMatrix( const m_Mat4& m )
 {
-	ui_shader.Bind();
-
-	ui_shader.Uniform( "transform_matrix", m );
+	ui_shader_.Bind();
+	ui_shader_.Uniform( "transform_matrix", m );
 }
 
 void ui_Painter::DrawUITriangles( ui_Vertex* vertices, int vertex_count, const unsigned char* color )
 {
-	ui_shader.Bind();
+	ui_shader_.Bind();
 
 	for( int i= 0; i< vertex_count; i++ )
 	{
@@ -48,44 +47,40 @@ void ui_Painter::DrawUITriangles( ui_Vertex* vertices, int vertex_count, const u
 		vertices[i].color[2]= color[2];
 		vertices[i].color[3]= color[3];
 	}
-	ui_vbo.Bind();
+	ui_vbo_.Bind();
 
-	ui_vbo.VertexSubData( vertices, vertex_count * sizeof(ui_Vertex), 0 );
+	ui_vbo_.VertexSubData( vertices, vertex_count * sizeof(ui_Vertex), 0 );
 
 	glDrawArrays( GL_TRIANGLES, 0, vertex_count );
 }
 
 void ui_Painter::DrawUIText( const char* text, float center_x, float center_y, float font_size, const unsigned char* font_color )
 {
-	int len= strlen(text);
-	float x= center_x - text_manager->LetterWidth() * 0.5f * float(len);
-	float y= center_y - 0.5f * text_manager->LetterHeight();
-	text_manager->AddText( x / text_manager->LetterWidth(), y/text_manager->LetterHeight(), font_size, font_color, text );
-	text_manager->Draw();
-}
+	float font_scaler= font_size / text_manager_->LetterHeight();
 
-void ui_Painter::DrawUITextLeft( const char* text, float x, float y, float font_size, const unsigned char* font_color )
-{
-	text_manager->AddText( x / text_manager->LetterWidth(), y/text_manager->LetterHeight(), font_size, font_color, text );
-	text_manager->Draw();
+	float x= center_x - 0.5f * font_scaler * text_manager_->LetterWidth() * float( std::strlen(text) );
+	float y= center_y - 0.5f * font_scaler * text_manager_->LetterHeight();
+
+	text_manager_->AddTextPixelCoords( x, y, font_size, font_color, text );
+	text_manager_->Draw();
 }
 
 void ui_Painter::DrawUITextPixelCoordsLeft( const char* text, float x, float y, float font_size, const unsigned char* font_color )
 {
-	text_manager->AddTextPixelCoords( x, y, font_size, font_color, text );
-	text_manager->Draw();
+	text_manager_->AddTextPixelCoords( x, y, font_size, font_color, text );
+	text_manager_->Draw();
 }
 
 void ui_Painter::DrawUITextPixelCoordsCenter( const char* text, float center_x, float y, float font_size, const unsigned char* font_color )
 {
-	float x= center_x - 0.5f * ( float(strlen(text)) * font_size * float(text_manager->LetterWidth()) / float(text_manager->LetterHeight()) );
-	text_manager->AddTextPixelCoords( x, y, font_size, font_color, text );
-	text_manager->Draw();
+	float x= center_x - 0.5f * ( float(strlen(text)) * font_size * float(text_manager_->LetterWidth()) / float(text_manager_->LetterHeight()) );
+	text_manager_->AddTextPixelCoords( x, y, font_size, font_color, text );
+	text_manager_->Draw();
 }
 
 void ui_Painter::DrawUITextPixelCoordsRight( const char* text, float x, float y, float font_size, const unsigned char* font_color )
 {
-	x-= ( float(strlen(text)) * font_size * float(text_manager->LetterWidth()) / float(text_manager->LetterHeight()) );
-	text_manager->AddTextPixelCoords( x, y, font_size, font_color, text );
-	text_manager->Draw();
+	x-= ( float(strlen(text)) * font_size * float(text_manager_->LetterWidth()) / float(text_manager_->LetterHeight()) );
+	text_manager_->AddTextPixelCoords( x, y, font_size, font_color, text );
+	text_manager_->Draw();
 }

@@ -541,7 +541,7 @@ void ui_ProgressBar::Draw( ui_Painter* painter ) const
 	char text[64];
 	sprintf( text, "%d%%", int(round( 100.0f * progress_) ) );
 
-	painter->DrawUIText( text, float(X() + SizeX()/2), float(Y()+ SizeY()/2), 1.0f, font_color );
+	painter->DrawUIText( text, float(X() + SizeX()/2), float(Y()+ SizeY()/2), SizeY(), font_color );
 }
 
 /*
