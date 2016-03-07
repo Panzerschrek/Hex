@@ -13,7 +13,8 @@ SOURCES += \
     ../src/test/test.cpp \
     ../src/test/test_test.cpp \
     ../src/test/math_test.cpp \
-    ../src/test/calendar_test.cpp
+    ../src/test/calendar_test.cpp \
+    ../src/test/allocation_free_list_test.cpp
 
 HEADERS += \
     ../src/test/test.h
