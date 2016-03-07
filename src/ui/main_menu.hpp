@@ -18,13 +18,10 @@ private:
 private:
 	h_SettingsPtr settings_;
 
-	ui_Button* button_back_;
+	std::unique_ptr<ui_Button> button_back_;
 
-	ui_Text* text_textures_size_;
-	ui_Slider* slider_textures_size_;
-
-	ui_Text* text_textures_filtration_;
-	ui_Button* button_textures_fitration_;
+	std::unique_ptr<ui_Text> text_textures_size_;
+	std::unique_ptr<ui_Slider> slider_textures_size_;
 };
 
 class ui_MainMenu : public ui_MenuBase
@@ -45,9 +42,9 @@ private:
 	h_MainLoop * const main_loop_;
 	h_SettingsPtr settings_;
 
-	ui_Button* button_play_;
-	ui_Button* button_settings_;
-	ui_Button* button_quit_;
-	ui_Text* game_title_;
-	ui_Text* game_subtitle_;
+	std::unique_ptr<ui_Button> button_play_;
+	std::unique_ptr<ui_Button> button_settings_;
+	std::unique_ptr<ui_Button> button_quit_;
+	std::unique_ptr<ui_Text> game_title_;
+	std::unique_ptr<ui_Text> game_subtitle_;
 };

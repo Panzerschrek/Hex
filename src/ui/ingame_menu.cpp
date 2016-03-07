@@ -43,12 +43,12 @@ public:
 
 		for( unsigned int i= ((unsigned int)h_BlockType::Air) + 1; i < (unsigned int)h_BlockType::NumBlockTypes; i++ )
 		{
-			ui_Button* button=
+			std::unique_ptr<ui_Button> button(
 				new ui_Button(
 					h_Block::GetBlockName(static_cast<h_BlockType>(i)),
 					column, row + 1 + ( i - (((unsigned int)h_BlockType::Air) + 1 ) ),
 					8, 1,
-					c_ui_main_style );
+					c_ui_main_style ) );
 
 			button->SetCallback(
 				[this, i]
@@ -56,15 +56,12 @@ public:
 					block_select_callback_(static_cast<h_BlockType>(i));
 				});
 
-			ui_MenuBase::elements_.push_back(button);
+			ui_MenuBase::elements_.push_back(button.get());
+			buttons_.push_back( std::move(button) );
 		}
 	}
 
-	virtual ~ui_BlockSelectMenu() override
-	{
-		for( ui_Base* el : ui_MenuBase::elements_ )
-			delete el;
-	}
+	virtual ~ui_BlockSelectMenu() override {}
 
 	virtual void KeyPress( ui_Key key ) override
 	{
@@ -76,6 +73,8 @@ public:
 
 private:
 	const BlockSelectCallback block_select_callback_;
+
+	std::vector< std::unique_ptr<ui_Button> > buttons_;
 };
 
 ui_IngameMenu::ui_IngameMenu(
@@ -88,16 +87,14 @@ ui_IngameMenu::ui_IngameMenu(
 
 	ui_Style title_style= c_ui_texts_style;
 	title_style.text_alignment= ui_Style::TextAlignment::Left;
-	block_type_text_= new ui_Text("", 1, row, 20, 1, title_style );
+	block_type_text_.reset( new ui_Text("", 1, row, 20, 1, title_style ) );
 	OnBlockSelected( h_BlockType::Unknown );
 
-	ui_MenuBase::elements_.push_back(block_type_text_);
+	ui_MenuBase::elements_.push_back( block_type_text_.get() );
 }
 
 ui_IngameMenu::~ui_IngameMenu()
 {
-	delete block_type_text_;
-
 	ui_CursorHandler::GrabMouse( false );
 }
 
@@ -137,12 +134,12 @@ void ui_IngameMenu::KeyPress( ui_Key key )
 
 	if( key == g_inventory_key )
 	{
-		child_menu_=
+		child_menu_.reset(
 			new ui_BlockSelectMenu(
 				this,
 				0, 0,
 				size_x_, size_y_,
-				std::bind(&ui_IngameMenu::OnBlockSelected, this, std::placeholders::_1) );
+				std::bind(&ui_IngameMenu::OnBlockSelected, this, std::placeholders::_1) ) );
 
 		this->SetActive( false );
 
@@ -181,8 +178,7 @@ void ui_IngameMenu::Tick()
 
 	if( child_menu_ && child_menu_->IsMarkedForKilling() )
 	{
-		delete child_menu_;
-		child_menu_= nullptr;
+		child_menu_.reset();
 		this->SetActive( true );
 	}
 

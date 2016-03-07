@@ -33,6 +33,6 @@ private:
 
 	std::map<ui_Key, bool> keys_;
 
-	ui_Text* block_type_text_;
+	std::unique_ptr<ui_Text> block_type_text_;
 
 };

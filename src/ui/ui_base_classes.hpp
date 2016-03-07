@@ -1,6 +1,7 @@
 #pragma once
 #include <array>
 #include <functional>
+#include <memory>
 #include <vector>
 
 #define H_UI_MAX_ELEMENTS 128
@@ -427,7 +428,7 @@ public:
 protected:
 	std::vector<ui_Base*> elements_;//container for all elements. All elements of menu must be here
 	ui_MenuBase * const parent_menu_;
-	ui_MenuBase* child_menu_;
+	std::unique_ptr<ui_MenuBase> child_menu_;
 
 	bool active_;
 	bool visible_;
