@@ -936,7 +936,7 @@ void rBuildChunkFailingBlocks( const r_ChunkInfo& chunk_info, std::vector<r_Worl
 			v[1].coord[1]= v[2].coord[1]= v[0].coord[1] + 1;
 			v[7].coord[1]= v[4].coord[1]= v[0].coord[1] - 1;
 
-			v[0].coord[2]= v[1].coord[2]= v[2].coord[2]= v[3].coord[2]= v[7].coord[2]= v[4].coord[2]= z - int(side << 8);
+			v[0].coord[2]= v[1].coord[2]= v[2].coord[2]= v[3].coord[2]= v[7].coord[2]= v[4].coord[2]= z + int((side^1) << 8);
 
 			v[0].tex_coord[0]= tex_scale * v[0].coord[0];
 			v[1].tex_coord[0]= v[4].tex_coord[0]= v[0].tex_coord[0] + 1*tex_scale;
@@ -973,8 +973,8 @@ void rBuildChunkFailingBlocks( const r_ChunkInfo& chunk_info, std::vector<r_Worl
 			v[0].coord[0]= v[ 1 ].coord[0]= 3 * ( block->GetX() + X ) + 1;
 			v[0].coord[1]= v[ 1 ].coord[1]= v[2].coord[1]= v[ 3 ].coord[1]= 2 * ( block->GetY() + Y - int(side) ) - (block->GetX()&1) + 2 + 1;
 
-			v[0].coord[2]= v[ 3 ].coord[2]= z;
-			v[ 1 ].coord[2]= v[2].coord[2]= z - (1<<8);
+			v[0].coord[2]= v[ 3 ].coord[2]= z + (1<<8);
+			v[ 1 ].coord[2]= v[2].coord[2]= z;
 
 			v[ 3 ].coord[0]= v[2].coord[0]= v[ 1 ].coord[0] + 2;
 
@@ -1006,8 +1006,8 @@ void rBuildChunkFailingBlocks( const r_ChunkInfo& chunk_info, std::vector<r_Worl
 			v[0].coord[1]= v[ 3 ].coord[1]= 2 * ( block->GetY() + Y ) - (block->GetX()&1) + 2 - int(side);
 			v[ 1 ].coord[1]= v[2].coord[1]= v[0].coord[1] + 1;
 
-			v[0].coord[2]= v[ 1 ].coord[2]= z;
-			v[2].coord[2]= v[ 3 ].coord[2]= z - (1 << 8);
+			v[0].coord[2]= v[ 1 ].coord[2]= z + (1 << 8);
+			v[2].coord[2]= v[ 3 ].coord[2]= z;
 
 			v[ 1 ].tex_coord[0]= v[2].tex_coord[0]= tex_scale * ( v[ 1 ].coord[1] - v[1].coord[0] );
 			v[0].tex_coord[0]= v[ 3 ].tex_coord[0]= v[ 1 ].tex_coord[0] - 2 * tex_scale;
@@ -1036,8 +1036,8 @@ void rBuildChunkFailingBlocks( const r_ChunkInfo& chunk_info, std::vector<r_Worl
 			v[ 1 ].coord[1]= v[2].coord[1]= 2 * ( block->GetY() + Y ) - (block->GetX()&1) + 2 - 1 + int(side);
 			v[0].coord[1]= v[ 3 ].coord[1]= v[ 1 ].coord[1] + 1;
 
-			v[ 1 ].coord[2]= v[0].coord[2]= z;
-			v[2].coord[2]= v[ 3 ].coord[2]= z - (1 << 8);
+			v[ 1 ].coord[2]= v[0].coord[2]= z + (1 << 8);
+			v[2].coord[2]= v[ 3 ].coord[2]= z;
 
 			v[2].tex_coord[0]= v[ 1 ].tex_coord[0]=  ( v[1].coord[1]  + v[1].coord[0] ) * tex_scale;
 			v[0].tex_coord[0]= v[ 3 ].tex_coord[0]= v[2].tex_coord[0] + 2 * tex_scale;
