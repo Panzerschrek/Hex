@@ -1,22 +1,33 @@
 #include "renderer/i_world_renderer.hpp"
 #include "world.hpp"
 
+// Table for replacement of division in vertex light calculation.
+// This method not precise, but fast.
+static const unsigned int g_vertex_light_div_shift= 16;
+static const unsigned int g_vertex_light_div_table_multiplier= 1 << g_vertex_light_div_shift;
+static const unsigned int g_vertex_light_div_table[]=
+{
+	0,
+	g_vertex_light_div_table_multiplier * (13+1)/1,
+	g_vertex_light_div_table_multiplier * (13+2)/2,
+	g_vertex_light_div_table_multiplier * (13+3)/3,
+	g_vertex_light_div_table_multiplier * (13+4)/4,
+	g_vertex_light_div_table_multiplier * (13+5)/5,
+	g_vertex_light_div_table_multiplier * (13+6)/6,
+};
+
 unsigned char h_World::SunLightLevel( short x, short y, short z ) const
 {
-	return GetChunk( x >> H_CHUNK_WIDTH_LOG2, y>> H_CHUNK_WIDTH_LOG2 )->
-		   SunLightLevel( x& (H_CHUNK_WIDTH-1), y& (H_CHUNK_WIDTH-1), z );
+	return
+		GetChunk( x >> H_CHUNK_WIDTH_LOG2, y>> H_CHUNK_WIDTH_LOG2 )->
+		SunLightLevel( x& (H_CHUNK_WIDTH-1), y& (H_CHUNK_WIDTH-1), z );
 }
 unsigned char h_World::FireLightLevel( short x, short y, short z ) const
 {
-	return GetChunk( x >> H_CHUNK_WIDTH_LOG2, y>> H_CHUNK_WIDTH_LOG2 )->
-		   FireLightLevel( x& (H_CHUNK_WIDTH-1), y& (H_CHUNK_WIDTH-1), z );
+	return
+	GetChunk( x >> H_CHUNK_WIDTH_LOG2, y>> H_CHUNK_WIDTH_LOG2 )->
+	FireLightLevel( x& (H_CHUNK_WIDTH-1), y& (H_CHUNK_WIDTH-1), z );
 }
-
-//table for calculating vertex light without division ( must be faster, but not precise )
-static const unsigned int vertex_light_div_table[]=
-{
-	0, 65536 * (13+1)/1, 65536 * (13+2)/2, 65536 * (13+3)/3, 65536 * (13+4)/4, 65536 * (13+5)/5, 65536 * (13+6)/6
-};
 
 void h_World::GetForwardVertexLight( short x, short y, short z, unsigned char* out_light ) const
 {
@@ -80,8 +91,8 @@ void h_World::GetForwardVertexLight( short x, short y, short z, unsigned char* o
 		block_count++;
 	}
 
-	out_light[0]= ( ( (unsigned int)light[0] ) * vertex_light_div_table[ block_count ] )>> 16;
-	out_light[1]= ( ( (unsigned int)light[1] ) * vertex_light_div_table[ block_count ] )>> 16;
+	out_light[0]= ( ( (unsigned int)light[0] ) * g_vertex_light_div_table[ block_count ] )>> g_vertex_light_div_shift;
+	out_light[1]= ( ( (unsigned int)light[1] ) * g_vertex_light_div_table[ block_count ] )>> g_vertex_light_div_shift;
 }
 
 void h_World::GetBackVertexLight( short x, short y, short z, unsigned char* out_light ) const
@@ -146,8 +157,8 @@ void h_World::GetBackVertexLight( short x, short y, short z, unsigned char* out_
 		block_count++;
 	}
 
-	out_light[0]= ( ( (unsigned int)light[0] ) * vertex_light_div_table[ block_count ] )>> 16;
-	out_light[1]= ( ( (unsigned int)light[1] ) * vertex_light_div_table[ block_count ] )>> 16;
+	out_light[0]= ( ( (unsigned int)light[0] ) * g_vertex_light_div_table[ block_count ] )>> g_vertex_light_div_shift;
+	out_light[1]= ( ( (unsigned int)light[1] ) * g_vertex_light_div_table[ block_count ] )>> g_vertex_light_div_shift;
 }
 
 void h_World::SetSunLightLevel( short x, short y, short z, unsigned char l )
@@ -166,53 +177,50 @@ void h_World::LightWorld()
 {
 	//main chunks. used fast lighting functions ( without coordinate clamping )
 	for( unsigned int i= 1; i< chunk_number_x_ - 1; i++ )
-		for( unsigned int j= 1; j< chunk_number_y_ - 1; j++ )
-		{
-			h_Chunk* ch= GetChunk( i, j );
-			short X= i * H_CHUNK_WIDTH, Y= j * H_CHUNK_WIDTH;
-			for( short x= 0; x< H_CHUNK_WIDTH; x++ )
-				for( short y= 0; y< H_CHUNK_WIDTH; y++ )
-					for( short z= 1; z< H_CHUNK_HEIGHT - 1; z++ )
-						AddSunLight_r( X+x, Y+y, z, ch->SunLightLevel(x,y,z) );
+	for( unsigned int j= 1; j< chunk_number_y_ - 1; j++ )
+	{
+		h_Chunk* ch= GetChunk( i, j );
+		short X= i * H_CHUNK_WIDTH, Y= j * H_CHUNK_WIDTH;
+		for( short x= 0; x< H_CHUNK_WIDTH; x++ )
+		for( short y= 0; y< H_CHUNK_WIDTH; y++ )
+		for( short z= 1; z< H_CHUNK_HEIGHT - 1; z++ )
+			AddSunLight_r( X+x, Y+y, z, ch->SunLightLevel(x,y,z) );
 
-			const std::vector< h_LightSource* >& light_sources= ch->GetLightSourceList();
-			for( const h_LightSource* source : light_sources )
-				AddFireLight_r( X + source->x_, Y + source->y_, source->z_, source->LightLevel() );
-		}
+		const std::vector< h_LightSource* >& light_sources= ch->GetLightSourceList();
+		for( const h_LightSource* source : light_sources )
+			AddFireLight_r( X + source->x_, Y + source->y_, source->z_, source->LightLevel() );
+	}
 
 	//north and south chunks
 	for( unsigned int k= 0; k< 2; k++ )
+	for( unsigned int i= 0; i< chunk_number_x_; i++ )
 	{
-		for( unsigned int i= 0; i< chunk_number_x_; i++ )
-		{
-			h_Chunk* ch= GetChunk( i, k * (chunk_number_y_-1) );
-			short X= i * H_CHUNK_WIDTH, Y=  H_CHUNK_WIDTH * k * (chunk_number_y_-1) ;
-			for( short x= 0; x< H_CHUNK_WIDTH; x++ )
-				for( short y= 0; y< H_CHUNK_WIDTH; y++ )
-					for( short z= 1; z< H_CHUNK_HEIGHT-1; z++ )
-						AddSunLightSafe_r( X+x, Y+y, z, ch->SunLightLevel(x,y,z) );
+		h_Chunk* ch= GetChunk( i, k * (chunk_number_y_-1) );
+		short X= i * H_CHUNK_WIDTH, Y=  H_CHUNK_WIDTH * k * (chunk_number_y_-1) ;
+		for( short x= 0; x< H_CHUNK_WIDTH; x++ )
+		for( short y= 0; y< H_CHUNK_WIDTH; y++ )
+		for( short z= 1; z< H_CHUNK_HEIGHT-1; z++ )
+			AddSunLightSafe_r( X+x, Y+y, z, ch->SunLightLevel(x,y,z) );
 
-			const std::vector< h_LightSource* >& light_sources= ch->GetLightSourceList();
-			for( const h_LightSource* source : light_sources )
-				AddFireLightSafe_r( X + source->x_, Y + source->y_, source->z_, source->LightLevel() );
-		}
+		const std::vector< h_LightSource* >& light_sources= ch->GetLightSourceList();
+		for( const h_LightSource* source : light_sources )
+			AddFireLightSafe_r( X + source->x_, Y + source->y_, source->z_, source->LightLevel() );
 	}
+
 	//east and west chunks
 	for( unsigned int k= 0; k< 2; k++ )
+	for( unsigned int j= 0; j< chunk_number_y_; j++ )
 	{
-		for( unsigned int j= 0; j< chunk_number_y_; j++ )
-		{
-			h_Chunk* ch= GetChunk( k*( chunk_number_x_ - 1), j );
-			short X= k*( chunk_number_x_ - 1) * H_CHUNK_WIDTH, Y=  j * H_CHUNK_WIDTH;
-			for( short x= 0; x< H_CHUNK_WIDTH; x++ )
-				for( short y= 0; y< H_CHUNK_WIDTH; y++ )
-					for( short z= 1; z< H_CHUNK_HEIGHT-1; z++ )
-						AddSunLightSafe_r( X+x, Y+y, z, ch->SunLightLevel(x,y,z) );
+		h_Chunk* ch= GetChunk( k*( chunk_number_x_ - 1), j );
+		short X= k*( chunk_number_x_ - 1) * H_CHUNK_WIDTH, Y=  j * H_CHUNK_WIDTH;
+		for( short x= 0; x< H_CHUNK_WIDTH; x++ )
+		for( short y= 0; y< H_CHUNK_WIDTH; y++ )
+		for( short z= 1; z< H_CHUNK_HEIGHT-1; z++ )
+			AddSunLightSafe_r( X+x, Y+y, z, ch->SunLightLevel(x,y,z) );
 
-			const std::vector< h_LightSource* >& light_sources= ch->GetLightSourceList();
-			for( const h_LightSource* source : light_sources )
-				AddFireLightSafe_r( X + source->x_, Y + source->y_, source->z_, source->LightLevel() );
-		}
+		const std::vector< h_LightSource* >& light_sources= ch->GetLightSourceList();
+		for( const h_LightSource* source : light_sources )
+			AddFireLightSafe_r( X + source->x_, Y + source->y_, source->z_, source->LightLevel() );
 	}
 }
 
@@ -235,53 +243,49 @@ short h_World::RelightBlockAdd( short x, short y, short z )
 	short i, j, k;
 	//remove all light
 	for( i= x_min; i<= x_max; i++ )
-		for( j= y_min; j<= y_max; j++ )
-			for( k= z_max; k> 0; k-- )
-			{
-				SetSunLightLevel( i, j, k, 0 );
-			}
+	for( j= y_min; j<= y_max; j++ )
+	for( k= z_max; k> 0; k-- )
+		SetSunLightLevel( i, j, k, 0 );
 
 	//sun shine in square
 	for( i= x_min; i<= x_max; i++ )
-		for( j= y_min; j<= y_max; j++ )
+	for( j= y_min; j<= y_max; j++ )
+	{
+		h_Chunk* ch= GetChunk( i>> H_CHUNK_WIDTH_LOG2, j>> H_CHUNK_WIDTH_LOG2 );
+		short local_i= i & ( H_CHUNK_WIDTH-1), local_j= j & ( H_CHUNK_WIDTH-1);
+		unsigned char* sun_light_map= ch->sun_light_map_ + BlockAddr( local_i, local_j, H_CHUNK_HEIGHT-2 );
+		for( k= H_CHUNK_HEIGHT-2; k> 0; k--, sun_light_map-- )
 		{
-			h_Chunk* ch= GetChunk( i>> H_CHUNK_WIDTH_LOG2, j>> H_CHUNK_WIDTH_LOG2 );
-			short local_i= i & ( H_CHUNK_WIDTH-1), local_j= j & ( H_CHUNK_WIDTH-1);
-			unsigned char* sun_light_map= ch->sun_light_map_ + BlockAddr( local_i, local_j, H_CHUNK_HEIGHT-2 );
-			for( k= H_CHUNK_HEIGHT-2; k> 0; k--, sun_light_map-- )
-			{
-				if( ch->GetBlock( local_i, local_j, k )->Type() != h_BlockType::Air )
-					break;
-				sun_light_map[0]= H_MAX_SUN_LIGHT;
-			}
+			if( ch->GetBlock( local_i, local_j, k )->Type() != h_BlockType::Air )
+				break;
+			sun_light_map[0]= H_MAX_SUN_LIGHT;
 		}
+	}
 
 	//secondary sun shine
 	for( i= x_min; i<= x_max; i++ )
-		for( j= y_min; j<= y_max; j++ )
-			for( k= z_max; k> 0; k-- )
-				AddSunLight_r( i, j, k,
-							   SunLightLevel( i, j, k ) );
+	for( j= y_min; j<= y_max; j++ )
+	for( k= z_max; k> 0; k-- )
+		AddSunLight_r( i, j, k, SunLightLevel( i, j, k ) );
+
 	//secondary sun shine from borders
 	for( i= x_min; i<= x_max; i++ )
-		for( k= z_max; k> 0; k-- )
-		{
-			AddSunLight_r( i, y_min-1, k,
-						   SunLightLevel( i, y_min-1, k ) );
-			AddSunLight_r( i, y_max+1, k,
-						   SunLightLevel( i, y_max+1, k ) );
-		}
+	for( k= z_max; k> 0; k-- )
+	{
+		AddSunLight_r( i, y_min-1, k, SunLightLevel( i, y_min-1, k ) );
+		AddSunLight_r( i, y_max+1, k, SunLightLevel( i, y_max+1, k ) );
+	}
+
 	for( j= y_min; j<= y_max; j++ )
-		for( k= z_max; k> 0; k-- )
-		{
-			AddSunLight_r( x_min-1, j, k,
-						   SunLightLevel( x_min-1, j, k ) );
-			AddSunLight_r( x_max+1, j, k,
-						   SunLightLevel( x_max+1, j, k ) );
-		}
+	for( k= z_max; k> 0; k-- )
+	{
+		AddSunLight_r( x_min-1, j, k, SunLightLevel( x_min-1, j, k ) );
+		AddSunLight_r( x_max+1, j, k, SunLightLevel( x_max+1, j, k ) );
+	}
+
 	for( i= x_min; i<= x_max; i++ )
-		for( j= y_min; j<= y_max; j++ )
-			AddSunLight_r( i, j, z_max+1, SunLightLevel( i, j, z_max+1 ) );
+	for( j= y_min; j<= y_max; j++ )
+		AddSunLight_r( i, j, z_max+1, SunLightLevel( i, j, z_max+1 ) );
 
 
 	x_min= x + 1 - (short)(fire_l);
@@ -293,36 +297,31 @@ short h_World::RelightBlockAdd( short x, short y, short z )
 
 	//zero fire light in cube
 	for( i= x_min; i<= x_max; i++ )
-		for( j= y_min; j<= y_max; j++ )
-			for( k= z_min; k<= z_max; k++ )
-				SetFireLightLevel( i, j, k, 0 );
+	for( j= y_min; j<= y_max; j++ )
+	for( k= z_min; k<= z_max; k++ )
+		SetFireLightLevel( i, j, k, 0 );
 
 	//secondary fire shine from borders
 	for( i= x_min; i<= x_max; i++ )
-		for( k= z_min; k<= z_max; k++ )
-		{
-			AddFireLight_r( i, y_min-1, k,
-							FireLightLevel( i, y_min-1, k ) );
-			AddFireLight_r( i, y_max+1, k,
-							FireLightLevel( i, y_max+1, k ) );
-		}
-	for( j= y_min; j<= y_max; j++ )
-		for( k= z_min; k<= z_max; k++ )
-		{
-			AddFireLight_r( x_min-1, j, k,
-							FireLightLevel( x_min-1, j, k ) );
-			AddFireLight_r( x_max+1, j, k,
-							FireLightLevel( x_max+1, j, k ) );
-		}
-	for( i= x_min; i<= x_max; i++ )
-		for( j= y_min; j<= y_max; j++ )
-		{
-			AddFireLight_r( i, j, z_min-1,
-							FireLightLevel( i, j, z_min-1 ) );
-			AddFireLight_r( i, j, z_max+1,
-							FireLightLevel( i, j, z_max+1 ) );
-		}
+	for( k= z_min; k<= z_max; k++ )
+	{
+		AddFireLight_r( i, y_min-1, k, FireLightLevel( i, y_min-1, k ) );
+		AddFireLight_r( i, y_max+1, k, FireLightLevel( i, y_max+1, k ) );
+	}
 
+	for( j= y_min; j<= y_max; j++ )
+	for( k= z_min; k<= z_max; k++ )
+	{
+		AddFireLight_r( x_min-1, j, k, FireLightLevel( x_min-1, j, k ) );
+		AddFireLight_r( x_max+1, j, k, FireLightLevel( x_max+1, j, k ) );
+	}
+
+	for( i= x_min; i<= x_max; i++ )
+	for( j= y_min; j<= y_max; j++ )
+	{
+		AddFireLight_r( i, j, z_min-1, FireLightLevel( i, j, z_min-1 ) );
+		AddFireLight_r( i, j, z_max+1, FireLightLevel( i, j, z_max+1 ) );
+	}
 
 	//shining from kight sources in cube
 	ShineFireLight( x_min, y_min, z_min, x_max, y_max, z_max );
@@ -629,7 +628,6 @@ void h_World::AddFireLightSafe_r( short x, short y, short z, unsigned char l )
 		AddFireLightSafe_r( x1, y1, z, l1 );
 }
 
-
 void h_World::ShineFireLight( short x_min, short y_min, short z_min, short x_max, short y_max, short z_max )
 {
 	(void)z_min;
@@ -654,7 +652,6 @@ void h_World::ShineFireLight( short x_min, short y_min, short z_min, short x_max
 	}
 }
 
-
 void h_World::AddLightToBorderChunk( unsigned int X, unsigned int Y )
 {
 	h_Chunk* ch= GetChunk( X, Y );
@@ -663,9 +660,9 @@ void h_World::AddLightToBorderChunk( unsigned int X, unsigned int Y )
 	short y= Y << H_CHUNK_WIDTH_LOG2;
 
 	for( short i= 0; i< H_CHUNK_WIDTH; i++ )
-		for( short j= 0; j< H_CHUNK_WIDTH; j++ )
-			for( short k= 1; k< H_CHUNK_HEIGHT-1; k++ )
-				AddSunLightSafe_r( x+i, y+j, k, ch->SunLightLevel( i, j, k ) );
+	for( short j= 0; j< H_CHUNK_WIDTH; j++ )
+	for( short k= 1; k< H_CHUNK_HEIGHT-1; k++ )
+		AddSunLightSafe_r( x+i, y+j, k, ch->SunLightLevel( i, j, k ) );
 
 	//add fire lights to border chunk
 	const std::vector< h_LightSource* >& light_sources= ch->GetLightSourceList();
@@ -673,62 +670,61 @@ void h_World::AddLightToBorderChunk( unsigned int X, unsigned int Y )
 		AddFireLightSafe_r( source->x_ + x, source->y_ + y, source->z_, source->LightLevel() );
 }
 
-
 void h_World::RelightWaterModifedChunksLight()
 {
 	const unsigned int c_inv_desiret_chunk_update_chance = 2;
 
 	unsigned int chunk_count= 0;
 	h_Chunk* ch;
-	short X, Y;
-	for( unsigned int i= 1; i< ChunkNumberX()-1; i++ )
-		for( unsigned int j= 1; j< ChunkNumberY()-1; j++ )
-		{
-			ch= GetChunk( i, j );
-			if( ch->need_update_light_ )
-				chunk_count++;
-		}
 
 	for( unsigned int i= 1; i< ChunkNumberX()-1; i++ )
-		for( unsigned int j= 1; j< ChunkNumberY()-1; j++ )
+	for( unsigned int j= 1; j< ChunkNumberY()-1; j++ )
+	{
+		ch= GetChunk( i, j );
+		if( ch->need_update_light_ )
+			chunk_count++;
+	}
+
+	for( unsigned int i= 1; i< ChunkNumberX()-1; i++ )
+	for( unsigned int j= 1; j< ChunkNumberY()-1; j++ )
+	{
+		ch= GetChunk( i, j );
+		if( ch->need_update_light_ )
 		{
-			ch= GetChunk( i, j );
-			if( ch->need_update_light_ )
+			// Chance of one chunk water updating per one phys tick.
+			if( phys_processes_rand_.Rand() <=
+				phys_processes_rand_.max_rand / ( chunk_count * c_inv_desiret_chunk_update_chance ) )
 			{
-				// Chance of one chunk water updating per one phys tick.
-				if( phys_processes_rand_.Rand() <=
-					phys_processes_rand_.max_rand / ( chunk_count * c_inv_desiret_chunk_update_chance ) )
-				{
-					X= i<<H_CHUNK_WIDTH_LOG2;
-					Y= j<<H_CHUNK_WIDTH_LOG2;
-					ch->SunRelight();//zero light in chunk and add vertical sun light
-					for( short x= 0; x< H_CHUNK_WIDTH; x++ )
-						for( short y=0; y< H_CHUNK_WIDTH; y++ )
-							for( short z= 1; z< H_CHUNK_HEIGHT-1; z++ )
-							{
-								AddSunLight_r( X+x, Y+y, z, SunLightLevel( X+x, Y+y, z) );
-							}
-					for( short x= 0; x< H_CHUNK_WIDTH; x++ )
-						for( short z= 1; z< H_CHUNK_HEIGHT-1; z++ )
-						{
-							AddSunLight_r( X+x, Y-1, z, SunLightLevel( X+x, Y-1, z) );
-							AddSunLight_r( X+x, Y+H_CHUNK_WIDTH, z, SunLightLevel( X+x, Y+H_CHUNK_WIDTH, z) );
-						}
-					for( short y= 0; y< H_CHUNK_WIDTH; y++ )
-						for( short z= 1; z< H_CHUNK_HEIGHT-1; z++ )
-						{
-							AddSunLight_r( X-1, Y+y, z, SunLightLevel( X-1, Y+y, z) );
-							AddSunLight_r( X+H_CHUNK_WIDTH, Y+y, z, SunLightLevel( X+H_CHUNK_WIDTH, Y+y, z) );
-						}
-					ch->need_update_light_= false;
+				short X= i<<H_CHUNK_WIDTH_LOG2;
+				short Y= j<<H_CHUNK_WIDTH_LOG2;
+				ch->SunRelight();//zero light in chunk and add vertical sun light
+				for( short x= 0; x< H_CHUNK_WIDTH; x++ )
+				for( short y=0; y< H_CHUNK_WIDTH; y++ )
+				for( short z= 1; z< H_CHUNK_HEIGHT-1; z++ )
+					AddSunLight_r( X+x, Y+y, z, SunLightLevel( X+x, Y+y, z) );
 
-					renderer_->UpdateChunk( i, j );
-					renderer_->UpdateChunk( i+1, j+1 );
-					renderer_->UpdateChunk( i+1, j-1 );
-					renderer_->UpdateChunk( i-1, j+1 );
-					renderer_->UpdateChunk( i-1, j-1 );
-					renderer_->UpdateChunkWater( i, j );
-				}//if rand
-			}//if need update light
-		}
+				for( short x= 0; x< H_CHUNK_WIDTH; x++ )
+				for( short z= 1; z< H_CHUNK_HEIGHT-1; z++ )
+				{
+					AddSunLight_r( X+x, Y-1, z, SunLightLevel( X+x, Y-1, z) );
+					AddSunLight_r( X+x, Y+H_CHUNK_WIDTH, z, SunLightLevel( X+x, Y+H_CHUNK_WIDTH, z) );
+				}
+
+				for( short y= 0; y< H_CHUNK_WIDTH; y++ )
+				for( short z= 1; z< H_CHUNK_HEIGHT-1; z++ )
+				{
+					AddSunLight_r( X-1, Y+y, z, SunLightLevel( X-1, Y+y, z) );
+					AddSunLight_r( X+H_CHUNK_WIDTH, Y+y, z, SunLightLevel( X+H_CHUNK_WIDTH, Y+y, z) );
+				}
+				ch->need_update_light_= false;
+
+				renderer_->UpdateChunk( i, j );
+				renderer_->UpdateChunk( i+1, j+1 );
+				renderer_->UpdateChunk( i+1, j-1 );
+				renderer_->UpdateChunk( i-1, j+1 );
+				renderer_->UpdateChunk( i-1, j-1 );
+				renderer_->UpdateChunkWater( i, j );
+			}//if rand
+		}//if need update light
+	} // for ij
 }
