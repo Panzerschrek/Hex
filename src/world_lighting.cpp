@@ -659,8 +659,8 @@ void h_World::AddLightToBorderChunk( unsigned int X, unsigned int Y )
 {
 	h_Chunk* ch= GetChunk( X, Y );
 
-	short x= X * H_CHUNK_WIDTH;
-	short y= Y * H_CHUNK_WIDTH;
+	short x= X << H_CHUNK_WIDTH_LOG2;
+	short y= Y << H_CHUNK_WIDTH_LOG2;
 
 	for( short i= 0; i< H_CHUNK_WIDTH; i++ )
 		for( short j= 0; j< H_CHUNK_WIDTH; j++ )
@@ -670,7 +670,7 @@ void h_World::AddLightToBorderChunk( unsigned int X, unsigned int Y )
 	//add fire lights to border chunk
 	const std::vector< h_LightSource* >& light_sources= ch->GetLightSourceList();
 	for( const h_LightSource* source : light_sources )
-		AddFireLightSafe_r( source->x_ + X, source->y_ + Y, source->z_, source->LightLevel() );
+		AddFireLightSafe_r( source->x_ + x, source->y_ + y, source->z_, source->LightLevel() );
 }
 
 
