@@ -542,9 +542,21 @@ void r_WorldRenderer::CalculateLight()
 
 	lighting_data_.current_sun_light= sky_light / float ( H_MAX_SUN_LIGHT * 16 );
 	lighting_data_.current_fire_light= R_FIRE_LIGHT_COLOR / float ( H_MAX_FIRE_LIGHT * 16 );
+	lighting_data_.current_ambient_light= R_AMBIENT_LIGHT_COLOR;
 
 	lighting_data_.sky_color= R_SKYBOX_COLOR * daynight_k;
 	lighting_data_.stars_brightness= 1.0f - daynight_k;
+
+	if( player_->IsUnderwater() )
+	{
+		static const m_Vec3 c_underwater_color( 0.4f, 0.4f, 0.7f );
+
+		lighting_data_.current_sun_light*= c_underwater_color;
+		lighting_data_.current_fire_light*= c_underwater_color;
+		lighting_data_.current_ambient_light*= c_underwater_color;
+		lighting_data_.sky_color*= c_underwater_color;
+		lighting_data_.stars_brightness*= ( c_underwater_color.x + c_underwater_color.y + c_underwater_color.z ) / 3.0f;
+	}
 }
 
 void r_WorldRenderer::Draw()
@@ -872,7 +884,7 @@ void r_WorldRenderer::DrawWorld()
 
 	world_shader_.Uniform( "sun_light_color", lighting_data_.current_sun_light );
 	world_shader_.Uniform( "fire_light_color", lighting_data_.current_fire_light );
-	world_shader_.Uniform( "ambient_light_color", R_AMBIENT_LIGHT_COLOR );
+	world_shader_.Uniform( "ambient_light_color", lighting_data_.current_ambient_light );
 
 	unsigned int vertex_count= DrawClusterMatrix( world_vertex_buffer_.get(), 2, 4 );
 	world_quads_in_frame_= vertex_count / 4;

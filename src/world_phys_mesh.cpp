@@ -14,5 +14,8 @@ p_WorldPhysMesh& p_WorldPhysMesh::operator=( p_WorldPhysMesh&& other )
 	upper_block_faces= std::move(other.upper_block_faces);
 	other.upper_block_faces.clear();
 
+	water_blocks= std::move(other.water_blocks);
+	other.water_blocks.clear();
+
 	return *this;
 }

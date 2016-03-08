@@ -27,9 +27,17 @@ public:
 	h_Direction dir;
 };
 
-void GetHexogonCoord( const m_Vec2& pos, short* x, short* y );
+struct p_WaterBlock
+{
+	// World coordinates of water block.
+	int x, y, z;
+	// Water level in this block in range [0;1].
+	float water_level;
+};
 
-bool RayHasIniersectWithTriangle(
+void pGetHexogonCoord( const m_Vec2& pos, short* x, short* y );
+
+bool pRayHasIniersectWithTriangle(
 	const m_Vec3* triangle, const m_Vec3& normal,
 	const m_Vec3& point, const m_Vec3& dir,
 	m_Vec3* intersect_pos );

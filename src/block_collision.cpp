@@ -75,7 +75,7 @@ static bool TriangleIntersectWithCircle( const m_Vec2* triangle, const m_Vec2& c
 }
 
 p_UpperBlockFace::p_UpperBlockFace( short x, short y, short in_z, h_Direction in_dir )
-	: z( float( in_dir == h_Direction::Up ? in_z : in_z - 1 ) )
+	: z( float(in_z) )
 	, dir(in_dir)
 {
 	H_ASSERT( in_dir == h_Direction::Up || in_dir == h_Direction::Down );
@@ -237,7 +237,7 @@ m_Vec2 p_BlockSide::CollideWithCirlce( const m_Vec2& pos, float radius ) const
 	return pos;
 }
 
-bool RayHasIniersectWithTriangle(
+bool pRayHasIniersectWithTriangle(
 	const m_Vec3* triangle, const m_Vec3& normal,
 	const m_Vec3& point, const m_Vec3& dir,
 	m_Vec3* intersect_pos )
@@ -277,7 +277,7 @@ bool RayHasIniersectWithTriangle(
 	else return false;
 }
 
-void GetHexogonCoord( const m_Vec2& pos, short* x, short* y )
+void pGetHexogonCoord( const m_Vec2& pos, short* x, short* y )
 {
 	float transformed_x= pos.x / H_SPACE_SCALE_VECTOR_X;
 	float floor_x= std::floor( transformed_x );

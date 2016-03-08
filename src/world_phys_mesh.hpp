@@ -16,4 +16,5 @@ struct p_WorldPhysMesh
 
 	std::vector< p_BlockSide > block_sides;
 	std::vector< p_UpperBlockFace > upper_block_faces;
+	std::vector< p_WaterBlock > water_blocks;
 };

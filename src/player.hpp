@@ -25,6 +25,7 @@ public:
 
 	const m_Vec3& BuildPos() const;
 	h_Direction BuildDirection() const;
+	bool IsUnderwater() const;
 
 	void Tick();
 
@@ -39,8 +40,9 @@ public:
 	void TestMobSetPosition();
 
 private:
-	void UpdateBuildPos();
-	void Move( const m_Vec3& delta );
+	void CheckUnderwater( const p_WorldPhysMesh& phys_mesh );
+	void UpdateBuildPos( const p_WorldPhysMesh& phys_mesh );
+	void Move( const m_Vec3& delta, const p_WorldPhysMesh& phys_mesh );
 
 private:
 	const h_WorldPtr world_;
@@ -53,6 +55,8 @@ private:
 	float vertical_speed_;
 	bool is_flying_;
 	bool in_air_;
+	float water_submerging_; // 0 - fully in air, 1 - fully in water
+	bool eyes_is_underwater_;
 	m_Vec3 view_angle_;
 
 	uint64_t prev_move_time_ms_;
@@ -90,4 +94,9 @@ inline h_Direction h_Player::BuildDirection() const
 inline h_BlockType h_Player::BuildBlock() const
 {
 	return build_block_;
+}
+
+inline bool h_Player::IsUnderwater() const
+{
+	return eyes_is_underwater_;
 }

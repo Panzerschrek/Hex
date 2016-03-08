@@ -79,7 +79,7 @@ h_World::h_World(
 
 	{ // Move world to player position
 		short player_xy[2];
-		GetHexogonCoord( m_Vec2(header_->player.x, header->player.y), &player_xy[0], &player_xy[1] );
+		pGetHexogonCoord( m_Vec2(header_->player.x, header->player.y), &player_xy[0], &player_xy[1] );
 		int player_longitude= ( player_xy[0] + (H_CHUNK_WIDTH >> 1) ) >> H_CHUNK_WIDTH_LOG2;
 		int player_latitude = ( player_xy[1] + (H_CHUNK_WIDTH >> 1) ) >> H_CHUNK_WIDTH_LOG2;
 
@@ -655,34 +655,56 @@ void h_World::UpdatePhysMesh( short x_min, short x_max, short y_min, short y_max
 
 			if( t != t_up )
 			{
-				if( t > t_up )
-					phys_mesh.upper_block_faces.emplace_back( x + X, y + Y, z + 1, h_Direction::Down );
-				else
-					phys_mesh.upper_block_faces.emplace_back( x + X, y + Y, z, h_Direction::Up );
+				phys_mesh.upper_block_faces.emplace_back( x + X, y + Y, z + 1, t > t_up ? h_Direction::Down : h_Direction::Up );
 			}
 			if( t != t_fr )
 			{
 				if( t > t_fr )
-					phys_mesh.block_sides.emplace_back( x + X + 1, y + Y + ((x+1)&1), z-1, h_Direction::BackLeft );
+					phys_mesh.block_sides.emplace_back( x + X + 1, y + Y + ((x+1)&1), z, h_Direction::BackLeft );
 				else
-					phys_mesh.block_sides.emplace_back( x + X, y + Y, z-1, h_Direction::ForwardRight );
+					phys_mesh.block_sides.emplace_back( x + X, y + Y, z, h_Direction::ForwardRight );
 			}
 			if( t != t_br )
 			{
 				if( t > t_br )
-					phys_mesh.block_sides.emplace_back( x + X + 1, y + Y - (x&1), z-1, h_Direction::ForwardLeft );
+					phys_mesh.block_sides.emplace_back( x + X + 1, y + Y - (x&1), z, h_Direction::ForwardLeft );
 				else
-					phys_mesh.block_sides.emplace_back( x + X, y + Y, z-1, h_Direction::BackRight );
+					phys_mesh.block_sides.emplace_back( x + X, y + Y, z, h_Direction::BackRight );
 			}
 			if( t!= t_f )
 			{
 				if( t > t_f )
-					phys_mesh.block_sides.emplace_back( x + X, y + Y + 1, z-1, h_Direction::Back );
+					phys_mesh.block_sides.emplace_back( x + X, y + Y + 1, z, h_Direction::Back );
 				else
-					phys_mesh.block_sides.emplace_back( x + X, y + Y, z-1, h_Direction::Forward );
+					phys_mesh.block_sides.emplace_back( x + X, y + Y, z, h_Direction::Forward );
 			}
 		} // for z
 	} // for xy
+
+	for( short x= x_min; x< x_max; x++ )
+	for( short y= y_min; y< y_max; y++ )
+	{
+		h_Chunk* chunk= GetChunk( x >> H_CHUNK_WIDTH_LOG2, y >> H_CHUNK_WIDTH_LOG2 );
+		const h_Block* const* blocks=
+			chunk->GetBlocksData() +
+			BlockAddr( x&(H_CHUNK_WIDTH-1), y&(H_CHUNK_WIDTH-1), 0 );
+
+		for( short z= z_min; z < z_max; z++ )
+		{
+			if( blocks[z]->Type() == h_BlockType::Water )
+			{
+				const h_LiquidBlock* water_block= static_cast<const h_LiquidBlock*>( blocks[z] );
+
+				p_WaterBlock water_phys_block;
+				water_phys_block.x= x + X;
+				water_phys_block.y= y + Y;
+				water_phys_block.z= z;
+				water_phys_block.water_level= float(water_block->LiquidLevel()) / float(H_MAX_WATER_LEVEL);
+
+				phys_mesh.water_blocks.push_back( water_phys_block );
+			}
+		}
+	}
 
 	std::lock_guard<std::mutex> lock( phys_mesh_mutex_ );
 	phys_mesh_= std::make_shared< p_WorldPhysMesh >( std::move(phys_mesh ) );
@@ -757,7 +779,7 @@ void h_World::PhysTick()
 		{
 			m_Vec3 player_pos= player_->Pos();
 			short player_coord_global[2];
-			GetHexogonCoord( player_pos.xy(), &player_coord_global[0], &player_coord_global[1] );
+			pGetHexogonCoord( player_pos.xy(), &player_coord_global[0], &player_coord_global[1] );
 
 			int player_coord[3];
 			player_coord[0]= player_coord_global[0] - Longitude() * H_CHUNK_WIDTH;

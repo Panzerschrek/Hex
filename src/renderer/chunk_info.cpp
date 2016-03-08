@@ -210,13 +210,13 @@ void r_ChunkInfo::BuildWaterSurfaceMesh()
 #define DIV_TABLE_SCALER_LOG2 14
 					static const unsigned int div_table[]= { 0, DIV_TABLE_SCALER/1, DIV_TABLE_SCALER/2, DIV_TABLE_SCALER/3, DIV_TABLE_SCALER/4, DIV_TABLE_SCALER/5, DIV_TABLE_SCALER/6 };//for faster division ( but not precise )
 					if( upper_block_is_water[k] )
-						v[k].coord[2]= b->z_<<R_WATER_VERTICES_Z_SCALER_LOG2;
+						v[k].coord[2]= (b->z_+1)<<R_WATER_VERTICES_Z_SCALER_LOG2;
 					else if( nearby_block_is_air[k] )
-						v[k].coord[2]= (b->z_-1)<<R_WATER_VERTICES_Z_SCALER_LOG2;
+						v[k].coord[2]= b->z_<<R_WATER_VERTICES_Z_SCALER_LOG2;
 					else
 					{
 						v[k].coord[2]=
-							((b->z_-1)<<R_WATER_VERTICES_Z_SCALER_LOG2) +
+							(b->z_<<R_WATER_VERTICES_Z_SCALER_LOG2) +
 							( ( vertex_water_level[k] * div_table[vertex_water_block_count[k]] ) >> (  H_MAX_WATER_LEVEL_LOG2 + DIV_TABLE_SCALER_LOG2 - R_WATER_VERTICES_Z_SCALER_LOG2 ) );
 					}
 				}
@@ -250,7 +250,7 @@ void r_ChunkInfo::BuildWaterSurfaceMesh()
 				v[1].coord[1]= v[2].coord[1]= v[0].coord[1] + 1;
 				v[4].coord[1]= v[5].coord[1]= v[0].coord[1] - 1;
 
-				h= ( (b->z_ -1) << R_WATER_VERTICES_Z_SCALER_LOG2 )
+				h= ( b->z_ << R_WATER_VERTICES_Z_SCALER_LOG2 )
 					+ ( b->LiquidLevel() >> ( H_MAX_WATER_LEVEL_LOG2 - R_WATER_VERTICES_Z_SCALER_LOG2 ) );
 				v[0].coord[2]= v[1].coord[2]= v[2].coord[2]= v[3].coord[2]= v[4].coord[2]= v[5].coord[2]= h;
 
@@ -664,7 +664,7 @@ void r_ChunkInfo::BuildChunkMesh()
 				v[1].coord[1]= v[2].coord[1]= v[0].coord[1] + 1;
 				v[7].coord[1]= v[4].coord[1]= v[0].coord[1] - 1;
 
-				v[0].coord[2]= v[1].coord[2]= v[2].coord[2]= v[3].coord[2]= v[7].coord[2]= v[4].coord[2]= z;
+				v[0].coord[2]= v[1].coord[2]= v[2].coord[2]= v[3].coord[2]= v[7].coord[2]= v[4].coord[2]= z + 1;
 
 				if( r_TextureManager::TexturePerBlock( tex_id ) )
 				{
@@ -743,8 +743,8 @@ void r_ChunkInfo::BuildChunkMesh()
 				v[0].coord[1]= v[ 3 ].coord[1]= 2 * ( y + Y ) - (x&1) + 2;
 				v[ 1 ].coord[1]= v[2].coord[1]= v[0].coord[1] + 1;
 
-				v[0].coord[2]= v[ 1 ].coord[2]= z;
-				v[2].coord[2]= v[ 3 ].coord[2]= z - 1;
+				v[0].coord[2]= v[ 1 ].coord[2]= z + 1;
+				v[2].coord[2]= v[ 3 ].coord[2]= z;
 
 
 				v[ 1 ].tex_coord[0]= v[2].tex_coord[0]= tex_scale * ( v[ 1 ].coord[1] - v[1].coord[0] );
@@ -800,8 +800,8 @@ void r_ChunkInfo::BuildChunkMesh()
 				v[ 1 ].coord[1]= v[2].coord[1]= 2 * ( y + Y ) - (x&1) + 2 - 1;
 				v[0].coord[1]= v[ 3 ].coord[1]= v[ 1 ].coord[1] + 1;
 
-				v[ 1 ].coord[2]= v[0].coord[2]= z;
-				v[2].coord[2]= v[ 3 ].coord[2]= z - 1;
+				v[ 1 ].coord[2]= v[0].coord[2]= z + 1;
+				v[2].coord[2]= v[ 3 ].coord[2]= z;
 
 
 				v[2].tex_coord[0]= v[ 1 ].tex_coord[0]=  ( v[1].coord[1]  + v[1].coord[0] ) * tex_scale;
@@ -854,8 +854,8 @@ void r_ChunkInfo::BuildChunkMesh()
 				v[0].coord[0]= v[ 1 ].coord[0]= 3 * ( x + X ) + 1;
 				v[0].coord[1]= v[ 1 ].coord[1]= v[2].coord[1]= v[ 3 ].coord[1]= 2 * ( y + Y ) - (x&1) + 2 + 1;
 
-				v[0].coord[2]= v[ 3 ].coord[2]= z;
-				v[ 1 ].coord[2]= v[2].coord[2]= z - 1;
+				v[0].coord[2]= v[ 3 ].coord[2]= z + 1;
+				v[ 1 ].coord[2]= v[2].coord[2]= z;
 
 				v[ 3 ].coord[0]= v[2].coord[0]= v[ 1 ].coord[0] + 2;
 

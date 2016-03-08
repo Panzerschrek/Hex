@@ -12,9 +12,14 @@ static const float g_acceleration= 40.0f;
 static const float g_deceleration= 40.0f;
 static const float g_air_acceleration= 2.0f;
 static const float g_air_deceleration= 4.0f;
+static const float g_water_acceleration= 4.0f;
+static const float g_water_deceleration= 8.0f;
 static const float g_vertical_acceleration= -9.8f * 1.5f;
+static const float g_vertical_water_acceleration= g_vertical_acceleration * 0.03f;
 static const float g_max_speed= 5.0f;
+static const float g_max_underwater_speed_= 3.0f;
 static const float g_max_vertical_speed= 30.0f;
+static const float g_max_underwater_vertical_speed= 2.0f;
 
 static const float g_jump_height= 1.4f;
 static const float g_jump_speed= std::sqrt( 2.0f * g_jump_height * -g_vertical_acceleration );
@@ -29,7 +34,6 @@ static const m_Vec3 g_block_normals[8]=
 	m_Vec3( 0.0f, 0.0f, 1.0f ),      m_Vec3( 0.0f, 0.0f, -1.0f )
 };
 
-
 h_Player::h_Player(
 	const h_WorldPtr& world,
 	const h_WorldHeaderPtr& world_header )
@@ -41,6 +45,8 @@ h_Player::h_Player(
 	, vertical_speed_(0.0f)
 	, is_flying_(false)
 	, in_air_(true)
+	, water_submerging_(0.0f)
+	, eyes_is_underwater_(false)
 	, view_angle_( world_header->player.rotation_x, 0.0f, world_header->player.rotation_z )
 	, prev_move_time_ms_(0)
 	, build_direction_( h_Direction::Unknown )
@@ -119,6 +125,12 @@ void h_Player::Tick()
 	const float c_eps= 0.001f;
 
 	bool use_ground_acceleration= !in_air_ || is_flying_;
+	float acceleration, deceleration;
+
+	acceleration= use_ground_acceleration ? g_acceleration : g_air_acceleration;
+	deceleration= use_ground_acceleration ? g_deceleration : g_air_deceleration;
+	acceleration= acceleration * (1.0f - water_submerging_) + g_water_acceleration * water_submerging_;
+	deceleration= deceleration * (1.0f - water_submerging_) + g_water_deceleration * water_submerging_;
 
 	m_Vec3 move_delta= moving_vector_;
 	if( !is_flying_ ) move_delta.z= 0.0f;
@@ -126,13 +138,16 @@ void h_Player::Tick()
 	float move_delta_length= move_delta.Length();
 	if( move_delta_length > c_eps )
 	{
-		m_Vec3 acceleration_vec= ( use_ground_acceleration ? g_acceleration : g_air_acceleration ) / move_delta_length * move_delta;
+		m_Vec3 acceleration_vec= acceleration / move_delta_length * move_delta;
 		speed_+= acceleration_vec * dt_s;
 	}
 
 	float speed_value= speed_.Length();
-	if( speed_value > g_max_speed )
-		speed_*= g_max_speed / speed_value;
+	float max_speed=
+		g_max_underwater_speed_ * water_submerging_ +
+		g_max_speed * (1.0f - water_submerging_);
+	if( speed_value > max_speed )
+		speed_*= max_speed / speed_value;
 
 	if( speed_value > c_eps )
 	{
@@ -141,7 +156,7 @@ void h_Player::Tick()
 			m_Vec3 deceleration_vec= speed_;
 			deceleration_vec.Normalize();
 
-			float d_speed= std::min( dt_s * ( use_ground_acceleration ? g_deceleration : g_air_deceleration ), speed_value );
+			float d_speed= std::min( dt_s * deceleration, speed_value );
 			speed_-= deceleration_vec * d_speed;
 		}
 	}
@@ -152,16 +167,27 @@ void h_Player::Tick()
 	{
 		speed_.z= 0.0f;
 
-		vertical_speed_+= g_vertical_acceleration * dt_s;
-		if( vertical_speed_ > g_max_vertical_speed ) vertical_speed_= g_max_vertical_speed;
-		else if( -vertical_speed_ > g_max_vertical_speed ) vertical_speed_= -g_max_vertical_speed;
+		float vertical_acceleration=
+			g_vertical_water_acceleration * water_submerging_+
+			g_vertical_acceleration * (1.0f - water_submerging_);
+		float max_vertical_speed=
+			g_max_underwater_vertical_speed * water_submerging_ +
+			g_max_vertical_speed * (1.0f - water_submerging_);
+
+		vertical_speed_+= ( vertical_acceleration + acceleration * moving_vector_.z * water_submerging_ ) * dt_s;
+
+		if( vertical_speed_ > max_vertical_speed ) vertical_speed_= max_vertical_speed;
+		else if( vertical_speed_ < -max_vertical_speed ) vertical_speed_= -max_vertical_speed;
 	}
 	else
 		vertical_speed_= 0.0f;
 
-	Move( m_Vec3( speed_.xy(), speed_.z + vertical_speed_ ) * dt_s );
+	p_WorldPhysMeshConstPtr phys_mesh= world_->GetPhysMesh();
+	if( !phys_mesh ) return;
 
-	UpdateBuildPos();
+	Move( m_Vec3( speed_.xy(), speed_.z + vertical_speed_ ) * dt_s, *phys_mesh );
+	UpdateBuildPos( *phys_mesh );
+	CheckUnderwater( *phys_mesh );
 }
 
 void h_Player::PauseWorldUpdates()
@@ -248,11 +274,41 @@ void h_Player::TestMobSetPosition()
 	}
 }
 
-void h_Player::UpdateBuildPos()
+void h_Player::CheckUnderwater( const p_WorldPhysMesh& phys_mesh )
 {
-	p_WorldPhysMeshConstPtr phys_mesh= world_->GetPhysMesh();
-	if( phys_mesh == nullptr ) return;
+	short player_world_space_xy[2];
+	pGetHexogonCoord( pos_.xy(), &player_world_space_xy[0], &player_world_space_xy[1] );
 
+	float feet_z= pos_.z;
+	float head_z= pos_.z + H_PLAYER_HEIGHT;
+	float eyes_z= pos_.z + H_PLAYER_EYE_LEVEL;
+	float blocks_underwater= 0.0f;
+
+	eyes_is_underwater_= false;
+
+	for( const p_WaterBlock& water_block : phys_mesh.water_blocks )
+	{
+		if( water_block.x == player_world_space_xy[0] &&
+			water_block.y == player_world_space_xy[1] )
+		{
+			float water_min= float(water_block.z);
+			float water_max= water_min + water_block.water_level;
+
+			// Take intersection length of two segments on z axis.
+			float z_min= std::max( feet_z, water_min );
+			float z_max= std::min( head_z, water_max );
+			if( z_max > z_min ) blocks_underwater+= z_max - z_min;
+
+			if( eyes_z > water_min && eyes_z < water_max )
+				eyes_is_underwater_= true;
+		}
+	}
+
+	water_submerging_= std::max( 0.0f, std::min( 1.0f, blocks_underwater / H_PLAYER_HEIGHT ) );
+}
+
+void h_Player::UpdateBuildPos( const p_WorldPhysMesh& phys_mesh )
+{
 	m_Vec3 eye_dir(
 		-std::sin( view_angle_.z ) * std::cos( view_angle_.x ),
 		+std::cos( view_angle_.z ) * std::cos( view_angle_.x ),
@@ -267,7 +323,7 @@ void h_Player::UpdateBuildPos()
 	m_Vec3 candidate_pos;
 	m_Vec3 n;
 
-	for( const p_UpperBlockFace& face : phys_mesh->upper_block_faces )
+	for( const p_UpperBlockFace& face : phys_mesh.upper_block_faces )
 	{
 		n= g_block_normals[ static_cast<size_t>(face.dir) ];
 
@@ -284,7 +340,7 @@ void h_Player::UpdateBuildPos()
 			triangle[0]= m_Vec3( face.edge[ traingles_edges[i][0] ], face.z );
 			triangle[1]= m_Vec3( face.edge[ traingles_edges[i][1] ], face.z );
 			triangle[2]= m_Vec3( face.edge[ traingles_edges[i][2] ], face.z );
-			if( RayHasIniersectWithTriangle( triangle, n, eye_pos, eye_dir, &candidate_pos ) )
+			if( pRayHasIniersectWithTriangle( triangle, n, eye_pos, eye_dir, &candidate_pos ) )
 			{
 				float candidate_square_dist= ( candidate_pos - eye_pos ).SquareLength();
 				if( candidate_square_dist < square_dist )
@@ -297,7 +353,7 @@ void h_Player::UpdateBuildPos()
 		}
 	}
 
-	for( const p_BlockSide& side : phys_mesh->block_sides )
+	for( const p_BlockSide& side : phys_mesh.block_sides )
 	{
 		n= g_block_normals[ static_cast<size_t>(side.dir) ];
 
@@ -310,7 +366,7 @@ void h_Player::UpdateBuildPos()
 		triangles[5]= m_Vec3( side.edge[1], side.z + 1.0f );
 		for( unsigned int i= 0; i < 2; i++ )
 		{
-			if( RayHasIniersectWithTriangle( triangles + i * 3, n, eye_pos, eye_dir, &candidate_pos ) )
+			if( pRayHasIniersectWithTriangle( triangles + i * 3, n, eye_pos, eye_dir, &candidate_pos ) )
 			{
 				float candidate_square_dist= ( candidate_pos - eye_pos ).SquareLength();
 				if( candidate_square_dist < square_dist )
@@ -334,9 +390,8 @@ void h_Player::UpdateBuildPos()
 	intersect_pos+= g_block_normals[ static_cast<size_t>(block_dir) ] * 0.1f;
 
 	short new_x, new_y, new_z;
-	GetHexogonCoord( intersect_pos.xy(), &new_x, &new_y );
+	pGetHexogonCoord( intersect_pos.xy(), &new_x, &new_y );
 	new_z= (short) intersect_pos.z;
-	new_z++;
 
 	discret_build_pos_[0]= new_x;
 	discret_build_pos_[1]= new_y;
@@ -344,12 +399,12 @@ void h_Player::UpdateBuildPos()
 
 	build_pos_.x= float( discret_build_pos_[0] + 1.0f / 3.0f ) * H_SPACE_SCALE_VECTOR_X;
 	build_pos_.y= float( discret_build_pos_[1] ) - 0.5f * float(discret_build_pos_[0]&1) + 0.5f;
-	build_pos_.z= float( discret_build_pos_[2] ) - 1.0f;
+	build_pos_.z= float( discret_build_pos_[2] );
 
 	build_direction_= block_dir;
 }
 
-void h_Player::Move( const m_Vec3& delta )
+void h_Player::Move( const m_Vec3& delta, const p_WorldPhysMesh& phys_mesh )
 {
 	const float c_eps= 0.00001f;
 	const float c_vertical_collision_eps= 0.001f;
@@ -361,12 +416,9 @@ void h_Player::Move( const m_Vec3& delta )
 	*/
 	const float c_vertical_collision_player_radius= H_PLAYER_RADIUS * 0.9f;
 
-	p_WorldPhysMeshConstPtr phys_mesh= world_->GetPhysMesh();
-	if( phys_mesh == nullptr ) return;
-
 	m_Vec3 new_pos= pos_ + delta;
 
-	for( const p_UpperBlockFace& face : phys_mesh->upper_block_faces )
+	for( const p_UpperBlockFace& face : phys_mesh.upper_block_faces )
 	{
 		if( delta.z > c_eps )
 		{
@@ -392,7 +444,7 @@ void h_Player::Move( const m_Vec3& delta )
 		}
 	}// upeer faces
 
-	for( const p_BlockSide& side : phys_mesh->block_sides )
+	for( const p_BlockSide& side : phys_mesh.block_sides )
 	{
 		if( ( side.z > new_pos.z && side.z < new_pos.z + H_PLAYER_HEIGHT ) ||
 			( side.z + 1.0f > new_pos.z && side.z + 1.0f < new_pos.z + H_PLAYER_HEIGHT ) )
@@ -412,7 +464,7 @@ void h_Player::Move( const m_Vec3& delta )
 
 	// Check in_air
 	in_air_= true;
-	for( const p_UpperBlockFace& face : phys_mesh->upper_block_faces )
+	for( const p_UpperBlockFace& face : phys_mesh.upper_block_faces )
 	{
 		if( face.dir == h_Direction::Up &&
 			new_pos.z <= face.z + c_on_ground_eps &&
