@@ -33,8 +33,7 @@ public: // r_IWorldRenderer
 public:
 	void Draw();
 
-	void Init();
-	void InitGL();
+	void InitGL( const h_LongLoadingCallback& long_loading_callback );
 
 	void SetViewportSize( unsigned int viewport_width, unsigned int viewport_height );
 

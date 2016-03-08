@@ -1,4 +1,5 @@
 #pragma once
+#include <functional>
 #include <memory>
 
 class h_Settings;
@@ -9,6 +10,8 @@ class h_Player;
 typedef std::shared_ptr<h_Player> h_PlayerPtr;
 typedef std::shared_ptr<const h_Player> h_PlayerConstPtr;
 typedef std::weak_ptr<h_Player> h_PlayerWeakPtr;
+
+typedef std::function<void( float relative_progress )> h_LongLoadingCallback;
 
 class h_World;
 typedef std::shared_ptr<h_World> h_WorldPtr;

@@ -11,10 +11,12 @@
 
 #include "settings.hpp"
 #include "settings_keys.hpp"
+#include "time.hpp"
 #include "console.hpp"
 
-#include "ui/main_menu.hpp"
 #include "ui/ingame_menu.hpp"
+#include "ui/loading_menu.hpp"
+#include "ui/main_menu.hpp"
 #include "ui/ui_painter.hpp"
 
 #include "ogl_state_manager.hpp"
@@ -347,25 +349,65 @@ void h_MainLoop::StartGame()
 {
 	if( !game_started_ )
 	{
+		// Create "loading menu"
+		ui_LoadingMenu* loading_menu= new ui_LoadingMenu( screen_width_, screen_height_ );
+		root_menu_.reset( loading_menu );
+
+		// Setup callback for loading.
+		uint64_t prev_progress_time_ms= 0;
+		const h_LongLoadingCallback long_loading_callback=
+		[this, loading_menu, &prev_progress_time_ms]( float progress )
+		{
+			uint64_t time_ms= hGetTimeMS();
+			// Draw frames with low frequency, bacause each frame makes loading slower.
+			if( time_ms - prev_progress_time_ms >= 125 )
+			{
+				prev_progress_time_ms= time_ms;
+				loading_menu->SetProgress( progress );
+
+				paintGL();
+				QCoreApplication::processEvents();
+			}
+		};
+		const float c_world_loading_relative_progress= 0.75f;
+
+		// Create world, player, renderer.
 		world_header_= std::make_shared<h_WorldHeader>();
 		world_header_->Load( g_world_directory );
 
-		world_= std::make_shared<h_World>( settings_, world_header_, g_world_directory );
+		world_= std::make_shared<h_World>(
+			[ &long_loading_callback, c_world_loading_relative_progress ]( float progress )
+			{
+				long_loading_callback( progress * c_world_loading_relative_progress );
+			},
+			settings_,
+			world_header_,
+			g_world_directory );
+
 		player_= std::make_shared<h_Player>( world_, world_header_ );
 
 		world_renderer_= std::make_shared<r_WorldRenderer>( settings_, world_, player_ );
 		world_renderer_->SetViewportSize( screen_width_, screen_height_ );
-		world_renderer_->InitGL();
+		world_renderer_->InitGL(
+			[ &long_loading_callback, c_world_loading_relative_progress ]( float progress )
+			{
+				long_loading_callback(
+					progress * ( 1.0f - c_world_loading_relative_progress )+
+					c_world_loading_relative_progress );
+			} );
 
+		// Start world updates after world renderer creation.
 		world_->StartUpdates( player_.get(), world_renderer_.get() );
 
-		game_started_= true;
-
+		// Set ingame menu.
 		root_menu_.reset(
 			new ui_IngameMenu(
 				screen_width_, screen_height_,
 				player_,
 				*this ));
+
+		// Finally, say "we in game".
+		game_started_= true;
 	}
 }
 

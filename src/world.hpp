@@ -23,6 +23,7 @@ class h_World
 
 public:
 	h_World(
+		const h_LongLoadingCallback& long_loading_callback,
 		const h_SettingsPtr& settings,
 		const h_WorldHeaderPtr& header,
 		const char* world_directory );

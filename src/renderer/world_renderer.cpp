@@ -1222,19 +1222,36 @@ void r_WorldRenderer::UpdateGPUData()
 	failing_blocks_vertex_count_= failing_blocks_vertices_.size();
 }
 
-void r_WorldRenderer::InitGL()
+void r_WorldRenderer::InitGL( const h_LongLoadingCallback& long_loading_callback  )
 {
+	const float c_shaders_progress= 1.0f;
+	const float c_framebuffers_progress= 1.0f;
+	const float c_textures_progress= 20.0f;
+	const float c_texts_progress= 2.0f;
+	const float c_vertex_buffers_progress= 1.0f;
+	float progress_scaler= 1.0f / (
+		c_shaders_progress + c_framebuffers_progress +
+		c_textures_progress + c_texts_progress );
+	float progress= 0.0f;
+
 	if( settings_->GetInt( h_SettingsKeys::antialiasing ) != 0 )
 		glEnable( GL_MULTISAMPLE );
 	//glEnable( GL_SAMPLE_ALPHA_TO_COVERAGE );
 
 	LoadShaders();
+	long_loading_callback( progress+= c_shaders_progress * progress_scaler );
+
 	InitFrameBuffers();
+	long_loading_callback( progress+= c_framebuffers_progress * progress_scaler );
+
 	LoadTextures();
+	long_loading_callback( progress+= c_textures_progress * progress_scaler );
 
 	text_manager_.reset( new r_Text( "textures/mono_font_sdf.tga" ) );
+	long_loading_callback( progress+= c_texts_progress * progress_scaler );
 
 	InitVertexBuffers();
+	long_loading_callback( progress+= c_vertex_buffers_progress * progress_scaler );
 }
 
 void r_WorldRenderer::LoadShaders()
@@ -1451,7 +1468,6 @@ void r_WorldRenderer::InitVertexBuffers()
 void r_WorldRenderer::LoadTextures()
 {
 	texture_manager_.SetTextureDetalization( settings_->GetInt( h_SettingsKeys::textures_detalization ) );
-
 	texture_manager_.SetFiltration( settings_->GetBool( h_SettingsKeys::filter_textures, true ) );
 	texture_manager_.LoadTextures();
 

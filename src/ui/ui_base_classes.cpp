@@ -532,16 +532,10 @@ void ui_ProgressBar::Draw( ui_Painter* painter ) const
 
 	painter->DrawUITriangles( triangles, vertex_count + 6, style_.color );
 
-	unsigned char font_color[4];
-	font_color[0]= current_color_[0]/2;
-	font_color[1]= current_color_[1]/2;
-	font_color[2]= current_color_[2]/2;
-	font_color[3]= current_color_[3];
-
 	char text[64];
 	sprintf( text, "%d%%", int(round( 100.0f * progress_) ) );
 
-	painter->DrawUIText( text, float(X() + SizeX()/2), float(Y()+ SizeY()/2), SizeY(), font_color );
+	painter->DrawUIText( text, float(X() + SizeX()/2), float(Y()+ SizeY()/2), SizeY(), current_text_color_ );
 }
 
 /*

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../fwd.hpp"
 #include "../hex.hpp"
 #include "panzer_ogl_lib.hpp"
 

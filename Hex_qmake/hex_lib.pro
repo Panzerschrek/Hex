@@ -61,7 +61,8 @@ HEADERS += \
     ../src/world_header.hpp \
     ../src/math_lib/math.hpp \
     ../src/math_lib/rand.hpp \
-    ../src/time.hpp
+    ../src/time.hpp \
+    ../src/ui/loading_menu.hpp
 
 SOURCES += \
     ../src/block.cpp \
@@ -105,4 +106,5 @@ SOURCES += \
     ../src/calendar.cpp \
     ../src/world_header.cpp \
     ../src/math_lib/math.cpp \
-    ../src/time.cpp
+    ../src/time.cpp \
+    ../src/ui/loading_menu.cpp

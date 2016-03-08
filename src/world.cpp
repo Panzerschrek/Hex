@@ -32,6 +32,7 @@ static constexpr const unsigned int g_world_start_tick=
 	g_day_duration_ticks / 4 + g_day_duration_ticks / 16;
 
 h_World::h_World(
+	const h_LongLoadingCallback& long_loading_callback,
 	const h_SettingsPtr& settings,
 	const h_WorldHeaderPtr& header,
 	const char* world_directory )
@@ -47,6 +48,11 @@ h_World::h_World(
 	, phys_thread_need_stop_(false)
 	, phys_thread_paused_(false)
 {
+	const float c_initial_progress= 0.05f;
+	const float c_progress_for_generation= 0.2f;
+	const float c_progres_per_chunk= 0.01f;
+	const float c_lighting_progress= 0.2f;
+
 	InitNormalBlocks();
 
 	chunk_number_x_= std::max( std::min( settings_->GetInt( h_SettingsKeys::chunk_number_x, 14 ), H_MAX_CHUNKS ), H_MIN_CHUNKS );
@@ -81,6 +87,14 @@ h_World::h_World(
 		latitude_ = player_latitude  - chunk_number_y_/2;
 	}
 
+	float progress_scaler= 1.0f / (
+		c_initial_progress + c_progress_for_generation +
+		c_progres_per_chunk * float( chunk_number_x_ * chunk_number_y_ ) +
+		c_lighting_progress );
+	float progress= 0.0f;
+
+	long_loading_callback( progress+= c_initial_progress * progress_scaler );
+
 	g_WorldGenerationParameters parameters;
 	parameters.world_dir= world_directory;
 	parameters.size[0]= parameters.size[1]= 512;
@@ -91,11 +105,19 @@ h_World::h_World(
 	world_generator_->Generate();
 	//world_generator_->DumpDebugResult();
 
+	long_loading_callback( progress+= c_progress_for_generation * progress_scaler );
+
 	for( unsigned int i= 0; i< chunk_number_x_; i++ )
 	for( unsigned int j= 0; j< chunk_number_y_; j++ )
+	{
 		chunks_[ i + j * H_MAX_CHUNKS ]= LoadChunk( i+longitude_, j+latitude_);
 
+		long_loading_callback( progress+= c_progres_per_chunk * progress_scaler );
+	}
+
 	LightWorld();
+
+	long_loading_callback( progress+= c_lighting_progress * progress_scaler );
 
 	test_mob_target_pos_[0]= test_mob_discret_pos_[0]= 0;
 	test_mob_target_pos_[1]= test_mob_discret_pos_[1]= 0;
