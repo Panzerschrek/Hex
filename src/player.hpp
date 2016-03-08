@@ -4,22 +4,24 @@
 #include "hex.hpp"
 #include "fwd.hpp"
 #include "vec.hpp"
-#include "math_lib/math.hpp"
-#include "chunk_phys_mesh.hpp"
 
+// Player. Methods must be called in UIi thread, unless methods, marked as "thread safe".
 class h_Player
 {
 public:
 	h_Player( const h_WorldPtr& world, const h_WorldHeaderPtr& world_header );
 	~h_Player();
 
-	void Move( const m_Vec3& direction );
+	// Set moving vector.
+	// x - left/right, y - forward/backward, z - up/down.
+	void SetMovingVector( const m_Vec3& moving_vector );
 	void Rotate( const m_Vec3& delta );
 	void ToggleFly();
 	void Jump();
 
-	const m_Vec3& Pos() const;
-	const m_Vec3& Angle() const;
+	// Get position, angle. Methods is thread safe.
+	m_Vec3 Pos() const;
+	m_Vec3 Angle() const;
 
 	const m_Vec3& BuildPos() const;
 	h_Direction BuildDirection() const;
@@ -36,18 +38,16 @@ public:
 	void Dig();
 	void TestMobSetPosition();
 
-	void SetCollisionMesh( h_ChunkPhysMesh mesh );
-
-	void Lock();
-	void Unlock();
-
 private:
 	void UpdateBuildPos();
-	void MoveInternal( const m_Vec3& delta );
+	void Move( const m_Vec3& delta );
 
 private:
 	const h_WorldPtr world_;
 	const h_WorldHeaderPtr world_header_;
+
+	// All vectors and positions - in world space.
+	m_Vec3 moving_vector_;
 	m_Vec3 pos_;
 	m_Vec3 speed_;
 	float vertical_speed_;
@@ -62,18 +62,18 @@ private:
 	h_Direction build_direction_; // Firection of build side. Unknown, if build block does not exist
 	h_BlockType build_block_;
 
-	std::mutex player_data_mutex_;
-
-	h_ChunkPhysMesh phys_mesh_;
+	mutable std::mutex player_data_mutex_;
 };
 
-inline const m_Vec3& h_Player::Pos() const
+inline m_Vec3 h_Player::Pos() const
 {
+	std::unique_lock<std::mutex> lock( player_data_mutex_ );
 	return pos_;
 }
 
-inline const m_Vec3& h_Player::Angle() const
+inline m_Vec3 h_Player::Angle() const
 {
+	std::unique_lock<std::mutex> lock( player_data_mutex_ );
 	return view_angle_;
 }
 
@@ -91,14 +91,3 @@ inline h_BlockType h_Player::BuildBlock() const
 {
 	return build_block_;
 }
-
-inline void h_Player::Lock()
-{
-	player_data_mutex_.lock();
-}
-
-inline void h_Player::Unlock()
-{
-	player_data_mutex_.unlock();
-}
-

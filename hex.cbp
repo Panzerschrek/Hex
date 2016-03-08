@@ -66,8 +66,6 @@
 		<Unit filename="src\chunk.hpp" />
 		<Unit filename="src\chunk_loader.cpp" />
 		<Unit filename="src\chunk_loader.hpp" />
-		<Unit filename="src\chunk_phys_mesh.cpp" />
-		<Unit filename="src\chunk_phys_mesh.hpp" />
 		<Unit filename="src\console.cpp" />
 		<Unit filename="src\console.hpp" />
 		<Unit filename="src\fwd.hpp" />
@@ -140,6 +138,8 @@
 		<Unit filename="src\world_lighting.cpp" />
 		<Unit filename="src\world_loading.cpp" />
 		<Unit filename="src\world_loading.hpp" />
+		<Unit filename="src\world_phys_mesh.cpp" />
+		<Unit filename="src\world_phys_mesh.hpp" />
 		<Unit filename="..\panzer_ogl_lib\framebuffer.cpp" />
 		<Unit filename="..\panzer_ogl_lib\framebuffer.hpp" />
 		<Unit filename="..\panzer_ogl_lib\func_addresses.cpp" />

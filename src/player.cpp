@@ -1,8 +1,12 @@
 #include "player.hpp"
 #include "block_collision.hpp"
+#include "world_phys_mesh.hpp"
 #include "world_header.hpp"
 #include "world.hpp"
 #include "time.hpp"
+#include "math_lib/math.hpp"
+
+#include "matrix.hpp"
 
 static const float g_acceleration= 40.0f;
 static const float g_deceleration= 40.0f;
@@ -31,6 +35,7 @@ h_Player::h_Player(
 	const h_WorldHeaderPtr& world_header )
 	: world_(world)
 	, world_header_(world_header)
+	, moving_vector_( 0.0f, 0.0f, 0.0f )
 	, pos_( world_header->player.x, world_header->player.y, world_header->player.z )
 	, speed_( 0.0f, 0.0f, 0.0f )
 	, vertical_speed_(0.0f)
@@ -41,7 +46,6 @@ h_Player::h_Player(
 	, build_direction_( h_Direction::Unknown )
 	, build_block_( h_BlockType::Unknown )
 	, player_data_mutex_()
-	, phys_mesh_()
 {
 	if( pos_.z <= 0.0f )
 	{
@@ -62,68 +66,17 @@ h_Player::~h_Player()
 	world_header_->player.rotation_z= view_angle_.z;
 }
 
-void h_Player::SetCollisionMesh( h_ChunkPhysMesh mesh )
+void h_Player::SetMovingVector( const m_Vec3& moving_vector )
 {
-	phys_mesh_= std::move(mesh);
-}
+	m_Mat4 mat;
+	mat.RotateZ( view_angle_.z );
 
-void h_Player::Move( const m_Vec3& direction )
-{
-	uint64_t current_time_ms = hGetTimeMS();
-	if( prev_move_time_ms_ == 0 ) prev_move_time_ms_= current_time_ms;
-	float dt_s= float(current_time_ms - prev_move_time_ms_) / 1000.0f;
-	prev_move_time_ms_= current_time_ms;
-
-	const float c_eps= 0.001f;
-
-	bool use_ground_acceleration= !in_air_ || is_flying_;
-
-	m_Vec3 move_delta= direction;
-	if( !is_flying_ ) move_delta.z= 0.0f;
-
-	float move_delta_length= move_delta.Length();
-	if( move_delta_length > c_eps )
-	{
-		m_Vec3 acceleration_vec= ( use_ground_acceleration ? g_acceleration : g_air_acceleration ) / move_delta_length * move_delta;
-		speed_+= acceleration_vec * dt_s;
-	}
-
-	float speed_value= speed_.Length();
-	if( speed_value > g_max_speed )
-		speed_*= g_max_speed / speed_value;
-
-	if( speed_value > c_eps )
-	{
-		if( move_delta_length <= c_eps )
-		{
-			m_Vec3 deceleration_vec= speed_;
-			deceleration_vec.Normalize();
-
-			float d_speed= std::min( dt_s * ( use_ground_acceleration ? g_deceleration : g_air_deceleration ), speed_value );
-			speed_-= deceleration_vec * d_speed;
-		}
-	}
-	else
-	{
-		speed_value= 0.0f;
-		speed_= m_Vec3( 0.0f, 0.0f, 0.0f );
-	}
-
-	if( !is_flying_ )
-	{
-		speed_.z= 0.0f;
-
-		vertical_speed_+= g_vertical_acceleration * dt_s;
-		if( vertical_speed_ > g_max_vertical_speed ) vertical_speed_= g_max_vertical_speed;
-		else if( -vertical_speed_ > g_max_vertical_speed ) vertical_speed_= -g_max_vertical_speed;
-	}
-	else vertical_speed_= 0.0f;
-
-	MoveInternal( m_Vec3( speed_.x, speed_.y, speed_.z + vertical_speed_ ) * dt_s );
+	moving_vector_= moving_vector * mat;
 }
 
 void h_Player::Rotate( const m_Vec3& delta )
 {
+	std::lock_guard<std::mutex> lock( player_data_mutex_ );
 	view_angle_+= delta;
 
 	if( view_angle_.z < 0.0f ) view_angle_.z+= m_Math::two_pi;
@@ -154,11 +107,61 @@ void h_Player::SetBuildBlock( h_BlockType block_type )
 
 void h_Player::Tick()
 {
-	UpdateBuildPos();
+	uint64_t current_time_ms = hGetTimeMS();
+	if( prev_move_time_ms_ == 0 ) prev_move_time_ms_= current_time_ms;
+	float dt_s= float(current_time_ms - prev_move_time_ms_) / 1000.0f;
+	prev_move_time_ms_= current_time_ms;
 
-	build_pos_.x= float( discret_build_pos_[0] + 1.0f / 3.0f ) * H_SPACE_SCALE_VECTOR_X;
-	build_pos_.y= float( discret_build_pos_[1] ) - 0.5f * float(discret_build_pos_[0]&1) + 0.5f;
-	build_pos_.z= float( discret_build_pos_[2] ) - 1.0f;
+	const float c_min_dt= 1.0f / 128.0f;
+	const float c_max_dt= 1.0f / 16.0f;
+	dt_s= std::max( c_min_dt, std::min( c_max_dt, dt_s ) );
+
+	const float c_eps= 0.001f;
+
+	bool use_ground_acceleration= !in_air_ || is_flying_;
+
+	m_Vec3 move_delta= moving_vector_;
+	if( !is_flying_ ) move_delta.z= 0.0f;
+
+	float move_delta_length= move_delta.Length();
+	if( move_delta_length > c_eps )
+	{
+		m_Vec3 acceleration_vec= ( use_ground_acceleration ? g_acceleration : g_air_acceleration ) / move_delta_length * move_delta;
+		speed_+= acceleration_vec * dt_s;
+	}
+
+	float speed_value= speed_.Length();
+	if( speed_value > g_max_speed )
+		speed_*= g_max_speed / speed_value;
+
+	if( speed_value > c_eps )
+	{
+		if( move_delta_length <= c_eps )
+		{
+			m_Vec3 deceleration_vec= speed_;
+			deceleration_vec.Normalize();
+
+			float d_speed= std::min( dt_s * ( use_ground_acceleration ? g_deceleration : g_air_deceleration ), speed_value );
+			speed_-= deceleration_vec * d_speed;
+		}
+	}
+	else
+		speed_= m_Vec3( 0.0f, 0.0f, 0.0f );
+
+	if( !is_flying_ )
+	{
+		speed_.z= 0.0f;
+
+		vertical_speed_+= g_vertical_acceleration * dt_s;
+		if( vertical_speed_ > g_max_vertical_speed ) vertical_speed_= g_max_vertical_speed;
+		else if( -vertical_speed_ > g_max_vertical_speed ) vertical_speed_= -g_max_vertical_speed;
+	}
+	else
+		vertical_speed_= 0.0f;
+
+	Move( m_Vec3( speed_.xy(), speed_.z + vertical_speed_ ) * dt_s );
+
+	UpdateBuildPos();
 }
 
 void h_Player::PauseWorldUpdates()
@@ -247,6 +250,9 @@ void h_Player::TestMobSetPosition()
 
 void h_Player::UpdateBuildPos()
 {
+	p_WorldPhysMeshConstPtr phys_mesh= world_->GetPhysMesh();
+	if( phys_mesh == nullptr ) return;
+
 	m_Vec3 eye_dir(
 		-std::sin( view_angle_.z ) * std::cos( view_angle_.x ),
 		+std::cos( view_angle_.z ) * std::cos( view_angle_.x ),
@@ -254,110 +260,71 @@ void h_Player::UpdateBuildPos()
 
 	m_Vec3 eye_pos= pos_;
 	eye_pos.z+= H_PLAYER_EYE_LEVEL;
-	float dst= std::numeric_limits<float>::max();
+	float square_dist= std::numeric_limits<float>::max();
 	h_Direction block_dir= h_Direction::Unknown;
 
 	m_Vec3 intersect_pos;
 	m_Vec3 candidate_pos;
-	m_Vec3 triangle[3];
 	m_Vec3 n;
 
-	for( const p_UpperBlockFace& face : phys_mesh_.upper_block_faces )
+	for( const p_UpperBlockFace& face : phys_mesh->upper_block_faces )
 	{
 		n= g_block_normals[ static_cast<size_t>(face.dir) ];
 
-		triangle[0]= m_Vec3( face.edge[0].x, face.edge[0].y, face.z );
-		triangle[1]= m_Vec3( face.edge[1].x, face.edge[1].y, face.z );
-		triangle[2]= m_Vec3( face.edge[2].x, face.edge[2].y, face.z );
-		if( RayHasIniersectWithTriangle( triangle, n, eye_pos, eye_dir, &candidate_pos ) )
+		// Hexagon triangulation to 4 triangles.
+		static const unsigned int traingles_edges[4][3]=
 		{
-			float candidate_dst= ( candidate_pos - eye_pos ).Length();
-			if( candidate_dst < dst )
-			{
-				dst= candidate_dst;
-				intersect_pos= candidate_pos;
-				block_dir= face.dir;
-			}
-		}
+			{ 0, 1, 2 }, { 2, 3, 4, }, { 4, 5, 0 }, { 0, 2, 4 },
+		};
 
-		triangle[0]= m_Vec3( face.edge[2].x, face.edge[2].y, face.z );
-		triangle[1]= m_Vec3( face.edge[3].x, face.edge[3].y, face.z );
-		triangle[2]= m_Vec3( face.edge[4].x, face.edge[4].y, face.z );
-		if( RayHasIniersectWithTriangle( triangle, n, eye_pos, eye_dir, &candidate_pos ) )
+		for( unsigned int i= 0; i < 4; i++ )
 		{
-			float candidate_dst= ( candidate_pos - eye_pos ).Length();
-			if( candidate_dst < dst )
-			{
-				dst= candidate_dst;
-				intersect_pos= candidate_pos;
-				block_dir= face.dir;
-			}
-		}
+			m_Vec3 triangle[3];
 
-		triangle[0]= m_Vec3( face.edge[4].x, face.edge[4].y, face.z );
-		triangle[1]= m_Vec3( face.edge[5].x, face.edge[5].y, face.z );
-		triangle[2]= m_Vec3( face.edge[0].x, face.edge[0].y, face.z );
-		if( RayHasIniersectWithTriangle( triangle, n, eye_pos, eye_dir, &candidate_pos ) )
-		{
-			float candidate_dst= ( candidate_pos - eye_pos ).Length();
-			if( candidate_dst < dst )
+			triangle[0]= m_Vec3( face.edge[ traingles_edges[i][0] ], face.z );
+			triangle[1]= m_Vec3( face.edge[ traingles_edges[i][1] ], face.z );
+			triangle[2]= m_Vec3( face.edge[ traingles_edges[i][2] ], face.z );
+			if( RayHasIniersectWithTriangle( triangle, n, eye_pos, eye_dir, &candidate_pos ) )
 			{
-				dst= candidate_dst;
-				intersect_pos= candidate_pos;
-				block_dir= face.dir;
-			}
-		}
-
-		triangle[0]= m_Vec3( face.edge[0].x, face.edge[0].y, face.z );
-		triangle[1]= m_Vec3( face.edge[2].x, face.edge[2].y, face.z );
-		triangle[2]= m_Vec3( face.edge[4].x, face.edge[4].y, face.z );
-		if( RayHasIniersectWithTriangle( triangle, n, eye_pos, eye_dir, &candidate_pos ) )
-		{
-			float candidate_dst= ( candidate_pos - eye_pos ).Length();
-			if( candidate_dst < dst )
-			{
-				dst= candidate_dst;
-				intersect_pos= candidate_pos;
-				block_dir= face.dir;
+				float candidate_square_dist= ( candidate_pos - eye_pos ).SquareLength();
+				if( candidate_square_dist < square_dist )
+				{
+					square_dist= candidate_square_dist;
+					intersect_pos= candidate_pos;
+					block_dir= face.dir;
+				}
 			}
 		}
 	}
 
-	for( const p_BlockSide& side : phys_mesh_.block_sides )
+	for( const p_BlockSide& side : phys_mesh->block_sides )
 	{
 		n= g_block_normals[ static_cast<size_t>(side.dir) ];
 
-		triangle[0]= m_Vec3( side.edge[0].x, side.edge[0].y, side.z );
-		triangle[1]= m_Vec3( side.edge[1].x, side.edge[1].y, side.z );
-		triangle[2]= m_Vec3( side.edge[1].x, side.edge[1].y, side.z + 1.0f );
-		if( RayHasIniersectWithTriangle( triangle, n, eye_pos, eye_dir, &candidate_pos ) )
+		m_Vec3 triangles[6];
+		triangles[0]= m_Vec3( side.edge[0], side.z );
+		triangles[1]= m_Vec3( side.edge[1], side.z );
+		triangles[2]= m_Vec3( side.edge[1], side.z + 1.0f );
+		triangles[3]= m_Vec3( side.edge[0], side.z + 1.0f );
+		triangles[4]= m_Vec3( side.edge[0], side.z );
+		triangles[5]= m_Vec3( side.edge[1], side.z + 1.0f );
+		for( unsigned int i= 0; i < 2; i++ )
 		{
-			float candidate_dst= ( candidate_pos - eye_pos ).Length();
-			if( candidate_dst < dst )
+			if( RayHasIniersectWithTriangle( triangles + i * 3, n, eye_pos, eye_dir, &candidate_pos ) )
 			{
-				dst= candidate_dst;
-				intersect_pos= candidate_pos;
-				block_dir= side.dir;
-			}
-		}
-
-		triangle[0]= m_Vec3( side.edge[0].x, side.edge[0].y, side.z + 1.0f );
-		triangle[1]= m_Vec3( side.edge[0].x, side.edge[0].y, side.z );
-		triangle[2]= m_Vec3( side.edge[1].x, side.edge[1].y, side.z + 1.0f );
-		if( RayHasIniersectWithTriangle( triangle, n, eye_pos, eye_dir, &candidate_pos ) )
-		{
-			float candidate_dst= ( candidate_pos - eye_pos ).Length();
-			if( candidate_dst < dst )
-			{
-				dst= candidate_dst;
-				intersect_pos= candidate_pos;
-				block_dir= side.dir;
+				float candidate_square_dist= ( candidate_pos - eye_pos ).SquareLength();
+				if( candidate_square_dist < square_dist )
+				{
+					square_dist= candidate_square_dist;
+					intersect_pos= candidate_pos;
+					block_dir= side.dir;
+				}
 			}
 		}
 	}
 
 	if( block_dir == h_Direction::Unknown ||
-		(intersect_pos - eye_pos).SquareLength() > g_max_build_distance * g_max_build_distance )
+		square_dist > g_max_build_distance * g_max_build_distance )
 	{
 		build_direction_= h_Direction::Unknown;
 		return;
@@ -375,10 +342,14 @@ void h_Player::UpdateBuildPos()
 	discret_build_pos_[1]= new_y;
 	discret_build_pos_[2]= new_z;
 
+	build_pos_.x= float( discret_build_pos_[0] + 1.0f / 3.0f ) * H_SPACE_SCALE_VECTOR_X;
+	build_pos_.y= float( discret_build_pos_[1] ) - 0.5f * float(discret_build_pos_[0]&1) + 0.5f;
+	build_pos_.z= float( discret_build_pos_[2] ) - 1.0f;
+
 	build_direction_= block_dir;
 }
 
-void h_Player::MoveInternal( const m_Vec3& delta )
+void h_Player::Move( const m_Vec3& delta )
 {
 	const float c_eps= 0.00001f;
 	const float c_vertical_collision_eps= 0.001f;
@@ -390,9 +361,12 @@ void h_Player::MoveInternal( const m_Vec3& delta )
 	*/
 	const float c_vertical_collision_player_radius= H_PLAYER_RADIUS * 0.9f;
 
+	p_WorldPhysMeshConstPtr phys_mesh= world_->GetPhysMesh();
+	if( phys_mesh == nullptr ) return;
+
 	m_Vec3 new_pos= pos_ + delta;
 
-	for( const p_UpperBlockFace& face : phys_mesh_.upper_block_faces )
+	for( const p_UpperBlockFace& face : phys_mesh->upper_block_faces )
 	{
 		if( delta.z > c_eps )
 		{
@@ -418,7 +392,7 @@ void h_Player::MoveInternal( const m_Vec3& delta )
 		}
 	}// upeer faces
 
-	for( const p_BlockSide& side : phys_mesh_.block_sides )
+	for( const p_BlockSide& side : phys_mesh->block_sides )
 	{
 		if( ( side.z > new_pos.z && side.z < new_pos.z + H_PLAYER_HEIGHT ) ||
 			( side.z + 1.0f > new_pos.z && side.z + 1.0f < new_pos.z + H_PLAYER_HEIGHT ) )
@@ -438,7 +412,7 @@ void h_Player::MoveInternal( const m_Vec3& delta )
 
 	// Check in_air
 	in_air_= true;
-	for( const p_UpperBlockFace& face : phys_mesh_.upper_block_faces )
+	for( const p_UpperBlockFace& face : phys_mesh->upper_block_faces )
 	{
 		if( face.dir == h_Direction::Up &&
 			new_pos.z <= face.z + c_on_ground_eps &&
@@ -459,5 +433,7 @@ void h_Player::MoveInternal( const m_Vec3& delta )
 		}
 	}
 
+	// Modify pos_ only under mutex.
+	std::lock_guard<std::mutex> lock( player_data_mutex_ );
 	pos_= new_pos;
 }

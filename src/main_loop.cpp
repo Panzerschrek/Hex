@@ -178,18 +178,12 @@ void h_MainLoop::paintGL()
 {
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
+	UpdateCursor();
+
 	root_menu_->Tick();
 
 	if( game_started_ )
-	{
-		player_->Lock();
-		UpdateCursor();
-		player_->Tick();
-		player_->Unlock();
 		world_renderer_->Draw();
-	}
-	else
-		UpdateCursor();
 
 	m_Mat4 mat;
 	mat.Identity();

@@ -8,7 +8,7 @@
 #include "settings_keys.hpp"
 #include "world_generator/world_generator.hpp"
 #include "world_header.hpp"
-#include "chunk_phys_mesh.hpp"
+#include "world_phys_mesh.hpp"
 #include "path_finder.hpp"
 #include "console.hpp"
 #include "time.hpp"
@@ -237,6 +237,12 @@ void h_World::UnpauseUpdates()
 	H_ASSERT( phys_thread_ );
 
 	phys_thread_paused_.store(false);
+}
+
+p_WorldPhysMeshConstPtr h_World::GetPhysMesh() const
+{
+	std::lock_guard<std::mutex> lock( phys_mesh_mutex_ );
+	return phys_mesh_;
 }
 
 void h_World::Save()
@@ -597,9 +603,9 @@ h_Chunk* h_World::LoadChunk( int lon, int lat )
 	return new h_Chunk( this, header, stream );
 }
 
-h_ChunkPhysMesh h_World::BuildPhysMesh( short x_min, short x_max, short y_min, short y_max, short z_min, short z_max )
+void h_World::UpdatePhysMesh( short x_min, short x_max, short y_min, short y_max, short z_min, short z_max )
 {
-	h_ChunkPhysMesh phys_mesh;
+	p_WorldPhysMesh phys_mesh;
 
 	short X= Longitude() * H_CHUNK_WIDTH;
 	short Y= Latitude () * H_CHUNK_WIDTH;
@@ -678,7 +684,8 @@ h_ChunkPhysMesh h_World::BuildPhysMesh( short x_min, short x_max, short y_min, s
 		} // for z
 	} // for xy
 
-	return phys_mesh;
+	std::lock_guard<std::mutex> lock( phys_mesh_mutex_ );
+	phys_mesh_= std::make_shared< p_WorldPhysMesh >( std::move(phys_mesh ) );
 }
 
 void h_World::BlastBlock_r( short x, short y, short z, short blast_power )
@@ -748,20 +755,18 @@ void h_World::PhysTick()
 
 		// player logic
 		{
-			player_->Lock();
+			m_Vec3 player_pos= player_->Pos();
 			short player_coord_global[2];
-			GetHexogonCoord( player_->Pos().xy(), &player_coord_global[0], &player_coord_global[1] );
-			player_->Unlock();
+			GetHexogonCoord( player_pos.xy(), &player_coord_global[0], &player_coord_global[1] );
 
 			int player_coord[3];
 			player_coord[0]= player_coord_global[0] - Longitude() * H_CHUNK_WIDTH;
 			player_coord[1]= player_coord_global[1] - Latitude () * H_CHUNK_WIDTH;
-			player_coord[2]= int(player_->Pos().z + H_PLAYER_EYE_LEVEL);
-			h_ChunkPhysMesh player_phys_mesh=
-				BuildPhysMesh(
-					player_coord[0] - 5, player_coord[0] + 5,
-					player_coord[1] - 6, player_coord[1] + 6,
-					player_coord[2] - 5, player_coord[2] + 5 );
+			player_coord[2]= int(player_pos.z + H_PLAYER_EYE_LEVEL);
+			UpdatePhysMesh(
+				player_coord[0] - 5, player_coord[0] + 5,
+				player_coord[1] - 6, player_coord[1] + 6,
+				player_coord[2] - 5, player_coord[2] + 5 );
 
 			int player_chunk_x= ( player_coord[0] + (H_CHUNK_WIDTH>>1) ) >> H_CHUNK_WIDTH_LOG2;
 			int player_chunk_y= ( player_coord[1] + (H_CHUNK_WIDTH>>1) ) >> H_CHUNK_WIDTH_LOG2;
@@ -774,10 +779,6 @@ void h_World::PhysTick()
 				MoveWorld( EAST );
 			else if( player_chunk_x < int(chunk_number_x_/2-2) )
 				MoveWorld( WEST );
-
-			player_->Lock();
-			player_->SetCollisionMesh( std::move(player_phys_mesh) );
-			player_->Unlock();
 		}
 
 		phys_tick_count_++;

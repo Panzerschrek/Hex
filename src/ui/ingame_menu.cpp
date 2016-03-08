@@ -154,6 +154,7 @@ ui_IngameMenu::ui_IngameMenu(
 	: ui_MenuBase( nullptr, 0, 0, sx, sy )
 	, main_loop_(main_loop)
 	, player_(player)
+	, game_paused_(false)
 {
 	int row= sy / ui_Base::CellSize() - 2;
 
@@ -229,6 +230,7 @@ void ui_IngameMenu::KeyPress( ui_Key key )
 		for( auto& key : keys_ ) key.second= false;
 
 		player_->PauseWorldUpdates();
+		game_paused_= true;
 	}
 	else if( key == g_jump_key )
 		player_->Jump();
@@ -265,42 +267,34 @@ void ui_IngameMenu::Tick()
 	{
 		child_menu_.reset();
 		this->SetActive( true );
-	}
 
-	m_Vec3 move_direction( 0.0f, 0.0f, 0.0f );
+		if( game_paused_ )
+		{
+			game_paused_= false;
+			player_->UnpauseWorldUpdates();
+		}
+	}
 
 	if( this->IsActive() )
 	{
-		player_->UnpauseWorldUpdates();
+		m_Vec3 move_direction( 0.0f, 0.0f, 0.0f );
 
-		float cam_ang_z= player_->Angle().z;
+		if( keys_[ g_forward_key  ] ) move_direction.y+= 1.0f;
+		if( keys_[ g_backward_key ] ) move_direction.y-= 1.0f;
 
-		if( keys_[ g_forward_key ] )
-		{
-			move_direction.y+= std::cos( cam_ang_z );
-			move_direction.x-= std::sin( cam_ang_z );
-		}
-		if( keys_[ g_backward_key ] )
-		{
-			move_direction.y-= std::cos( cam_ang_z );
-			move_direction.x+= std::sin( cam_ang_z );
-		}
-		if( keys_[ g_left_key ] )
-		{
-			move_direction.y-= std::cos( cam_ang_z - m_Math::pi_2 );
-			move_direction.x+= std::sin( cam_ang_z - m_Math::pi_2 );
-		}
-		if( keys_[ g_right_key ] )
-		{
-			move_direction.y-= std::cos( cam_ang_z + m_Math::pi_2 );
-			move_direction.x+= std::sin( cam_ang_z + m_Math::pi_2 );
-		}
+		if( keys_[ g_left_key  ] ) move_direction.x-= 1.0f;
+		if( keys_[ g_right_key ] ) move_direction.x+= 1.0f;
 
 		if( keys_[ g_jump_key ] ) move_direction.z+= 1.0f;
 		if( keys_[ g_down_key ] ) move_direction.z-= 1.0f;
-	}
 
-	player_->Move( move_direction );
+		player_->SetMovingVector( move_direction );
+	}
+	else
+		player_->SetMovingVector( m_Vec3( 0.0f, 0.0f, 0.0f ) );
+
+	if( !game_paused_ )
+		player_->Tick();
 }
 
 void ui_IngameMenu::OnBlockSelected( h_BlockType block_type )

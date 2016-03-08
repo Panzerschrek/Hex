@@ -61,6 +61,10 @@ public:
 	void PauseUpdates();
 	void UnpauseUpdates();
 
+	// Get phys mesh for current player. Method is thread safe.
+	// Can return nullptr.
+	p_WorldPhysMeshConstPtr GetPhysMesh() const;
+
 	void Save();//save world data to disk
 
 	unsigned char SunLightLevel( short x, short y, short z ) const;
@@ -99,7 +103,7 @@ private:
 	void AddLightToBorderChunk( unsigned int X, unsigned int Y );
 
 	//function uses local coordinates of loaded zone
-	h_ChunkPhysMesh BuildPhysMesh( short x_min, short x_max, short y_min, short y_max, short z_min, short z_max );
+	void UpdatePhysMesh( short x_min, short x_max, short y_min, short y_max, short z_min, short z_max );
 
 	//clamp coordinates to [ 0; H_CHUNK_WIDTH * chunk_number - 1 ) for x and y
 	//and to [ 0; H_CHUNK_HEIGHT - 1 ] for z
@@ -172,8 +176,11 @@ private:
 	std::atomic<bool> phys_thread_paused_;
 
 	//queue 0 - for enqueue, queue 1 - for dequeue
-	std::queue< h_WorldAction > action_queue_[2];
 	std::mutex action_queue_mutex_;
+	std::queue< h_WorldAction > action_queue_[2];
+
+	mutable std::mutex phys_mesh_mutex_;
+	p_WorldPhysMeshConstPtr phys_mesh_;
 
 	int test_mob_discret_pos_[3];
 	int test_mob_target_pos_[3];

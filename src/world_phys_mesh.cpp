@@ -1,12 +1,12 @@
-#include "chunk_phys_mesh.hpp"
+#include "world_phys_mesh.hpp"
 
 
-h_ChunkPhysMesh::h_ChunkPhysMesh( h_ChunkPhysMesh&& other )
+p_WorldPhysMesh::p_WorldPhysMesh( p_WorldPhysMesh&& other )
 {
 	*this= std::move(other);
 }
 
-h_ChunkPhysMesh& h_ChunkPhysMesh::operator=( h_ChunkPhysMesh&& other )
+p_WorldPhysMesh& p_WorldPhysMesh::operator=( p_WorldPhysMesh&& other )
 {
 	block_sides= std::move(other.block_sides);
 	other.block_sides.clear();

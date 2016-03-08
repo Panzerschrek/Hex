@@ -11,7 +11,7 @@ HEADERS += \
     ../src/block_collision.hpp \
 	../src/chunk.hpp \
     ../src/chunk_loader.hpp \
-    ../src/chunk_phys_mesh.hpp \
+	../src/world_phys_mesh.hpp \
     ../src/console.hpp \
     ../src/fwd.hpp \
     ../src/hex.hpp \
@@ -69,7 +69,7 @@ SOURCES += \
     ../src/block_collision.cpp \
     ../src/chunk.cpp \
     ../src/chunk_loader.cpp \
-    ../src/chunk_phys_mesh.cpp \
+	../src/world_phys_mesh.cpp \
     ../src/console.cpp \
     ../src/main.cpp \
     ../src/main_loop.cpp \

@@ -32,6 +32,7 @@ private:
 private:
 	h_MainLoop& main_loop_;
 	const h_PlayerPtr player_;
+	bool game_paused_;
 
 	std::map<ui_Key, bool> keys_;
 
