@@ -359,7 +359,9 @@ void h_MainLoop::StartGame()
 				prev_progress_time_ms= time_ms;
 				loading_menu->SetProgress( progress );
 
-				paintGL();
+				// Schedule repaint.
+				update();
+				// Process events, include "paint" event.
 				QCoreApplication::processEvents();
 			}
 		};
