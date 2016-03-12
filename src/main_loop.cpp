@@ -301,12 +301,12 @@ void h_MainLoop::ProcessMenuKey( QKeyEvent* e, bool pressed )
 
 void h_MainLoop::mouseReleaseEvent(QMouseEvent* e)
 {
-	ui_CursorHandler::CursorPress( e->x(), e->y(), MouseKey(e), true );
+	ui_CursorHandler::CursorPress( e->x(), e->y(), MouseKey(e), false );
 }
 
 void h_MainLoop::mousePressEvent( QMouseEvent* e )
 {
-	ui_CursorHandler::CursorPress( e->x(), e->y(), MouseKey(e), false );
+	ui_CursorHandler::CursorPress( e->x(), e->y(), MouseKey(e), true );
 }
 
 void h_MainLoop::mouseMoveEvent(QMouseEvent*){}
