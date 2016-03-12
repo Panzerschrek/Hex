@@ -482,13 +482,12 @@ void r_WorldRenderer::UpdateWorldPosition( int longitude, int latitude )
 
 void r_WorldRenderer::CalculateMatrices()
 {
-	cam_pos_= player_->Pos();
-	cam_pos_.z+= H_PLAYER_EYE_LEVEL;
+	cam_pos_= player_->EyesPos();
 	cam_ang_= player_->Angle();
 
-	m_Mat4 scale, translate, rotate_x, rotate_z, basis_change;
+	m_Mat4 translate, rotate_x, rotate_z, basis_change;
 
-	fov_y_= 1.57f;
+	fov_y_= m_Math::pi_2;
 	fov_x_= 2.0f * std::atan( float(viewport_width_) / float(viewport_height_) * std::tan( fov_y_ * 0.5f ) );
 
 	translate.Translate( -cam_pos_ );
@@ -497,12 +496,21 @@ void r_WorldRenderer::CalculateMatrices()
 		H_SPACE_SCALE_VECTOR_X / 3.0f,
 		0.5f,
 		1.0f );//hexogonal prism scale vector. DO NOT TOUCH!
-	scale.Scale( s_vector );
+	block_scale_matrix_.Scale( s_vector );
+
+	// near clip plane does not clip nearest to player blocks
+	float z_near=
+		player_->MinEyesCollidersDistance() *
+		std::cos( std::max( fov_x_, fov_y_ ) * 0.5f )
+		* 0.95f;
+
+	float z_far= 1024.0f;
 
 	perspective_matrix_.PerspectiveProjection(
-		float(viewport_width_)/float(viewport_height_), fov_y_,
-		0.5f*(H_PLAYER_HEIGHT - H_PLAYER_EYE_LEVEL),//znear
-		1024.0f );
+		float(viewport_width_)/float(viewport_height_),
+		fov_y_,
+		z_near,
+		z_far );
 
 	rotate_x.RotateX( -cam_ang_.x );
 	rotate_z.RotateZ( -cam_ang_.z );
@@ -516,7 +524,6 @@ void r_WorldRenderer::CalculateMatrices()
 	rotation_matrix_= rotate_z * rotate_x * basis_change * perspective_matrix_;
 	view_matrix_= translate * rotation_matrix_;
 
-	block_scale_matrix_= scale;
 	block_final_matrix_= block_scale_matrix_ * view_matrix_;
 }
 

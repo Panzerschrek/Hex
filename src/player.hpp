@@ -21,7 +21,11 @@ public:
 
 	// Get position, angle. Methods is thread safe.
 	m_Vec3 Pos() const;
+	m_Vec3 EyesPos() const;
 	m_Vec3 Angle() const;
+
+	// Minimal distance to colliders (blocs, etc.), where player eyes can be.
+	float MinEyesCollidersDistance() const;
 
 	const m_Vec3& BuildPos() const;
 	h_Direction BuildDirection() const;
@@ -48,6 +52,10 @@ private:
 	const h_WorldPtr world_;
 	const h_WorldHeaderPtr world_header_;
 
+	const float radius_;
+	const float eyes_level_;
+	const float height_;
+
 	// All vectors and positions - in world space.
 	m_Vec3 moving_vector_;
 	m_Vec3 pos_;
@@ -73,6 +81,12 @@ inline m_Vec3 h_Player::Pos() const
 {
 	std::unique_lock<std::mutex> lock( player_data_mutex_ );
 	return pos_;
+}
+
+inline m_Vec3 h_Player::EyesPos() const
+{
+	std::unique_lock<std::mutex> lock( player_data_mutex_ );
+	return m_Vec3( pos_.xy(), pos_.z + eyes_level_ );
 }
 
 inline m_Vec3 h_Player::Angle() const

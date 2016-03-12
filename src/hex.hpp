@@ -35,10 +35,6 @@
 //space scale vector
 #define H_SPACE_SCALE_VECTOR_X 0.8660254037f
 
-#define H_PLAYER_HEIGHT 1.75f
-#define H_PLAYER_RADIUS (0.25f * 0.9f) // 90% of block side
-#define H_PLAYER_EYE_LEVEL 1.67f
-
 #define H_MAX_SUN_LIGHT 8
 #define H_MAX_FIRE_LIGHT 13
 

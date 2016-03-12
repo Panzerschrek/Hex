@@ -8,6 +8,10 @@
 
 #include "matrix.hpp"
 
+static const float g_default_player_radius= 0.25f * 0.9f; // 90% of block side
+static const float g_default_player_eyes_level= 1.67f;
+static const float g_default_player_height= 1.75f;
+
 static const float g_acceleration= 40.0f;
 static const float g_deceleration= 40.0f;
 static const float g_air_acceleration= 2.0f;
@@ -39,6 +43,9 @@ h_Player::h_Player(
 	const h_WorldHeaderPtr& world_header )
 	: world_(world)
 	, world_header_(world_header)
+	, radius_(g_default_player_radius)
+	, eyes_level_(g_default_player_eyes_level)
+	, height_(g_default_player_height)
 	, moving_vector_( 0.0f, 0.0f, 0.0f )
 	, pos_( world_header->player.x, world_header->player.y, world_header->player.z )
 	, speed_( 0.0f, 0.0f, 0.0f )
@@ -106,9 +113,12 @@ void h_Player::Jump()
 	}
 }
 
-void h_Player::SetBuildBlock( h_BlockType block_type )
+float h_Player::MinEyesCollidersDistance() const
 {
-	build_block_= block_type;
+	return
+		std::min(
+			height_ - eyes_level_,
+			radius_ );
 }
 
 void h_Player::Tick()
@@ -200,6 +210,11 @@ void h_Player::UnpauseWorldUpdates()
 	world_->UnpauseUpdates();
 }
 
+void h_Player::SetBuildBlock( h_BlockType block_type )
+{
+	build_block_= block_type;
+}
+
 void h_Player::Build()
 {
 	if( build_block_ != h_BlockType::Unknown && build_direction_ != h_Direction::Unknown )
@@ -280,8 +295,8 @@ void h_Player::CheckUnderwater( const p_WorldPhysMesh& phys_mesh )
 	pGetHexogonCoord( pos_.xy(), &player_world_space_xy[0], &player_world_space_xy[1] );
 
 	float feet_z= pos_.z;
-	float head_z= pos_.z + H_PLAYER_HEIGHT;
-	float eyes_z= pos_.z + H_PLAYER_EYE_LEVEL;
+	float head_z= pos_.z + height_;
+	float eyes_z= pos_.z + eyes_level_;
 	float blocks_underwater= 0.0f;
 
 	eyes_is_underwater_= false;
@@ -304,7 +319,7 @@ void h_Player::CheckUnderwater( const p_WorldPhysMesh& phys_mesh )
 		}
 	}
 
-	water_submerging_= std::max( 0.0f, std::min( 1.0f, blocks_underwater / H_PLAYER_HEIGHT ) );
+	water_submerging_= std::max( 0.0f, std::min( 1.0f, blocks_underwater / height_ ) );
 }
 
 void h_Player::UpdateBuildPos( const p_WorldPhysMesh& phys_mesh )
@@ -315,7 +330,7 @@ void h_Player::UpdateBuildPos( const p_WorldPhysMesh& phys_mesh )
 		+std::sin( view_angle_.x ) );
 
 	m_Vec3 eye_pos= pos_;
-	eye_pos.z+= H_PLAYER_EYE_LEVEL;
+	eye_pos.z+= eyes_level_;
 	float square_dist= std::numeric_limits<float>::max();
 	h_Direction block_dir= h_Direction::Unknown;
 
@@ -414,7 +429,7 @@ void h_Player::Move( const m_Vec3& delta, const p_WorldPhysMesh& phys_mesh )
 	 * This approach fix bug, when player can stay on block,
 	 * where he can`t stay by logic of human, but stay, beacause calculation errors.
 	*/
-	const float c_vertical_collision_player_radius= H_PLAYER_RADIUS * 0.9f;
+	const float c_vertical_collision_player_radius= radius_ * 0.9f;
 
 	m_Vec3 new_pos= pos_ + delta;
 
@@ -423,11 +438,11 @@ void h_Player::Move( const m_Vec3& delta, const p_WorldPhysMesh& phys_mesh )
 		if( delta.z > c_eps )
 		{
 			if( face.dir == h_Direction::Down &&
-				face.z >= (pos_.z + H_PLAYER_HEIGHT) &&
-				face.z < (new_pos.z + H_PLAYER_HEIGHT) &&
+				face.z >= (pos_.z + height_) &&
+				face.z < (new_pos.z + height_) &&
 				face.HasCollisionWithCircle( new_pos.xy(), c_vertical_collision_player_radius ) )
 				{
-					new_pos.z= face.z - H_PLAYER_HEIGHT - c_vertical_collision_eps;
+					new_pos.z= face.z - height_ - c_vertical_collision_eps;
 					break;
 				}
 		}
@@ -446,10 +461,10 @@ void h_Player::Move( const m_Vec3& delta, const p_WorldPhysMesh& phys_mesh )
 
 	for( const p_BlockSide& side : phys_mesh.block_sides )
 	{
-		if( ( side.z > new_pos.z && side.z < new_pos.z + H_PLAYER_HEIGHT ) ||
-			( side.z + 1.0f > new_pos.z && side.z + 1.0f < new_pos.z + H_PLAYER_HEIGHT ) )
+		if( ( side.z > new_pos.z && side.z < new_pos.z + height_ ) ||
+			( side.z + 1.0f > new_pos.z && side.z + 1.0f < new_pos.z + height_ ) )
 		{
-			m_Vec2 collide_pos= side.CollideWithCirlce( new_pos.xy(), H_PLAYER_RADIUS );
+			m_Vec2 collide_pos= side.CollideWithCirlce( new_pos.xy(), radius_ );
 			if( collide_pos != new_pos.xy() )
 			{
 				new_pos.x= collide_pos.x;
@@ -476,8 +491,8 @@ void h_Player::Move( const m_Vec3& delta, const p_WorldPhysMesh& phys_mesh )
 			break;
 		}
 		if( face.dir == h_Direction::Down &&
-			new_pos.z + H_PLAYER_HEIGHT >= face.z - c_on_ground_eps &&
-			new_pos.z + H_PLAYER_HEIGHT < face.z &&
+			new_pos.z + height_ >= face.z - c_on_ground_eps &&
+			new_pos.z + height_ < face.z &&
 			face.HasCollisionWithCircle( new_pos.xy(), c_vertical_collision_player_radius ) )
 		{
 			vertical_speed_= 0.0f;

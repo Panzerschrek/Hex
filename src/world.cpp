@@ -777,14 +777,14 @@ void h_World::PhysTick()
 
 		// player logic
 		{
-			m_Vec3 player_pos= player_->Pos();
+			m_Vec3 player_pos= player_->EyesPos();
 			short player_coord_global[2];
 			pGetHexogonCoord( player_pos.xy(), &player_coord_global[0], &player_coord_global[1] );
 
 			int player_coord[3];
 			player_coord[0]= player_coord_global[0] - Longitude() * H_CHUNK_WIDTH;
 			player_coord[1]= player_coord_global[1] - Latitude () * H_CHUNK_WIDTH;
-			player_coord[2]= int(player_pos.z + H_PLAYER_EYE_LEVEL);
+			player_coord[2]= int( std::round(player_pos.z) );
 			UpdatePhysMesh(
 				player_coord[0] - 5, player_coord[0] + 5,
 				player_coord[1] - 6, player_coord[1] + 6,
