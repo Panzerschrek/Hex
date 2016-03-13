@@ -94,6 +94,11 @@ public:
 	{
 	}
 
+	size_t size() const
+	{
+		return size_;
+	}
+
 	iterator begin()
 	{
 		if( !root_ ) return nullptr;
@@ -153,6 +158,7 @@ public:
 	void erase(iterator it)
 	{
 		H_ASSERT(it.p);
+		H_ASSERT( size_ != 0 );
 
 		size_--;
 
@@ -178,14 +184,13 @@ public:
 			{
 				if( deleted_parent->right == it.p ) deleted_parent->right= it.p->left;
 				else deleted_parent->left= it.p->left;
-				if( it.p->right ) it.p->right->parent= deleted_parent;
 			}
 			else
 			{
 				H_ASSERT(it.p == root_);
 				root_= it.p->left;
-				root_->parent= nullptr;
 			}
+			it.p->left->parent= deleted_parent;
 
 			if( it.p->right )
 			{
@@ -204,6 +209,8 @@ public:
 		} // if( it.p->left )
 		else // only right
 		{
+			H_ASSERT(it.p->right);
+
 			if( deleted_parent )
 			{
 				if( deleted_parent->right == it.p ) deleted_parent->right= it.p->right;
