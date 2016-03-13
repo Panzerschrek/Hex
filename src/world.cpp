@@ -250,6 +250,8 @@ void h_World::Save()
 
 unsigned int h_World::GetTimeOfYear() const
 {
+	std::lock_guard<std::mutex> lock(phys_tick_count_mutex_);
+
 	return phys_tick_count_ % ( g_day_duration_ticks * g_days_in_year );
 }
 
@@ -899,7 +901,10 @@ void h_World::PhysTick()
 				MoveWorld( WEST );
 		}
 
-		phys_tick_count_++;
+		{ // Modify phys ticks counter under mutex only.
+			std::lock_guard<std::mutex> lock( phys_tick_count_mutex_ );
+			phys_tick_count_++;
+		}
 
 		renderer_->Update();
 

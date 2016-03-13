@@ -17,6 +17,10 @@
 
 #include "vec.hpp"
 
+/*
+Main world logic class.
+Methods without comments about thread-safety can be called only in world thread.
+*/
 class h_World
 {
 	friend class h_Chunk;
@@ -36,12 +40,14 @@ public:
 	int ChunkCoordToQuadchunkX( int longitude ) const;
 	int ChunkCoordToQuadchunkY( int latitude  ) const;
 
+	// Chunk matrix size. Thread safe.
 	unsigned int ChunkNumberX() const;
 	unsigned int ChunkNumberY() const;
 
 	short Longitude() const;
 	short Latitude () const;
 
+	// Add events. Thread safe.
 	void AddBuildEvent( short x, short y, short z, h_BlockType block_type );//coordinates - relative
 	void AddDestroyEvent( short x, short y, short z );
 
@@ -74,6 +80,7 @@ public:
 	//returns light level of back-backleft upper vertex of prism X16. coordinates - relative
 	void GetBackVertexLight( short x, short y, short z, unsigned char* out_light ) const;
 
+	// Get time, calendar, latitude. All methods thread safe.
 	// Time of year, in ticks. 0 - midnight of first year day.
 	unsigned int GetTimeOfYear() const;
 	const h_Calendar& GetCalendar() const;
@@ -165,12 +172,14 @@ private:
 
 	m_Rand phys_processes_rand_;
 
-	h_Calendar calendar_;
+	const h_Calendar calendar_;
 
 	r_IWorldRenderer* renderer_= nullptr;
 	h_Player* player_= nullptr;
 
+	mutable std::mutex phys_tick_count_mutex_;
 	unsigned int phys_tick_count_;
+
 	std::unique_ptr< std::thread > phys_thread_;
 	std::atomic<bool> phys_thread_need_stop_;
 	std::atomic<bool> phys_thread_paused_;
