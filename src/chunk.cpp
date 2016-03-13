@@ -189,8 +189,6 @@ h_Block* h_Chunk::LoadBlock( QDataStream& stream, unsigned int block_addr )
 						BlockAddrToX(block_addr),
 						BlockAddrToY(block_addr),
 						BlockAddrToZ(block_addr) );
-
-				active_grass_blocks_.push_back( grass_block );
 			}
 			else
 				grass_block= world_->UnactiveGrassBlock();
