@@ -47,6 +47,7 @@ h_World::h_World(
 	, phys_tick_count_( header->ticks != 0 ? header->ticks : g_world_start_tick )
 	, phys_thread_need_stop_(false)
 	, phys_thread_paused_(false)
+	, unactive_grass_block_( 0, 0, 1, false )
 {
 	const float c_initial_progress= 0.05f;
 	const float c_progress_for_generation= 0.2f;
@@ -310,6 +311,12 @@ void h_World::Build( short x, short y, short z, h_BlockType block_type )
 		s->SetLightLevel( H_MAX_FIRE_LIGHT );
 		ch->SetBlockAndTransparency( x, y, z, s, TRANSPARENCY_SOLID );
 		AddFireLight_r( x + X* H_CHUNK_WIDTH, y + Y* H_CHUNK_WIDTH, z, H_MAX_FIRE_LIGHT );
+	}
+	else if( block_type == h_BlockType::Grass )
+	{
+		h_Chunk* ch=GetChunk( X, Y );
+		h_GrassBlock* grass_block= ch->NewActiveGrassBlock( x, y, z );
+		ch->SetBlockAndTransparency( x, y, z, grass_block, TRANSPARENCY_SOLID );
 	}
 	else
 		GetChunk( X, Y )->
@@ -773,6 +780,7 @@ void h_World::PhysTick()
 			for( unsigned int x= active_area_margins_[0]; x < chunk_number_x_ - active_area_margins_[0]; x++ )
 				GetChunk( x, y )->ProcessFailingBlocks();
 		}
+		GrassPhysTick();
 		RelightWaterModifedChunksLight();
 
 		// player logic
@@ -966,6 +974,151 @@ bool h_World::WaterFlow( h_LiquidBlock* from, short to_x, short to_y, short to_z
 		}
 	}
 	return false;
+}
+
+void h_World::GrassPhysTick()
+{
+	const unsigned int c_reproducing_start_chance= m_Rand::max_rand / 4;
+	const unsigned int c_reproducing_do_chance= m_Rand::max_rand / 4;
+
+	for( unsigned int y= active_area_margins_[1]; y < chunk_number_y_ - active_area_margins_[1]; y++ )
+	for( unsigned int x= active_area_margins_[0]; x < chunk_number_x_ - active_area_margins_[0]; x++ )
+	{
+		h_Chunk* chunk= GetChunk( x, y );
+		int X= x << H_CHUNK_WIDTH_LOG2;
+		int Y= y << H_CHUNK_WIDTH_LOG2;
+
+		auto& blocks= chunk->active_grass_blocks_;
+		for( unsigned int i= 0; i < blocks.size(); )
+		{
+			h_GrassBlock* grass_block= blocks[i];
+
+			H_ASSERT( grass_block->IsActive() );
+			H_ASSERT( grass_block->GetZ() > 0 );
+
+			int block_addr= BlockAddr( grass_block->GetX(), grass_block->GetY(), grass_block->GetZ() );
+			H_ASSERT( block_addr <= H_CHUNK_WIDTH * H_CHUNK_WIDTH * H_CHUNK_HEIGHT );
+
+			H_ASSERT( chunk->blocks_[ block_addr ] == grass_block );
+
+			// Grass can exist only if upper block is air.
+			if( chunk->blocks_[ block_addr + 1 ]->Type() != h_BlockType::Air )
+			{
+				chunk->blocks_[ block_addr ]= NormalBlock( h_BlockType::Soil );
+
+				//chunk->active_grass_blocks_allocator_.Delete( grass_block );
+				delete grass_block;
+
+				if( i != blocks.size() - 1 ) blocks[i]= blocks.back();
+				blocks.pop_back();
+
+				renderer_->UpdateChunk( x, y );
+
+				continue;
+			}
+
+			if( phys_processes_rand_.Rand() <= c_reproducing_start_chance )
+			{
+				bool can_reproduce= false;
+
+				bool z_plus_2_block_is_air= chunk->blocks_[ block_addr + 2 ]->Type() == h_BlockType::Air;
+
+				int world_x= grass_block->GetX() + X;
+				int world_y= grass_block->GetY() + Y;
+
+				int forward_side_y= world_y + ( (world_x^1) & 1 );
+				int back_side_y= world_y - (world_x & 1);
+
+				int neighbors[6][2]=
+				{
+					{ world_x, world_y + 1 },
+					{ world_x, world_y - 1 },
+					{ world_x + 1, forward_side_y },
+					{ world_x + 1, back_side_y },
+					{ world_x - 1, forward_side_y },
+					{ world_x - 1, back_side_y },
+				};
+
+				for( unsigned int n= 0; n < 6; n++ )
+				{
+					int neinghbor_chunk_x= neighbors[n][0] >> H_CHUNK_WIDTH_LOG2;
+					int neinghbor_chunk_y= neighbors[n][1] >> H_CHUNK_WIDTH_LOG2;
+
+					h_Chunk* neighbor_chunk= GetChunk( neinghbor_chunk_x, neinghbor_chunk_y );
+
+					int local_x= neighbors[n][0] & (H_CHUNK_WIDTH-1);
+					int local_y= neighbors[n][1] & (H_CHUNK_WIDTH-1);
+					int neighbor_addr= BlockAddr( local_x, local_y, grass_block->GetZ() );
+					H_ASSERT( neighbor_addr <= H_CHUNK_WIDTH * H_CHUNK_WIDTH * H_CHUNK_HEIGHT );
+
+					h_BlockType z_minus_one_block_type= neighbor_chunk->blocks_[ neighbor_addr - 1 ]->Type();
+					h_BlockType neighbor_block_type   = neighbor_chunk->blocks_[ neighbor_addr     ]->Type();
+					h_BlockType z_plus_one_block_type = neighbor_chunk->blocks_[ neighbor_addr + 1 ]->Type();
+					h_BlockType z_plus_two_block_type = neighbor_chunk->blocks_[ neighbor_addr + 2 ]->Type();
+
+					if( z_minus_one_block_type == h_BlockType::Soil &&
+						neighbor_block_type    == h_BlockType::Air &&
+						z_plus_one_block_type  == h_BlockType::Air )
+					{
+						if( phys_processes_rand_.Rand() <= c_reproducing_do_chance )
+						{
+							neighbor_chunk->blocks_[ neighbor_addr - 1 ]=
+								neighbor_chunk->NewActiveGrassBlock(
+									local_x, local_y, grass_block->GetZ() - 1 );
+
+							renderer_->UpdateChunk( neinghbor_chunk_x, neinghbor_chunk_y );
+						}
+						can_reproduce= true;
+					}
+					if( neighbor_block_type    == h_BlockType::Soil &&
+						z_plus_one_block_type  == h_BlockType::Air )
+					{
+						if( phys_processes_rand_.Rand() <= c_reproducing_do_chance )
+						{
+							neighbor_chunk->blocks_[ neighbor_addr  ]=
+								neighbor_chunk->NewActiveGrassBlock(
+									local_x, local_y, grass_block->GetZ() );
+
+							renderer_->UpdateChunk( neinghbor_chunk_x, neinghbor_chunk_y );
+						}
+						can_reproduce= true;
+					}
+					if( z_plus_one_block_type  == h_BlockType::Soil &&
+						z_plus_two_block_type  == h_BlockType::Air &&
+						z_plus_2_block_is_air )
+					{
+						if( phys_processes_rand_.Rand() <= c_reproducing_do_chance )
+						{
+							neighbor_chunk->blocks_[ neighbor_addr + 1 ]=
+								neighbor_chunk->NewActiveGrassBlock(
+									local_x, local_y, grass_block->GetZ() + 1 );
+
+							renderer_->UpdateChunk( neinghbor_chunk_x, neinghbor_chunk_y );
+						}
+						can_reproduce= true;
+					}
+
+				} // for neighbors
+
+				if( !can_reproduce )
+				{
+					// Deactivate grass block
+					chunk->blocks_[ block_addr ]= &unactive_grass_block_;
+
+					//chunk->active_grass_blocks_allocator_.Delete( grass_block );
+					delete grass_block;
+
+					if( i != blocks.size() - 1 ) blocks[i]= blocks.back();
+					blocks.pop_back();
+
+					continue;
+				}
+
+			} // if rand
+
+			i++;
+		} // for grass blocks
+	} // for chunks
 }
 
 void h_World::InitNormalBlocks()
