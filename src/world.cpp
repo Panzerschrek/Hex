@@ -144,7 +144,7 @@ h_World::~h_World()
 void h_World::AddBuildEvent( short x, short y, short z, h_BlockType block_type )
 {
 	h_WorldAction act;
-	act.type= ACTION_BUILD;
+	act.type= h_WorldAction::Type::Build;
 	act.block_type= block_type;
 	act.coord[0]= x;
 	act.coord[1]= y;
@@ -157,7 +157,7 @@ void h_World::AddBuildEvent( short x, short y, short z, h_BlockType block_type )
 void h_World::AddDestroyEvent( short x, short y, short z )
 {
 	h_WorldAction act;
-	act.type= ACTION_DESTROY;
+	act.type= h_WorldAction::Type::Destroy;
 	act.coord[0]= x;
 	act.coord[1]= y;
 	act.coord[2]= z;
@@ -422,10 +422,16 @@ void h_World::FlushActionQueue()
 		h_WorldAction act= action_queue_[1].front();
 		action_queue_[1].pop();
 
-		if( act.type == ACTION_BUILD )
+		switch( act.type )
+		{
+		case h_WorldAction::Type::Build:
 			Build( act.coord[0], act.coord[1], act.coord[2], act.block_type );
-		else if( act.type == ACTION_DESTROY )
+			break;
+
+		case h_WorldAction::Type::Destroy:
 			Destroy( act.coord[0], act.coord[1], act.coord[2] );
+			break;
+		};
 	}
 }
 
