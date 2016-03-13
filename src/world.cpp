@@ -373,8 +373,7 @@ void h_World::Destroy( short x, short y, short z )
 			{
 				if( ch->active_grass_blocks_[i] == grass_block )
 				{
-					//chunk->active_grass_blocks_allocator_.Delete( grass_block );
-					delete ch->active_grass_blocks_[i];
+					ch->active_grass_blocks_allocator_.Delete( grass_block );
 
 					if( i != ch->active_grass_blocks_.size() - 1 )
 						ch->active_grass_blocks_[i]= ch->active_grass_blocks_.back();
@@ -1101,8 +1100,7 @@ void h_World::GrassPhysTick()
 			{
 				chunk->blocks_[ block_addr ]= NormalBlock( h_BlockType::Soil );
 
-				//chunk->active_grass_blocks_allocator_.Delete( grass_block );
-				delete grass_block;
+				chunk->active_grass_blocks_allocator_.Delete( grass_block );
 
 				if( i != blocks.size() - 1 ) blocks[i]= blocks.back();
 				blocks.pop_back();
@@ -1205,8 +1203,7 @@ void h_World::GrassPhysTick()
 					// Deactivate grass block
 					chunk->blocks_[ block_addr ]= &unactive_grass_block_;
 
-					//chunk->active_grass_blocks_allocator_.Delete( grass_block );
-					delete grass_block;
+					chunk->active_grass_blocks_allocator_.Delete( grass_block );
 
 					if( i != blocks.size() - 1 ) blocks[i]= blocks.back();
 					blocks.pop_back();

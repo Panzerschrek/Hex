@@ -39,9 +39,10 @@ h_Chunk::h_Chunk( h_World* world, int longitude, int latitude, const g_WorldGene
 	, need_update_light_(false)
 {
 	GenChunk( generator );
-	//PlantGrass();
+	PlantGrass();
 	PlantTrees( generator );
 	GenWaterBlocks();
+	ActivateGrass();
 	MakeLight();
 }
 
@@ -407,25 +408,36 @@ void h_Chunk::PlantBigTree( short x, short y, short z )
 	}
 }
 
-
 void h_Chunk::PlantGrass()
 {
-	//TODO - optomize
-	short x, y, z;
-	for( x= 0; x< H_CHUNK_WIDTH; x++ )
+	for( int x= 0; x< H_CHUNK_WIDTH; x++ )
+	for( int y= 0; y< H_CHUNK_WIDTH; y++ )
 	{
-		for( y= 0; y< H_CHUNK_WIDTH; y++ )
-		{
-			for( z= H_CHUNK_HEIGHT - 2; z> 0; z-- )
-				if ( GetBlock( x, y, z )->Type() != h_BlockType::Air )
-					break;
+		int addr= BlockAddr( x, y, 0 );
 
-			if( GetBlock( x, y, z )->Type() == h_BlockType::Soil )
+		for( int z= H_CHUNK_HEIGHT - 2; z > 0; z-- )
+			if ( blocks_[ addr + z ]->Type() != h_BlockType::Air )
 			{
-				h_GrassBlock* grass_block= NewActiveGrassBlock( x, y, z );
-				SetBlockAndTransparency( x, y, z, grass_block, TRANSPARENCY_SOLID );
+				if( blocks_[ addr + z ]->Type() == h_BlockType::Soil )
+				{
+					blocks_[ addr + z ]= world_->UnactiveGrassBlock();
+					transparency_[ addr + z ]= TRANSPARENCY_SOLID;
+				}
+				break;
 			}
-		}
+	}
+}
+
+void h_Chunk::ActivateGrass()
+{
+	for( int x= 0; x< H_CHUNK_WIDTH; x++ )
+	for( int y= 0; y< H_CHUNK_WIDTH; y++ )
+	{
+		int addr= BlockAddr( x, y, 0 );
+
+		for( int z= H_CHUNK_HEIGHT - 2; z > 0; z-- )
+			if ( blocks_[ addr + z ]->Type() == h_BlockType::Grass )
+				blocks_[ addr + z ]= NewActiveGrassBlock( x, y, z );
 	}
 }
 
@@ -546,11 +558,9 @@ void h_Chunk::DeleteLightSource( short x, short y, short z )
 
 h_GrassBlock* h_Chunk::NewActiveGrassBlock( unsigned char x, unsigned char y, unsigned char z )
 {
-	/*h_GrassBlock* grass_block=
+	h_GrassBlock* grass_block=
 		active_grass_blocks_allocator_.New(
-			x, y, z, true );*/
-
-	h_GrassBlock* grass_block= new h_GrassBlock( x, y, z, true );
+			x, y, z, true );
 
 	active_grass_blocks_.push_back( grass_block );
 
