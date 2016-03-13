@@ -47,6 +47,7 @@ h_World::h_World(
 	, phys_tick_count_( header->ticks != 0 ? header->ticks : g_world_start_tick )
 	, phys_thread_need_stop_(false)
 	, phys_thread_paused_(false)
+	, unactive_grass_block_( 0, 0, 1, false )
 {
 	const float c_initial_progress= 0.05f;
 	const float c_progress_for_generation= 0.2f;
@@ -311,6 +312,12 @@ void h_World::Build( short x, short y, short z, h_BlockType block_type )
 		ch->SetBlockAndTransparency( x, y, z, s, TRANSPARENCY_SOLID );
 		AddFireLight_r( x + X* H_CHUNK_WIDTH, y + Y* H_CHUNK_WIDTH, z, H_MAX_FIRE_LIGHT );
 	}
+	else if( block_type == h_BlockType::Grass )
+	{
+		h_Chunk* ch=GetChunk( X, Y );
+		h_GrassBlock* grass_block= ch->NewActiveGrassBlock( x, y, z );
+		ch->SetBlockAndTransparency( x, y, z, grass_block, TRANSPARENCY_SOLID );
+	}
 	else
 		GetChunk( X, Y )->
 		SetBlockAndTransparency(
@@ -326,6 +333,7 @@ void h_World::Build( short x, short y, short z, h_BlockType block_type )
 	UpdateWaterInRadius( X * H_CHUNK_WIDTH + x,Y * H_CHUNK_WIDTH + y, r );
 
 	CheckFailingBlock( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), z );
+	CheckBlockNeighbors( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), z );
 }
 
 void h_World::Destroy( short x, short y, short z )
@@ -337,12 +345,13 @@ void h_World::Destroy( short x, short y, short z )
 	x&= H_CHUNK_WIDTH - 1;
 	y&= H_CHUNK_WIDTH - 1;
 
-	h_Chunk* ch=GetChunk( X, Y );
-	if( ch->GetBlock( x, y, z )->Type() == h_BlockType::Water )
+	h_Chunk* ch= GetChunk( X, Y );
+	h_Block* block= ch->GetBlock( x, y, z );
+	if( block->Type() == h_BlockType::Water )
 	{
 
 	}
-	else if( ch->GetBlock( x, y, z )->Type() == h_BlockType::FireStone )
+	else if( block->Type() == h_BlockType::FireStone )
 	{
 		ch->DeleteLightSource( x, y, z );
 		ch->SetBlockAndTransparency(
@@ -352,6 +361,41 @@ void h_World::Destroy( short x, short y, short z )
 		RelightBlockRemove( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), z );
 		UpdateInRadius( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), H_MAX_FIRE_LIGHT );
 		UpdateWaterInRadius( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), H_MAX_FIRE_LIGHT );
+	}
+	else if( block->Type() == h_BlockType::Grass )
+	{
+		// Delete grass block from list of active grass blocks, if it is active.
+		h_GrassBlock* grass_block= static_cast<h_GrassBlock*>(block);
+		if( grass_block->IsActive() )
+		{
+			bool deleted= false;
+			for( unsigned int i= 0; i < ch->active_grass_blocks_.size(); i++ )
+			{
+				if( ch->active_grass_blocks_[i] == grass_block )
+				{
+					ch->active_grass_blocks_allocator_.Delete( grass_block );
+
+					if( i != ch->active_grass_blocks_.size() - 1 )
+						ch->active_grass_blocks_[i]= ch->active_grass_blocks_.back();
+
+					ch->active_grass_blocks_.pop_back();
+
+					deleted= true;
+					break;
+				}
+			}
+
+			(void)deleted;
+			H_ASSERT(deleted);
+		}
+
+		ch->SetBlockAndTransparency(
+			x, y, z,
+			NormalBlock( h_BlockType::Air ), TRANSPARENCY_AIR );
+
+		RelightBlockRemove( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), z );
+		UpdateInRadius( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), H_MAX_SUN_LIGHT );
+		UpdateWaterInRadius( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), H_MAX_SUN_LIGHT );
 	}
 	else
 	{
@@ -364,6 +408,7 @@ void h_World::Destroy( short x, short y, short z )
 	}
 
 	CheckFailingBlock( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), z + 1 );
+	CheckBlockNeighbors( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), z );
 }
 
 void h_World::FlushActionQueue()
@@ -404,6 +449,56 @@ void h_World::CheckFailingBlock( short x, short y, short z )
 		UpdateInRadius( x , y, H_MAX_FIRE_LIGHT );
 		UpdateWaterInRadius( x, y, H_MAX_FIRE_LIGHT );
 	}
+}
+
+void h_World::CheckBlockNeighbors( short x, short y, short z )
+{
+	int forward_side_y= y + ( (x^1) & 1 );
+	int back_side_y= y - (x & 1);
+
+	int neighbors[7][2]=
+	{
+		{ x, y },
+		{ x, y + 1 },
+		{ x, y - 1 },
+		{ x + 1, forward_side_y },
+		{ x + 1, back_side_y },
+		{ x - 1, forward_side_y },
+		{ x - 1, back_side_y },
+	};
+
+	for( unsigned int n= 0; n < 7; n++ )
+	{
+		int chunk_x= neighbors[n][0] >> H_CHUNK_WIDTH_LOG2;
+		int chunk_y= neighbors[n][1] >> H_CHUNK_WIDTH_LOG2;
+
+		h_Chunk* chunk= GetChunk( chunk_x, chunk_y );
+
+		int local_x= neighbors[n][0] & (H_CHUNK_WIDTH-1);
+		int local_y= neighbors[n][1] & (H_CHUNK_WIDTH-1);
+		int neighbor_addr= BlockAddr( local_x, local_y, 0 );
+
+		for( int neighbor_z= std::max(0, int(z) - 2);
+			 neighbor_z <= std::min(int(z) + 1, H_CHUNK_HEIGHT - 1);
+			 neighbor_z++ )
+		{
+			h_Block* block= chunk->blocks_[ neighbor_addr + neighbor_z ];
+			switch( block->Type() )
+			{
+				// Activate unactive grass blocks.
+				case h_BlockType::Grass:
+				{
+					h_GrassBlock* grass_block= static_cast<h_GrassBlock*>(block);
+					if( !grass_block->IsActive() )
+						chunk->blocks_[ neighbor_addr + neighbor_z ]=
+							chunk->NewActiveGrassBlock( local_x, local_y, neighbor_z );
+				}
+				break;
+
+				default: break;
+			};
+		} // for z
+	} // for xy neighbors
 }
 
 void h_World::UpdateInRadius( short x, short y, short r )
@@ -773,6 +868,7 @@ void h_World::PhysTick()
 			for( unsigned int x= active_area_margins_[0]; x < chunk_number_x_ - active_area_margins_[0]; x++ )
 				GetChunk( x, y )->ProcessFailingBlocks();
 		}
+		GrassPhysTick();
 		RelightWaterModifedChunksLight();
 
 		// player logic
@@ -966,6 +1062,158 @@ bool h_World::WaterFlow( h_LiquidBlock* from, short to_x, short to_y, short to_z
 		}
 	}
 	return false;
+}
+
+void h_World::GrassPhysTick()
+{
+	const unsigned int c_reproducing_start_chance= m_Rand::max_rand / 16;
+	const unsigned int c_reproducing_do_chance= m_Rand::max_rand / 6;
+	const unsigned char c_min_light_for_grass_reproducing= H_MAX_SUN_LIGHT / 2;
+
+	m_Vec3 sun_vector= calendar_.GetSunVector( phys_tick_count_, GetGlobalWorldLatitude() );
+	unsigned char current_sun_multiplier= sun_vector.z > std::sin( 4.0f * m_Math::deg2rad ) ? 1 : 0;
+
+	for( unsigned int y= active_area_margins_[1]; y < chunk_number_y_ - active_area_margins_[1]; y++ )
+	for( unsigned int x= active_area_margins_[0]; x < chunk_number_x_ - active_area_margins_[0]; x++ )
+	{
+		h_Chunk* chunk= GetChunk( x, y );
+		int X= x << H_CHUNK_WIDTH_LOG2;
+		int Y= y << H_CHUNK_WIDTH_LOG2;
+
+		auto& blocks= chunk->active_grass_blocks_;
+		for( unsigned int i= 0; i < blocks.size(); )
+		{
+			h_GrassBlock* grass_block= blocks[i];
+
+			H_ASSERT( grass_block->IsActive() );
+			H_ASSERT( grass_block->GetZ() > 0 );
+
+			int block_addr= BlockAddr( grass_block->GetX(), grass_block->GetY(), grass_block->GetZ() );
+			H_ASSERT( block_addr <= H_CHUNK_WIDTH * H_CHUNK_WIDTH * H_CHUNK_HEIGHT );
+
+			H_ASSERT( chunk->blocks_[ block_addr ] == grass_block );
+
+			// Grass can exist only if upper block is air.
+			if( chunk->blocks_[ block_addr + 1 ]->Type() != h_BlockType::Air )
+			{
+				chunk->blocks_[ block_addr ]= NormalBlock( h_BlockType::Soil );
+
+				chunk->active_grass_blocks_allocator_.Delete( grass_block );
+
+				if( i != blocks.size() - 1 ) blocks[i]= blocks.back();
+				blocks.pop_back();
+
+				renderer_->UpdateChunk( x, y );
+
+				continue;
+			}
+
+			unsigned char light=
+				chunk-> sun_light_map_[ block_addr + 1 ] * current_sun_multiplier +
+				chunk->fire_light_map_[ block_addr + 1 ];
+
+			if( light >= c_min_light_for_grass_reproducing &&
+				phys_processes_rand_.Rand() <= c_reproducing_start_chance )
+			{
+				bool can_reproduce= false;
+
+				bool z_plus_2_block_is_air= chunk->blocks_[ block_addr + 2 ]->Type() == h_BlockType::Air;
+
+				int world_x= grass_block->GetX() + X;
+				int world_y= grass_block->GetY() + Y;
+
+				int forward_side_y= world_y + ( (world_x^1) & 1 );
+				int back_side_y= world_y - (world_x & 1);
+
+				int neighbors[6][2]=
+				{
+					{ world_x, world_y + 1 },
+					{ world_x, world_y - 1 },
+					{ world_x + 1, forward_side_y },
+					{ world_x + 1, back_side_y },
+					{ world_x - 1, forward_side_y },
+					{ world_x - 1, back_side_y },
+				};
+
+				for( unsigned int n= 0; n < 6; n++ )
+				{
+					int neinghbor_chunk_x= neighbors[n][0] >> H_CHUNK_WIDTH_LOG2;
+					int neinghbor_chunk_y= neighbors[n][1] >> H_CHUNK_WIDTH_LOG2;
+
+					h_Chunk* neighbor_chunk= GetChunk( neinghbor_chunk_x, neinghbor_chunk_y );
+
+					int local_x= neighbors[n][0] & (H_CHUNK_WIDTH-1);
+					int local_y= neighbors[n][1] & (H_CHUNK_WIDTH-1);
+					int neighbor_addr= BlockAddr( local_x, local_y, grass_block->GetZ() );
+					H_ASSERT( neighbor_addr <= H_CHUNK_WIDTH * H_CHUNK_WIDTH * H_CHUNK_HEIGHT );
+
+					h_BlockType z_minus_one_block_type= neighbor_chunk->blocks_[ neighbor_addr - 1 ]->Type();
+					h_BlockType neighbor_block_type   = neighbor_chunk->blocks_[ neighbor_addr     ]->Type();
+					h_BlockType z_plus_one_block_type = neighbor_chunk->blocks_[ neighbor_addr + 1 ]->Type();
+					h_BlockType z_plus_two_block_type = neighbor_chunk->blocks_[ neighbor_addr + 2 ]->Type();
+
+					if( z_minus_one_block_type == h_BlockType::Soil &&
+						neighbor_block_type    == h_BlockType::Air &&
+						z_plus_one_block_type  == h_BlockType::Air )
+					{
+						if( phys_processes_rand_.Rand() <= c_reproducing_do_chance )
+						{
+							neighbor_chunk->blocks_[ neighbor_addr - 1 ]=
+								neighbor_chunk->NewActiveGrassBlock(
+									local_x, local_y, grass_block->GetZ() - 1 );
+
+							renderer_->UpdateChunk( neinghbor_chunk_x, neinghbor_chunk_y );
+						}
+						can_reproduce= true;
+					}
+					if( neighbor_block_type    == h_BlockType::Soil &&
+						z_plus_one_block_type  == h_BlockType::Air )
+					{
+						if( phys_processes_rand_.Rand() <= c_reproducing_do_chance )
+						{
+							neighbor_chunk->blocks_[ neighbor_addr  ]=
+								neighbor_chunk->NewActiveGrassBlock(
+									local_x, local_y, grass_block->GetZ() );
+
+							renderer_->UpdateChunk( neinghbor_chunk_x, neinghbor_chunk_y );
+						}
+						can_reproduce= true;
+					}
+					if( z_plus_one_block_type  == h_BlockType::Soil &&
+						z_plus_two_block_type  == h_BlockType::Air &&
+						z_plus_2_block_is_air )
+					{
+						if( phys_processes_rand_.Rand() <= c_reproducing_do_chance )
+						{
+							neighbor_chunk->blocks_[ neighbor_addr + 1 ]=
+								neighbor_chunk->NewActiveGrassBlock(
+									local_x, local_y, grass_block->GetZ() + 1 );
+
+							renderer_->UpdateChunk( neinghbor_chunk_x, neinghbor_chunk_y );
+						}
+						can_reproduce= true;
+					}
+
+				} // for neighbors
+
+				if( !can_reproduce )
+				{
+					// Deactivate grass block
+					chunk->blocks_[ block_addr ]= &unactive_grass_block_;
+
+					chunk->active_grass_blocks_allocator_.Delete( grass_block );
+
+					if( i != blocks.size() - 1 ) blocks[i]= blocks.back();
+					blocks.pop_back();
+
+					continue;
+				}
+
+			} // if rand
+
+			i++;
+		} // for grass blocks
+	} // for chunks
 }
 
 void h_World::InitNormalBlocks()

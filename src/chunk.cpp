@@ -4,6 +4,27 @@
 #include "math_lib/rand.hpp"
 #include "world_generator/world_generator.hpp"
 
+inline unsigned char BlockAddrToX( unsigned int block_addr )
+{
+	H_ASSERT( block_addr < H_CHUNK_WIDTH * H_CHUNK_WIDTH * H_CHUNK_HEIGHT );
+
+	return block_addr >> (H_CHUNK_WIDTH_LOG2 + H_CHUNK_HEIGHT_LOG2);
+}
+
+inline unsigned char BlockAddrToY( unsigned int block_addr )
+{
+	H_ASSERT( block_addr < H_CHUNK_WIDTH * H_CHUNK_WIDTH * H_CHUNK_HEIGHT );
+
+	return (block_addr >> H_CHUNK_HEIGHT_LOG2) & (H_CHUNK_WIDTH-1);
+}
+
+inline unsigned char BlockAddrToZ( unsigned int block_addr )
+{
+	H_ASSERT( block_addr < H_CHUNK_WIDTH * H_CHUNK_WIDTH * H_CHUNK_HEIGHT );
+
+	return block_addr & (H_CHUNK_HEIGHT-1);
+}
+
 // Check point in chunk relative coordinates.
 inline static bool InChunkBorders( int x, int y )
 {
@@ -21,6 +42,7 @@ h_Chunk::h_Chunk( h_World* world, int longitude, int latitude, const g_WorldGene
 	PlantGrass();
 	PlantTrees( generator );
 	GenWaterBlocks();
+	ActivateGrass();
 	MakeLight();
 }
 
@@ -57,7 +79,6 @@ void h_Chunk::SaveBlock( QDataStream& stream, const h_Block* block )
 	case h_BlockType::Stone:
 	case h_BlockType::Soil:
 	case h_BlockType::Wood:
-	case h_BlockType::Grass:
 	case h_BlockType::Sand:
 	case h_BlockType::Foliage:
 	case h_BlockType::FireStone:
@@ -75,6 +96,10 @@ void h_Chunk::SaveBlock( QDataStream& stream, const h_Block* block )
 
 			// TODO - save other failing block data
 		}
+		break;
+
+	case h_BlockType::Grass:
+		stream << static_cast< const h_GrassBlock* >(block)->IsActive();
 		break;
 
 	case h_BlockType::NumBlockTypes:
@@ -99,7 +124,6 @@ h_Block* h_Chunk::LoadBlock( QDataStream& stream, unsigned int block_addr )
 	case h_BlockType::Stone:
 	case h_BlockType::Soil:
 	case h_BlockType::Wood:
-	case h_BlockType::Grass:
 	case h_BlockType::Sand:
 	case h_BlockType::Foliage:
 	case h_BlockType::Brick:
@@ -109,9 +133,9 @@ h_Block* h_Chunk::LoadBlock( QDataStream& stream, unsigned int block_addr )
 	case h_BlockType::FireStone:
 		{
 			h_LightSource* light_source= new h_LightSource( h_BlockType::FireStone, H_MAX_FIRE_LIGHT );
-			light_source->x_= block_addr >> (H_CHUNK_WIDTH_LOG2 + H_CHUNK_HEIGHT_LOG2);
-			light_source->y_= (block_addr >> H_CHUNK_HEIGHT_LOG2) & (H_CHUNK_WIDTH-1);
-			light_source->z_= block_addr & (H_CHUNK_HEIGHT-1);
+			light_source->x_= BlockAddrToX(block_addr);
+			light_source->y_= BlockAddrToY(block_addr);
+			light_source->z_= BlockAddrToZ(block_addr);
 
 			light_source_list_.push_back( light_source );
 
@@ -126,9 +150,9 @@ h_Block* h_Chunk::LoadBlock( QDataStream& stream, unsigned int block_addr )
 			unsigned short water_level;
 			stream >> water_level;
 
-			liquid_block->x_= block_addr >> (H_CHUNK_WIDTH_LOG2 + H_CHUNK_HEIGHT_LOG2);
-			liquid_block->y_= (block_addr >> H_CHUNK_HEIGHT_LOG2) & (H_CHUNK_WIDTH-1);
-			liquid_block->z_= block_addr & (H_CHUNK_HEIGHT-1);
+			liquid_block->x_= BlockAddrToX(block_addr);
+			liquid_block->y_= BlockAddrToY(block_addr);
+			liquid_block->z_= BlockAddrToZ(block_addr);
 
 			liquid_block->SetLiquidLevel( water_level );
 			water_block_list_.Add( liquid_block );
@@ -142,13 +166,35 @@ h_Block* h_Chunk::LoadBlock( QDataStream& stream, unsigned int block_addr )
 			h_FailingBlock* failing_block=
 				failing_blocks_alocatior_.New(
 					LoadBlock( stream, block_addr ),
-					block_addr >> (H_CHUNK_WIDTH_LOG2 + H_CHUNK_HEIGHT_LOG2),
-					(block_addr >> H_CHUNK_HEIGHT_LOG2) & (H_CHUNK_WIDTH-1),
-					block_addr & (H_CHUNK_HEIGHT-1) );
+					BlockAddrToX(block_addr),
+					BlockAddrToY(block_addr),
+					BlockAddrToZ(block_addr) );
 
 			failing_blocks_.push_back( failing_block );
 
 			block= failing_block;
+		}
+		break;
+
+	case h_BlockType::Grass:
+		{
+			h_GrassBlock* grass_block;
+			bool is_active;
+
+			stream >> is_active;
+
+			if( is_active )
+			{
+				grass_block=
+					NewActiveGrassBlock(
+						BlockAddrToX(block_addr),
+						BlockAddrToY(block_addr),
+						BlockAddrToZ(block_addr) );
+			}
+			else
+				grass_block= world_->UnactiveGrassBlock();
+
+			block= grass_block;
 		}
 		break;
 
@@ -362,22 +408,36 @@ void h_Chunk::PlantBigTree( short x, short y, short z )
 	}
 }
 
-
 void h_Chunk::PlantGrass()
 {
-	//TODO - optomize
-	short x, y, z;
-	for( x= 0; x< H_CHUNK_WIDTH; x++ )
+	for( int x= 0; x< H_CHUNK_WIDTH; x++ )
+	for( int y= 0; y< H_CHUNK_WIDTH; y++ )
 	{
-		for( y= 0; y< H_CHUNK_WIDTH; y++ )
-		{
-			for( z= H_CHUNK_HEIGHT - 2; z> 0; z-- )
-				if ( GetBlock( x, y, z )->Type() != h_BlockType::Air )
-					break;
+		int addr= BlockAddr( x, y, 0 );
 
-			if( GetBlock( x, y, z )->Type() == h_BlockType::Soil )
-				SetBlockAndTransparency( x, y, z, world_->NormalBlock( h_BlockType::Grass ), TRANSPARENCY_SOLID );
-		}
+		for( int z= H_CHUNK_HEIGHT - 2; z > 0; z-- )
+			if ( blocks_[ addr + z ]->Type() != h_BlockType::Air )
+			{
+				if( blocks_[ addr + z ]->Type() == h_BlockType::Soil )
+				{
+					blocks_[ addr + z ]= world_->UnactiveGrassBlock();
+					transparency_[ addr + z ]= TRANSPARENCY_SOLID;
+				}
+				break;
+			}
+	}
+}
+
+void h_Chunk::ActivateGrass()
+{
+	for( int x= 0; x< H_CHUNK_WIDTH; x++ )
+	for( int y= 0; y< H_CHUNK_WIDTH; y++ )
+	{
+		int addr= BlockAddr( x, y, 0 );
+
+		for( int z= H_CHUNK_HEIGHT - 2; z > 0; z-- )
+			if ( blocks_[ addr + z ]->Type() == h_BlockType::Grass )
+				blocks_[ addr + z ]= NewActiveGrassBlock( x, y, z );
 	}
 }
 
@@ -494,6 +554,17 @@ void h_Chunk::DeleteLightSource( short x, short y, short z )
 			break;
 		}
 	}
+}
+
+h_GrassBlock* h_Chunk::NewActiveGrassBlock( unsigned char x, unsigned char y, unsigned char z )
+{
+	h_GrassBlock* grass_block=
+		active_grass_blocks_allocator_.New(
+			x, y, z, true );
+
+	active_grass_blocks_.push_back( grass_block );
+
+	return grass_block;
 }
 
 void h_Chunk::ProcessFailingBlocks()

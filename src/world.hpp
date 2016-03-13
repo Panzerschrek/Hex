@@ -91,6 +91,7 @@ private:
 	void FlushActionQueue();
 
 	void CheckFailingBlock( short x, short y, short z );
+	void CheckBlockNeighbors( short x, short y, short z );
 
 	void UpdateInRadius( short x, short y, short r );//update chunks in square [x-r;x+r] [y-r;x+r]
 	void UpdateWaterInRadius( short x, short y, short r );//update chunks water in square [x-r;x+r] [y-r;x+r]
@@ -140,9 +141,11 @@ private:
 	void WaterPhysTick();
 	bool WaterFlow( h_LiquidBlock* from, short to_x, short to_y, short to_z ); //returns true if chunk was midifed
 	bool WaterFlowDown( h_LiquidBlock* from, short to_x, short to_y, short to_z );
-	bool WaterFlowUp( h_LiquidBlock* from, short to_x, short to_y, short to_z );
+
+	void GrassPhysTick();
 
 	h_Block* NormalBlock( h_BlockType block_type );
+	h_GrassBlock* UnactiveGrassBlock();
 	// h_Block* WaterBlock( unsigned char water_level= MAX_WATER_LEVEL );
 	void InitNormalBlocks();
 
@@ -168,8 +171,6 @@ private:
 	r_IWorldRenderer* renderer_= nullptr;
 	h_Player* player_= nullptr;
 
-	h_Block normal_blocks_[ size_t(h_BlockType::NumBlockTypes) ];
-
 	unsigned int phys_tick_count_;
 	std::unique_ptr< std::thread > phys_thread_;
 	std::atomic<bool> phys_thread_need_stop_;
@@ -186,6 +187,11 @@ private:
 	int test_mob_target_pos_[3];
 	unsigned int test_mob_last_think_tick_= 0;
 	m_Vec3 test_mob_pos_;
+
+	// All arrays - put at the end of class.
+
+	h_Block normal_blocks_[ size_t(h_BlockType::NumBlockTypes) ];
+	h_GrassBlock unactive_grass_block_;
 
 	// Chunks matrix. chunk(x, y)= chunks_[ x + y * H_MAX_CHUNKS ]
 	h_Chunk* chunks_[ H_MAX_CHUNKS * H_MAX_CHUNKS ];
@@ -230,6 +236,11 @@ inline const h_Chunk* h_World::GetChunk( short X, short Y ) const
 inline h_Block* h_World::NormalBlock( h_BlockType block_type )
 {
 	return &normal_blocks_[ (int)block_type ];
+}
+
+inline h_GrassBlock* h_World::UnactiveGrassBlock()
+{
+	return &unactive_grass_block_;
 }
 
 inline short h_World::ClampX( short x ) const

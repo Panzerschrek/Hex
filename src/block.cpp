@@ -210,7 +210,7 @@ const h_Block* h_FailingBlock::GetBlock() const
 }
 
 void h_FailingBlock::Tick()
-{	
+{
 	static const fixed16_t c_acceleration= 3 << 8;
 	static const unsigned int c_tick_of_max_speed= 40;
 
@@ -239,6 +239,42 @@ unsigned char h_FailingBlock::GetY() const
 }
 
 fixed16_t h_FailingBlock::GetZ() const
+{
+	return z_;
+}
+
+/*
+----------------h_GrassBlock--------------
+*/
+
+h_GrassBlock::h_GrassBlock(
+	unsigned char x, unsigned char y, unsigned char z,
+	bool active )
+	: h_Block( h_BlockType::Grass )
+	, x_(x), y_(y), z_(z)
+	, active_(active)
+{
+	H_ASSERT( x < H_CHUNK_WIDTH );
+	H_ASSERT( y < H_CHUNK_WIDTH );
+	H_ASSERT( z >= 1 && z < H_CHUNK_HEIGHT - 1 );
+}
+
+bool h_GrassBlock::IsActive() const
+{
+	return active_;
+}
+
+unsigned char h_GrassBlock::GetX() const
+{
+	return x_;
+}
+
+unsigned char h_GrassBlock::GetY() const
+{
+	return y_;
+}
+
+unsigned char h_GrassBlock::GetZ() const
 {
 	return z_;
 }

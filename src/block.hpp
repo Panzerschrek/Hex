@@ -70,3 +70,22 @@ private:
 	unsigned int failig_start_ticks_;
 	fixed16_t z_;
 };
+
+class h_GrassBlock : public h_Block
+{
+public:
+	h_GrassBlock(
+		unsigned char x, unsigned char y, unsigned char z,
+		bool active );
+
+	bool IsActive() const;
+
+	// Coordinates - inside chunk.
+	unsigned char GetX() const;
+	unsigned char GetY() const;
+	unsigned char GetZ() const;
+
+private:
+	const unsigned char x_, y_, z_;
+	const bool active_;
+};

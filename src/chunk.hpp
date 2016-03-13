@@ -65,6 +65,7 @@ private:
 	void PlantTree( short x, short y, short z );//local coordinates
 	void PlantBigTree( short x, short y, short z );//local coordinates
 	void PlantGrass();
+	void ActivateGrass();
 	unsigned int CalculateWaterBlockCount();
 	void GenWaterBlocks();
 	void MakeLight();
@@ -76,6 +77,8 @@ private:
 //lights management
 	h_LightSource* NewLightSource( short x, short y, short z, h_BlockType type );
 	void DeleteLightSource( short x, short y, short z );
+
+	h_GrassBlock* NewActiveGrassBlock( unsigned char x, unsigned char y, unsigned char z );
 
 	void ProcessFailingBlocks();
 
@@ -100,6 +103,12 @@ private:
 	// failing blocks management
 	SmallObjectsAllocator< h_FailingBlock, 32, unsigned char > failing_blocks_alocatior_;
 	std::vector<h_FailingBlock*> failing_blocks_;
+
+	// Active grass. Grass blocks, which can reproduce, placed here.
+	// If grass block has no free space around, it becomes "unactive".
+	// Unactive block is unique object, placed in h_World. See h_World::unactive_grass_block_.
+	SmallObjectsAllocator< h_GrassBlock, 64, unsigned char > active_grass_blocks_allocator_;
+	std::vector<h_GrassBlock*> active_grass_blocks_;
 
 	//light management
 	std::vector< h_LightSource* > light_source_list_;
