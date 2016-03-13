@@ -1073,8 +1073,6 @@ void h_World::GrassPhysTick()
 	m_Vec3 sun_vector= calendar_.GetSunVector( phys_tick_count_, GetGlobalWorldLatitude() );
 	unsigned char current_sun_multiplier= sun_vector.z > std::sin( 4.0f * m_Math::deg2rad ) ? 1 : 0;
 
-	unsigned int active_grass_blocks_count= 0;
-
 	for( unsigned int y= active_area_margins_[1]; y < chunk_number_y_ - active_area_margins_[1]; y++ )
 	for( unsigned int x= active_area_margins_[0]; x < chunk_number_x_ - active_area_margins_[0]; x++ )
 	{
@@ -1215,11 +1213,7 @@ void h_World::GrassPhysTick()
 
 			i++;
 		} // for grass blocks
-
-		active_grass_blocks_count+= blocks.size();
 	} // for chunks
-
-	h_Console::Info( "Active grass blocks: ", active_grass_blocks_count );
 }
 
 void h_World::InitNormalBlocks()
