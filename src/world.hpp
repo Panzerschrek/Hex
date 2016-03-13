@@ -90,7 +90,6 @@ private:
 	void Destroy( short x, short y, short z );
 	void FlushActionQueue();
 
-	void CheckFailingBlock( short x, short y, short z );
 	void CheckBlockNeighbors( short x, short y, short z );
 
 	void UpdateInRadius( short x, short y, short r );//update chunks in square [x-r;x+r] [y-r;x+r]
@@ -146,7 +145,7 @@ private:
 
 	h_Block* NormalBlock( h_BlockType block_type );
 	h_GrassBlock* UnactiveGrassBlock();
-	// h_Block* WaterBlock( unsigned char water_level= MAX_WATER_LEVEL );
+
 	void InitNormalBlocks();
 
 private:

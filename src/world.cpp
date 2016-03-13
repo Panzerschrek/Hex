@@ -143,8 +143,6 @@ h_World::~h_World()
 
 void h_World::AddBuildEvent( short x, short y, short z, h_BlockType block_type )
 {
-	action_queue_mutex_.lock();
-
 	h_WorldAction act;
 	act.type= ACTION_BUILD;
 	act.block_type= block_type;
@@ -152,24 +150,20 @@ void h_World::AddBuildEvent( short x, short y, short z, h_BlockType block_type )
 	act.coord[1]= y;
 	act.coord[2]= z;
 
+	std::lock_guard< std::mutex > lock(action_queue_mutex_);
 	action_queue_[0].push( act );
-
-	action_queue_mutex_.unlock();
 }
 
 void h_World::AddDestroyEvent( short x, short y, short z )
 {
-	action_queue_mutex_.lock();
-
 	h_WorldAction act;
 	act.type= ACTION_DESTROY;
 	act.coord[0]= x;
 	act.coord[1]= y;
 	act.coord[2]= z;
 
+	std::lock_guard< std::mutex > lock(action_queue_mutex_);
 	action_queue_[0].push( act );
-
-	action_queue_mutex_.unlock();
 }
 
 void h_World::Blast( short x, short y, short z, short radius )
@@ -288,52 +282,54 @@ void h_World::Build( short x, short y, short z, h_BlockType block_type )
 	if( !CanBuild( x, y, z ) )
 		return;
 
-	short X= x>> H_CHUNK_WIDTH_LOG2, Y = y>> H_CHUNK_WIDTH_LOG2;
+	int local_x= x & (H_CHUNK_WIDTH - 1);
+	int local_y= y & (H_CHUNK_WIDTH - 1);
 
-	x&= H_CHUNK_WIDTH - 1;
-	y&= H_CHUNK_WIDTH - 1;
+	int chunk_x= x >> H_CHUNK_WIDTH_LOG2;
+	int chunk_y= y >> H_CHUNK_WIDTH_LOG2;
+
 	if( block_type == h_BlockType::Water )
 	{
 		h_LiquidBlock* b;
-		h_Chunk* ch=GetChunk( X, Y );
+		h_Chunk* ch= GetChunk( chunk_x, chunk_y );
 		ch-> SetBlockAndTransparency(
-			x, y, z,
+			local_x, local_y, z,
 			b= ch->NewWaterBlock(), TRANSPARENCY_LIQUID );
 
-		b->x_= x;
-		b->y_= y;
+		b->x_= local_x;
+		b->y_= local_y;
 		b->z_= z;
 	}
 	else if( block_type == h_BlockType::FireStone )
 	{
-		h_Chunk* ch=GetChunk( X, Y );
-		h_LightSource* s= ch->NewLightSource( x, y, z, h_BlockType::FireStone );
+		h_Chunk* ch= GetChunk( chunk_x, chunk_y );
+		h_LightSource* s= ch->NewLightSource( local_x, local_y, z, h_BlockType::FireStone );
 		s->SetLightLevel( H_MAX_FIRE_LIGHT );
-		ch->SetBlockAndTransparency( x, y, z, s, TRANSPARENCY_SOLID );
-		AddFireLight_r( x + X* H_CHUNK_WIDTH, y + Y* H_CHUNK_WIDTH, z, H_MAX_FIRE_LIGHT );
+
+		ch->SetBlockAndTransparency( local_x, local_y, z, s, TRANSPARENCY_SOLID );
+		AddFireLight_r( x, y, z, H_MAX_FIRE_LIGHT );
 	}
 	else if( block_type == h_BlockType::Grass )
 	{
-		h_Chunk* ch=GetChunk( X, Y );
-		h_GrassBlock* grass_block= ch->NewActiveGrassBlock( x, y, z );
-		ch->SetBlockAndTransparency( x, y, z, grass_block, TRANSPARENCY_SOLID );
+		h_Chunk* ch= GetChunk( chunk_x, chunk_y );
+		h_GrassBlock* grass_block= ch->NewActiveGrassBlock( local_x, local_y, z );
+		ch->SetBlockAndTransparency( local_x, local_y, z, grass_block, TRANSPARENCY_SOLID );
 	}
 	else
-		GetChunk( X, Y )->
+		GetChunk( chunk_x, chunk_y )->
 		SetBlockAndTransparency(
-			x, y, z,
+			local_x, local_y, z,
 			NormalBlock( block_type ),
 			NormalBlock( block_type )->Transparency() );
 
 	short r= 1;
 	if( block_type != h_BlockType::Water )
-		r= RelightBlockAdd( X * H_CHUNK_WIDTH + x,Y * H_CHUNK_WIDTH + y, z ) + 1;
+		r= RelightBlockAdd( x, y, z ) + 1;
 
-	UpdateInRadius( X * H_CHUNK_WIDTH + x,Y * H_CHUNK_WIDTH + y, r );
-	UpdateWaterInRadius( X * H_CHUNK_WIDTH + x,Y * H_CHUNK_WIDTH + y, r );
+	UpdateInRadius( x, y, r );
+	UpdateWaterInRadius( x, y, r );
 
-	CheckFailingBlock( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), z );
-	CheckBlockNeighbors( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), z );
+	CheckBlockNeighbors( x, y, z );
 }
 
 void h_World::Destroy( short x, short y, short z )
@@ -341,26 +337,30 @@ void h_World::Destroy( short x, short y, short z )
 	if( !InBorders( x, y, z ) )
 		return;
 
-	short X= x>> H_CHUNK_WIDTH_LOG2, Y = y>> H_CHUNK_WIDTH_LOG2;
-	x&= H_CHUNK_WIDTH - 1;
-	y&= H_CHUNK_WIDTH - 1;
+	int local_x= x & (H_CHUNK_WIDTH - 1);
+	int local_y= y & (H_CHUNK_WIDTH - 1);
 
-	h_Chunk* ch= GetChunk( X, Y );
-	h_Block* block= ch->GetBlock( x, y, z );
+	int chunk_x= x >> H_CHUNK_WIDTH_LOG2;
+	int chunk_y= y >> H_CHUNK_WIDTH_LOG2;
+
+	h_Chunk* ch= GetChunk( chunk_x, chunk_y );
+	h_Block* block= ch->GetBlock( local_x, local_y, z );
 	if( block->Type() == h_BlockType::Water )
 	{
 
 	}
 	else if( block->Type() == h_BlockType::FireStone )
 	{
-		ch->DeleteLightSource( x, y, z );
+		ch->DeleteLightSource( local_x, local_y, z );
 		ch->SetBlockAndTransparency(
-			x, y, z,
+			local_x, local_y, z,
 			NormalBlock( h_BlockType::Air ), TRANSPARENCY_AIR );
-		RelightBlockAdd( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), z );
-		RelightBlockRemove( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), z );
-		UpdateInRadius( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), H_MAX_FIRE_LIGHT );
-		UpdateWaterInRadius( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), H_MAX_FIRE_LIGHT );
+
+		RelightBlockAdd( x, y, z );
+
+		RelightBlockRemove( x, y, z );
+		UpdateInRadius( x, y, H_MAX_FIRE_LIGHT );
+		UpdateWaterInRadius( x, y, H_MAX_FIRE_LIGHT );
 	}
 	else if( block->Type() == h_BlockType::Grass )
 	{
@@ -390,25 +390,25 @@ void h_World::Destroy( short x, short y, short z )
 		}
 
 		ch->SetBlockAndTransparency(
-			x, y, z,
+			local_x, local_y, z,
 			NormalBlock( h_BlockType::Air ), TRANSPARENCY_AIR );
 
-		RelightBlockRemove( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), z );
-		UpdateInRadius( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), H_MAX_SUN_LIGHT );
-		UpdateWaterInRadius( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), H_MAX_SUN_LIGHT );
+		RelightBlockRemove( x, y, z );
+		UpdateInRadius( x, y, H_MAX_FIRE_LIGHT );
+		UpdateWaterInRadius( x, y, H_MAX_FIRE_LIGHT );
 	}
 	else
 	{
 		ch->SetBlockAndTransparency(
-			x, y, z,
+			local_x, local_y, z,
 			NormalBlock( h_BlockType::Air ), TRANSPARENCY_AIR );
-		RelightBlockRemove( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), z );
-		UpdateInRadius( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), H_MAX_SUN_LIGHT );
-		UpdateWaterInRadius( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), H_MAX_SUN_LIGHT );
+
+		RelightBlockRemove( x, y, z );
+		UpdateInRadius( x, y, H_MAX_FIRE_LIGHT );
+		UpdateWaterInRadius( x, y, H_MAX_FIRE_LIGHT );
 	}
 
-	CheckFailingBlock( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), z + 1 );
-	CheckBlockNeighbors( x + (X<< H_CHUNK_WIDTH_LOG2), y + (Y<< H_CHUNK_WIDTH_LOG2), z );
+	CheckBlockNeighbors( x, y, z );
 }
 
 void h_World::FlushActionQueue()
@@ -426,28 +426,6 @@ void h_World::FlushActionQueue()
 			Build( act.coord[0], act.coord[1], act.coord[2], act.block_type );
 		else if( act.type == ACTION_DESTROY )
 			Destroy( act.coord[0], act.coord[1], act.coord[2] );
-	}
-}
-
-void h_World::CheckFailingBlock( short x, short y, short z )
-{
-	short X= x>> H_CHUNK_WIDTH_LOG2;
-	short Y= y>> H_CHUNK_WIDTH_LOG2;
-	short local_x= x & (H_CHUNK_WIDTH - 1);
-	short local_y= y & (H_CHUNK_WIDTH - 1);
-
-	h_Chunk* ch= GetChunk( X, Y );
-
-	h_Block* b= ch->GetBlock( local_x, local_y, z );
-	if( b->Type() == h_BlockType::Sand && z >= 1 && ch->GetBlock( local_x, local_y, z - 1)->Type() == h_BlockType::Air )
-	{
-		h_FailingBlock* failing_block= ch->failing_blocks_alocatior_.New( b, local_x, local_y, z );
-		ch->failing_blocks_.push_back(failing_block);
-		ch->SetBlockAndTransparency( local_x, local_y, z, failing_block, TRANSPARENCY_AIR );
-
-		RelightBlockRemove( x, y, z );
-		UpdateInRadius( x , y, H_MAX_FIRE_LIGHT );
-		UpdateWaterInRadius( x, y, H_MAX_FIRE_LIGHT );
 	}
 }
 
@@ -495,6 +473,22 @@ void h_World::CheckBlockNeighbors( short x, short y, short z )
 				}
 				break;
 
+				// If there is air under sand block - sand must fail.
+				case h_BlockType::Sand:
+				{
+					if( chunk->blocks_[ neighbor_addr + neighbor_z - 1 ]->Type() == h_BlockType::Air )
+					{
+						h_FailingBlock* failing_block= chunk->failing_blocks_alocatior_.New( block, local_x, local_y, neighbor_z );
+						chunk->failing_blocks_.push_back( failing_block );
+						chunk->SetBlockAndTransparency( local_x, local_y, neighbor_z, failing_block, TRANSPARENCY_AIR );
+
+						RelightBlockRemove( neighbors[n][0], neighbors[n][1], neighbor_z );
+						UpdateInRadius( neighbors[n][0], neighbors[n][1], H_MAX_FIRE_LIGHT );
+						UpdateWaterInRadius( neighbors[n][0], neighbors[n][1], H_MAX_FIRE_LIGHT );
+					}
+				}
+				break;
+
 				default: break;
 			};
 		} // for z
@@ -514,8 +508,8 @@ void h_World::UpdateInRadius( short x, short y, short r )
 	y_min>>= H_CHUNK_WIDTH_LOG2;
 	y_max>>= H_CHUNK_WIDTH_LOG2;
 	for( short i= x_min; i<= x_max; i++ )
-		for( short j= y_min; j<= y_max; j++ )
-			renderer_->UpdateChunk( i, j );
+	for( short j= y_min; j<= y_max; j++ )
+		renderer_->UpdateChunk( i, j );
 }
 
 void h_World::UpdateWaterInRadius( short x, short y, short r )
@@ -531,8 +525,8 @@ void h_World::UpdateWaterInRadius( short x, short y, short r )
 	y_min>>= H_CHUNK_WIDTH_LOG2;
 	y_max>>= H_CHUNK_WIDTH_LOG2;
 	for( short i= x_min; i<= x_max; i++ )
-		for( short j= y_min; j<= y_max; j++ )
-			renderer_->UpdateChunkWater( i, j );
+	for( short j= y_min; j<= y_max; j++ )
+		renderer_->UpdateChunkWater( i, j );
 }
 
 void h_World::MoveWorld( h_WorldMoveDirection dir )

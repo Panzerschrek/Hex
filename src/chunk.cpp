@@ -290,8 +290,7 @@ void h_Chunk::PlantTree( short x, short y, short z )
 	{
 		if( InChunkBorders( x, y ) )
 		{
-			SetTransparency( x, y, h, TRANSPARENCY_SOLID );
-			SetBlock( x, y, h, world_->NormalBlock( h_BlockType::Wood ) );
+			SetBlockAndTransparency( x, y, h, world_->NormalBlock( h_BlockType::Wood ), TRANSPARENCY_SOLID );
 		}
 
 		if( h - z > 1 )
@@ -605,8 +604,8 @@ void h_Chunk::ProcessFailingBlocks()
 				blocks_[ block_addr + new_z ]= b;
 			}
 
-			// Check block, upper for this, which can start fail.
-			world_->CheckFailingBlock( global_x, global_y, old_z + 1 );
+			// Check block, upper for this, which can start fail, or do something else.
+			world_->CheckBlockNeighbors( global_x, global_y, old_z + 1 );
 		}
 		i++;
 	}
