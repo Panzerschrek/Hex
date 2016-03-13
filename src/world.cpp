@@ -1069,6 +1069,10 @@ void h_World::GrassPhysTick()
 {
 	const unsigned int c_reproducing_start_chance= m_Rand::max_rand / 16;
 	const unsigned int c_reproducing_do_chance= m_Rand::max_rand / 6;
+	const unsigned char c_min_light_for_grass_reproducing= H_MAX_SUN_LIGHT / 2;
+
+	m_Vec3 sun_vector= calendar_.GetSunVector( phys_tick_count_, GetGlobalWorldLatitude() );
+	unsigned char current_sun_multiplier= sun_vector.z > std::sin( 4.0f * m_Math::deg2rad ) ? 1 : 0;
 
 	unsigned int active_grass_blocks_count= 0;
 
@@ -1108,7 +1112,12 @@ void h_World::GrassPhysTick()
 				continue;
 			}
 
-			if( phys_processes_rand_.Rand() <= c_reproducing_start_chance )
+			unsigned char light=
+				chunk-> sun_light_map_[ block_addr + 1 ] * current_sun_multiplier +
+				chunk->fire_light_map_[ block_addr + 1 ];
+
+			if( light >= c_min_light_for_grass_reproducing &&
+				phys_processes_rand_.Rand() <= c_reproducing_start_chance )
 			{
 				bool can_reproduce= false;
 
