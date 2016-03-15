@@ -22,6 +22,10 @@ static const ui_Key g_backward_key= ui_Key::S;
 static const ui_Key g_left_key= ui_Key::A;
 static const ui_Key g_right_key= ui_Key::D;
 
+/*
+---------------ui_BlockSelectMenu----------------
+*/
+
 class ui_BlockSelectMenu final : public ui_MenuBase
 {
 public:
@@ -35,8 +39,8 @@ public:
 		: ui_MenuBase( parent, x, y, sx, sy )
 		, block_select_callback_(block_select_callback)
 	{
-		unsigned int column= 1;
-		unsigned int row= 2;
+		int column= 1;
+		int row= 2;
 
 		ui_Style title_style= c_ui_texts_style;
 		title_style.text_alignment= ui_Style::TextAlignment::Left;
@@ -48,7 +52,7 @@ public:
 			std::unique_ptr<ui_Button> button(
 				new ui_Button(
 					h_Block::GetBlockName(static_cast<h_BlockType>(i)),
-					column, row + 1 + ( i - (((unsigned int)h_BlockType::Air) + 1 ) ),
+					column, row + 1 + int( i - (((unsigned int)h_BlockType::Air) + 1 ) ),
 					8, 1,
 					c_ui_main_style ) );
 
@@ -80,6 +84,10 @@ private:
 	std::vector< std::unique_ptr<ui_Button> > buttons_;
 };
 
+/*
+---------------ui_EscMenu----------------
+*/
+
 class ui_EscMenu final : public ui_MenuBase
 {
 public:
@@ -91,8 +99,8 @@ public:
 		: ui_MenuBase( parent, x, y, sx, sy )
 		, main_loop_(main_loop)
 	{
-		unsigned int row, column;
-		const unsigned int c_button_half_width= 5;
+		int row, column;
+		const int c_button_half_width= 5;
 		row= SizeY() / ui_Base::CellSize() / 2 - 1;
 		column= SizeX() / ui_Base::CellSize() / 2 - c_button_half_width;
 
@@ -146,6 +154,11 @@ private:
 	std::unique_ptr<ui_Button> resume_button_;
 	std::unique_ptr<ui_Button> quit_to_main_menu_button_;
 };
+
+
+/*
+---------------ui_IngameMenu----------------
+*/
 
 ui_IngameMenu::ui_IngameMenu(
 	int sx, int sy,

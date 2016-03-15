@@ -26,11 +26,15 @@ ui_SettingsMenu::ui_SettingsMenu( ui_MenuBase* parent, const h_SettingsPtr setti
 
 	int center_cell_x= ui_MenuBase::size_x_ / (2*ui_Base::CellSize());
 	int center_cell_y= ui_MenuBase::size_y_ / (2*ui_Base::CellSize());
+	const int c_text_size= 10;
 
-	int punkt_row= center_cell_y-4;
+	int punkt_row= center_cell_y - 4;
 
-	text_textures_size_.reset( new ui_Text( "", center_cell_x-10, punkt_row, 10, 1, c_ui_texts_style ) );
-	slider_textures_size_.reset( new ui_Slider( center_cell_x, punkt_row, 8, 1.0f, c_ui_main_style ) );
+	ui_Style texts_style= c_ui_texts_style;
+	texts_style.text_alignment= ui_Style::TextAlignment::Right;
+
+	text_textures_size_.reset( new ui_Text( "", center_cell_x - c_text_size - 1, punkt_row, c_text_size, 1, texts_style ) );
+	slider_textures_size_.reset( new ui_Slider( center_cell_x, punkt_row, 1 + g_textures_size_step, 1.0f, c_ui_main_style ) );
 	slider_textures_size_->SetInvStep( g_textures_size_step );
 	slider_textures_size_->SetCallback( [this] { OnTexturesSizeSlider(); } );
 
@@ -40,9 +44,19 @@ ui_SettingsMenu::ui_SettingsMenu( ui_MenuBase* parent, const h_SettingsPtr setti
 
 	punkt_row++;
 
+	fullscreen_text_.reset( new ui_Text( "fullscreen" , center_cell_x - c_text_size - 1, punkt_row, c_text_size, 1, texts_style ) );
+	fullscreen_checkbox_.reset( new ui_Checkbox( center_cell_x, punkt_row, settings_->GetBool(h_SettingsKeys::fullscreen), c_ui_main_style ) );
+	fullscreen_checkbox_->SetCallback(
+		[this]
+		{
+			settings_->SetSetting( h_SettingsKeys::fullscreen, fullscreen_checkbox_->GetState() );
+		} );
+
 	ui_MenuBase::elements_.push_back( button_back_.get() );
 	ui_MenuBase::elements_.push_back( text_textures_size_.get() );
 	ui_MenuBase::elements_.push_back( slider_textures_size_.get() );
+	ui_MenuBase::elements_.push_back( fullscreen_text_.get() );
+	ui_MenuBase::elements_.push_back( fullscreen_checkbox_.get() );
 }
 
 ui_SettingsMenu::~ui_SettingsMenu()

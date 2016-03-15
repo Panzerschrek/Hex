@@ -5,10 +5,10 @@
 ui_LoadingMenu::ui_LoadingMenu( unsigned int size_x, unsigned int size_y )
 	: ui_MenuBase( nullptr, 0, 0, size_x, size_y )
 {
-	const unsigned int c_half_width= 8;
+	const int c_half_width= 8;
 
-	unsigned int column= size_x / ui_Base::CellSize() / 2 - c_half_width;
-	unsigned int row= size_y / ui_Base::CellSize() / 2 - 2;
+	int column= size_x / ui_Base::CellSize() / 2 - c_half_width;
+	int row= size_y / ui_Base::CellSize() / 2 - 2;
 
 	loading_text_.reset( new ui_Text( "", column, row, c_half_width * 2, 1, c_ui_texts_style ) );
 	row++;

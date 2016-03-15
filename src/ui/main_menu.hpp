@@ -22,6 +22,9 @@ private:
 
 	std::unique_ptr<ui_Text> text_textures_size_;
 	std::unique_ptr<ui_Slider> slider_textures_size_;
+
+	std::unique_ptr<ui_Text> fullscreen_text_;
+	std::unique_ptr<ui_Checkbox> fullscreen_checkbox_;
 };
 
 class ui_MainMenu : public ui_MenuBase

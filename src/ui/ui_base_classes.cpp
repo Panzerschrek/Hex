@@ -422,7 +422,7 @@ void ui_Button::Draw( ui_Painter* painter ) const
 ui_Checkbox::ui_Checkbox( int cell_x, int cell_y, bool state, const ui_Style& style )
 	: ui_Base(
 		cell_x * ui_Base::CellSize() + ui_Base::CellOffset(), cell_y * ui_Base::CellSize() + ui_Base::CellOffset(),
-		(cell_x+1) * ui_Base::CellSize() + ui_Base::CellOffset(), (cell_y+1) * ui_Base::CellSize() + ui_Base::CellOffset(),
+		 ui_Base::CellSize() - 2*ui_Base::CellOffset(), ui_Base::CellSize() -2*ui_Base::CellOffset(),
 		style )
 	, flag_(state)
 	, callback_()
@@ -450,7 +450,7 @@ void ui_Checkbox::Draw( ui_Painter* painter ) const
 {
 	ui_Vertex triangles[ 64 ];
 
-	int co= ui_Base::CellOffset() * 3 / 2;
+	int co= ui_Base::CellOffset();
 	int vertex_count= GenElementFraming( triangles, co );
 	if( flag_ )
 	{
