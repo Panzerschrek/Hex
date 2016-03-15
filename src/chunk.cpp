@@ -582,19 +582,34 @@ void h_Chunk::ProcessFailingBlocks()
 			int global_x= b->GetX() + ( (longitude_ - world_->Longitude()) << H_CHUNK_WIDTH_LOG2 );
 			int global_y= b->GetY() + ( (latitude_  - world_->Latitude ()) << H_CHUNK_WIDTH_LOG2 );
 
-			if( blocks_[ block_addr + old_z - 1 ]->Type() != h_BlockType::Air )
+			h_Block* lower_block= blocks_[ block_addr + old_z - 1 ];
+			if( lower_block->Type() != h_BlockType::Air )
 			{
-				blocks_[ block_addr + old_z ]= b->GetBlock();
-				transparency_[ block_addr + old_z ]= b->GetBlock()->Transparency();
+				// failing blocks can fall to water.
+				if( lower_block->Type() == h_BlockType::Water )
+				{
+					h_LiquidBlock* water_block= static_cast<h_LiquidBlock*>(lower_block);
+					water_block->z_= old_z;
 
-				world_->UpdateInRadius(
-					global_x, global_y,
-					world_->RelightBlockAdd( global_x, global_y, old_z ) );
+					blocks_[ block_addr + old_z ]= water_block;
+					blocks_[ block_addr + new_z ]= b;
 
-				if( i != failing_blocks_.size() - 1 )
-					failing_blocks_[i]= failing_blocks_.back();
-				failing_blocks_.pop_back();
-				failing_blocks_alocatior_.Delete( b );
+					world_->UpdateWaterInRadius( global_x, global_y, new_z );
+				}
+				else
+				{
+					blocks_[ block_addr + old_z ]= b->GetBlock();
+					transparency_[ block_addr + old_z ]= b->GetBlock()->Transparency();
+
+					world_->UpdateInRadius(
+						global_x, global_y,
+						world_->RelightBlockAdd( global_x, global_y, old_z ) );
+
+					if( i != failing_blocks_.size() - 1 )
+						failing_blocks_[i]= failing_blocks_.back();
+					failing_blocks_.pop_back();
+					failing_blocks_alocatior_.Delete( b );
+				}
 
 				continue;
 			}

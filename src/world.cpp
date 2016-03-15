@@ -484,7 +484,8 @@ void h_World::CheckBlockNeighbors( short x, short y, short z )
 				// If there is air under sand block - sand must fail.
 				case h_BlockType::Sand:
 				{
-					if( chunk->blocks_[ neighbor_addr + neighbor_z - 1 ]->Type() == h_BlockType::Air )
+					h_BlockType lower_block_type= chunk->blocks_[ neighbor_addr + neighbor_z - 1 ]->Type();
+					if( lower_block_type == h_BlockType::Air || lower_block_type == h_BlockType::Water )
 					{
 						h_FailingBlock* failing_block= chunk->failing_blocks_alocatior_.New( block, local_x, local_y, neighbor_z );
 						chunk->failing_blocks_.push_back( failing_block );
