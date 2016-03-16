@@ -571,6 +571,7 @@ void h_Chunk::ProcessFailingBlocks()
 	for( unsigned int i= 0; i < failing_blocks_.size(); )
 	{
 		h_FailingBlock* b= failing_blocks_[i];
+		i++;
 
 		unsigned char old_z= b->GetZ() >> 16;
 		b->Tick();
@@ -605,13 +606,12 @@ void h_Chunk::ProcessFailingBlocks()
 						global_x, global_y,
 						world_->RelightBlockAdd( global_x, global_y, old_z ) );
 
+					i--;
 					if( i != failing_blocks_.size() - 1 )
 						failing_blocks_[i]= failing_blocks_.back();
 					failing_blocks_.pop_back();
 					failing_blocks_alocatior_.Delete( b );
 				}
-
-				continue;
 			}
 			else
 			{
@@ -620,9 +620,8 @@ void h_Chunk::ProcessFailingBlocks()
 			}
 
 			// Check block, upper for this, which can start fail, or do something else.
-			world_->CheckBlockNeighbors( global_x, global_y, old_z + 1 );
+			world_->CheckBlockNeighbors( global_x, global_y, old_z );
 		}
-		i++;
 	}
 }
 
