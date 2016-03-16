@@ -47,8 +47,8 @@ public:
 	short Longitude() const;
 	short Latitude () const;
 
-	// Add events. Thread safe.
-	void AddBuildEvent( short x, short y, short z, h_BlockType block_type );//coordinates - relative
+	// Add events. Thread safe. Coordinates - global.
+	void AddBuildEvent( short x, short y, short z, h_BlockType block_type );
 	void AddDestroyEvent( short x, short y, short z );
 
 	//replace all blocks in radius in this layer( z=const )

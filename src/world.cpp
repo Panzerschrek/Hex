@@ -424,6 +424,10 @@ void h_World::FlushActionQueue()
 		h_WorldAction act= action_queue_[1].front();
 		action_queue_[1].pop();
 
+		// global coordinates to local
+		act.coord[0]-= longitude_ << H_CHUNK_WIDTH_LOG2;
+		act.coord[1]-= latitude_  << H_CHUNK_WIDTH_LOG2;
+
 		switch( act.type )
 		{
 		case h_WorldAction::Type::Build:

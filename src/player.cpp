@@ -219,10 +219,7 @@ void h_Player::Build()
 {
 	if( build_block_ != h_BlockType::Unknown && build_direction_ != h_Direction::Unknown )
 	{
-		world_->AddBuildEvent(
-			discret_build_pos_[0] - world_->Longitude() * H_CHUNK_WIDTH,
-			discret_build_pos_[1] - world_->Latitude () * H_CHUNK_WIDTH,
-			discret_build_pos_[2], build_block_ );
+		world_->AddBuildEvent( discret_build_pos_[0], discret_build_pos_[1], discret_build_pos_[2], build_block_ );
 	}
 }
 
@@ -274,10 +271,7 @@ void h_Player::Dig()
 		default: break;
 		};
 
-		world_->AddDestroyEvent(
-			dig_pos[0] - world_->Longitude() * H_CHUNK_WIDTH,
-			dig_pos[1] - world_->Latitude () * H_CHUNK_WIDTH,
-			dig_pos[2] );
+		world_->AddDestroyEvent( dig_pos[0], dig_pos[1], dig_pos[2] );
 	}
 }
 
