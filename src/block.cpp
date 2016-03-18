@@ -5,22 +5,6 @@
 #include "hex.hpp"
 #include "block.hpp"
 
-
-static constexpr h_CombinedTransparency GetCombinedTransparency(
-	const h_VisibleTransparency visible_transparency,
-	bool direct_sun_light_transparency,
-	bool secondary_sun_light_transparency,
-	bool fire_light_transaprency )
-{
-	return
-		visible_transparency |
-		( h_CombinedTransparency(direct_sun_light_transparency   ) << 2 ) |
-		( h_CombinedTransparency(secondary_sun_light_transparency) << 3 ) |
-		( h_CombinedTransparency(fire_light_transaprency         ) << 4 );
-}
-
-// Structure for block properties, used in heavy-loaded algorithms (lighting, water flow, grass reproducing, etc. ).
-// Make this size of this struct so small, as you can.
 struct BlockProperties
 {
 	h_VisibleTransparency default_transparency;
@@ -34,6 +18,15 @@ struct BlockProperties
 
 static_assert( sizeof(BlockProperties) == 2, "Unexpected size" );
 
+static constexpr h_CombinedTransparency GetCombinedTransparency( const BlockProperties& properties )
+{
+	return
+		properties.default_transparency |
+		( h_CombinedTransparency(properties.transparent_for_direct_sun_light   ) << 2 ) |
+		( h_CombinedTransparency(properties.transparent_for_secondary_sun_light) << 3 ) |
+		( h_CombinedTransparency(properties.transparent_for_fire_light         ) << 4 );
+}
+
 // Properties of all common blocks.
 // Preprocesor used for compile-time initialization, because it fails on structures copying.
 #define g_trivial_blocks_properties \
@@ -46,8 +39,7 @@ static_assert( sizeof(BlockProperties) == 2, "Unexpected size" );
 	.is_technical= false,\
 }
 
-// We need this table in ReadOnly section of result eecutable file.
-static const BlockProperties g_blocks_properties[ size_t(h_BlockType::NumBlockTypes) ]=
+static const constexpr BlockProperties g_blocks_properties[ size_t(h_BlockType::NumBlockTypes) ]=
 {
 	[size_t(h_BlockType::Air)]=
 	{
@@ -128,23 +120,22 @@ static const BlockProperties g_blocks_properties[ size_t(h_BlockType::NumBlockTy
 	},
 };
 
-// TODO - make better way to convert enum to string. Preprocessor, for example.
-#define MACRO_TO_STR(X) #X
+static const constexpr h_CombinedTransparency g_blocks_combined_transparency[ size_t(h_BlockType::NumBlockTypes) ]=
+{
+
+#define BLOCK_PROCESS_FUNC(x) [size_t(h_BlockType::x)]= GetCombinedTransparency( g_blocks_properties[size_t(h_BlockType::x)] )
+#include "blocks_list.hpp"
+#undef BLOCK_PROCESS_FUNC
+
+};
 
 static const char* const g_block_names[ size_t(h_BlockType::NumBlockTypes) ]=
 {
-	MACRO_TO_STR(Air),
-	MACRO_TO_STR(SphericalBlock),
-	MACRO_TO_STR(Stone),
-	MACRO_TO_STR(Soil),
-	MACRO_TO_STR(Wood),
-	MACRO_TO_STR(Grass),
-	MACRO_TO_STR(Water),
-	MACRO_TO_STR(Sand),
-	MACRO_TO_STR(Foliage),
-	MACRO_TO_STR(FireStone),
-	MACRO_TO_STR(Brick),
-	MACRO_TO_STR(FailingBlock),
+
+#define BLOCK_PROCESS_FUNC(x) #x
+#include "blocks_list.hpp"
+#undef BLOCK_PROCESS_FUNC
+
 };
 
 static const char* const g_block_type_unknown= "Unknown";
@@ -216,12 +207,7 @@ h_Direction h_Block::GetDirectionByName( const char* name )
 h_Block::h_Block( h_BlockType type, unsigned short additional_data )
 	: type_(type)
 	, additional_data_(additional_data)
-	, combined_transparency_(
-		GetCombinedTransparency(
-			g_blocks_properties[ size_t(type_) ].default_transparency,
-			g_blocks_properties[ size_t(type_) ].transparent_for_direct_sun_light,
-			g_blocks_properties[ size_t(type_) ].transparent_for_secondary_sun_light,
-			g_blocks_properties[ size_t(type_) ].transparent_for_fire_light ) )
+	, combined_transparency_( g_blocks_combined_transparency[ size_t(type) ] )
 {}
 
 h_BlockType h_Block::Type() const

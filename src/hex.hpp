@@ -39,26 +39,18 @@
 #define H_MAX_SUN_LIGHT 8
 #define H_MAX_FIRE_LIGHT 13
 
-// Put new block types at the end of list.
 enum class h_BlockType : unsigned short
 {
-	Air= 0,//MUST BE 0
-	SphericalBlock= 1, // MUST BE 1
-	Stone,
-	Soil,
-	Wood,
-	Grass,
-	Water,
-	Sand,
-	Foliage,
-	FireStone,
-	Brick,
 
-	FailingBlock,
+#define BLOCK_PROCESS_FUNC(x) x
+#include "blocks_list.hpp"
+#undef BLOCK_PROCESS_FUNC
 
 	NumBlockTypes,
 	Unknown= 65535
 };
+
+static_assert( int(h_BlockType::Air) == 0, "Air must be zero" );
 
 /* COORDINATE SYSTEM:
   __

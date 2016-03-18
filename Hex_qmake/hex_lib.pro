@@ -62,7 +62,8 @@ HEADERS += \
     ../src/math_lib/math.hpp \
     ../src/math_lib/rand.hpp \
     ../src/time.hpp \
-    ../src/ui/loading_menu.hpp
+    ../src/ui/loading_menu.hpp \
+    ../src/blocks_list.hpp
 
 SOURCES += \
     ../src/block.cpp \
