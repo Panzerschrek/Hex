@@ -464,9 +464,9 @@ void h_Player::Move( const m_Vec3& delta, const p_WorldPhysMesh& phys_mesh )
 				new_pos.x= collide_pos.x;
 				new_pos.y= collide_pos.y;
 
-				// Zero speed component, perpendicalar to this side.
+				// Zero speed component, perpendicalar to this side, but only if speed vector directed to block.
 				const m_Vec3& normal= g_block_normals[ static_cast<size_t>(side.dir) ];
-				speed_-= ( speed_ * normal ) * normal;
+				speed_-= std::min( 0.0f, speed_ * normal ) * normal;
 			}
 		}
 	}
