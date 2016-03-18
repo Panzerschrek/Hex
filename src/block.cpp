@@ -5,23 +5,137 @@
 #include "hex.hpp"
 #include "block.hpp"
 
-// TODO - make better way to convert enum to string. Preprocessor, for example.
-#define MACRO_TO_STR(X) #X
+struct BlockProperties
+{
+	h_VisibleTransparency default_transparency;
+
+	bool transparent_for_fire_light : 1;
+	bool transparent_for_direct_sun_light : 1;
+	bool transparent_for_secondary_sun_light : 1;
+	bool is_failing : 1;
+	bool is_technical : 1;
+};
+
+static_assert( sizeof(BlockProperties) == 2, "Unexpected size" );
+
+static constexpr h_CombinedTransparency GetCombinedTransparency( const BlockProperties& properties )
+{
+	return
+		properties.default_transparency |
+		( h_CombinedTransparency(properties.transparent_for_direct_sun_light   ) << 2 ) |
+		( h_CombinedTransparency(properties.transparent_for_secondary_sun_light) << 3 ) |
+		( h_CombinedTransparency(properties.transparent_for_fire_light         ) << 4 );
+}
+
+// Properties of all common blocks.
+// Preprocesor used for compile-time initialization, because it fails on structures copying.
+#define g_trivial_blocks_properties \
+{\
+	.default_transparency= TRANSPARENCY_SOLID,\
+	.transparent_for_fire_light= false,\
+	.transparent_for_direct_sun_light= false,\
+	.transparent_for_secondary_sun_light= false,\
+	.is_failing= false,\
+	.is_technical= false,\
+}
+
+static const constexpr BlockProperties g_blocks_properties[ size_t(h_BlockType::NumBlockTypes) ]=
+{
+	[size_t(h_BlockType::Air)]=
+	{
+		.default_transparency= TRANSPARENCY_AIR,
+		.transparent_for_fire_light= true,
+		.transparent_for_direct_sun_light= true,
+		.transparent_for_secondary_sun_light= true,
+		.is_failing= false,
+		.is_technical= false,
+	},
+
+	[size_t(h_BlockType::SphericalBlock)]=
+	g_trivial_blocks_properties,
+
+	[size_t(h_BlockType::Stone)]=
+	g_trivial_blocks_properties,
+
+	[size_t(h_BlockType::Soil)]=
+	g_trivial_blocks_properties,
+
+	[size_t(h_BlockType::Wood)]=
+	g_trivial_blocks_properties,
+
+	[size_t(h_BlockType::Grass)]=
+	g_trivial_blocks_properties,
+
+	[size_t(h_BlockType::Water)]=
+	{
+		.default_transparency= TRANSPARENCY_LIQUID,
+		.transparent_for_fire_light= true,
+		.transparent_for_direct_sun_light= false,
+		.transparent_for_secondary_sun_light= true,
+		.is_failing= false,
+		.is_technical= false,
+	},
+
+	[size_t(h_BlockType::Sand)]=
+	{
+		.default_transparency= TRANSPARENCY_SOLID,
+		.transparent_for_fire_light= false,
+		.transparent_for_direct_sun_light= false,
+		.transparent_for_secondary_sun_light= false,
+		.is_failing= true,
+		.is_technical= false,
+	},
+
+	[size_t(h_BlockType::Foliage)]=
+	{
+		.default_transparency= TRANSPARENCY_GREENERY,
+		.transparent_for_fire_light= true,
+		.transparent_for_direct_sun_light= false,
+		.transparent_for_secondary_sun_light= true,
+		.is_failing= true,
+		.is_technical= false,
+	},
+
+	[size_t(h_BlockType::FireStone)]=
+	{
+		.default_transparency= TRANSPARENCY_SOLID,
+		.transparent_for_fire_light= false,
+		.transparent_for_direct_sun_light= false,
+		.transparent_for_secondary_sun_light= false,
+		.is_failing= false,
+		.is_technical= false,
+	},
+
+	[size_t(h_BlockType::Brick)]=
+	g_trivial_blocks_properties,
+
+	[size_t(h_BlockType::FailingBlock)]=
+	{
+		.default_transparency= TRANSPARENCY_AIR,
+		.transparent_for_fire_light= true,
+		.transparent_for_direct_sun_light= true,
+		.transparent_for_secondary_sun_light= true,
+		.is_failing= false, // this property has no sense for failing block
+		.is_technical= true,
+	},
+};
+
+static const constexpr h_CombinedTransparency g_blocks_combined_transparency[ size_t(h_BlockType::NumBlockTypes) ]=
+{
+
+#define BLOCK_PROCESS_FUNC(x) [size_t(h_BlockType::x)]= GetCombinedTransparency( g_blocks_properties[size_t(h_BlockType::x)] )
+#include "blocks_list.hpp"
+#undef BLOCK_PROCESS_FUNC
+
+};
 
 static const char* const g_block_names[ size_t(h_BlockType::NumBlockTypes) ]=
 {
-	MACRO_TO_STR(Air),
-	MACRO_TO_STR(SphericalBlock),
-	MACRO_TO_STR(Stone),
-	MACRO_TO_STR(Soil),
-	MACRO_TO_STR(Wood),
-	MACRO_TO_STR(Grass),
-	MACRO_TO_STR(Water),
-	MACRO_TO_STR(Sand),
-	MACRO_TO_STR(Foliage),
-	MACRO_TO_STR(FireStone),
-	MACRO_TO_STR(Brick),
-	MACRO_TO_STR(FailingBlock),
+
+#define BLOCK_PROCESS_FUNC(x) #x
+#include "blocks_list.hpp"
+#undef BLOCK_PROCESS_FUNC
+
 };
 
 static const char* const g_block_type_unknown= "Unknown";
@@ -93,6 +207,7 @@ h_Direction h_Block::GetDirectionByName( const char* name )
 h_Block::h_Block( h_BlockType type, unsigned short additional_data )
 	: type_(type)
 	, additional_data_(additional_data)
+	, combined_transparency_( g_blocks_combined_transparency[ size_t(type) ] )
 {}
 
 h_BlockType h_Block::Type() const
@@ -100,28 +215,9 @@ h_BlockType h_Block::Type() const
 	return type_;
 }
 
-h_TransparencyType h_Block::Transparency() const
+h_CombinedTransparency h_Block::CombinedTransparency() const
 {
-	switch(type_)
-	{
-	case h_BlockType::Air:
-		return TRANSPARENCY_AIR;
-
-	case h_BlockType::Foliage:
-		return TRANSPARENCY_GREENERY;
-
-	case h_BlockType::Water:
-		return TRANSPARENCY_LIQUID;
-
-	case h_BlockType::FireStone:
-		return TRANSPARENCY_SOLID;
-
-	case h_BlockType::FailingBlock:
-		return TRANSPARENCY_AIR;
-
-	default:
-		return TRANSPARENCY_SOLID;
-	};
+	return combined_transparency_;
 }
 
 unsigned short h_Block::AdditionalData() const

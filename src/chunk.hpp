@@ -85,7 +85,8 @@ private:
 	void SetSunLightLevel( short x, short y, short z, unsigned char l );
 	void SetFireLightLevel( short x, short y, short z, unsigned char l );
 
-	void SetBlockAndTransparency( short x, short y, short z, h_Block* b, h_TransparencyType t );
+	void SetBlock( short x, short y, short z, h_Block* b );
+	void SetBlock( unsigned int addr, h_Block* b );
 
 private:
 	h_World* const world_;
@@ -112,10 +113,10 @@ private:
 	std::vector< h_LightSource* > light_source_list_;
 
 	// Large arrays - put back.
-	h_Block* blocks_             [ H_CHUNK_WIDTH * H_CHUNK_WIDTH * H_CHUNK_HEIGHT ];
-	unsigned char transparency_  [ H_CHUNK_WIDTH * H_CHUNK_WIDTH * H_CHUNK_HEIGHT ];
-	unsigned char sun_light_map_ [ H_CHUNK_WIDTH * H_CHUNK_WIDTH * H_CHUNK_HEIGHT ];
-	unsigned char fire_light_map_[ H_CHUNK_WIDTH * H_CHUNK_WIDTH * H_CHUNK_HEIGHT ];
+	h_Block* blocks_                     [ H_CHUNK_WIDTH * H_CHUNK_WIDTH * H_CHUNK_HEIGHT ];
+	h_CombinedTransparency transparency_ [ H_CHUNK_WIDTH * H_CHUNK_WIDTH * H_CHUNK_HEIGHT ];
+	unsigned char sun_light_map_         [ H_CHUNK_WIDTH * H_CHUNK_WIDTH * H_CHUNK_HEIGHT ];
+	unsigned char fire_light_map_        [ H_CHUNK_WIDTH * H_CHUNK_WIDTH * H_CHUNK_HEIGHT ];
 
 	unsigned char height_map_    [ H_CHUNK_WIDTH * H_CHUNK_WIDTH ];//z coordinates of first nonair block
 };
@@ -241,7 +242,7 @@ inline void h_Chunk::SetFireLightLevel( short x, short y, short z, unsigned char
 	fire_light_map_[ BlockAddr( x, y, z ) ]= l;
 }
 
-inline void h_Chunk::SetBlockAndTransparency( short x, short y, short z, h_Block* b, h_TransparencyType t )
+inline void h_Chunk::SetBlock( short x, short y, short z, h_Block* b )
 {
 	H_ASSERT( x >= 0 && x < H_CHUNK_WIDTH );
 	H_ASSERT( y >= 0 && y < H_CHUNK_WIDTH );
@@ -249,6 +250,14 @@ inline void h_Chunk::SetBlockAndTransparency( short x, short y, short z, h_Block
 
 	short addr= BlockAddr( x, y, z );
 
-	transparency_[addr]= t;
+	transparency_[addr]= b->CombinedTransparency();
+	blocks_[addr]= b;
+}
+
+inline void h_Chunk::SetBlock( unsigned int addr, h_Block* b )
+{
+	H_ASSERT( addr < H_CHUNK_WIDTH * H_CHUNK_WIDTH * H_CHUNK_HEIGHT );
+
+	transparency_[addr]= b->CombinedTransparency();
 	blocks_[addr]= b;
 }

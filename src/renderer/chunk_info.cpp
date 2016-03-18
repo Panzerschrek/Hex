@@ -374,11 +374,11 @@ void r_ChunkInfo::GetQuadCount()
 		int column_max_geometry_height= 0;
 		for( int z= 0; z< H_CHUNK_HEIGHT - 2; z++ )
 		{
-			unsigned char t= t_p[z];
-			unsigned char t_fr= t_fr_p[z];
-			unsigned char t_br= t_br_p[z];
-			unsigned char t_up= t_p[z+1];
-			unsigned char t_f= t_f_p[z];
+			unsigned char t= t_p[z] & H_VISIBLY_TRANSPARENCY_BITS;
+			unsigned char t_fr= t_fr_p[z] & H_VISIBLY_TRANSPARENCY_BITS;
+			unsigned char t_br= t_br_p[z] & H_VISIBLY_TRANSPARENCY_BITS;
+			unsigned char t_up= t_p[z+1] & H_VISIBLY_TRANSPARENCY_BITS;
+			unsigned char t_f= t_f_p[z] & H_VISIBLY_TRANSPARENCY_BITS;
 
 			if( t != t_up )
 			{
@@ -629,11 +629,11 @@ void r_ChunkInfo::BuildChunkMesh()
 			unsigned char tex_id, tex_scale, light[2];
 			const h_Block* b;
 
-			unsigned char t= t_p[z];
-			unsigned char t_fr= t_fr_p[z];
-			unsigned char t_br= t_br_p[z];
-			unsigned char t_up= t_p[z+1];
-			unsigned char t_f= t_f_p[z];
+			unsigned char t= t_p[z] & H_VISIBLY_TRANSPARENCY_BITS;
+			unsigned char t_fr= t_fr_p[z] & H_VISIBLY_TRANSPARENCY_BITS;
+			unsigned char t_br= t_br_p[z] & H_VISIBLY_TRANSPARENCY_BITS;
+			unsigned char t_up= t_p[z+1] & H_VISIBLY_TRANSPARENCY_BITS;
+			unsigned char t_f= t_f_p[z] & H_VISIBLY_TRANSPARENCY_BITS;
 
 			if( t != t_up )//up
 			{

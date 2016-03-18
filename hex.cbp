@@ -60,6 +60,7 @@
 		<Unit filename="src\block.hpp" />
 		<Unit filename="src\block_collision.cpp" />
 		<Unit filename="src\block_collision.hpp" />
+		<Unit filename="src\blocks_list.hpp" />
 		<Unit filename="src\calendar.cpp" />
 		<Unit filename="src\calendar.hpp" />
 		<Unit filename="src\chunk.cpp" />
