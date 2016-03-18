@@ -118,16 +118,19 @@ bool h_PathFinder::FindPath(
 				int address= BlockAddr( chunk_local_x, chunk_local_y, neighbor.z );
 				const unsigned char* transparency_data= chunk->GetTransparencyData();
 
-				bool can_step_forward= transparency_data[ address ] == TRANSPARENCY_AIR && transparency_data[ address - 1 ] != TRANSPARENCY_AIR;
+				bool can_step_forward=
+					( transparency_data[ address     ] & H_VISIBLY_TRANSPARENCY_BITS ) == TRANSPARENCY_AIR &&
+					( transparency_data[ address - 1 ] & H_VISIBLY_TRANSPARENCY_BITS ) != TRANSPARENCY_AIR;
+
 				bool can_step_up=
-					transparency_data[ address ] != TRANSPARENCY_AIR &&
-					transparency_data[ address + 1 ] == TRANSPARENCY_AIR &&
-					current_point_taransparency_data[ wavefront_point.z + 1 ] == TRANSPARENCY_AIR;
+					( transparency_data[ address     ] & H_VISIBLY_TRANSPARENCY_BITS ) != TRANSPARENCY_AIR &&
+					( transparency_data[ address + 1 ] & H_VISIBLY_TRANSPARENCY_BITS ) == TRANSPARENCY_AIR &&
+					( current_point_taransparency_data[ wavefront_point.z + 1 ] & H_VISIBLY_TRANSPARENCY_BITS )== TRANSPARENCY_AIR;
 				bool can_step_down=
 					neighbor.z >= 2 &&
-					transparency_data[ address ] == TRANSPARENCY_AIR &&
-					transparency_data[ address - 1 ] == TRANSPARENCY_AIR &&
-					transparency_data[ address - 2 ] != TRANSPARENCY_AIR;
+					( transparency_data[ address     ] & H_VISIBLY_TRANSPARENCY_BITS ) == TRANSPARENCY_AIR &&
+					( transparency_data[ address - 1 ] & H_VISIBLY_TRANSPARENCY_BITS ) == TRANSPARENCY_AIR &&
+					( transparency_data[ address - 2 ] & H_VISIBLY_TRANSPARENCY_BITS ) != TRANSPARENCY_AIR;
 
 				if( neighbor.x == target_x && neighbor.y == target_y &&
 					(neighbor.z == target_z ||

@@ -13,12 +13,15 @@ public:
 	~h_Block() {}
 
 	h_BlockType Type() const;
-	h_TransparencyType Transparency() const;
+
+	h_CombinedTransparency CombinedTransparency() const;
 	unsigned short AdditionalData() const;
 
 protected:
 	h_BlockType type_;
 	unsigned short additional_data_;//for water level\etc.
+
+	h_CombinedTransparency combined_transparency_;
 };
 
 class h_LiquidBlock: public h_Block
