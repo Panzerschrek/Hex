@@ -48,7 +48,7 @@ static const constexpr BlockProperties g_blocks_properties[ size_t(h_BlockType::
 		.transparent_for_direct_sun_light= true,
 		.transparent_for_secondary_sun_light= true,
 		.is_failing= false,
-		.is_technical= false,
+		.is_technical= true,
 	},
 
 	[size_t(h_BlockType::SphericalBlock)]=
@@ -198,6 +198,11 @@ h_Direction h_Block::GetDirectionByName( const char* name )
 			return h_Direction(i);
 	}
 	return h_Direction::Unknown;
+}
+
+bool h_Block::IsTechnicalType( h_BlockType type )
+{
+	return g_blocks_properties[ size_t(type) ].is_technical;
 }
 
 /*

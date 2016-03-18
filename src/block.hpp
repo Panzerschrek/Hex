@@ -9,6 +9,8 @@ public:
 	static const char* GetBlockName( h_BlockType type );
 	static h_Direction GetDirectionByName( const char* name );
 
+	static bool IsTechnicalType( h_BlockType type );
+
 	h_Block( h_BlockType type= h_BlockType::Air, unsigned short additional_data= 0 );
 	~h_Block() {}
 

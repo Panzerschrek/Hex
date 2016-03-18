@@ -22,6 +22,24 @@ static const ui_Key g_backward_key= ui_Key::S;
 static const ui_Key g_left_key= ui_Key::A;
 static const ui_Key g_right_key= ui_Key::D;
 
+// Returns block name in format "Failing white sand" instead "FailingWhiteSand"
+static std::string BlockNameSpaceSplitted( h_BlockType type )
+{
+	std::string str= h_Block::GetBlockName( type );
+
+	for( unsigned int i= 1; i < str.size(); i++ )
+	{
+		char c= str[i];
+		if( c >= 'A' && c <= 'Z' )
+		{
+			str[i]= c + ('a' - 'A');
+			str.insert( i, 1, ' ' );
+		}
+	}
+
+	return str;
+}
+
 /*
 ---------------ui_BlockSelectMenu----------------
 */
@@ -47,12 +65,16 @@ public:
 		title_.reset( new ui_Text("Select block:", column, row, 12, 1, title_style ) );
 		ui_MenuBase::elements_.push_back(title_.get());
 
-		for( unsigned int i= ((unsigned int)h_BlockType::Air) + 1; i < (unsigned int)h_BlockType::NumBlockTypes; i++ )
+		for( unsigned int i= 0, p= 0; i < (unsigned int)h_BlockType::NumBlockTypes; i++ )
 		{
+			h_BlockType type= static_cast<h_BlockType>(i);
+			if( h_Block::IsTechnicalType( type ) )
+				continue;
+
 			std::unique_ptr<ui_Button> button(
 				new ui_Button(
-					h_Block::GetBlockName(static_cast<h_BlockType>(i)),
-					column, row + 1 + int( i - (((unsigned int)h_BlockType::Air) + 1 ) ),
+					BlockNameSpaceSplitted( type ).data(),
+					column, row + p,
 					8, 1,
 					c_ui_main_style ) );
 
@@ -64,6 +86,8 @@ public:
 
 			ui_MenuBase::elements_.push_back(button.get());
 			buttons_.push_back( std::move(button) );
+
+			p++;
 		}
 	}
 
