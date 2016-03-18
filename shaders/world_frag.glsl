@@ -67,10 +67,22 @@ void main()
 	if( c.a < 0.5 )
 		discard;
 
-	#ifdef LIGHTING_ONLY
+#ifdef LIGHTING_ONLY
 	c.xyz= vec3( 0.5, 0.5, 0.5 );
-	#endif
+#endif
 
+	// TODO - remove lighting copy-paste in shaders
+#if 0 // Old code - just add fire and sun/
 	vec3 l= f_light.x * sun_light_color + f_light.y * fire_light_color + ambient_light_color;
+
+#else // New code - reduce one source, if outher source is big.
+	vec3 s= f_light.x * sun_light_color;
+	vec3 f= f_light.y * fire_light_color;
+	const vec3 c_one= vec3(1.0, 1.0, 1.0);
+	const float c_mul= 0.28;
+	vec3 l= s * ( c_one - c_mul * f ) + f * ( c_one - c_mul * s ) + ambient_light_color;
+
+#endif
+
 	color= vec4( c.xyz * l, 1.0 );
 }
