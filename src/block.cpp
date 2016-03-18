@@ -312,8 +312,10 @@ const h_Block* h_FailingBlock::GetBlock() const
 
 void h_FailingBlock::Tick()
 {
-	static const fixed16_t c_acceleration= 3 << 8;
-	static const unsigned int c_tick_of_max_speed= 40;
+	static const constexpr fixed16_t c_acceleration= 10 << 8;
+	static const constexpr unsigned int c_tick_of_max_speed= 25;
+	static const constexpr fixed16_t c_max_speed= c_tick_of_max_speed * c_acceleration;
+	static_assert( c_max_speed < (1 << 16), "Blocks must fail at speed, less than 1 block per tick." );
 
 	failig_start_ticks_++;
 
@@ -324,7 +326,7 @@ void h_FailingBlock::Tick()
 	else
 		dz=
 			( ( c_acceleration * (c_tick_of_max_speed * c_tick_of_max_speed) ) >> 1 ) +
-			( c_tick_of_max_speed * c_acceleration ) * ( failig_start_ticks_ - c_tick_of_max_speed );
+			c_max_speed * ( failig_start_ticks_ - c_tick_of_max_speed );
 
 	z_= ( failing_start_z_ << 16 ) - dz;
 }
