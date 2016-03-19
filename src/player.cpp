@@ -217,10 +217,20 @@ void h_Player::SetBuildBlock( h_BlockType block_type )
 
 void h_Player::Build()
 {
-	if( build_block_ != h_BlockType::Unknown && build_direction_ != h_Direction::Unknown )
+	if( build_block_ == h_BlockType::Unknown || build_direction_ == h_Direction::Unknown )
+		return;
+
+	// Check intersection with builded block.
+	float z_min= std::max( float( discret_build_pos_[2]     ), pos_.z );
+	float z_max= std::min( float( discret_build_pos_[2] + 1 ), pos_.z + height_ );
+	if( z_min < z_max )
 	{
-		world_->AddBuildEvent( discret_build_pos_[0], discret_build_pos_[1], discret_build_pos_[2], build_block_ );
+		p_UpperBlockFace face( discret_build_pos_[0], discret_build_pos_[1], discret_build_pos_[2], h_Direction::Up );
+		if( face.HasCollisionWithCircle( pos_.xy(), radius_ ) )
+			return;
 	}
+
+	world_->AddBuildEvent( discret_build_pos_[0], discret_build_pos_[1], discret_build_pos_[2], build_block_ );
 }
 
 void h_Player::Dig()
