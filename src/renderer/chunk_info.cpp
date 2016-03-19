@@ -4,6 +4,15 @@
 #include "texture_manager.hpp"
 #include "rendering_constants.hpp"
 
+static bool IsWaterBlockVisible(
+	const h_LiquidBlock* water_block,
+	const h_Block* upper_block )
+{
+	return
+		upper_block->Type() == h_BlockType::Air ||
+		( upper_block->Type() != h_BlockType::Water && water_block->LiquidLevel() < H_MAX_WATER_LEVEL );
+}
+
 r_ChunkInfo::r_ChunkInfo()
 	: chunk_front_(nullptr), chunk_right_(nullptr)
 	, chunk_back_right_(nullptr), chunk_back_(nullptr)
@@ -12,16 +21,13 @@ r_ChunkInfo::r_ChunkInfo()
 
 void r_ChunkInfo::GetWaterHexCount()
 {
-	const m_Collection< h_LiquidBlock* >* water_block_list= chunk_->GetWaterList();
-	m_Collection< h_LiquidBlock* >::ConstIterator iter( water_block_list );
+	const std::vector< h_LiquidBlock* >& water_block_list= chunk_->GetWaterList();
 
 	unsigned int hex_count= 0;
 
-	for( iter.Begin(); iter.IsValid(); iter.Next() )
+	for( const h_LiquidBlock* b : water_block_list )
 	{
-		const h_LiquidBlock* b= *iter;
-		h_BlockType type= chunk_->GetBlock( b->x_, b->y_, b->z_ + 1 )->Type();
-		if( type == h_BlockType::Air || ( b->LiquidLevel() < H_MAX_WATER_LEVEL && type != h_BlockType::Water ) )
+		if( IsWaterBlockVisible( b, chunk_->GetBlock( b->x_, b->y_, b->z_ + 1 ) ) )
 			hex_count++;
 	}
 
@@ -30,36 +36,23 @@ void r_ChunkInfo::GetWaterHexCount()
 
 void r_ChunkInfo::BuildWaterSurfaceMesh()
 {
-	const m_Collection< h_LiquidBlock* >* water_block_list= chunk_->GetWaterList();
-	m_Collection< h_LiquidBlock* >::ConstIterator iter( water_block_list );
-	const h_LiquidBlock* b;
-	r_WaterVertex* v;
-	short h;
-	const h_Chunk* ch;
+	const std::vector< h_LiquidBlock* >& water_block_list= chunk_->GetWaterList();
 
-	v= water_vertex_data_;
-
-	short X= chunk_->Longitude() * H_CHUNK_WIDTH;
-	short Y= chunk_->Latitude() * H_CHUNK_WIDTH;
-	short chunk_loaded_zone_X;
-	short chunk_loaded_zone_Y;
-
-	unsigned int vertex_water_level[6];
-	unsigned short vertex_water_block_count[6];
 	const h_World* world= chunk_->GetWorld();
-	short global_x, global_y;
-	short nearby_block_x, nearby_block_y;
 
-	chunk_loaded_zone_X= ( chunk_->Longitude() - world->Longitude() ) * H_CHUNK_WIDTH;
-	chunk_loaded_zone_Y= ( chunk_->Latitude() - world->Latitude() ) * H_CHUNK_WIDTH;
-	if( ! chunk_->IsEdgeChunk() )
+	short X= chunk_->Longitude() << H_CHUNK_WIDTH_LOG2;
+	short Y= chunk_->Latitude()  << H_CHUNK_WIDTH_LOG2;
+
+	short chunk_loaded_zone_X= ( chunk_->Longitude() - world->Longitude() ) << H_CHUNK_WIDTH_LOG2;
+	short chunk_loaded_zone_Y= ( chunk_->Latitude () - world->Latitude () ) << H_CHUNK_WIDTH_LOG2;
+
+	r_WaterVertex* v= water_vertex_data_;
+
+	if( !chunk_->IsEdgeChunk() )
 	{
-		for( iter.Begin(); iter.IsValid(); iter.Next() )
+		for( const h_LiquidBlock* b : water_block_list )
 		{
-			b= *iter;
-
-			h_BlockType type= chunk_->GetBlock( b->x_, b->y_, b->z_ + 1 )->Type();
-			if( type == h_BlockType::Air || ( b->LiquidLevel() < H_MAX_WATER_LEVEL && type != h_BlockType::Water ) )
+			if( IsWaterBlockVisible( b, chunk_->GetBlock( b->x_, b->y_, b->z_ + 1 ) ) )
 			{
 				v[0].coord[0]= 3 * ( b->x_ + X );
 				v[1].coord[0]= v[5].coord[0]= v[0].coord[0] + 1;
@@ -70,156 +63,91 @@ void r_ChunkInfo::BuildWaterSurfaceMesh()
 				v[1].coord[1]= v[2].coord[1]= v[0].coord[1] + 1;
 				v[4].coord[1]= v[5].coord[1]= v[0].coord[1] - 1;
 
-				//calculate height of vertices
-				const h_Block* b2, *b3;
+				// Calculate height of vertices.
 				bool upper_block_is_water[6]= { false, false, false, false, false, false };
-				bool nearby_block_is_air[6]= { false, false, false, false, false, false };
+				bool nearby_block_is_air [6]= { false, false, false, false, false, false };
+				unsigned int vertex_water_level[6];
+				unsigned short vertex_water_block_count[6];
 				vertex_water_level[0]= vertex_water_level[1]= vertex_water_level[2]=
 				vertex_water_level[3]= vertex_water_level[4]= vertex_water_level[5]= b->LiquidLevel();
 				vertex_water_block_count[0]= vertex_water_block_count[1]= vertex_water_block_count[2]=
 				vertex_water_block_count[3]= vertex_water_block_count[4]= vertex_water_block_count[5]= 1;
 
-				//forward
-				global_x= b->x_ + chunk_loaded_zone_X;
-				global_y= b->y_ + chunk_loaded_zone_Y + 1;
-				nearby_block_x= (global_x)&( H_CHUNK_WIDTH-1);
-				nearby_block_y= (global_y)&( H_CHUNK_WIDTH-1);
-				b2= ( ch= world->GetChunk( global_x >> H_CHUNK_WIDTH_LOG2,
-										   global_y >> H_CHUNK_WIDTH_LOG2 )
-					)-> GetBlock( nearby_block_x, nearby_block_y, b->z_ );
-				b3= ch->GetBlock( nearby_block_x, nearby_block_y, b->z_ + 1 );
-				if( b3->Type() == h_BlockType::Water )
-					upper_block_is_water[1]= upper_block_is_water[2]= true;
-				else if( b2->Type() == h_BlockType::Air )
-					nearby_block_is_air[1]= nearby_block_is_air[2]= true;
-				else if( b2->Type() == h_BlockType::Water )
-				{
-					vertex_water_level[1]+= ((h_LiquidBlock*)b2)->LiquidLevel();
-					vertex_water_level[2]+= ((h_LiquidBlock*)b2)->LiquidLevel();
-					vertex_water_block_count[1]++;
-					vertex_water_block_count[2]++;
-				}
+				int global_x= chunk_loaded_zone_X + b->x_;
+				int global_y= chunk_loaded_zone_Y + b->y_;
+				int forward_side_y= global_y + ( (global_x^1) & 1 );
+				int back_side_y= global_y - (global_x & 1);
 
-				//back
-				global_x= b->x_ + chunk_loaded_zone_X;
-				global_y= b->y_ + chunk_loaded_zone_Y - 1;
-				nearby_block_x= (global_x)&( H_CHUNK_WIDTH-1);
-				nearby_block_y= (global_y)&( H_CHUNK_WIDTH-1);
-				b2= ( ch= world->GetChunk( global_x >> H_CHUNK_WIDTH_LOG2,
-										   global_y >> H_CHUNK_WIDTH_LOG2 )
-					)-> GetBlock( nearby_block_x, nearby_block_y, b->z_ );
-				b3= ch->GetBlock( nearby_block_x, nearby_block_y, b->z_ + 1 );
-				if( b3->Type() == h_BlockType::Water )
-					upper_block_is_water[4]= upper_block_is_water[5]= true;
-				else if( b2->Type() == h_BlockType::Air )
-					nearby_block_is_air[4]= nearby_block_is_air[5]= true;
-				else if( b2->Type() == h_BlockType::Water )
+				int neighbors[6][2]=
 				{
-					vertex_water_level[4]+= ((h_LiquidBlock*)b2)->LiquidLevel();
-					vertex_water_level[5]+= ((h_LiquidBlock*)b2)->LiquidLevel();
-					vertex_water_block_count[4]++;
-					vertex_water_block_count[5]++;
-				}
+					{ global_x - 1, forward_side_y },
+					{ global_x, global_y + 1 },
+					{ global_x + 1, forward_side_y },
+					{ global_x + 1, back_side_y },
+					{ global_x, global_y - 1 },
+					{ global_x - 1, back_side_y },
+				};
 
-				//forward right
-				global_x= b->x_ + chunk_loaded_zone_X + 1;
-				global_y= b->y_ + chunk_loaded_zone_Y +((b->x_+1)&1);
-				nearby_block_x= (global_x)&( H_CHUNK_WIDTH-1);
-				nearby_block_y= (global_y)&( H_CHUNK_WIDTH-1);
-				b2= ( ch= world->GetChunk( global_x >> H_CHUNK_WIDTH_LOG2,
-										   global_y >> H_CHUNK_WIDTH_LOG2 )
-					)-> GetBlock( nearby_block_x, nearby_block_y, b->z_ );
-				b3= ch->GetBlock( nearby_block_x, nearby_block_y, b->z_ + 1 );
-				if( b3->Type() == h_BlockType::Water )
-					upper_block_is_water[2]= upper_block_is_water[3]= true;
-				else if( b2->Type() == h_BlockType::Air )
-					nearby_block_is_air[2]= nearby_block_is_air[3]= true;
-				else if( b2->Type() == h_BlockType::Water )
+				for( unsigned int d= 0; d < 6; d++ )
 				{
-					vertex_water_level[2]+= ((h_LiquidBlock*)b2)->LiquidLevel();
-					vertex_water_level[3]+= ((h_LiquidBlock*)b2)->LiquidLevel();
-					vertex_water_block_count[2]++;
-					vertex_water_block_count[3]++;
-				}
+					int local_x= neighbors[d][0] & (H_CHUNK_WIDTH - 1);
+					int local_y= neighbors[d][1] & (H_CHUNK_WIDTH - 1);
 
-				//back left
-				global_x= b->x_ + chunk_loaded_zone_X - 1;
-				global_y= b->y_ + chunk_loaded_zone_Y - (b->x_&1);
-				nearby_block_x= (global_x)&( H_CHUNK_WIDTH-1);
-				nearby_block_y= (global_y)&( H_CHUNK_WIDTH-1);
-				b2= ( ch= world->GetChunk( global_x >> H_CHUNK_WIDTH_LOG2,
-										   global_y >> H_CHUNK_WIDTH_LOG2 )
-					)-> GetBlock( nearby_block_x, nearby_block_y, b->z_ );
-				b3= ch->GetBlock( nearby_block_x, nearby_block_y, b->z_ + 1 );
-				if( b3->Type() == h_BlockType::Water )
-					upper_block_is_water[0]= upper_block_is_water[5]= true;
-				else if( b2->Type() == h_BlockType::Air )
-					nearby_block_is_air[0]= nearby_block_is_air[5]= true;
-				else if( b2->Type() == h_BlockType::Water )
-				{
-					vertex_water_level[0]+= ((h_LiquidBlock*)b2)->LiquidLevel();
-					vertex_water_level[5]+= ((h_LiquidBlock*)b2)->LiquidLevel();
-					vertex_water_block_count[0]++;
-					vertex_water_block_count[5]++;
-				}
+					const h_Chunk* ch2=
+						world->GetChunk(
+							neighbors[d][0] >> H_CHUNK_WIDTH_LOG2,
+							neighbors[d][1] >> H_CHUNK_WIDTH_LOG2 );
 
-				//back right
-				global_x= b->x_ + chunk_loaded_zone_X + 1;
-				global_y= b->y_ + chunk_loaded_zone_Y -(b->x_&1);
-				nearby_block_x= (global_x)&( H_CHUNK_WIDTH-1);
-				nearby_block_y= (global_y)&( H_CHUNK_WIDTH-1);
-				b2= ( ch= world->GetChunk( global_x >> H_CHUNK_WIDTH_LOG2,
-										   global_y >> H_CHUNK_WIDTH_LOG2 )
-					)-> GetBlock( nearby_block_x, nearby_block_y, b->z_ );
-				b3= ch->GetBlock( nearby_block_x, nearby_block_y, b->z_ + 1 );
-				if( b3->Type() == h_BlockType::Water )
-					upper_block_is_water[3]= upper_block_is_water[4]= true;
-				else if( b2->Type() == h_BlockType::Air )
-					nearby_block_is_air[3]= nearby_block_is_air[4]= true;
-				else if( b2->Type() == h_BlockType::Water )
-				{
-					vertex_water_level[3]+= ((h_LiquidBlock*)b2)->LiquidLevel();
-					vertex_water_level[4]+= ((h_LiquidBlock*)b2)->LiquidLevel();
-					vertex_water_block_count[3]++;
-					vertex_water_block_count[4]++;
-				}
-				//forward left
-				global_x= b->x_ + chunk_loaded_zone_X - 1;
-				global_y= b->y_ + chunk_loaded_zone_Y + ((b->x_+1)&1);
-				nearby_block_x= (global_x)&( H_CHUNK_WIDTH-1);
-				nearby_block_y= (global_y)&( H_CHUNK_WIDTH-1);
-				b2= ( ch= world->GetChunk( global_x >> H_CHUNK_WIDTH_LOG2,
-										   global_y >> H_CHUNK_WIDTH_LOG2 )
-					)-> GetBlock( nearby_block_x, nearby_block_y, b->z_ );
-				b3= ch->GetBlock( nearby_block_x, nearby_block_y, b->z_ + 1 );
-				if( b3->Type() == h_BlockType::Water )
-					upper_block_is_water[0]= upper_block_is_water[1]= true;
-				else if( b2->Type() == h_BlockType::Air )
-					nearby_block_is_air[0]= nearby_block_is_air[1]= true;
-				else if( b2->Type() == h_BlockType::Water )
-				{
-					vertex_water_level[0]+= ((h_LiquidBlock*)b2)->LiquidLevel();
-					vertex_water_level[1]+= ((h_LiquidBlock*)b2)->LiquidLevel();
-					vertex_water_block_count[0]++;
-					vertex_water_block_count[1]++;
-				}
+					unsigned int addr= BlockAddr( local_x, local_y, b->z_ );
+					const h_Block* b2= ch2->GetBlock( addr );
+					const h_Block* b3= ch2->GetBlock( addr+ 1 );
+
+					static const unsigned int c_next_vi[6]= { 1, 2, 3, 4, 5, 0 };
+					unsigned int vi0= d;
+					unsigned int vi1= c_next_vi[d];
+
+					if( b3->Type() == h_BlockType::Water )
+						upper_block_is_water[vi0]= upper_block_is_water[vi1]= true;
+					else if( b2->Type() == h_BlockType::Air )
+						nearby_block_is_air[vi0]= nearby_block_is_air[vi1]= true;
+					else if( b2->Type() == h_BlockType::Water )
+					{
+						auto water_block= static_cast<const h_LiquidBlock*>(b2);
+
+						vertex_water_level[vi0]+= water_block->LiquidLevel();
+						vertex_water_level[vi1]+= water_block->LiquidLevel();
+						vertex_water_block_count[ vi0 ]++;
+						vertex_water_block_count[ vi1 ]++;
+					}
+				} // for neighbors
 
 				for( unsigned int k= 0; k< 6; k++ )
 				{
-#define DIV_TABLE_SCALER 16384
-#define DIV_TABLE_SCALER_LOG2 14
-					static const unsigned int div_table[]= { 0, DIV_TABLE_SCALER/1, DIV_TABLE_SCALER/2, DIV_TABLE_SCALER/3, DIV_TABLE_SCALER/4, DIV_TABLE_SCALER/5, DIV_TABLE_SCALER/6 };//for faster division ( but not precise )
+					// For fast division ( but not precise ).
+					static const constexpr unsigned int c_div_table_shift= 14;
+					static const constexpr unsigned int c_div_table_scaler= 1 << c_div_table_shift;
+					static const unsigned int div_table[7]=
+					{
+						0,
+						c_div_table_scaler/1, c_div_table_scaler/2, c_div_table_scaler/3,
+						c_div_table_scaler/4, c_div_table_scaler/5, c_div_table_scaler/6,
+					};
+
 					if( upper_block_is_water[k] )
-						v[k].coord[2]= (b->z_+1)<<R_WATER_VERTICES_Z_SCALER_LOG2;
+						v[k].coord[2]= (b->z_+1) << R_WATER_VERTICES_Z_SCALER_LOG2;
 					else if( nearby_block_is_air[k] )
-						v[k].coord[2]= b->z_<<R_WATER_VERTICES_Z_SCALER_LOG2;
+						v[k].coord[2]= b->z_ << R_WATER_VERTICES_Z_SCALER_LOG2;
 					else
 					{
+						unsigned int avg_water_level=
+							( ( vertex_water_level[k] * div_table[ vertex_water_block_count[k] ] ) >> c_div_table_shift );
+
 						v[k].coord[2]=
-							(b->z_<<R_WATER_VERTICES_Z_SCALER_LOG2) +
-							( ( vertex_water_level[k] * div_table[vertex_water_block_count[k]] ) >> (  H_MAX_WATER_LEVEL_LOG2 + DIV_TABLE_SCALER_LOG2 - R_WATER_VERTICES_Z_SCALER_LOG2 ) );
+							( b->z_ << R_WATER_VERTICES_Z_SCALER_LOG2 )+
+							( avg_water_level >> ( H_MAX_WATER_LEVEL_LOG2 - R_WATER_VERTICES_Z_SCALER_LOG2 ) );
 					}
-				}
+				} // for vertices
+
 				world->GetForwardVertexLight( b->x_ + chunk_loaded_zone_X - 1, b->y_ + chunk_loaded_zone_Y - (b->x_&1), b->z_, v[0].light );
 				world->GetBackVertexLight( b->x_ + chunk_loaded_zone_X, b->y_ + chunk_loaded_zone_Y + 1, b->z_, v[1].light );
 				world->GetForwardVertexLight( b->x_ + chunk_loaded_zone_X, b->y_ + chunk_loaded_zone_Y, b->z_, v[2].light );
@@ -234,12 +162,9 @@ void r_ChunkInfo::BuildWaterSurfaceMesh()
 	}//smooth water surface
 	else
 	{
-		for( iter.Begin(); iter.IsValid(); iter.Next() )
+		for( const h_LiquidBlock* b : water_block_list )
 		{
-			b= *iter;
-
-			h_BlockType type= chunk_->GetBlock( b->x_, b->y_, b->z_ + 1 )->Type();
-			if( type  == h_BlockType::Air || ( b->LiquidLevel() < H_MAX_WATER_LEVEL && type != h_BlockType::Water ) )
+			if( IsWaterBlockVisible( b, chunk_->GetBlock( b->x_, b->y_, b->z_ + 1 ) ) )
 			{
 				v[0].coord[0]= 3 * ( b->x_ + X );
 				v[1].coord[0]= v[5].coord[0]= v[0].coord[0] + 1;
@@ -250,8 +175,10 @@ void r_ChunkInfo::BuildWaterSurfaceMesh()
 				v[1].coord[1]= v[2].coord[1]= v[0].coord[1] + 1;
 				v[4].coord[1]= v[5].coord[1]= v[0].coord[1] - 1;
 
-				h= ( b->z_ << R_WATER_VERTICES_Z_SCALER_LOG2 )
-					+ ( b->LiquidLevel() >> ( H_MAX_WATER_LEVEL_LOG2 - R_WATER_VERTICES_Z_SCALER_LOG2 ) );
+				short h=
+					( b->z_ << R_WATER_VERTICES_Z_SCALER_LOG2 ) +
+					( b->LiquidLevel() >> ( H_MAX_WATER_LEVEL_LOG2 - R_WATER_VERTICES_Z_SCALER_LOG2 ) );
+
 				v[0].coord[2]= v[1].coord[2]= v[2].coord[2]= v[3].coord[2]= v[4].coord[2]= v[5].coord[2]= h;
 
 				unsigned char light[2][2];
@@ -268,6 +195,8 @@ void r_ChunkInfo::BuildWaterSurfaceMesh()
 			}// if water surface
 		}//for
 	}
+
+	H_ASSERT( v == water_vertex_data_ + water_vertex_count_ );
 }
 
 /*

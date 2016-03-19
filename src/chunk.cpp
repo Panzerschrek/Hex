@@ -145,17 +145,16 @@ h_Block* h_Chunk::LoadBlock( QDataStream& stream, unsigned int block_addr )
 
 	case h_BlockType::Water:
 		{
-			h_LiquidBlock* liquid_block= water_blocks_allocator_.New();
-
 			unsigned short water_level;
 			stream >> water_level;
+
+			h_LiquidBlock* liquid_block= NewWaterBlock();
 
 			liquid_block->x_= BlockAddrToX(block_addr);
 			liquid_block->y_= BlockAddrToY(block_addr);
 			liquid_block->z_= BlockAddrToZ(block_addr);
 
 			liquid_block->SetLiquidLevel( water_level );
-			water_block_list_.Add( liquid_block );
 
 			block= liquid_block;
 		}
@@ -461,7 +460,7 @@ void h_Chunk::GenWaterBlocks()
 			block->z_= z;
 			blocks_[ addr ]= block;
 			block->SetLiquidLevel( H_MAX_WATER_LEVEL );
-			water_block_list_.Add( block );
+			water_block_list_.push_back( block );
 		}
 	}
 }
@@ -508,11 +507,10 @@ void h_Chunk::SunRelight()
 		}
 }
 
-
 h_LiquidBlock* h_Chunk::NewWaterBlock()
 {
 	h_LiquidBlock* b= water_blocks_allocator_.New();
-	water_block_list_.Add( b );
+	water_block_list_.push_back( b );
 	return b;
 }
 
@@ -603,7 +601,7 @@ void h_Chunk::ProcessFailingBlocks()
 						world_->RelightBlockAdd( global_x, global_y, old_z ) );
 
 					i--;
-					if( i != failing_blocks_.size() - 1 )
+					if( i + 1 != failing_blocks_.size() )
 						failing_blocks_[i]= failing_blocks_.back();
 					failing_blocks_.pop_back();
 					failing_blocks_alocatior_.Delete( b );

@@ -4,7 +4,6 @@
 #include "hex.hpp"
 #include "fwd.hpp"
 #include "block.hpp"
-#include "math_lib/collection.hpp"
 #include "world_loading.hpp"
 #include "math_lib/small_objects_allocator.hpp"
 
@@ -28,11 +27,13 @@ public:
 
 	h_Block* GetBlock( short x, short y, short z );
 	const h_Block* GetBlock( short x, short y, short z ) const;
+	h_Block* GetBlock( unsigned int addr );
+	const h_Block* GetBlock( unsigned int addr ) const;
 	const h_Block* const* GetBlocksData() const;
 
 	const std::vector<h_FailingBlock*>& GetFailingBlocks() const;
 
-	const m_Collection< h_LiquidBlock* >* GetWaterList() const;
+	const std::vector< h_LiquidBlock* >& GetWaterList() const;
 	const std::vector< h_LightSource* >& GetLightSourceList() const;
 	h_World* GetWorld();
 	const h_World* GetWorld() const;
@@ -97,7 +98,7 @@ private:
 
 	// water management
 	SmallObjectsAllocator< h_LiquidBlock, 256, unsigned char > water_blocks_allocator_;
-	m_Collection< h_LiquidBlock* > water_block_list_;
+	std::vector< h_LiquidBlock* > water_block_list_;
 
 	// failing blocks management
 	SmallObjectsAllocator< h_FailingBlock, 32, unsigned char > failing_blocks_alocatior_;
@@ -153,6 +154,18 @@ inline const h_Block* h_Chunk::GetBlock( short x, short y, short z ) const
 	return blocks_[ BlockAddr( x, y, z ) ];
 }
 
+inline h_Block* h_Chunk::GetBlock( unsigned int addr )
+{
+	H_ASSERT( addr < H_CHUNK_WIDTH * H_CHUNK_WIDTH * H_CHUNK_HEIGHT );
+	return blocks_[addr];
+}
+
+inline const h_Block* h_Chunk::GetBlock( unsigned int addr ) const
+{
+	H_ASSERT( addr < H_CHUNK_WIDTH * H_CHUNK_WIDTH * H_CHUNK_HEIGHT );
+	return blocks_[addr];
+}
+
 inline const h_Block* const* h_Chunk::GetBlocksData() const
 {
 	return blocks_;
@@ -163,9 +176,9 @@ inline const std::vector<h_FailingBlock*>& h_Chunk::GetFailingBlocks() const
 	return failing_blocks_;
 }
 
-inline const m_Collection< h_LiquidBlock* >* h_Chunk::GetWaterList() const
+inline const std::vector< h_LiquidBlock* >& h_Chunk::GetWaterList() const
 {
-	return & water_block_list_;
+	return water_block_list_;
 }
 
 inline const std::vector<h_LightSource*>& h_Chunk::GetLightSourceList() const
@@ -234,11 +247,19 @@ inline const unsigned char* h_Chunk::GetFireLightData() const
 
 inline void h_Chunk::SetSunLightLevel( short x, short y, short z, unsigned char l )
 {
+	H_ASSERT( x >= 0 && x < H_CHUNK_WIDTH );
+	H_ASSERT( y >= 0 && y < H_CHUNK_WIDTH );
+	H_ASSERT( z >= 0 && z < H_CHUNK_HEIGHT );
+
 	sun_light_map_[ BlockAddr( x, y, z ) ]= l;
 }
 
 inline void h_Chunk::SetFireLightLevel( short x, short y, short z, unsigned char l )
 {
+	H_ASSERT( x >= 0 && x < H_CHUNK_WIDTH );
+	H_ASSERT( y >= 0 && y < H_CHUNK_WIDTH );
+	H_ASSERT( z >= 0 && z < H_CHUNK_HEIGHT );
+
 	fire_light_map_[ BlockAddr( x, y, z ) ]= l;
 }
 

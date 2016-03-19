@@ -501,6 +501,12 @@ void h_World::CheckBlockNeighbors( short x, short y, short z )
 				}
 				break;
 
+			// If something happens near water blocks, water mesh must be rebuilded,
+			// bacause it depends on nonwater blocks.
+			case h_BlockType::Water:
+				renderer_->UpdateChunkWater( chunk_x, chunk_y );
+				break;
+
 				default: break;
 			};
 		} // for z
@@ -679,7 +685,7 @@ void h_World::SaveChunk( h_Chunk* ch )
 
 	HEXCHUNK_header header;
 
-	header.water_block_count= ch->GetWaterList()->Size();
+	header.water_block_count= ch->GetWaterList().size();
 	header.longitude= ch->Longitude();
 	header.latitude= ch->Latitude();
 
@@ -950,101 +956,124 @@ void h_World::TestMobTick()
 
 void h_World::WaterPhysTick()
 {
-	h_Chunk* ch;
 	for( unsigned int i= active_area_margins_[0]; i< ChunkNumberX() - active_area_margins_[0]; i++ )
-		for( unsigned int j= active_area_margins_[1]; j< ChunkNumberY() - active_area_margins_[1]; j++ )
+	for( unsigned int j= active_area_margins_[1]; j< ChunkNumberY() - active_area_margins_[1]; j++ )
+	{
+		// Update only each second cluster of size 3x3 per tick.
+		int cluster_x= m_Math::DivNonNegativeRemainder(int(i) + longitude_, 3);
+		int cluster_y= m_Math::DivNonNegativeRemainder(int(j) + latitude_ , 3);
+		if( ( (cluster_x ^ cluster_y) & 1 ) == ( phys_tick_count_ & 1 ) )
+			continue;
+
+		bool chunk_modifed= false;
+		h_Chunk* ch= GetChunk( i, j );
+
+		int X= i << H_CHUNK_WIDTH_LOG2;
+		int Y= j << H_CHUNK_WIDTH_LOG2;
+
+		std::vector< h_LiquidBlock* >& list= ch->water_block_list_;
+		for( unsigned int k= 0; k < list.size(); )
 		{
-			bool chunk_modifed= false;
-			ch= GetChunk( i, j );
+			h_LiquidBlock* b= list[k];
+			k++;
 
-			//skip some quadchunks for updating ( in chessboard order )
-			if( ( ( ChunkCoordToQuadchunkX( ch->Longitude() ) ^ ChunkCoordToQuadchunkY( ch->Latitude() ) ) & 1 ) == (phys_tick_count_&1) )
-				continue;
+			H_ASSERT( ch->GetBlock( b->x_, b->y_, b->z_ ) == b );
 
-			m_Collection< h_LiquidBlock* >& l= ch->water_block_list_;
-			h_LiquidBlock* b;
-			m_Collection< h_LiquidBlock* >::Iterator iter(&l);
-			for( iter.Begin(); iter.IsValid(); iter.Next() )
+			unsigned int block_addr= BlockAddr( b->x_, b->y_, b->z_ );
+			h_Block* lower_block= ch->GetBlock( block_addr - 1 );
+
+			// Try fail down.
+			if( lower_block->Type() == h_BlockType::Air )
 			{
-				b= *iter;
+				ch->SetBlock( block_addr, NormalBlock( h_BlockType::Air ) );
+				ch->SetBlock( block_addr - 1, b );
+				b->z_--;
 
-				if( ch->GetBlock( b->x_, b->y_, b->z_ - 1 )->Type() == h_BlockType::Air )
+				chunk_modifed= true;
+
+				// If we fail, flow in next tick.
+				continue;
+			}
+			else
+			{
+				// Try flow down.
+				if( lower_block->Type() == h_BlockType::Water )
 				{
-					b->z_--;
-					ch->SetBlock( b->x_, b->y_, b->z_    , b );
-					ch->SetBlock( b->x_, b->y_, b->z_ + 1, NormalBlock( h_BlockType::Air ) );
+					h_LiquidBlock* lower_water_block= static_cast<h_LiquidBlock*>(lower_block);
+
+					int level_delta= std::min(int(H_MAX_WATER_LEVEL - lower_water_block->LiquidLevel()), int(b->LiquidLevel()));
+					if( level_delta > 0 )
+					{
+						b->DecreaseLiquidLevel( level_delta );
+						lower_water_block->IncreaseLiquidLevel( level_delta );
+						chunk_modifed= true;
+					}
+				}
+
+				int global_x= X + b->x_;
+				int global_y= Y + b->y_;
+
+				int forward_side_y= global_y + ( (global_x^1) & 1 );
+				int back_side_y= global_y - (global_x & 1);
+
+				int neighbors[6][2]=
+				{
+					{ global_x, global_y + 1 },
+					{ global_x, global_y - 1 },
+					{ global_x + 1, forward_side_y },
+					{ global_x + 1, back_side_y },
+					{ global_x - 1, forward_side_y },
+					{ global_x - 1, back_side_y },
+				};
+
+				for( unsigned int d= 0; d < 6; d++ )
+					if( WaterFlow( b, neighbors[d][0], neighbors[d][1], b->z_ ) )
+						chunk_modifed= true;
+
+				if( b->LiquidLevel() == 0 ||
+					( b->LiquidLevel() < 16 && lower_block->Type() != h_BlockType::Water ) )
+				{
+					ch->SetBlock( block_addr, NormalBlock( h_BlockType::Air ) );
+					ch->DeleteWaterBlock( b );
+
+					k--;
+					list[k]= list.back();
+					list.pop_back();
+
 					chunk_modifed= true;
 				}
-				else
-				{
-					//water flow down
-					h_LiquidBlock* b2= (h_LiquidBlock*)ch->GetBlock( b->x_, b->y_, b->z_ - 1 );
-					if( b2->Type() == h_BlockType::Water )
-					{
-						int level_delta= std::min(int(H_MAX_WATER_LEVEL - b2->LiquidLevel()), int(b->LiquidLevel()));
-						if( level_delta > 0 )
-						{
-							b->DecreaseLiquidLevel( level_delta );
-							b2->IncreaseLiquidLevel( level_delta );
-							chunk_modifed= true;
-						}
-					} //water flow down
+			}// if down block not air
+		}//for all water blocks in chunk
 
+		if( chunk_modifed )
+		{
+			renderer_->UpdateChunkWater( i  , j   );
 
-					if( WaterFlow(
-						b, b->x_ + ( i << H_CHUNK_WIDTH_LOG2 ),
-						b->y_ + ( j << H_CHUNK_WIDTH_LOG2 ) + 1, b->z_ ) )//forward
-						chunk_modifed= true;
-					if( WaterFlow(
-						b, b->x_ + ( i << H_CHUNK_WIDTH_LOG2 ) + 1,
-						b->y_ + ( j << H_CHUNK_WIDTH_LOG2 ) + ((b->x_+1)&1), b->z_ ) )//FORWARD_RIGHT
-						chunk_modifed= true;
-					if( WaterFlow(
-						b, b->x_ + ( i << H_CHUNK_WIDTH_LOG2 ) - 1,
-						b->y_ + ( j << H_CHUNK_WIDTH_LOG2 ) + ((b->x_+1)&1), b->z_ ) )//FORWARD_LEFT
-						chunk_modifed= true;
+			renderer_->UpdateChunkWater( i-1, j   );
+			renderer_->UpdateChunkWater( i+1, j   );
+			renderer_->UpdateChunkWater( i  , j-1 );
+			renderer_->UpdateChunkWater( i  , j+1 );
 
-					if( WaterFlow(
-						b, b->x_ + ( i << H_CHUNK_WIDTH_LOG2 ),
-						b->y_ + ( j << H_CHUNK_WIDTH_LOG2 ) - 1, b->z_ ) )//back
-						chunk_modifed= true;
-					if( WaterFlow(
-						b, b->x_ + ( i << H_CHUNK_WIDTH_LOG2 ) + 1,
-						b->y_ + ( j << H_CHUNK_WIDTH_LOG2 ) - (b->x_&1), b->z_ ) )//BACK_RIGHT
-						chunk_modifed= true;
-					if( WaterFlow(
-						b, b->x_ + ( i << H_CHUNK_WIDTH_LOG2 ) - 1,
-						b->y_ + ( j << H_CHUNK_WIDTH_LOG2 ) - (b->x_&1), b->z_ ) )//BACK_LEFT
-						chunk_modifed= true;
+			renderer_->UpdateChunkWater( i-1, j-1 );
+			renderer_->UpdateChunkWater( i-1, j+1 );
+			renderer_->UpdateChunkWater( i+1, j-1 );
+			renderer_->UpdateChunkWater( i+1, j+1 );
 
-					if( b->LiquidLevel() == 0 ||
-						( b->LiquidLevel() < 16 && ch->GetBlock( b->x_, b->y_, b->z_-1 )->Type() != h_BlockType::Water ) )
-					{
-						iter.RemoveCurrent();
-						ch->SetBlock( b->x_, b->y_, b->z_, NormalBlock( h_BlockType::Air ) );
-						ch->DeleteWaterBlock( b );
-					}
-				}// if down block not air
-			}//for all water blocks in chunk
-			if( chunk_modifed )
-			{
-				renderer_->UpdateChunkWater( i  , j   );
-				renderer_->UpdateChunkWater( i-1, j   );
-				renderer_->UpdateChunkWater( i+1, j   );
-				renderer_->UpdateChunkWater( i  , j-1 );
-				renderer_->UpdateChunkWater( i  , j+1 );
-
-				ch->need_update_light_= true;
-			}
-		}//for chunks
+			ch->need_update_light_= true;
+		}
+	}//for chunks
 }
 
 bool h_World::WaterFlow( h_LiquidBlock* from, short to_x, short to_y, short to_z )
 {
+	int local_x= to_x & ( H_CHUNK_WIDTH-1 );
+	int local_y= to_y & ( H_CHUNK_WIDTH-1 );
+
 	h_Chunk* ch= GetChunk( to_x >> H_CHUNK_WIDTH_LOG2, to_y >> H_CHUNK_WIDTH_LOG2 );
-	h_LiquidBlock* b2= (h_LiquidBlock*)ch->GetBlock( to_x & ( H_CHUNK_WIDTH-1 ), to_y & ( H_CHUNK_WIDTH-1 ), to_z );
-	h_BlockType type= b2->Type();
-	if( type == h_BlockType::Air )
+	int addr= BlockAddr( local_x, local_y, to_z );
+	h_Block* block= ch->GetBlock( addr );
+
+	if( block->Type() == h_BlockType::Air )
 	{
 		if( from->LiquidLevel() > 1 )
 		{
@@ -1052,22 +1081,24 @@ bool h_World::WaterFlow( h_LiquidBlock* from, short to_x, short to_y, short to_z
 			from->DecreaseLiquidLevel( level_delta );
 
 			h_LiquidBlock* new_block= ch->NewWaterBlock();
-			new_block->x_= to_x & ( H_CHUNK_WIDTH-1 );
-			new_block->y_= to_y & ( H_CHUNK_WIDTH-1 );
+			new_block->x_= local_x;
+			new_block->y_= local_y;
 			new_block->z_= to_z;
 			new_block->SetLiquidLevel( level_delta );
-			ch->SetBlock( new_block->x_, new_block->y_, new_block->z_, new_block );
+			ch->SetBlock( addr, new_block );
 			return true;
 		}
 	}
-	else if( type == h_BlockType::Water )
+	else if( block->Type() == h_BlockType::Water )
 	{
-		short water_level_delta= from->LiquidLevel() - b2->LiquidLevel();
+		h_LiquidBlock* water_block= static_cast<h_LiquidBlock*>(block);
+
+		short water_level_delta= from->LiquidLevel() - water_block->LiquidLevel();
 		if( water_level_delta > 1 )
 		{
 			water_level_delta/= 2;
 			from->DecreaseLiquidLevel( water_level_delta );
-			b2->IncreaseLiquidLevel( water_level_delta );
+			water_block->IncreaseLiquidLevel( water_level_delta );
 			return true;
 		}
 	}

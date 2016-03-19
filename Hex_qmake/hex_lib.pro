@@ -26,7 +26,6 @@ HEADERS += \
     ../src/math_lib/allocation_free_list.hpp \
     ../src/math_lib/allocation_free_set.hpp \
     ../src/math_lib/assert.hpp \
-    ../src/math_lib/collection.hpp \
     ../src/math_lib/small_objects_allocator.hpp \
     ../src/renderer/i_world_renderer.hpp \
     ../src/renderer/img_utils.hpp \
