@@ -863,13 +863,18 @@ void h_World::PhysTick()
 
 		uint64_t t0_ms = hGetTimeMS();
 
+		// Build/destroy.
 		FlushActionQueue();
-		WaterPhysTick();
+
+		// Blocks failing. Do it before water phys tick.
+		// If block was removed, it must be replaced by upper failing blocks, and only AFTER it water can flow to this palce.
 		{
 			for( unsigned int y= active_area_margins_[1]; y < chunk_number_y_ - active_area_margins_[1]; y++ )
 			for( unsigned int x= active_area_margins_[0]; x < chunk_number_x_ - active_area_margins_[0]; x++ )
 				GetChunk( x, y )->ProcessFailingBlocks();
 		}
+
+		WaterPhysTick();
 		GrassPhysTick();
 		RelightWaterModifedChunksLight();
 
