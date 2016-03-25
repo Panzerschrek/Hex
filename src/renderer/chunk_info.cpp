@@ -906,15 +906,15 @@ r_WorldVertex* r_ChunkInfo::BuildNonstandardFormBlocks( r_WorldVertex* v )
 					int x= block->GetX() + relative_X;
 					int y= block->GetY() + relative_Y;
 
-					int block_z= block->GetZ();
 					for( unsigned int i= 0; i < 2; i++ )
 					{
-						world->GetForwardVertexLight( x-1, y - (x&1)    , block_z+i, light[6*i+0] );
-						world->GetBackVertexLight   ( x  , y + 1        , block_z+i, light[6*i+1] );
-						world->GetForwardVertexLight( x  , y            , block_z+i, light[6*i+2] );
-						world->GetBackVertexLight   ( x+1, y + ((1+x)&1), block_z+i, light[6*i+3] );
-						world->GetForwardVertexLight( x  , y - 1        , block_z+i, light[6*i+4] );
-						world->GetBackVertexLight   ( x  , y            , block_z+i, light[6*i+5] );
+						int h= block->GetZ() - 1 + int(i);
+						world->GetForwardVertexLight( x-1, y - (x&1)    , h, light[6*i+0] );
+						world->GetBackVertexLight   ( x  , y + 1        , h, light[6*i+1] );
+						world->GetForwardVertexLight( x  , y            , h, light[6*i+2] );
+						world->GetBackVertexLight   ( x+1, y + ((1+x)&1), h, light[6*i+3] );
+						world->GetForwardVertexLight( x  , y - 1        , h, light[6*i+4] );
+						world->GetBackVertexLight   ( x  , y            , h, light[6*i+5] );
 					}
 					for( unsigned int i= 0; i < 6; i++ )
 					{
@@ -1003,6 +1003,18 @@ r_WorldVertex* r_ChunkInfo::BuildNonstandardFormBlocks( r_WorldVertex* v )
 					v+= 4 * 2;
 				} // for up and down
 
+				for( unsigned int l= 0; l < 2; l++ )
+				{
+					v[0].light[l]= light[6+1][l];
+					v[1].light[l]= light[0+1][l];
+					v[3].light[l]= light[6+2][l];
+					v[2].light[l]= light[0+2][l];
+
+					v[4].light[l]= light[6+5][l];
+					v[5].light[l]= light[0+5][l];
+					v[7].light[l]= light[6+4][l];
+					v[6].light[l]= light[0+4][l];
+				}
 				// forward and back part
 				for( unsigned int side= 0; side < 2; side++ )
 				{
@@ -1027,30 +1039,24 @@ r_WorldVertex* r_ChunkInfo::BuildNonstandardFormBlocks( r_WorldVertex* v )
 
 					v[0].tex_coord[2]= v[1].tex_coord[2]= v[2].tex_coord[2]= v[3].tex_coord[2]= tex_id;
 
-					for( unsigned int l= 0; l < 2; l++ )
-					{
-						if( side == 0 )
-						{
-							v[0].light[l]= light[6+1][l];
-							v[1].light[l]= light[0+1][l];
-							v[3].light[l]= light[6+2][l];
-							v[2].light[l]= light[0+2][l];
-						}
-						else
-						{
-							v[0].light[l]= light[6+5][l];
-							v[1].light[l]= light[0+5][l];
-							v[3].light[l]= light[6+4][l];
-							v[2].light[l]= light[0+4][l];
-						}
-					}
-
 					if( side == 1 )
 						std::swap( v[1], v[3] );
 
 					v+= 4;
 				}
 
+				for( unsigned int l= 0; l < 2; l++ )
+				{
+					v[1].light[l]= light[6+2][l];
+					v[2].light[l]= light[0+2][l];
+					v[0].light[l]= light[6+3][l];
+					v[3].light[l]= light[0+3][l];
+
+					v[5].light[l]= light[6+0][l];
+					v[6].light[l]= light[0+0][l];
+					v[4].light[l]= light[6+5][l];
+					v[7].light[l]= light[0+5][l];
+				}
 				// forward_right and back_left
 				for( unsigned int side= 0; side < 2; side++ )
 				{
@@ -1076,30 +1082,24 @@ r_WorldVertex* r_ChunkInfo::BuildNonstandardFormBlocks( r_WorldVertex* v )
 
 					v[0].tex_coord[2]= v[1].tex_coord[2]= v[2].tex_coord[2]= v[3].tex_coord[2]= tex_id;
 
-					for( unsigned int l= 0; l < 2; l++ )
-					{
-						if( side == 0 )
-						{
-							v[1].light[l]= light[6+2][l];
-							v[2].light[l]= light[0+2][l];
-							v[0].light[l]= light[6+3][l];
-							v[3].light[l]= light[0+3][l];
-						}
-						else
-						{
-							v[1].light[l]= light[6+0][l];
-							v[2].light[l]= light[0+0][l];
-							v[0].light[l]= light[6+5][l];
-							v[3].light[l]= light[0+5][l];
-						}
-					}
-
 					if( side == 1 )
 						std::swap( v[1], v[3] );
 
 					v+=4;
 				}
 
+				for( unsigned int l= 0; l < 2; l++ )
+				{
+					v[4].light[l]= light[6+1][l];
+					v[7].light[l]= light[0+1][l];
+					v[5].light[l]= light[6+0][l];
+					v[6].light[l]= light[0+0][l];
+
+					v[0].light[l]= light[6+3][l];
+					v[3].light[l]= light[0+3][l];
+					v[1].light[l]= light[6+4][l];
+					v[2].light[l]= light[0+4][l];
+				}
 				// back_right and forward_left
 				for( unsigned int side= 0; side < 2; side++ )
 				{
@@ -1124,24 +1124,6 @@ r_WorldVertex* r_ChunkInfo::BuildNonstandardFormBlocks( r_WorldVertex* v )
 					v[ 3 ].tex_coord[1]= v[2].tex_coord[1]= v[0].tex_coord[1] - tex_scale;
 
 					v[0].tex_coord[2]= v[1].tex_coord[2]= v[2].tex_coord[2]= v[3].tex_coord[2]= tex_id;
-
-					for( unsigned int l= 0; l < 2; l++ )
-					{
-						if( side == 1 )
-						{
-							v[0].light[l]= light[6+1][l];
-							v[3].light[l]= light[0+1][l];
-							v[1].light[l]= light[6+0][l];
-							v[2].light[l]= light[0+0][l];
-						}
-						else
-						{
-							v[0].light[l]= light[6+3][l];
-							v[3].light[l]= light[0+3][l];
-							v[1].light[l]= light[6+4][l];
-							v[2].light[l]= light[0+4][l];
-						}
-					}
 
 					if( side == 0 )
 						std::swap( v[1], v[3] );
