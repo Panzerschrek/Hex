@@ -39,19 +39,6 @@
 #define H_MAX_SUN_LIGHT 8
 #define H_MAX_FIRE_LIGHT 13
 
-enum class h_BlockType : unsigned short
-{
-
-#define BLOCK_PROCESS_FUNC(x) x
-#include "blocks_list.hpp"
-#undef BLOCK_PROCESS_FUNC
-
-	NumBlockTypes,
-	Unknown= 65535
-};
-
-static_assert( int(h_BlockType::Air) == 0, "Air must be zero" );
-
 /* COORDINATE SYSTEM:
   __
  /  \
@@ -84,6 +71,28 @@ bl \______/ br
     \__/  \__/
 
 */
+
+enum class h_BlockType : unsigned short
+{
+
+#define BLOCK_PROCESS_FUNC(x) x
+#include "blocks_list.hpp"
+#undef BLOCK_PROCESS_FUNC
+
+	NumBlockTypes,
+	Unknown= 65535
+};
+
+static_assert( int(h_BlockType::Air) == 0, "Air must be zero" );
+
+enum class h_BlockForm : unsigned char
+{
+	Full,
+	Plate,
+	Bisected,
+	NumForms,
+	Unknown= 255
+};
 
 enum class h_Direction : unsigned char
 {

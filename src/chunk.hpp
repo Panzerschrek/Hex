@@ -34,6 +34,7 @@ public:
 	const std::vector<h_FailingBlock*>& GetFailingBlocks() const;
 
 	const std::vector< h_LiquidBlock* >& GetWaterList() const;
+	const std::vector< h_NonstandardFormBlock* >& GetNonstandartFormBlocksList() const;
 	const std::vector< h_LightSource* >& GetLightSourceList() const;
 	h_World* GetWorld();
 	const h_World* GetWorld() const;
@@ -79,6 +80,10 @@ private:
 	h_LightSource* NewLightSource( short x, short y, short z, h_BlockType type );
 	void DeleteLightSource( short x, short y, short z );
 
+	h_NonstandardFormBlock* NewNonstandardFormBlock(
+		unsigned char x, unsigned char y, unsigned char z,
+		h_BlockType type, h_Direction direction );
+
 	h_GrassBlock* NewActiveGrassBlock( unsigned char x, unsigned char y, unsigned char z );
 
 	void ProcessFailingBlocks();
@@ -96,6 +101,8 @@ private:
 
 	bool need_update_light_;
 
+	// TODO - select memory block size for allocatiors
+
 	// water management
 	SmallObjectsAllocator< h_LiquidBlock, 256, unsigned char > water_blocks_allocator_;
 	std::vector< h_LiquidBlock* > water_block_list_;
@@ -103,6 +110,9 @@ private:
 	// failing blocks management
 	SmallObjectsAllocator< h_FailingBlock, 32, unsigned char > failing_blocks_alocatior_;
 	std::vector<h_FailingBlock*> failing_blocks_;
+
+	SmallObjectsAllocator< h_NonstandardFormBlock, 32, unsigned char > nonstandard_form_blocks_allocator_;
+	std::vector<h_NonstandardFormBlock*> nonstandard_form_blocks_;
 
 	// Active grass. Grass blocks, which can reproduce, placed here.
 	// If grass block has no free space around, it becomes "unactive".
@@ -179,6 +189,11 @@ inline const std::vector<h_FailingBlock*>& h_Chunk::GetFailingBlocks() const
 inline const std::vector< h_LiquidBlock* >& h_Chunk::GetWaterList() const
 {
 	return water_block_list_;
+}
+
+inline const std::vector< h_NonstandardFormBlock* >& h_Chunk::GetNonstandartFormBlocksList() const
+{
+	return nonstandard_form_blocks_;
 }
 
 inline const std::vector<h_LightSource*>& h_Chunk::GetLightSourceList() const

@@ -318,10 +318,27 @@ void h_World::Build( short x, short y, short z, h_BlockType block_type )
 		ch->SetBlock( local_x, local_y, z, grass_block );
 	}
 	else
-		GetChunk( chunk_x, chunk_y )->
-		SetBlock(
-			local_x, local_y, z,
-			NormalBlock( block_type ) );
+	{
+		h_BlockForm form= h_Block::Form( block_type );
+		if( form == h_BlockForm::Plate || form == h_BlockForm::Bisected )
+		{
+			h_Chunk* ch= GetChunk( chunk_x, chunk_y );
+
+			h_NonstandardFormBlock* block=
+				GetChunk( chunk_x, chunk_y )->
+				NewNonstandardFormBlock(
+					local_x, local_y, z, block_type, h_Direction::Up );
+
+			ch->SetBlock( local_x, local_y, z, block );
+		}
+		else
+		{
+			GetChunk( chunk_x, chunk_y )->
+			SetBlock(
+				local_x, local_y, z,
+				NormalBlock( block_type ) );
+		}
+	}
 
 	short r= 1;
 	if( block_type != h_BlockType::Water )

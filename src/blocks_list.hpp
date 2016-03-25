@@ -18,5 +18,6 @@ BLOCK_PROCESS_FUNC(Foliage),
 BLOCK_PROCESS_FUNC(FireStone),
 BLOCK_PROCESS_FUNC(Brick),
 BLOCK_PROCESS_FUNC(FailingBlock),
+BLOCK_PROCESS_FUNC(BrickPlate),
 // Put new blocks here
 
