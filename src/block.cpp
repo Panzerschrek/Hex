@@ -106,7 +106,7 @@ static const constexpr BlockProperties g_blocks_properties[ size_t(h_BlockType::
 	{
 		.default_transparency= TRANSPARENCY_SOLID,
 		.form= h_BlockForm::Full,
-		.transparent_for_fire_light= false,
+		.transparent_for_fire_light= true,
 		.transparent_for_direct_sun_light= false,
 		.transparent_for_secondary_sun_light= false,
 		.is_failing= false,
@@ -131,9 +131,9 @@ static const constexpr BlockProperties g_blocks_properties[ size_t(h_BlockType::
 	{
 		.default_transparency= TRANSPARENCY_AIR,
 		.form= h_BlockForm::Plate,
-		.transparent_for_fire_light= true,
+		.transparent_for_fire_light= false,
 		.transparent_for_direct_sun_light= false,
-		.transparent_for_secondary_sun_light= true,
+		.transparent_for_secondary_sun_light= false,
 		.is_failing= false,
 		.is_technical= false,
 	},
