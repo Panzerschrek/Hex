@@ -74,20 +74,17 @@ static bool TriangleIntersectWithCircle( const m_Vec2* triangle, const m_Vec2& c
 	return false;
 }
 
-p_UpperBlockFace::p_UpperBlockFace( short x, short y, short in_z, h_Direction in_dir )
+/*
+------------------p_UpperBlockFace--------------------
+*/
+
+p_UpperBlockFace::p_UpperBlockFace( short x, short y, float in_z, h_Direction in_dir )
 	: z( float(in_z) )
 	, dir(in_dir)
 {
 	H_ASSERT( in_dir == h_Direction::Up || in_dir == h_Direction::Down );
 
-	edge[0].x= float(x) * H_SPACE_SCALE_VECTOR_X;
-	edge[1].x= edge[5].x= edge[0].x + 0.5f * H_HEXAGON_EDGE_SIZE;
-	edge[2].x= edge[4].x= edge[0].x + 1.5f * H_HEXAGON_EDGE_SIZE;
-	edge[3].x= edge[0].x + 2.0f * H_HEXAGON_EDGE_SIZE;
-
-	edge[0].y= edge[3].y= float(y) + 0.5f * float( (x+1)&1 ) + 0.5f;
-	edge[1].y= edge[2].y= edge[0].y + 0.5f;
-	edge[4].y= edge[5].y= edge[0].y - 0.5f;
+	SetupEdges( x, y );
 }
 
 bool p_UpperBlockFace::HasCollisionWithCircle( const m_Vec2& pos, float radius ) const
@@ -121,56 +118,36 @@ bool p_UpperBlockFace::HasCollisionWithCircle( const m_Vec2& pos, float radius )
 	return false;
 }
 
+void p_UpperBlockFace::SetupEdges( short x, short y )
+{
+	edge[0].x= float(x) * H_SPACE_SCALE_VECTOR_X;
+	edge[1].x= edge[5].x= edge[0].x + 0.5f * H_HEXAGON_EDGE_SIZE;
+	edge[2].x= edge[4].x= edge[0].x + 1.5f * H_HEXAGON_EDGE_SIZE;
+	edge[3].x= edge[0].x + 2.0f * H_HEXAGON_EDGE_SIZE;
+
+	edge[0].y= edge[3].y= float(y) + 0.5f * float( (x+1)&1 ) + 0.5f;
+	edge[1].y= edge[2].y= edge[0].y + 0.5f;
+	edge[4].y= edge[5].y= edge[0].y - 0.5f;
+}
+
+/*
+------------------p_BlockSide--------------------
+*/
+
 p_BlockSide::p_BlockSide( short x, short y, short in_z, h_Direction in_dir )
-	: z(in_z)
+	: z0(in_z)
+	, z1(in_z + 1.0f)
 	, dir(in_dir)
 {
-	switch( dir )
-	{
-	case h_Direction::Forward:
-		edge[0].x= float(x) * H_SPACE_SCALE_VECTOR_X + 1.5f * H_HEXAGON_EDGE_SIZE;
-		edge[1].x= edge[0].x - H_HEXAGON_EDGE_SIZE;
-		edge[0].y= edge[1].y= float(y) + 0.5f * float( (x+1)&1 ) + 1.0f;
-		break;
+	SetupEdge( x, y );
+}
 
-	case h_Direction::Back:
-		edge[0].x= float(x) * H_SPACE_SCALE_VECTOR_X + 0.5f * H_HEXAGON_EDGE_SIZE;
-		edge[1].x= edge[0].x + H_HEXAGON_EDGE_SIZE;
-		edge[0].y= edge[1].y= float(y) + 0.5f * float( (x+1)&1 );
-		break;
-
-	case h_Direction::ForwardRight:
-		edge[0].x= float(x) * H_SPACE_SCALE_VECTOR_X + H_HEXAGON_EDGE_SIZE * 2.0f;
-		edge[1].x= edge[0].x - 0.5f * H_HEXAGON_EDGE_SIZE;
-		edge[0].y= float(y) + 0.5f * float( (x+1)&1 ) + 0.5f;
-		edge[1].y= edge[0].y + 0.5f;
-		break;
-
-	case h_Direction::BackLeft:
-		edge[0].x= float(x) * H_SPACE_SCALE_VECTOR_X;
-		edge[1].x= edge[0].x + 0.5f * H_HEXAGON_EDGE_SIZE;
-		edge[0].y= float(y) + 0.5f * float( (x+1)&1 ) + 0.5f;
-		edge[1].y= edge[0].y - 0.5f;
-		break;
-
-	case h_Direction::ForwardLeft:
-		edge[0].x= float(x) * H_SPACE_SCALE_VECTOR_X + H_HEXAGON_EDGE_SIZE * 0.5f;
-		edge[1].x= edge[0].x - 0.5f * H_HEXAGON_EDGE_SIZE;
-		edge[0].y= float(y) + 0.5f * float( (x+1)&1 ) + 1.0f;
-		edge[1].y= edge[0].y - 0.5f;
-		break;
-
-	case h_Direction::BackRight:
-		edge[0].x= float(x) * H_SPACE_SCALE_VECTOR_X  + 1.5f * H_HEXAGON_EDGE_SIZE;
-		edge[1].x= edge[0].x + 0.5f * H_HEXAGON_EDGE_SIZE;
-		edge[0].y= float(y) + 0.5f * float( (x+1)&1 );
-		edge[1].y= edge[0].y + 0.5f;
-		break;
-
-	default:
-		H_ASSERT(false);
-		break;
-	}
+p_BlockSide::p_BlockSide( short x, short y, float in_z0, float in_z1, h_Direction in_dir )
+	: z0(in_z0)
+	, z1(in_z1)
+	, dir(in_dir)
+{
+	SetupEdge( x, y );
 }
 
 bool p_BlockSide::HasCollisionWithCircle( const m_Vec2& pos, float radius ) const
@@ -235,6 +212,56 @@ m_Vec2 p_BlockSide::CollideWithCirlce( const m_Vec2& pos, float radius ) const
 
 	}
 	return pos;
+}
+
+void p_BlockSide::SetupEdge( short x, short y )
+{
+	switch( dir )
+	{
+	case h_Direction::Forward:
+		edge[0].x= float(x) * H_SPACE_SCALE_VECTOR_X + 1.5f * H_HEXAGON_EDGE_SIZE;
+		edge[1].x= edge[0].x - H_HEXAGON_EDGE_SIZE;
+		edge[0].y= edge[1].y= float(y) + 0.5f * float( (x+1)&1 ) + 1.0f;
+		break;
+
+	case h_Direction::Back:
+		edge[0].x= float(x) * H_SPACE_SCALE_VECTOR_X + 0.5f * H_HEXAGON_EDGE_SIZE;
+		edge[1].x= edge[0].x + H_HEXAGON_EDGE_SIZE;
+		edge[0].y= edge[1].y= float(y) + 0.5f * float( (x+1)&1 );
+		break;
+
+	case h_Direction::ForwardRight:
+		edge[0].x= float(x) * H_SPACE_SCALE_VECTOR_X + H_HEXAGON_EDGE_SIZE * 2.0f;
+		edge[1].x= edge[0].x - 0.5f * H_HEXAGON_EDGE_SIZE;
+		edge[0].y= float(y) + 0.5f * float( (x+1)&1 ) + 0.5f;
+		edge[1].y= edge[0].y + 0.5f;
+		break;
+
+	case h_Direction::BackLeft:
+		edge[0].x= float(x) * H_SPACE_SCALE_VECTOR_X;
+		edge[1].x= edge[0].x + 0.5f * H_HEXAGON_EDGE_SIZE;
+		edge[0].y= float(y) + 0.5f * float( (x+1)&1 ) + 0.5f;
+		edge[1].y= edge[0].y - 0.5f;
+		break;
+
+	case h_Direction::ForwardLeft:
+		edge[0].x= float(x) * H_SPACE_SCALE_VECTOR_X + H_HEXAGON_EDGE_SIZE * 0.5f;
+		edge[1].x= edge[0].x - 0.5f * H_HEXAGON_EDGE_SIZE;
+		edge[0].y= float(y) + 0.5f * float( (x+1)&1 ) + 1.0f;
+		edge[1].y= edge[0].y - 0.5f;
+		break;
+
+	case h_Direction::BackRight:
+		edge[0].x= float(x) * H_SPACE_SCALE_VECTOR_X  + 1.5f * H_HEXAGON_EDGE_SIZE;
+		edge[1].x= edge[0].x + 0.5f * H_HEXAGON_EDGE_SIZE;
+		edge[0].y= float(y) + 0.5f * float( (x+1)&1 );
+		edge[1].y= edge[0].y + 0.5f;
+		break;
+
+	default:
+		H_ASSERT(false);
+		break;
+	}
 }
 
 bool pRayHasIniersectWithTriangle(

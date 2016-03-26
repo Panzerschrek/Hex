@@ -425,6 +425,38 @@ void h_World::Destroy( short x, short y, short z )
 		UpdateInRadius( x, y, H_MAX_FIRE_LIGHT );
 		UpdateWaterInRadius( x, y, H_MAX_FIRE_LIGHT );
 	}
+	else if( h_Block::Form( block->Type() ) != h_BlockForm::Full )
+	{
+		auto nonstandard_form_block= static_cast<h_NonstandardFormBlock*>(block);
+
+		bool deleted= false;
+		for( unsigned int i= 0; i < ch->nonstandard_form_blocks_.size(); i++ )
+		{
+			if( ch->nonstandard_form_blocks_[i] == nonstandard_form_block )
+			{
+				ch->nonstandard_form_blocks_allocator_.Delete( nonstandard_form_block );
+
+				if( i != ch->nonstandard_form_blocks_.size() - 1 )
+					ch->nonstandard_form_blocks_[i]= ch->nonstandard_form_blocks_.back();
+
+				ch->nonstandard_form_blocks_.pop_back();
+
+				deleted= true;
+				break;
+			}
+		}
+
+		(void)deleted;
+		H_ASSERT(deleted);
+
+		ch->SetBlock(
+			local_x, local_y, z,
+			NormalBlock( h_BlockType::Air ) );
+
+		RelightBlockRemove( x, y, z );
+		UpdateInRadius( x, y, H_MAX_FIRE_LIGHT );
+		UpdateWaterInRadius( x, y, H_MAX_FIRE_LIGHT );
+	}
 	else
 	{
 		ch->SetBlock(
@@ -839,6 +871,31 @@ void h_World::UpdatePhysMesh( short x_min, short x_max, short y_min, short y_max
 				water_phys_block.water_level= float(water_block->LiquidLevel()) / float(H_MAX_WATER_LEVEL);
 
 				phys_mesh.water_blocks.push_back( water_phys_block );
+			}
+			else if( h_Block::Form( blocks[z]->Type()) == h_BlockForm::Plate )
+			{
+				auto nonstandatd_form_block= static_cast<const h_NonstandardFormBlock*>(blocks[z]);
+				float z0= float(z);
+				float z1= z0 + 0.5f;
+				if( nonstandatd_form_block->Direction() == h_Direction::Down )
+				{
+					z0+= 0.5f;
+					z1+= 0.5f;
+				}
+
+				phys_mesh.upper_block_faces.emplace_back(
+					x + X, y + Y, z0, h_Direction::Down );
+
+				phys_mesh.upper_block_faces.emplace_back(
+					x + X, y + Y, z1, h_Direction::Up );
+
+				for( unsigned int d= 0; d < 6; d++ )
+				{
+					phys_mesh.block_sides.emplace_back(
+						x + X, y + Y,
+						z0, z1,
+						static_cast<h_Direction>(d + (unsigned int)h_Direction::Forward) );
+				}
 			}
 		}
 	}

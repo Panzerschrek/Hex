@@ -384,12 +384,12 @@ void h_Player::UpdateBuildPos( const p_WorldPhysMesh& phys_mesh )
 		n= g_block_normals[ static_cast<size_t>(side.dir) ];
 
 		m_Vec3 triangles[6];
-		triangles[0]= m_Vec3( side.edge[0], side.z );
-		triangles[1]= m_Vec3( side.edge[1], side.z );
-		triangles[2]= m_Vec3( side.edge[1], side.z + 1.0f );
-		triangles[3]= m_Vec3( side.edge[0], side.z + 1.0f );
-		triangles[4]= m_Vec3( side.edge[0], side.z );
-		triangles[5]= m_Vec3( side.edge[1], side.z + 1.0f );
+		triangles[0]= m_Vec3( side.edge[0], side.z0 );
+		triangles[1]= m_Vec3( side.edge[1], side.z0 );
+		triangles[2]= m_Vec3( side.edge[1], side.z1 );
+		triangles[3]= m_Vec3( side.edge[0], side.z1 );
+		triangles[4]= m_Vec3( side.edge[0], side.z0 );
+		triangles[5]= m_Vec3( side.edge[1], side.z1 );
 		for( unsigned int i= 0; i < 2; i++ )
 		{
 			if( pRayHasIniersectWithTriangle( triangles + i * 3, n, eye_pos, eye_dir, &candidate_pos ) )
@@ -472,8 +472,8 @@ void h_Player::Move( const m_Vec3& delta, const p_WorldPhysMesh& phys_mesh )
 
 	for( const p_BlockSide& side : phys_mesh.block_sides )
 	{
-		if( ( side.z > new_pos.z && side.z < new_pos.z + height_ ) ||
-			( side.z + 1.0f > new_pos.z && side.z + 1.0f < new_pos.z + height_ ) )
+		if( ( side.z0 > new_pos.z && side.z0 < new_pos.z + height_ ) ||
+			( side.z1 > new_pos.z && side.z1 < new_pos.z + height_ ) )
 		{
 			m_Vec2 collide_pos= side.CollideWithCirlce( new_pos.xy(), radius_ );
 			if( collide_pos != new_pos.xy() )
