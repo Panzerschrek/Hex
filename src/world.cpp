@@ -141,11 +141,17 @@ h_World::~h_World()
 		}
 }
 
-void h_World::AddBuildEvent( short x, short y, short z, h_BlockType block_type )
+void h_World::AddBuildEvent(
+	short x, short y, short z,
+	h_BlockType block_type,
+	h_Direction horizontal_direction, h_Direction vertical_direction )
 {
 	h_WorldAction act;
+
 	act.type= h_WorldAction::Type::Build;
 	act.block_type= block_type;
+	act.horizontal_direction= horizontal_direction;
+	act.vertical_direction= vertical_direction;
 	act.coord[0]= x;
 	act.coord[1]= y;
 	act.coord[2]= z;
@@ -277,7 +283,10 @@ const m_Vec3& h_World::TestMobGetPosition() const
 	return test_mob_pos_;
 }
 
-void h_World::Build( short x, short y, short z, h_BlockType block_type )
+void h_World::Build(
+	short x, short y, short z,
+	h_BlockType block_type,
+	h_Direction horizontal_direction, h_Direction vertical_direction )
 {
 	if( !InBorders( x, y, z ) )
 		return;
@@ -327,7 +336,8 @@ void h_World::Build( short x, short y, short z, h_BlockType block_type )
 			h_NonstandardFormBlock* block=
 				GetChunk( chunk_x, chunk_y )->
 				NewNonstandardFormBlock(
-					local_x, local_y, z, block_type, h_Direction::Up );
+					local_x, local_y, z,
+					block_type, vertical_direction );
 
 			ch->SetBlock( local_x, local_y, z, block );
 		}
@@ -447,7 +457,10 @@ void h_World::FlushActionQueue()
 		switch( act.type )
 		{
 		case h_WorldAction::Type::Build:
-			Build( act.coord[0], act.coord[1], act.coord[2], act.block_type );
+			Build(
+				act.coord[0], act.coord[1], act.coord[2],
+				act.block_type,
+				act.horizontal_direction, act.vertical_direction );
 			break;
 
 		case h_WorldAction::Type::Destroy:

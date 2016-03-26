@@ -230,7 +230,14 @@ void h_Player::Build()
 			return;
 	}
 
-	world_->AddBuildEvent( discret_build_pos_[0], discret_build_pos_[1], discret_build_pos_[2], build_block_ );
+	// TODO - select horizontal direction
+	h_Direction horizontal_direction= h_Direction::Forward;
+	h_Direction vertical_direction= view_angle_.x <= 0.0f ? h_Direction::Up : h_Direction::Down;
+
+	world_->AddBuildEvent(
+		discret_build_pos_[0], discret_build_pos_[1], discret_build_pos_[2],
+		build_block_,
+		horizontal_direction, vertical_direction );
 }
 
 void h_Player::Dig()

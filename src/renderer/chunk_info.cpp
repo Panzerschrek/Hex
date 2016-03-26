@@ -883,7 +883,9 @@ r_WorldVertex* r_ChunkInfo::BuildNonstandardFormBlocks( r_WorldVertex* v )
 		case h_BlockForm::Plate:
 			{
 				h_BlockType block_type= block->Type();
+
 				int z= block->GetZ() << 1;
+				if( block->Direction() == h_Direction::Down ) z++;
 
 				int xy[8][2];
 				xy[0][0]= 3 * ( X + block->GetX() );
@@ -916,10 +918,13 @@ r_WorldVertex* r_ChunkInfo::BuildNonstandardFormBlocks( r_WorldVertex* v )
 						world->GetForwardVertexLight( x  , y - 1        , h, light[6*i+4] );
 						world->GetBackVertexLight   ( x  , y            , h, light[6*i+5] );
 					}
+
+					// Calculate light for vertices in block center.
+					unsigned int avg_index= block->Direction() == h_Direction::Up ? 6 : 0;
 					for( unsigned int i= 0; i < 6; i++ )
 					{
-						light[i+6][0]= (light[i][0] + light[i+6][0]) >> 1;
-						light[i+6][1]= (light[i][1] + light[i+6][1]) >> 1;
+						light[i+avg_index][0]= (light[i][0] + light[i+6][0]) >> 1;
+						light[i+avg_index][1]= (light[i][1] + light[i+6][1]) >> 1;
 					}
 				}
 				else
@@ -1090,15 +1095,15 @@ r_WorldVertex* r_ChunkInfo::BuildNonstandardFormBlocks( r_WorldVertex* v )
 
 				for( unsigned int l= 0; l < 2; l++ )
 				{
-					v[4].light[l]= light[6+1][l];
-					v[7].light[l]= light[0+1][l];
-					v[5].light[l]= light[6+0][l];
-					v[6].light[l]= light[0+0][l];
-
 					v[0].light[l]= light[6+3][l];
 					v[3].light[l]= light[0+3][l];
 					v[1].light[l]= light[6+4][l];
 					v[2].light[l]= light[0+4][l];
+
+					v[4].light[l]= light[6+1][l];
+					v[7].light[l]= light[0+1][l];
+					v[5].light[l]= light[6+0][l];
+					v[6].light[l]= light[0+0][l];
 				}
 				// back_right and forward_left
 				for( unsigned int side= 0; side < 2; side++ )

@@ -48,7 +48,11 @@ public:
 	short Latitude () const;
 
 	// Add events. Thread safe. Coordinates - global.
-	void AddBuildEvent( short x, short y, short z, h_BlockType block_type );
+	void AddBuildEvent(
+		short x, short y, short z,
+		h_BlockType block_type,
+		h_Direction horizontal_direction, h_Direction vertical_direction );
+
 	void AddDestroyEvent( short x, short y, short z );
 
 	//replace all blocks in radius in this layer( z=const )
@@ -93,7 +97,12 @@ public:
 	const m_Vec3& TestMobGetPosition() const;
 
 private:
-	void Build( short x, short y, short z, h_BlockType block_type );//coordinates - relative
+	//coordinates - relative
+	void Build(
+		short x, short y, short z,
+		h_BlockType block_type,
+		h_Direction horizontal_direction, h_Direction vertical_direction );
+
 	void Destroy( short x, short y, short z );
 	void FlushActionQueue();
 

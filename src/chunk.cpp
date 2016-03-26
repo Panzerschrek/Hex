@@ -103,7 +103,10 @@ void h_Chunk::SaveBlock( QDataStream& stream, const h_Block* block )
 		break;
 
 	case h_BlockType::BrickPlate:
-	// TODO
+		{
+			auto nonstandard_form_block= static_cast< const h_NonstandardFormBlock* >(block);
+			stream << ( (unsigned char) nonstandard_form_block->Direction() );
+		}
 		break;
 
 	case h_BlockType::NumBlockTypes:
@@ -202,13 +205,16 @@ h_Block* h_Chunk::LoadBlock( QDataStream& stream, unsigned int block_addr )
 		break;
 
 	case h_BlockType::BrickPlate:
-		// TODO
-		block=
-			NewNonstandardFormBlock(
-				BlockAddrToX(block_addr),
-				BlockAddrToY(block_addr),
-				BlockAddrToZ(block_addr),
-				h_BlockType::BrickPlate, h_Direction::Up );
+		{
+			unsigned char direction;
+			stream >> direction;
+
+			block= NewNonstandardFormBlock(
+					BlockAddrToX(block_addr),
+					BlockAddrToY(block_addr),
+					BlockAddrToZ(block_addr),
+					h_BlockType::BrickPlate, static_cast<h_Direction>(direction) );
+		}
 		break;
 
 	default:
