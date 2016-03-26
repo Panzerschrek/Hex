@@ -681,8 +681,8 @@ void r_ChunkInfo::BuildChunkMesh()
 				v[ 1 ].tex_coord[0]= v[2].tex_coord[0]= tex_scale * ( v[ 1 ].coord[1] - v[1].coord[0] );
 				v[0].tex_coord[0]= v[ 3 ].tex_coord[0]= v[ 1 ].tex_coord[0] - 2 * tex_scale;
 
-				v[0].tex_coord[1]= v[ 1 ].tex_coord[1]= z * (2 * tex_scale);
-				v[2].tex_coord[1]= v[ 3 ].tex_coord[1]= v[0].tex_coord[1] - (2 * tex_scale);
+				v[2].tex_coord[1]= v[ 3 ].tex_coord[1]= (z * tex_scale) << 1;
+				v[0].tex_coord[1]= v[ 1 ].tex_coord[1]= v[2].tex_coord[1] + (tex_scale << 1);
 
 				v[0].tex_coord[2]= v[1].tex_coord[2]= v[2].tex_coord[2]= v[3].tex_coord[2]=
 				tex_id;
@@ -738,8 +738,8 @@ void r_ChunkInfo::BuildChunkMesh()
 				v[2].tex_coord[0]= v[ 1 ].tex_coord[0]=  ( v[1].coord[1]  + v[1].coord[0] ) * tex_scale;
 				v[0].tex_coord[0]= v[ 3 ].tex_coord[0]= v[2].tex_coord[0] + 2 * tex_scale;
 
-				v[0].tex_coord[1]= v[ 1 ].tex_coord[1]= z * (2 * tex_scale);
-				v[ 3 ].tex_coord[1]= v[2].tex_coord[1]= v[0].tex_coord[1] - (2 * tex_scale);
+				v[ 3 ].tex_coord[1]= v[2].tex_coord[1]= ( z * tex_scale ) << 1;
+				v[0].tex_coord[1]= v[ 1 ].tex_coord[1]= v[ 3 ].tex_coord[1] + (tex_scale << 1);
 
 				v[0].tex_coord[2]= v[1].tex_coord[2]= v[2].tex_coord[2]= v[3].tex_coord[2]=
 				tex_id;
@@ -794,8 +794,9 @@ void r_ChunkInfo::BuildChunkMesh()
 				v[0].tex_coord[0]= v[ 1 ].tex_coord[0]= v[0].coord[0] * tex_scale;
 				v[2].tex_coord[0]= v[ 3 ].tex_coord[0]= v[0].tex_coord[0] + 2 * tex_scale;
 
-				v[0].tex_coord[1]= v[ 3 ].tex_coord[1]= z * (2 * tex_scale);
-				v[ 1 ].tex_coord[1]= v[2].tex_coord[1]= v[0].tex_coord[1] - (2 * tex_scale);
+				v[ 1 ].tex_coord[1]= v[2].tex_coord[1]= (z * tex_scale) << 1;
+				v[0].tex_coord[1]= v[ 3 ].tex_coord[1]= v[ 1 ].tex_coord[1] + (tex_scale << 1);
+
 				v[0].tex_coord[2]= v[1].tex_coord[2]= v[2].tex_coord[2]= v[3].tex_coord[2]=
 				tex_id;
 
@@ -974,7 +975,7 @@ r_WorldVertex* r_ChunkInfo::BuildNonstandardFormBlocks( r_WorldVertex* v )
 						v[2].tex_coord[0]= v[7].tex_coord[0]= v[0].tex_coord[0] + 3*tex_scale;
 						v[3].tex_coord[0]= v[0].tex_coord[0] + 4*tex_scale;
 
-						v[0].tex_coord[1]= v[3].tex_coord[1]= tex_scale * xy[0][0];
+						v[0].tex_coord[1]= v[3].tex_coord[1]= tex_scale * xy[0][1];
 						v[1].tex_coord[1]= v[2].tex_coord[1]= v[0].tex_coord[1] + 1*tex_scale;
 						v[7].tex_coord[1]= v[4].tex_coord[1]= v[0].tex_coord[1] - 1*tex_scale;
 					}
@@ -1039,8 +1040,8 @@ r_WorldVertex* r_ChunkInfo::BuildNonstandardFormBlocks( r_WorldVertex* v )
 					v[0].tex_coord[0]= v[ 1 ].tex_coord[0]= v[0].coord[0] * tex_scale;
 					v[2].tex_coord[0]= v[ 3 ].tex_coord[0]= v[0].tex_coord[0] + 2 * tex_scale;
 
-					v[0].tex_coord[1]= v[ 3 ].tex_coord[1]= z * tex_scale;
-					v[ 1 ].tex_coord[1]= v[2].tex_coord[1]= v[0].tex_coord[1] - tex_scale;
+					v[ 1 ].tex_coord[1]= v[2].tex_coord[1]= z * tex_scale;
+					v[0].tex_coord[1]= v[ 3 ].tex_coord[1]= v[ 1 ].tex_coord[1] + tex_scale;
 
 					v[0].tex_coord[2]= v[1].tex_coord[2]= v[2].tex_coord[2]= v[3].tex_coord[2]= tex_id;
 
@@ -1082,8 +1083,8 @@ r_WorldVertex* r_ChunkInfo::BuildNonstandardFormBlocks( r_WorldVertex* v )
 					v[ 1 ].tex_coord[0]= v[2].tex_coord[0]= tex_scale * ( v[ 1 ].coord[1] - v[1].coord[0] );
 					v[0].tex_coord[0]= v[ 3 ].tex_coord[0]= v[ 1 ].tex_coord[0] - 2 * tex_scale;
 
-					v[0].tex_coord[1]= v[ 1 ].tex_coord[1]= z * tex_scale;
-					v[2].tex_coord[1]= v[ 3 ].tex_coord[1]= v[0].tex_coord[1] - tex_scale;
+					v[2].tex_coord[1]= v[ 3 ].tex_coord[1]= z * tex_scale;
+					v[0].tex_coord[1]= v[ 1 ].tex_coord[1]= v[2].tex_coord[1] + tex_scale;
 
 					v[0].tex_coord[2]= v[1].tex_coord[2]= v[2].tex_coord[2]= v[3].tex_coord[2]= tex_id;
 
@@ -1125,8 +1126,8 @@ r_WorldVertex* r_ChunkInfo::BuildNonstandardFormBlocks( r_WorldVertex* v )
 					v[2].tex_coord[0]= v[ 1 ].tex_coord[0]=  ( v[1].coord[1]  + v[1].coord[0] ) * tex_scale;
 					v[0].tex_coord[0]= v[ 3 ].tex_coord[0]= v[2].tex_coord[0] + 2 * tex_scale;
 
-					v[0].tex_coord[1]= v[ 1 ].tex_coord[1]= z * tex_scale;
-					v[ 3 ].tex_coord[1]= v[2].tex_coord[1]= v[0].tex_coord[1] - tex_scale;
+					v[ 3 ].tex_coord[1]= v[2].tex_coord[1]= z * tex_scale;
+					v[0].tex_coord[1]= v[ 1 ].tex_coord[1]= v[ 3 ].tex_coord[1] + tex_scale;
 
 					v[0].tex_coord[2]= v[1].tex_coord[2]= v[2].tex_coord[2]= v[3].tex_coord[2]= tex_id;
 
