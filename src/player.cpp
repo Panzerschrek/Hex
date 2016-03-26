@@ -4,6 +4,7 @@
 #include "world_header.hpp"
 #include "world.hpp"
 #include "time.hpp"
+#include "math_lib/assert.hpp"
 #include "math_lib/math.hpp"
 
 #include "matrix.hpp"
@@ -243,53 +244,7 @@ void h_Player::Build()
 void h_Player::Dig()
 {
 	if( build_direction_ != h_Direction::Unknown )
-	{
-		short dig_pos[3]=
-		{
-			discret_build_pos_[0],
-			discret_build_pos_[1],
-			discret_build_pos_[2]
-		};
-
-		switch( build_direction_ )
-		{
-		case h_Direction::Up:
-			dig_pos[2]--;
-			break;
-		case h_Direction::Down:
-			dig_pos[2]++;
-			break;
-
-		case h_Direction::Forward:
-			dig_pos[1]--;
-			break;
-		case h_Direction::Back:
-			dig_pos[1]++;
-			break;
-
-		case h_Direction::ForwardRight:
-			dig_pos[1]-= (dig_pos[0]&1);
-			dig_pos[0]--;
-			break;
-		case h_Direction::BackRight:
-			dig_pos[1]+= ((dig_pos[0]+1)&1);
-			dig_pos[0]--;
-			break;
-
-		case h_Direction::ForwardLeft:
-			dig_pos[1]-= (dig_pos[0]&1);
-			dig_pos[0]++;
-			break;
-		case h_Direction::BackLeft:
-			dig_pos[1]+= ((dig_pos[0]+1)&1);
-			dig_pos[0]++;
-			break;
-
-		default: break;
-		};
-
-		world_->AddDestroyEvent( dig_pos[0], dig_pos[1], dig_pos[2] );
-	}
+		world_->AddDestroyEvent( destroy_pos_[0], destroy_pos_[1], destroy_pos_[2] );
 }
 
 void h_Player::TestMobSetPosition()
@@ -412,16 +367,44 @@ void h_Player::UpdateBuildPos( const p_WorldPhysMesh& phys_mesh )
 		return;
 	}
 
-	// Fix accuracy.
-	intersect_pos+= g_block_normals[ static_cast<size_t>(block_dir) ] * 0.1f;
+	// Fix accuracy. Move intersection point inside target block.
+	intersect_pos-= g_block_normals[ static_cast<size_t>(block_dir) ] * 0.1f;
 
-	short new_x, new_y, new_z;
-	pGetHexogonCoord( intersect_pos.xy(), &new_x, &new_y );
-	new_z= (short) intersect_pos.z;
+	pGetHexogonCoord( intersect_pos.xy(), &destroy_pos_[0], &destroy_pos_[1] );
+	destroy_pos_[2]= short( intersect_pos.z );
 
-	discret_build_pos_[0]= new_x;
-	discret_build_pos_[1]= new_y;
-	discret_build_pos_[2]= new_z;
+	discret_build_pos_[0]= destroy_pos_[0];
+	discret_build_pos_[1]= destroy_pos_[1];
+	discret_build_pos_[2]= destroy_pos_[2];
+
+	switch( block_dir )
+	{
+	case h_Direction::Up: discret_build_pos_[2]++; break;
+	case h_Direction::Down: discret_build_pos_[2]--; break;
+
+	case h_Direction::Forward: discret_build_pos_[1]++; break;
+	case h_Direction::Back: discret_build_pos_[1]--; break;
+
+	case h_Direction::ForwardRight:
+		discret_build_pos_[1]+= ( (discret_build_pos_[0]^1) & 1 );
+		discret_build_pos_[0]++;
+		break;
+	case h_Direction::BackRight:
+		discret_build_pos_[1]-= discret_build_pos_[0] & 1;
+		discret_build_pos_[0]++;
+		break;
+
+	case h_Direction::ForwardLeft:
+		discret_build_pos_[1]+= ( (discret_build_pos_[0]^1) & 1 );
+		discret_build_pos_[0]--;
+		break;
+	case h_Direction::BackLeft:
+		discret_build_pos_[1]-= discret_build_pos_[0] & 1;
+		discret_build_pos_[0]--;
+		break;
+
+	case h_Direction::Unknown: H_ASSERT(false); break;
+	}
 
 	build_pos_.x= float( discret_build_pos_[0] + 1.0f / 3.0f ) * H_SPACE_SCALE_VECTOR_X;
 	build_pos_.y= float( discret_build_pos_[1] ) - 0.5f * float(discret_build_pos_[0]&1) + 0.5f;
