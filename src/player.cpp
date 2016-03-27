@@ -315,19 +315,13 @@ void h_Player::UpdateBuildPos( const p_WorldPhysMesh& phys_mesh )
 	{
 		n= g_block_normals[ static_cast<size_t>(face.dir) ];
 
-		// Hexagon triangulation to 4 triangles.
-		static const unsigned int traingles_edges[4][3]=
+		// Triangulate polygon and check intersection with triangles.
+		m_Vec3 triangle[3];
+		triangle[0]= m_Vec3( face.vertices[0], face.z );
+		for( unsigned int i= 0; i < face.vertex_count - 2; i++ )
 		{
-			{ 0, 1, 2 }, { 2, 3, 4, }, { 4, 5, 0 }, { 0, 2, 4 },
-		};
-
-		for( unsigned int i= 0; i < 4; i++ )
-		{
-			m_Vec3 triangle[3];
-
-			triangle[0]= m_Vec3( face.edge[ traingles_edges[i][0] ], face.z );
-			triangle[1]= m_Vec3( face.edge[ traingles_edges[i][1] ], face.z );
-			triangle[2]= m_Vec3( face.edge[ traingles_edges[i][2] ], face.z );
+			triangle[1]= m_Vec3( face.vertices[ i + 1 ], face.z );
+			triangle[2]= m_Vec3( face.vertices[ i + 2 ], face.z );
 			if( pRayHasIniersectWithTriangle( triangle, n, eye_pos, eye_dir, &candidate_pos ) )
 			{
 				float candidate_square_dist= ( candidate_pos - eye_pos ).SquareLength();

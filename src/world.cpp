@@ -899,8 +899,64 @@ void h_World::UpdatePhysMesh( short x_min, short x_max, short y_min, short y_max
 						static_cast<h_Direction>(d + (unsigned int)h_Direction::Forward) );
 				}
 			}
-		}
-	}
+			else if( h_Block::Form( blocks[z]->Type()) == h_BlockForm::Bisected )
+			{
+				auto nonstandatd_form_block= static_cast<const h_NonstandardFormBlock*>(blocks[z]);
+
+				p_UpperBlockFace help_face( x + X, y + Y, float(z), h_Direction::Up );
+
+				static const unsigned int c_rot_table[]=
+				{ 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5 };
+				static const unsigned int c_dir_to_rot_table[6]=
+				{ 0, 3,  1, 4,  5, 2 };
+				unsigned int rot= c_dir_to_rot_table[
+					(unsigned int) nonstandatd_form_block->Direction() -
+					(unsigned int) h_Direction::Forward ];
+
+				m_Vec2 vertices[4];
+				vertices[0]= help_face.vertices[ c_rot_table[0 + rot] ];
+				vertices[1]= help_face.vertices[ c_rot_table[1 + rot] ];
+				vertices[2]= help_face.vertices[ c_rot_table[2 + rot] ];
+				vertices[3]= help_face.vertices[ c_rot_table[3 + rot] ];
+
+				for( unsigned int i= 0; i < 2; i++ )
+				{
+					phys_mesh.upper_block_faces.emplace_back();
+					p_UpperBlockFace& face= phys_mesh.upper_block_faces.back();
+
+					face.vertex_count= 4;
+					face.vertices[0]= vertices[0];
+					face.vertices[1]= vertices[1];
+					face.vertices[2]= vertices[2];
+					face.vertices[3]= vertices[3];
+					face.center= help_face.center;
+					face.radius= help_face.radius;
+					face.z= float(z+i);
+					face.dir= i == 0 ? h_Direction::Down : h_Direction::Up;
+				}
+
+				for( unsigned int i= 0; i < 4; i++ )
+				{
+					phys_mesh.block_sides.emplace_back();
+					p_BlockSide& side= phys_mesh.block_sides.back();
+
+					side.z0= float(z);
+					side.z1= float(z+1);
+
+					static const h_Direction c_circle_table[]=
+					{
+						h_Direction::ForwardLeft, h_Direction::Forward, h_Direction::ForwardRight,
+						h_Direction::BackRight, h_Direction::Back, h_Direction::BackLeft,
+					};
+					unsigned int s= i == 3 ? 4 : i;
+					side.dir= h_Direction( c_circle_table[ (rot + s) % 6 ] );
+
+					side.edge[0]= vertices[i];
+					side.edge[1]= vertices[ (i+1) & 3 ];
+				}
+			} // h_BlockForm::Bisected
+		} // for z
+	} // for xy
 
 	std::lock_guard<std::mutex> lock( phys_mesh_mutex_ );
 	phys_mesh_= std::make_shared< p_WorldPhysMesh >( std::move(phys_mesh ) );

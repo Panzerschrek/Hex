@@ -79,55 +79,50 @@ static bool TriangleIntersectWithCircle( const m_Vec2* triangle, const m_Vec2& c
 */
 
 p_UpperBlockFace::p_UpperBlockFace( short x, short y, float in_z, h_Direction in_dir )
-	: z( float(in_z) )
+	: radius( H_HEXAGON_EDGE_SIZE )
+	, z( in_z )
+	, vertex_count(6)
 	, dir(in_dir)
 {
 	H_ASSERT( in_dir == h_Direction::Up || in_dir == h_Direction::Down );
 
-	SetupEdges( x, y );
+	vertices[0].x= float(x) * H_SPACE_SCALE_VECTOR_X;
+	vertices[1].x= vertices[5].x= vertices[0].x + 0.5f * H_HEXAGON_EDGE_SIZE;
+	vertices[2].x= vertices[4].x= vertices[0].x + 1.5f * H_HEXAGON_EDGE_SIZE;
+	vertices[3].x= vertices[0].x + 2.0f * H_HEXAGON_EDGE_SIZE;
+
+	vertices[0].y= vertices[3].y= float(y) + 0.5f * float( (x+1)&1 ) + 0.5f;
+	vertices[1].y= vertices[2].y= vertices[0].y + 0.5f;
+	vertices[4].y= vertices[5].y= vertices[0].y - 0.5f;
+
+	center.x= vertices[0].x + H_HEXAGON_EDGE_SIZE;
+	center.y= vertices[0].y;
 }
 
-bool p_UpperBlockFace::HasCollisionWithCircle( const m_Vec2& pos, float radius ) const
+bool p_UpperBlockFace::HasCollisionWithCircle( const m_Vec2& pos, float circle_radius ) const
 {
-	m_Vec2 center
-	(
-		edge[0].x + H_HEXAGON_EDGE_SIZE,
-		edge[0].y
-	);
-
-	float dst= ( pos - center ).Length();
+	float square_dist= ( pos - center ).SquareLength();
 
 	// Not hit outer circle. Has no collision.
-	if( dst >= radius + H_HEXAGON_EDGE_SIZE )
+	float radius_sum= circle_radius + radius;
+	if( square_dist >= radius_sum * radius_sum )
 		return false;
-	// Hit inner circle. Has collision.
-	if( dst <= radius + H_HEXAGON_INNER_RADIUS )
+	// Hit centre. Has collision.
+	if( square_dist <= circle_radius * circle_radius )
 		return true;
 
 	// Check collision with hexagon traigles
 	m_Vec2 triangle[3];
-	triangle[0]= center;
-	for( unsigned int i= 0; i < 6; i++ )
+	triangle[0]= vertices[0];
+	for( unsigned int i= 0; i < vertex_count - 2; i++ )
 	{
-		triangle[1]= edge[i];
-		triangle[2]= edge[ i == 5 ? 0 : i + 1 ];
+		triangle[1]= vertices[i+1];
+		triangle[2]= vertices[i+2];
 
-		if( TriangleIntersectWithCircle( triangle, pos, radius ) )
+		if( TriangleIntersectWithCircle( triangle, pos, circle_radius ) )
 			return true;
 	}
 	return false;
-}
-
-void p_UpperBlockFace::SetupEdges( short x, short y )
-{
-	edge[0].x= float(x) * H_SPACE_SCALE_VECTOR_X;
-	edge[1].x= edge[5].x= edge[0].x + 0.5f * H_HEXAGON_EDGE_SIZE;
-	edge[2].x= edge[4].x= edge[0].x + 1.5f * H_HEXAGON_EDGE_SIZE;
-	edge[3].x= edge[0].x + 2.0f * H_HEXAGON_EDGE_SIZE;
-
-	edge[0].y= edge[3].y= float(y) + 0.5f * float( (x+1)&1 ) + 0.5f;
-	edge[1].y= edge[2].y= edge[0].y + 0.5f;
-	edge[4].y= edge[5].y= edge[0].y - 0.5f;
 }
 
 /*
