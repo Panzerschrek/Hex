@@ -102,6 +102,14 @@ void h_Chunk::SaveBlock( QDataStream& stream, const h_Block* block )
 		stream << static_cast< const h_GrassBlock* >(block)->IsActive();
 		break;
 
+	case h_BlockType::BrickPlate:
+	case h_BlockType::BrickHalfblock:
+		{
+			auto nonstandard_form_block= static_cast< const h_NonstandardFormBlock* >(block);
+			stream << ( (unsigned char) nonstandard_form_block->Direction() );
+		}
+		break;
+
 	case h_BlockType::NumBlockTypes:
 	case h_BlockType::Unknown:
 		break;
@@ -194,6 +202,20 @@ h_Block* h_Chunk::LoadBlock( QDataStream& stream, unsigned int block_addr )
 				grass_block= world_->UnactiveGrassBlock();
 
 			block= grass_block;
+		}
+		break;
+
+	case h_BlockType::BrickPlate:
+	case h_BlockType::BrickHalfblock:
+		{
+			unsigned char direction;
+			stream >> direction;
+
+			block= NewNonstandardFormBlock(
+					BlockAddrToX(block_addr),
+					BlockAddrToY(block_addr),
+					BlockAddrToZ(block_addr),
+					block_id, static_cast<h_Direction>(direction) );
 		}
 		break;
 
@@ -548,6 +570,18 @@ void h_Chunk::DeleteLightSource( short x, short y, short z )
 			break;
 		}
 	}
+}
+
+h_NonstandardFormBlock* h_Chunk::NewNonstandardFormBlock(
+		unsigned char x, unsigned char y, unsigned char z,
+		h_BlockType type, h_Direction direction )
+{
+	h_NonstandardFormBlock* block=
+		nonstandard_form_blocks_allocator_.New( x, y, z, type, direction );
+
+	nonstandard_form_blocks_.push_back(block);
+
+	return block;
 }
 
 h_GrassBlock* h_Chunk::NewActiveGrassBlock( unsigned char x, unsigned char y, unsigned char z )

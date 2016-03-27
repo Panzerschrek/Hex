@@ -1,4 +1,5 @@
 #pragma once
+#include "hex.hpp"
 
 struct h_WorldAction
 {
@@ -9,7 +10,12 @@ struct h_WorldAction
 	};
 
 	Type type;
-	short coord[3];
+
 	h_BlockType block_type;
+
+	h_Direction horizontal_direction;
+	h_Direction vertical_direction;
+
+	short coord[3];
 };
 

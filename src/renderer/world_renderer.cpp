@@ -888,7 +888,11 @@ void r_WorldRenderer::DrawWorld()
 
 	world_shader_.Bind();
 	world_shader_.Uniform( "tex", 0 );
-	world_shader_.Uniform( "view_matrix", block_final_matrix_ );
+
+	m_Mat4 z_scale_mat;
+	z_scale_mat.Scale( m_Vec3( 1.0f, 1.0f, 0.5f ) );
+
+	world_shader_.Uniform( "view_matrix", z_scale_mat * block_final_matrix_ );
 
 	world_shader_.Uniform( "sun_light_color", lighting_data_.current_sun_light );
 	world_shader_.Uniform( "fire_light_color", lighting_data_.current_fire_light );

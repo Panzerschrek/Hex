@@ -10,6 +10,7 @@ public:
 	static h_Direction GetDirectionByName( const char* name );
 
 	static bool IsTechnicalType( h_BlockType type );
+	static h_BlockForm Form( h_BlockType type );
 
 	h_Block( h_BlockType type= h_BlockType::Air, unsigned short additional_data= 0 );
 	~h_Block() {}
@@ -26,7 +27,25 @@ protected:
 	h_CombinedTransparency combined_transparency_;
 };
 
-class h_LiquidBlock: public h_Block
+class h_NonstandardFormBlock : public h_Block
+{
+public:
+	h_NonstandardFormBlock(
+		unsigned char x, unsigned char y, unsigned char z,
+		h_BlockType type, h_Direction direction );
+
+	h_Direction Direction() const;
+
+	unsigned char GetX() const;
+	unsigned char GetY() const;
+	unsigned char GetZ() const;
+
+private:
+	const unsigned char x_, y_, z_;
+	const h_Direction direction_;
+};
+
+class h_LiquidBlock : public h_Block
 {
 	// h_Block::additional_data_ in this class is water pressure
 public:

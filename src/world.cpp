@@ -141,11 +141,17 @@ h_World::~h_World()
 		}
 }
 
-void h_World::AddBuildEvent( short x, short y, short z, h_BlockType block_type )
+void h_World::AddBuildEvent(
+	short x, short y, short z,
+	h_BlockType block_type,
+	h_Direction horizontal_direction, h_Direction vertical_direction )
 {
 	h_WorldAction act;
+
 	act.type= h_WorldAction::Type::Build;
 	act.block_type= block_type;
+	act.horizontal_direction= horizontal_direction;
+	act.vertical_direction= vertical_direction;
 	act.coord[0]= x;
 	act.coord[1]= y;
 	act.coord[2]= z;
@@ -277,7 +283,10 @@ const m_Vec3& h_World::TestMobGetPosition() const
 	return test_mob_pos_;
 }
 
-void h_World::Build( short x, short y, short z, h_BlockType block_type )
+void h_World::Build(
+	short x, short y, short z,
+	h_BlockType block_type,
+	h_Direction horizontal_direction, h_Direction vertical_direction )
 {
 	if( !InBorders( x, y, z ) )
 		return;
@@ -318,10 +327,30 @@ void h_World::Build( short x, short y, short z, h_BlockType block_type )
 		ch->SetBlock( local_x, local_y, z, grass_block );
 	}
 	else
-		GetChunk( chunk_x, chunk_y )->
-		SetBlock(
-			local_x, local_y, z,
-			NormalBlock( block_type ) );
+	{
+		h_BlockForm form= h_Block::Form( block_type );
+		if( form == h_BlockForm::Plate || form == h_BlockForm::Bisected )
+		{
+			h_Chunk* ch= GetChunk( chunk_x, chunk_y );
+
+			h_Direction direction= form == h_BlockForm::Plate ? vertical_direction : horizontal_direction;
+
+			h_NonstandardFormBlock* block=
+				GetChunk( chunk_x, chunk_y )->
+				NewNonstandardFormBlock(
+					local_x, local_y, z,
+					block_type, direction );
+
+			ch->SetBlock( local_x, local_y, z, block );
+		}
+		else
+		{
+			GetChunk( chunk_x, chunk_y )->
+			SetBlock(
+				local_x, local_y, z,
+				NormalBlock( block_type ) );
+		}
+	}
 
 	short r= 1;
 	if( block_type != h_BlockType::Water )
@@ -398,6 +427,38 @@ void h_World::Destroy( short x, short y, short z )
 		UpdateInRadius( x, y, H_MAX_FIRE_LIGHT );
 		UpdateWaterInRadius( x, y, H_MAX_FIRE_LIGHT );
 	}
+	else if( h_Block::Form( block->Type() ) != h_BlockForm::Full )
+	{
+		auto nonstandard_form_block= static_cast<h_NonstandardFormBlock*>(block);
+
+		bool deleted= false;
+		for( unsigned int i= 0; i < ch->nonstandard_form_blocks_.size(); i++ )
+		{
+			if( ch->nonstandard_form_blocks_[i] == nonstandard_form_block )
+			{
+				ch->nonstandard_form_blocks_allocator_.Delete( nonstandard_form_block );
+
+				if( i != ch->nonstandard_form_blocks_.size() - 1 )
+					ch->nonstandard_form_blocks_[i]= ch->nonstandard_form_blocks_.back();
+
+				ch->nonstandard_form_blocks_.pop_back();
+
+				deleted= true;
+				break;
+			}
+		}
+
+		(void)deleted;
+		H_ASSERT(deleted);
+
+		ch->SetBlock(
+			local_x, local_y, z,
+			NormalBlock( h_BlockType::Air ) );
+
+		RelightBlockRemove( x, y, z );
+		UpdateInRadius( x, y, H_MAX_FIRE_LIGHT );
+		UpdateWaterInRadius( x, y, H_MAX_FIRE_LIGHT );
+	}
 	else
 	{
 		ch->SetBlock(
@@ -430,7 +491,10 @@ void h_World::FlushActionQueue()
 		switch( act.type )
 		{
 		case h_WorldAction::Type::Build:
-			Build( act.coord[0], act.coord[1], act.coord[2], act.block_type );
+			Build(
+				act.coord[0], act.coord[1], act.coord[2],
+				act.block_type,
+				act.horizontal_direction, act.vertical_direction );
 			break;
 
 		case h_WorldAction::Type::Destroy:
@@ -810,8 +874,89 @@ void h_World::UpdatePhysMesh( short x_min, short x_max, short y_min, short y_max
 
 				phys_mesh.water_blocks.push_back( water_phys_block );
 			}
-		}
-	}
+			else if( h_Block::Form( blocks[z]->Type()) == h_BlockForm::Plate )
+			{
+				auto nonstandatd_form_block= static_cast<const h_NonstandardFormBlock*>(blocks[z]);
+				float z0= float(z);
+				float z1= z0 + 0.5f;
+				if( nonstandatd_form_block->Direction() == h_Direction::Down )
+				{
+					z0+= 0.5f;
+					z1+= 0.5f;
+				}
+
+				phys_mesh.upper_block_faces.emplace_back(
+					x + X, y + Y, z0, h_Direction::Down );
+
+				phys_mesh.upper_block_faces.emplace_back(
+					x + X, y + Y, z1, h_Direction::Up );
+
+				for( unsigned int d= 0; d < 6; d++ )
+				{
+					phys_mesh.block_sides.emplace_back(
+						x + X, y + Y,
+						z0, z1,
+						static_cast<h_Direction>(d + (unsigned int)h_Direction::Forward) );
+				}
+			}
+			else if( h_Block::Form( blocks[z]->Type()) == h_BlockForm::Bisected )
+			{
+				auto nonstandatd_form_block= static_cast<const h_NonstandardFormBlock*>(blocks[z]);
+
+				p_UpperBlockFace help_face( x + X, y + Y, float(z), h_Direction::Up );
+
+				static const unsigned int c_rot_table[]=
+				{ 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5 };
+				static const unsigned int c_dir_to_rot_table[6]=
+				{ 0, 3,  1, 4,  5, 2 };
+				unsigned int rot= c_dir_to_rot_table[
+					(unsigned int) nonstandatd_form_block->Direction() -
+					(unsigned int) h_Direction::Forward ];
+
+				m_Vec2 vertices[4];
+				vertices[0]= help_face.vertices[ c_rot_table[0 + rot] ];
+				vertices[1]= help_face.vertices[ c_rot_table[1 + rot] ];
+				vertices[2]= help_face.vertices[ c_rot_table[2 + rot] ];
+				vertices[3]= help_face.vertices[ c_rot_table[3 + rot] ];
+
+				for( unsigned int i= 0; i < 2; i++ )
+				{
+					phys_mesh.upper_block_faces.emplace_back();
+					p_UpperBlockFace& face= phys_mesh.upper_block_faces.back();
+
+					face.vertex_count= 4;
+					face.vertices[0]= vertices[0];
+					face.vertices[1]= vertices[1];
+					face.vertices[2]= vertices[2];
+					face.vertices[3]= vertices[3];
+					face.center= help_face.center;
+					face.radius= help_face.radius;
+					face.z= float(z+i);
+					face.dir= i == 0 ? h_Direction::Down : h_Direction::Up;
+				}
+
+				for( unsigned int i= 0; i < 4; i++ )
+				{
+					phys_mesh.block_sides.emplace_back();
+					p_BlockSide& side= phys_mesh.block_sides.back();
+
+					side.z0= float(z);
+					side.z1= float(z+1);
+
+					static const h_Direction c_circle_table[]=
+					{
+						h_Direction::ForwardLeft, h_Direction::Forward, h_Direction::ForwardRight,
+						h_Direction::BackRight, h_Direction::Back, h_Direction::BackLeft,
+					};
+					unsigned int s= i == 3 ? 4 : i;
+					side.dir= h_Direction( c_circle_table[ (rot + s) % 6 ] );
+
+					side.edge[0]= vertices[i];
+					side.edge[1]= vertices[ (i+1) & 3 ];
+				}
+			} // h_BlockForm::Bisected
+		} // for z
+	} // for xy
 
 	std::lock_guard<std::mutex> lock( phys_mesh_mutex_ );
 	phys_mesh_= std::make_shared< p_WorldPhysMesh >( std::move(phys_mesh ) );

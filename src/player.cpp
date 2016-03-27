@@ -4,6 +4,7 @@
 #include "world_header.hpp"
 #include "world.hpp"
 #include "time.hpp"
+#include "math_lib/assert.hpp"
 #include "math_lib/math.hpp"
 
 #include "matrix.hpp"
@@ -230,59 +231,27 @@ void h_Player::Build()
 			return;
 	}
 
-	world_->AddBuildEvent( discret_build_pos_[0], discret_build_pos_[1], discret_build_pos_[2], build_block_ );
+	unsigned int sector= (unsigned int)( 6.0f * ( view_angle_.z + m_Math::pi_2 + m_Math::two_pi ) / m_Math::two_pi );
+	sector%= 6;
+	static const h_Direction c_dir_table[]=
+	{
+		h_Direction::ForwardRight, h_Direction::Forward, h_Direction::ForwardLeft,
+		h_Direction::BackLeft, h_Direction::Back, h_Direction::BackRight,
+	};
+
+	h_Direction horizontal_direction= c_dir_table[sector];
+	h_Direction vertical_direction= view_angle_.x <= 0.0f ? h_Direction::Up : h_Direction::Down;
+
+	world_->AddBuildEvent(
+		discret_build_pos_[0], discret_build_pos_[1], discret_build_pos_[2],
+		build_block_,
+		horizontal_direction, vertical_direction );
 }
 
 void h_Player::Dig()
 {
 	if( build_direction_ != h_Direction::Unknown )
-	{
-		short dig_pos[3]=
-		{
-			discret_build_pos_[0],
-			discret_build_pos_[1],
-			discret_build_pos_[2]
-		};
-
-		switch( build_direction_ )
-		{
-		case h_Direction::Up:
-			dig_pos[2]--;
-			break;
-		case h_Direction::Down:
-			dig_pos[2]++;
-			break;
-
-		case h_Direction::Forward:
-			dig_pos[1]--;
-			break;
-		case h_Direction::Back:
-			dig_pos[1]++;
-			break;
-
-		case h_Direction::ForwardRight:
-			dig_pos[1]-= (dig_pos[0]&1);
-			dig_pos[0]--;
-			break;
-		case h_Direction::BackRight:
-			dig_pos[1]+= ((dig_pos[0]+1)&1);
-			dig_pos[0]--;
-			break;
-
-		case h_Direction::ForwardLeft:
-			dig_pos[1]-= (dig_pos[0]&1);
-			dig_pos[0]++;
-			break;
-		case h_Direction::BackLeft:
-			dig_pos[1]+= ((dig_pos[0]+1)&1);
-			dig_pos[0]++;
-			break;
-
-		default: break;
-		};
-
-		world_->AddDestroyEvent( dig_pos[0], dig_pos[1], dig_pos[2] );
-	}
+		world_->AddDestroyEvent( destroy_pos_[0], destroy_pos_[1], destroy_pos_[2] );
 }
 
 void h_Player::TestMobSetPosition()
@@ -346,19 +315,13 @@ void h_Player::UpdateBuildPos( const p_WorldPhysMesh& phys_mesh )
 	{
 		n= g_block_normals[ static_cast<size_t>(face.dir) ];
 
-		// Hexagon triangulation to 4 triangles.
-		static const unsigned int traingles_edges[4][3]=
+		// Triangulate polygon and check intersection with triangles.
+		m_Vec3 triangle[3];
+		triangle[0]= m_Vec3( face.vertices[0], face.z );
+		for( unsigned int i= 0; i < face.vertex_count - 2; i++ )
 		{
-			{ 0, 1, 2 }, { 2, 3, 4, }, { 4, 5, 0 }, { 0, 2, 4 },
-		};
-
-		for( unsigned int i= 0; i < 4; i++ )
-		{
-			m_Vec3 triangle[3];
-
-			triangle[0]= m_Vec3( face.edge[ traingles_edges[i][0] ], face.z );
-			triangle[1]= m_Vec3( face.edge[ traingles_edges[i][1] ], face.z );
-			triangle[2]= m_Vec3( face.edge[ traingles_edges[i][2] ], face.z );
+			triangle[1]= m_Vec3( face.vertices[ i + 1 ], face.z );
+			triangle[2]= m_Vec3( face.vertices[ i + 2 ], face.z );
 			if( pRayHasIniersectWithTriangle( triangle, n, eye_pos, eye_dir, &candidate_pos ) )
 			{
 				float candidate_square_dist= ( candidate_pos - eye_pos ).SquareLength();
@@ -377,12 +340,12 @@ void h_Player::UpdateBuildPos( const p_WorldPhysMesh& phys_mesh )
 		n= g_block_normals[ static_cast<size_t>(side.dir) ];
 
 		m_Vec3 triangles[6];
-		triangles[0]= m_Vec3( side.edge[0], side.z );
-		triangles[1]= m_Vec3( side.edge[1], side.z );
-		triangles[2]= m_Vec3( side.edge[1], side.z + 1.0f );
-		triangles[3]= m_Vec3( side.edge[0], side.z + 1.0f );
-		triangles[4]= m_Vec3( side.edge[0], side.z );
-		triangles[5]= m_Vec3( side.edge[1], side.z + 1.0f );
+		triangles[0]= m_Vec3( side.edge[0], side.z0 );
+		triangles[1]= m_Vec3( side.edge[1], side.z0 );
+		triangles[2]= m_Vec3( side.edge[1], side.z1 );
+		triangles[3]= m_Vec3( side.edge[0], side.z1 );
+		triangles[4]= m_Vec3( side.edge[0], side.z0 );
+		triangles[5]= m_Vec3( side.edge[1], side.z1 );
 		for( unsigned int i= 0; i < 2; i++ )
 		{
 			if( pRayHasIniersectWithTriangle( triangles + i * 3, n, eye_pos, eye_dir, &candidate_pos ) )
@@ -405,16 +368,44 @@ void h_Player::UpdateBuildPos( const p_WorldPhysMesh& phys_mesh )
 		return;
 	}
 
-	// Fix accuracy.
-	intersect_pos+= g_block_normals[ static_cast<size_t>(block_dir) ] * 0.1f;
+	// Fix accuracy. Move intersection point inside target block.
+	intersect_pos-= g_block_normals[ static_cast<size_t>(block_dir) ] * 0.1f;
 
-	short new_x, new_y, new_z;
-	pGetHexogonCoord( intersect_pos.xy(), &new_x, &new_y );
-	new_z= (short) intersect_pos.z;
+	pGetHexogonCoord( intersect_pos.xy(), &destroy_pos_[0], &destroy_pos_[1] );
+	destroy_pos_[2]= short( intersect_pos.z );
 
-	discret_build_pos_[0]= new_x;
-	discret_build_pos_[1]= new_y;
-	discret_build_pos_[2]= new_z;
+	discret_build_pos_[0]= destroy_pos_[0];
+	discret_build_pos_[1]= destroy_pos_[1];
+	discret_build_pos_[2]= destroy_pos_[2];
+
+	switch( block_dir )
+	{
+	case h_Direction::Up: discret_build_pos_[2]++; break;
+	case h_Direction::Down: discret_build_pos_[2]--; break;
+
+	case h_Direction::Forward: discret_build_pos_[1]++; break;
+	case h_Direction::Back: discret_build_pos_[1]--; break;
+
+	case h_Direction::ForwardRight:
+		discret_build_pos_[1]+= ( (discret_build_pos_[0]^1) & 1 );
+		discret_build_pos_[0]++;
+		break;
+	case h_Direction::BackRight:
+		discret_build_pos_[1]-= discret_build_pos_[0] & 1;
+		discret_build_pos_[0]++;
+		break;
+
+	case h_Direction::ForwardLeft:
+		discret_build_pos_[1]+= ( (discret_build_pos_[0]^1) & 1 );
+		discret_build_pos_[0]--;
+		break;
+	case h_Direction::BackLeft:
+		discret_build_pos_[1]-= discret_build_pos_[0] & 1;
+		discret_build_pos_[0]--;
+		break;
+
+	case h_Direction::Unknown: H_ASSERT(false); break;
+	}
 
 	build_pos_.x= float( discret_build_pos_[0] + 1.0f / 3.0f ) * H_SPACE_SCALE_VECTOR_X;
 	build_pos_.y= float( discret_build_pos_[1] ) - 0.5f * float(discret_build_pos_[0]&1) + 0.5f;
@@ -465,8 +456,8 @@ void h_Player::Move( const m_Vec3& delta, const p_WorldPhysMesh& phys_mesh )
 
 	for( const p_BlockSide& side : phys_mesh.block_sides )
 	{
-		if( ( side.z > new_pos.z && side.z < new_pos.z + height_ ) ||
-			( side.z + 1.0f > new_pos.z && side.z + 1.0f < new_pos.z + height_ ) )
+		if( ( side.z0 > new_pos.z && side.z0 < new_pos.z + height_ ) ||
+			( side.z1 > new_pos.z && side.z1 < new_pos.z + height_ ) )
 		{
 			m_Vec2 collide_pos= side.CollideWithCirlce( new_pos.xy(), radius_ );
 			if( collide_pos != new_pos.xy() )

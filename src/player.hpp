@@ -71,6 +71,7 @@ private:
 
 	m_Vec3 build_pos_;
 	short discret_build_pos_[3]; // World space build position.
+	short destroy_pos_[3];
 	h_Direction build_direction_; // Firection of build side. Unknown, if build block does not exist
 	h_BlockType build_block_;
 

@@ -8,6 +8,7 @@
 struct BlockProperties
 {
 	h_VisibleTransparency default_transparency;
+	h_BlockForm form;
 
 	bool transparent_for_fire_light : 1;
 	bool transparent_for_direct_sun_light : 1;
@@ -16,7 +17,7 @@ struct BlockProperties
 	bool is_technical : 1;
 };
 
-static_assert( sizeof(BlockProperties) == 2, "Unexpected size" );
+static_assert( sizeof(BlockProperties) == 3, "Unexpected size" );
 
 static constexpr h_CombinedTransparency GetCombinedTransparency( const BlockProperties& properties )
 {
@@ -32,6 +33,7 @@ static constexpr h_CombinedTransparency GetCombinedTransparency( const BlockProp
 #define g_trivial_blocks_properties \
 {\
 	.default_transparency= TRANSPARENCY_SOLID,\
+	.form= h_BlockForm::Full,\
 	.transparent_for_fire_light= false,\
 	.transparent_for_direct_sun_light= false,\
 	.transparent_for_secondary_sun_light= false,\
@@ -44,6 +46,7 @@ static const constexpr BlockProperties g_blocks_properties[ size_t(h_BlockType::
 	[size_t(h_BlockType::Air)]=
 	{
 		.default_transparency= TRANSPARENCY_AIR,
+		.form= h_BlockForm::Full,
 		.transparent_for_fire_light= true,
 		.transparent_for_direct_sun_light= true,
 		.transparent_for_secondary_sun_light= true,
@@ -69,6 +72,7 @@ static const constexpr BlockProperties g_blocks_properties[ size_t(h_BlockType::
 	[size_t(h_BlockType::Water)]=
 	{
 		.default_transparency= TRANSPARENCY_LIQUID,
+		.form= h_BlockForm::Full,
 		.transparent_for_fire_light= true,
 		.transparent_for_direct_sun_light= false,
 		.transparent_for_secondary_sun_light= true,
@@ -79,6 +83,7 @@ static const constexpr BlockProperties g_blocks_properties[ size_t(h_BlockType::
 	[size_t(h_BlockType::Sand)]=
 	{
 		.default_transparency= TRANSPARENCY_SOLID,
+		.form= h_BlockForm::Full,
 		.transparent_for_fire_light= false,
 		.transparent_for_direct_sun_light= false,
 		.transparent_for_secondary_sun_light= false,
@@ -89,6 +94,7 @@ static const constexpr BlockProperties g_blocks_properties[ size_t(h_BlockType::
 	[size_t(h_BlockType::Foliage)]=
 	{
 		.default_transparency= TRANSPARENCY_GREENERY,
+		.form= h_BlockForm::Full,
 		.transparent_for_fire_light= true,
 		.transparent_for_direct_sun_light= false,
 		.transparent_for_secondary_sun_light= true,
@@ -99,7 +105,8 @@ static const constexpr BlockProperties g_blocks_properties[ size_t(h_BlockType::
 	[size_t(h_BlockType::FireStone)]=
 	{
 		.default_transparency= TRANSPARENCY_SOLID,
-		.transparent_for_fire_light= false,
+		.form= h_BlockForm::Full,
+		.transparent_for_fire_light= true,
 		.transparent_for_direct_sun_light= false,
 		.transparent_for_secondary_sun_light= false,
 		.is_failing= false,
@@ -112,11 +119,34 @@ static const constexpr BlockProperties g_blocks_properties[ size_t(h_BlockType::
 	[size_t(h_BlockType::FailingBlock)]=
 	{
 		.default_transparency= TRANSPARENCY_AIR,
+		.form= h_BlockForm::Full,
 		.transparent_for_fire_light= true,
 		.transparent_for_direct_sun_light= true,
 		.transparent_for_secondary_sun_light= true,
 		.is_failing= false, // this property has no sense for failing block
 		.is_technical= true,
+	},
+
+	[size_t(h_BlockType::BrickPlate)]=
+	{
+		.default_transparency= TRANSPARENCY_AIR,
+		.form= h_BlockForm::Plate,
+		.transparent_for_fire_light= false,
+		.transparent_for_direct_sun_light= false,
+		.transparent_for_secondary_sun_light= false,
+		.is_failing= false,
+		.is_technical= false,
+	},
+
+	[size_t(h_BlockType::BrickHalfblock)]=
+	{
+		.default_transparency= TRANSPARENCY_AIR,
+		.form= h_BlockForm::Bisected,
+		.transparent_for_fire_light= false,
+		.transparent_for_direct_sun_light= false,
+		.transparent_for_secondary_sun_light= false,
+		.is_failing= false,
+		.is_technical= false,
 	},
 };
 
@@ -205,6 +235,11 @@ bool h_Block::IsTechnicalType( h_BlockType type )
 	return g_blocks_properties[ size_t(type) ].is_technical;
 }
 
+h_BlockForm h_Block::Form( h_BlockType type )
+{
+	return g_blocks_properties[ size_t(type) ].form;
+}
+
 /*
 ----------------h_Block--------------
 */
@@ -228,6 +263,53 @@ h_CombinedTransparency h_Block::CombinedTransparency() const
 unsigned short h_Block::AdditionalData() const
 {
 	return additional_data_;
+}
+
+
+/*
+---------------h_NonstandardFormBlock-----------
+*/
+
+h_NonstandardFormBlock::h_NonstandardFormBlock(
+	unsigned char x, unsigned char y, unsigned char z,
+	h_BlockType type, h_Direction direction )
+	: h_Block(type)
+	, x_(x), y_(y), z_(z)
+	, direction_(direction)
+{
+	H_ASSERT( Form(type) != h_BlockForm::Full );
+	H_ASSERT( x < H_CHUNK_WIDTH );
+	H_ASSERT( y < H_CHUNK_WIDTH );
+	H_ASSERT( z >= 1 && z < H_CHUNK_HEIGHT - 1 );
+
+	H_ASSERT
+	(
+		( Form(type) == h_BlockForm::Plate &&
+		(direction == h_Direction::Up || direction == h_Direction::Down) )
+		||
+		( Form(type) == h_BlockForm::Bisected &&
+		direction >= h_Direction::Forward && direction <= h_Direction::BackRight )
+	);
+}
+
+h_Direction h_NonstandardFormBlock::Direction() const
+{
+	return direction_;
+}
+
+unsigned char h_NonstandardFormBlock::GetX() const
+{
+	return x_;
+}
+
+unsigned char h_NonstandardFormBlock::GetY() const
+{
+	return y_;
+}
+
+unsigned char h_NonstandardFormBlock::GetZ() const
+{
+	return z_;
 }
 
 /*

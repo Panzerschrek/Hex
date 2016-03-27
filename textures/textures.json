@@ -162,7 +162,17 @@
 		{
 			"blockname": "Brick",
 			"blockside": "universal"
+		},
+		{
+			"blockname": "BrickPlate",
+			"blockside": "universal"
+		},
+		{
+			"blockname": "BrickHalfblock",
+			"blockside": "universal"
 		}
+
+
 	]
 },
 

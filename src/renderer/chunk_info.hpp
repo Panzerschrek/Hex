@@ -54,6 +54,10 @@ public:
 
 	const h_Chunk* chunk_;
 	const h_Chunk* chunk_front_, *chunk_right_, *chunk_back_right_, *chunk_back_;
+
+private:
+	unsigned int GetNonstandardFormBlocksQuadCount();
+	r_WorldVertex* BuildNonstandardFormBlocks( r_WorldVertex* v );
 };
 
 void rBuildChunkFailingBlocks( const r_ChunkInfo& chunk_info, std::vector<r_WorldVertex>& out_vertices );
