@@ -137,6 +137,17 @@ static const constexpr BlockProperties g_blocks_properties[ size_t(h_BlockType::
 		.is_failing= false,
 		.is_technical= false,
 	},
+
+	[size_t(h_BlockType::BrickHalfblock)]=
+	{
+		.default_transparency= TRANSPARENCY_AIR,
+		.form= h_BlockForm::Bisected,
+		.transparent_for_fire_light= false,
+		.transparent_for_direct_sun_light= false,
+		.transparent_for_secondary_sun_light= false,
+		.is_failing= false,
+		.is_technical= false,
+	},
 };
 
 static const constexpr h_CombinedTransparency g_blocks_combined_transparency[ size_t(h_BlockType::NumBlockTypes) ]=

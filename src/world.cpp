@@ -333,11 +333,13 @@ void h_World::Build(
 		{
 			h_Chunk* ch= GetChunk( chunk_x, chunk_y );
 
+			h_Direction direction= form == h_BlockForm::Plate ? vertical_direction : horizontal_direction;
+
 			h_NonstandardFormBlock* block=
 				GetChunk( chunk_x, chunk_y )->
 				NewNonstandardFormBlock(
 					local_x, local_y, z,
-					block_type, vertical_direction );
+					block_type, direction );
 
 			ch->SetBlock( local_x, local_y, z, block );
 		}

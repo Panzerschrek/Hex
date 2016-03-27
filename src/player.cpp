@@ -231,8 +231,15 @@ void h_Player::Build()
 			return;
 	}
 
-	// TODO - select horizontal direction
-	h_Direction horizontal_direction= h_Direction::Forward;
+	unsigned int sector= (unsigned int)( 6.0f * ( view_angle_.z + m_Math::pi_2 + m_Math::two_pi ) / m_Math::two_pi );
+	sector%= 6;
+	static const h_Direction c_dir_table[]=
+	{
+		h_Direction::ForwardRight, h_Direction::Forward, h_Direction::ForwardLeft,
+		h_Direction::BackLeft, h_Direction::Back, h_Direction::BackRight,
+	};
+
+	h_Direction horizontal_direction= c_dir_table[sector];
 	h_Direction vertical_direction= view_angle_.x <= 0.0f ? h_Direction::Up : h_Direction::Down;
 
 	world_->AddBuildEvent(

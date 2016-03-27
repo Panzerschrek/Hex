@@ -19,5 +19,6 @@ BLOCK_PROCESS_FUNC(FireStone),
 BLOCK_PROCESS_FUNC(Brick),
 BLOCK_PROCESS_FUNC(FailingBlock),
 BLOCK_PROCESS_FUNC(BrickPlate),
+BLOCK_PROCESS_FUNC(BrickHalfblock),
 // Put new blocks here
 

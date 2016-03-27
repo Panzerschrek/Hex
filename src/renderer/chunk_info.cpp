@@ -843,11 +843,12 @@ unsigned int r_ChunkInfo::GetNonstandardFormBlocksQuadCount()
 			break;
 
 		case h_BlockForm::Plate:
+			// 2 quads per upper and lower faces. 6 quads for sides.
 			quad_count+= 2 * 2 + 6;
 			break;
 
 		case h_BlockForm::Bisected:
-			// TODO
+			quad_count+= 1 + 1 + 4;
 			break;
 		};
 	}
@@ -1140,7 +1141,146 @@ r_WorldVertex* r_ChunkInfo::BuildNonstandardFormBlocks( r_WorldVertex* v )
 			break;
 
 		case h_BlockForm::Bisected:
-			// TODO
+			{
+				static const unsigned int c_rot_table[]=
+				{ 0, 1, 2, 3, 4, 5,  0, 1, 2, 3, 4, 5,  0, 1, 2, 3, 4, 5, };
+				static const unsigned int c_dir_to_rot_table[6]=
+				{ 0, 3,  1, 4,  5, 2 };
+				unsigned int rot= c_dir_to_rot_table[ ((unsigned int)block->Direction()) - ((unsigned int)h_Direction::Forward) ];
+
+				int z= block->GetZ() << 1;
+
+				int xy[6][2];
+				xy[0][0]= 3 * ( X + block->GetX() );
+				xy[0][1]= ( Y + block->GetY() ) * 2 - (1 & block->GetX()) + 2;
+				xy[1][0]= xy[0][0] + 1;
+				xy[1][1]= xy[0][1] + 1;
+				xy[2][0]= xy[0][0] + 3;
+				xy[2][1]= xy[0][1] + 1;
+				xy[3][0]= xy[0][0] + 4;
+				xy[3][1]= xy[0][1];
+				xy[4][0]= xy[0][0] + 3;
+				xy[4][1]= xy[0][1] - 1;
+				xy[5][0]= xy[0][0] + 1;
+				xy[5][1]= xy[0][1] - 1;
+
+				unsigned char light[12][2];
+				if( !flat_lighting )
+				{
+					int x= block->GetX() + relative_X;
+					int y= block->GetY() + relative_Y;
+					for( unsigned int i= 0; i < 2; i++ )
+					{
+						int h= block->GetZ() - 1 + int(i);
+						world->GetForwardVertexLight( x-1, y - (x&1)    , h, light[6*i+0] );
+						world->GetBackVertexLight   ( x  , y + 1        , h, light[6*i+1] );
+						world->GetForwardVertexLight( x  , y            , h, light[6*i+2] );
+						world->GetBackVertexLight   ( x+1, y + ((1+x)&1), h, light[6*i+3] );
+						world->GetForwardVertexLight( x  , y - 1        , h, light[6*i+4] );
+						world->GetBackVertexLight   ( x  , y            , h, light[6*i+5] );
+					}
+				}
+				else
+				{
+					unsigned int addr= BlockAddr( block->GetX(), block->GetY(), block->GetZ() );
+					light[0][0]= chunk_->GetSunLightData ()[ addr ];
+					light[0][1]= chunk_->GetFireLightData()[ addr ];
+					for( unsigned int i= 1; i < 12; i++ )
+					{
+						light[i][0]= light[0][0];
+						light[i][1]= light[0][1];
+					}
+				}
+
+				// Forward_left, forward, forward_right, back
+				for( unsigned int side= 0; side < 4; side++ )
+				{
+					static const h_Direction c_dirs[4]= { h_Direction::ForwardLeft, h_Direction::Forward, h_Direction::ForwardRight, h_Direction::Back };
+					unsigned char tex_id= r_TextureManager::GetTextureId( block->Type(), (unsigned char) c_dirs[side] );
+					unsigned char tex_scale= r_TextureManager::GetTextureScale( tex_id );
+
+					unsigned int i0;
+					unsigned int i1;
+					if( side == 3 )
+					{
+						i0= c_rot_table[ rot + 3 ];
+						i1= c_rot_table[ rot + 0 ];
+					}
+					else
+					{
+						i0= c_rot_table[ rot + side + 0 ];
+						i1= c_rot_table[ rot + side + 1 ];
+					}
+
+					v[1].coord[0]= v[2].coord[0]= xy[i0][0];
+					v[0].coord[0]= v[3].coord[0]= xy[i1][0];
+					v[1].coord[1]= v[2].coord[1]= xy[i0][1];
+					v[0].coord[1]= v[3].coord[1]= xy[i1][1];
+
+					v[3].coord[2]= v[2].coord[2]= z;
+					v[0].coord[2]= v[1].coord[2]= z + 2;
+
+					if( v[0].coord[1] == v[2].coord[1] )
+						for( unsigned int t= 0; t < 4; t++ ) v[t].tex_coord[0]= v[t].coord[0] * tex_scale;
+					else
+						for( unsigned int t= 0; t < 4; t++ ) v[t].tex_coord[0]= ( v[t].coord[1] * tex_scale ) << 1;
+					v[3].tex_coord[1]= v[2].tex_coord[1]= z * tex_scale;
+					v[0].tex_coord[1]= v[1].tex_coord[1]= z * tex_scale + (tex_scale<<1);
+					v[0].tex_coord[2]= v[1].tex_coord[2]= v[2].tex_coord[2]= v[3].tex_coord[2]= tex_id;
+
+					for( unsigned int l= 0; l < 2; l++ )
+					{
+						v[0].light[l]= light[i1+6][l];
+						v[1].light[l]= light[i0+6][l];
+						v[2].light[l]= light[i0+0][l];
+						v[3].light[l]= light[i1+0][l];
+					}
+
+					v+= 4;
+				}
+
+				// Up and down sides
+				for( unsigned int side= 0; side < 2; side++ )
+				{
+					unsigned char tex_id= r_TextureManager::GetTextureId(
+						block->Type(),
+						(unsigned int)h_Direction::Up + side )
+						;
+					unsigned char tex_scale= r_TextureManager::GetTextureScale( tex_id );
+
+					v[0].coord[0]= xy[ c_rot_table[rot+0] ][0];
+					v[0].coord[1]= xy[ c_rot_table[rot+0] ][1];
+					v[1].coord[0]= xy[ c_rot_table[rot+1] ][0];
+					v[1].coord[1]= xy[ c_rot_table[rot+1] ][1];
+					v[2].coord[0]= xy[ c_rot_table[rot+2] ][0];
+					v[2].coord[1]= xy[ c_rot_table[rot+2] ][1];
+					v[3].coord[0]= xy[ c_rot_table[rot+3] ][0];
+					v[3].coord[1]= xy[ c_rot_table[rot+3] ][1];
+
+					v[0].coord[2]= v[1].coord[2]= v[2].coord[2]= v[3].coord[2]= z + ( (1-side) << 1 );
+
+					for( unsigned int t= 0; t < 4; t++ )
+					{
+						v[t].tex_coord[0]= tex_scale * v[t].coord[0];
+						v[t].tex_coord[1]= tex_scale * v[t].coord[01];
+						v[t].tex_coord[2]= tex_id;
+					}
+
+					for( unsigned int l= 0; l < 2; l++ )
+					{
+						unsigned int s= 6 * ( 1 - side );
+						v[0].light[l]= light[ s + c_rot_table[rot+0] ][l];
+						v[1].light[l]= light[ s + c_rot_table[rot+1] ][l];
+						v[2].light[l]= light[ s + c_rot_table[rot+2] ][l];
+						v[3].light[l]= light[ s + c_rot_table[rot+3] ][l];
+					}
+
+					if( side == 1 )
+						std::swap( v[1], v[3] );
+
+					v+= 4;
+				}
+			} // h_BlockForm::Bisected
 			break;
 		};
 	}
