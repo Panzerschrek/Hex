@@ -1179,6 +1179,8 @@ void h_World::WaterPhysTick()
 					( b->LiquidLevel() < 16 && lower_block->Type() != h_BlockType::Water ) )
 				{
 					ch->SetBlock( block_addr, NormalBlock( h_BlockType::Air ) );
+					CheckBlockNeighbors( global_x, global_y, b->z_ );
+
 					ch->DeleteWaterBlock( b );
 
 					k--;
@@ -1231,6 +1233,8 @@ bool h_World::WaterFlow( h_LiquidBlock* from, short to_x, short to_y, short to_z
 			new_block->z_= to_z;
 			new_block->SetLiquidLevel( level_delta );
 			ch->SetBlock( addr, new_block );
+
+			CheckBlockNeighbors( to_x, to_y, to_z );
 			return true;
 		}
 	}
@@ -1252,8 +1256,8 @@ bool h_World::WaterFlow( h_LiquidBlock* from, short to_x, short to_y, short to_z
 
 void h_World::GrassPhysTick()
 {
-	const unsigned int c_reproducing_start_chance= m_Rand::max_rand / 16;
-	const unsigned int c_reproducing_do_chance= m_Rand::max_rand / 6;
+	const unsigned int c_reproducing_start_chance= m_Rand::max_rand / 32;
+	const unsigned int c_reproducing_do_chance= m_Rand::max_rand / 12;
 	const unsigned char c_min_light_for_grass_reproducing= H_MAX_SUN_LIGHT / 2;
 
 	m_Vec3 sun_vector= calendar_.GetSunVector( phys_tick_count_, GetGlobalWorldLatitude() );
@@ -1279,8 +1283,10 @@ void h_World::GrassPhysTick()
 
 			H_ASSERT( chunk->blocks_[ block_addr ] == grass_block );
 
-			// Grass can exist only if upper block is air.
-			if( chunk->blocks_[ block_addr + 1 ]->Type() != h_BlockType::Air )
+			// Grass fade, if upper block is full or it is water.
+			h_Block* upper_block= chunk->blocks_[ block_addr + 1 ];
+			if( ( upper_block->CombinedTransparency() & H_VISIBLY_TRANSPARENCY_BITS ) == TRANSPARENCY_SOLID ||
+				upper_block->Type() == h_BlockType::Water )
 			{
 				chunk->blocks_[ block_addr ]= NormalBlock( h_BlockType::Soil );
 
