@@ -932,8 +932,8 @@ r_WorldVertex* r_ChunkInfo::BuildNonstandardFormBlocks( r_WorldVertex* v )
 				else
 				{
 					unsigned int addr= BlockAddr( block->GetX(), block->GetY(), block->GetZ() );
-					light[0][0]= chunk_->GetSunLightData ()[ addr ];
-					light[0][1]= chunk_->GetFireLightData()[ addr ];
+					light[0][0]= chunk_->GetSunLightData ()[ addr ] << 4;
+					light[0][1]= chunk_->GetFireLightData()[ addr ] << 4;
 					for( unsigned int i= 1; i < 12; i++ )
 					{
 						light[i][0]= light[0][0];
@@ -1183,8 +1183,8 @@ r_WorldVertex* r_ChunkInfo::BuildNonstandardFormBlocks( r_WorldVertex* v )
 				else
 				{
 					unsigned int addr= BlockAddr( block->GetX(), block->GetY(), block->GetZ() );
-					light[0][0]= chunk_->GetSunLightData ()[ addr ];
-					light[0][1]= chunk_->GetFireLightData()[ addr ];
+					light[0][0]= chunk_->GetSunLightData ()[ addr ] << 4;
+					light[0][1]= chunk_->GetFireLightData()[ addr ] << 4;
 					for( unsigned int i= 1; i < 12; i++ )
 					{
 						light[i][0]= light[0][0];
