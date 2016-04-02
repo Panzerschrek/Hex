@@ -1302,17 +1302,62 @@ void rBuildChunkFailingBlocks( const r_ChunkInfo& chunk_info, std::vector<r_Worl
 	out_vertices.resize( out_vertices.size() + vertex_count );
 	r_WorldVertex* v= out_vertices.data() + out_vertices.size() - vertex_count;
 
+	const h_World* world= chunk_info.chunk_->GetWorld();
+
 	int X= chunk_info.chunk_->Longitude() << H_CHUNK_WIDTH_LOG2;
 	int Y= chunk_info.chunk_->Latitude () << H_CHUNK_WIDTH_LOG2;
+	int relative_X= ( chunk_info.chunk_->Longitude() - world->Longitude() ) << H_CHUNK_WIDTH_LOG2;
+	int relative_Y= ( chunk_info.chunk_->Latitude () - world->Latitude () ) << H_CHUNK_WIDTH_LOG2;
+
+	bool flat_lighting= chunk_info.chunk_->IsEdgeChunk();
 
 	for( const h_FailingBlock* block : failing_blocks )
 	{
-		r_WorldVertex* v0= v;
-
 		h_BlockType block_type= block->GetBlock()->Type();
 		fixed8_t z= block->GetZ() >> 8;
 
 		const short c_y_tex_coord= 64;
+
+		unsigned char light[6 * 2][2];
+		if( !flat_lighting )
+		{
+			unsigned char primary_light[6 * 3][2];
+
+			int x= block->GetX() + relative_X;
+			int y= block->GetY() + relative_Y;
+
+			int int_z= block->GetZ() >> 16;
+			for( unsigned int i= 0; i < 3; i++ )
+			{
+				int h= int_z - 1 + int(i);
+				world->GetForwardVertexLight( x-1, y - (x&1)    , h, primary_light[6*i+0] );
+				world->GetBackVertexLight   ( x  , y + 1        , h, primary_light[6*i+1] );
+				world->GetForwardVertexLight( x  , y            , h, primary_light[6*i+2] );
+				world->GetBackVertexLight   ( x+1, y + ((1+x)&1), h, primary_light[6*i+3] );
+				world->GetForwardVertexLight( x  , y - 1        , h, primary_light[6*i+4] );
+				world->GetBackVertexLight   ( x  , y            , h, primary_light[6*i+5] );
+			}
+
+			fixed8_t k= z & 255;
+			fixed8_t one_minus_k= 256 - k;
+			for( unsigned int h= 0; h < 12; h+= 6 )
+			for( unsigned int s= 0; s < 6; s++ )
+			for( unsigned int l= 0; l < 2; l++ )
+				light[h+s][l]= ( primary_light[h+s][l] * one_minus_k + primary_light[h+6+s][l] * k ) >> 8;
+		}
+		else
+		{
+			unsigned int addr= BlockAddr( block->GetX(), block->GetY(), block->GetZ() >> 16 );
+			unsigned char l[2];
+			l[0]= chunk_info.chunk_->GetSunLightData ()[ addr ] << 4;
+			l[1]= chunk_info.chunk_->GetFireLightData()[ addr ] << 4;
+			for( unsigned int i= 0; i < 12; i++ )
+			{
+				light[i][0]= l[0];
+				light[i][1]= l[1];
+			}
+		}
+
 
 		// upper and lower part
 		for( unsigned int side= 0; side < 2; side++ )
@@ -1346,6 +1391,17 @@ void rBuildChunkFailingBlocks( const r_ChunkInfo& chunk_info, std::vector<r_Worl
 			v[0].tex_coord[2]= v[1].tex_coord[2]= v[2].tex_coord[2]= v[3].tex_coord[2]= v[7].tex_coord[2]= v[4].tex_coord[2]=
 				tex_id;
 
+			for( unsigned int l= 0; l < 2; l++ )
+			{
+				unsigned int h= (1 - side) * 6;
+				v[0].light[l]= light[h+0][l];
+				v[1].light[l]= light[h+1][l];
+				v[2].light[l]= light[h+2][l];
+				v[3].light[l]= light[h+3][l];
+				v[7].light[l]= light[h+4][l];
+				v[4].light[l]= light[h+5][l];
+			}
+
 			v[5]= v[0];
 			v[6]= v[3];
 
@@ -1358,6 +1414,18 @@ void rBuildChunkFailingBlocks( const r_ChunkInfo& chunk_info, std::vector<r_Worl
 			v+= 4 * 2;
 		}
 
+		for( unsigned int l= 0; l < 2; l++ )
+		{
+			v[0].light[l]= light[6+1][l];
+			v[1].light[l]= light[0+1][l];
+			v[2].light[l]= light[0+2][l];
+			v[3].light[l]= light[6+2][l];
+
+			v[4+0].light[l]= light[6+5][l];
+			v[4+1].light[l]= light[0+5][l];
+			v[4+2].light[l]= light[0+4][l];
+			v[4+3].light[l]= light[6+4][l];
+		}
 		// forward and back part
 		for( unsigned int side= 0; side < 2; side++ )
 		{
@@ -1388,6 +1456,18 @@ void rBuildChunkFailingBlocks( const r_ChunkInfo& chunk_info, std::vector<r_Worl
 			v+= 4;
 		}
 
+		for( unsigned int l= 0; l < 2; l++ )
+		{
+			v[0].light[l]= light[6+3][l];
+			v[1].light[l]= light[6+2][l];
+			v[2].light[l]= light[0+2][l];
+			v[3].light[l]= light[0+3][l];
+
+			v[4+0].light[l]= light[6+5][l];
+			v[4+1].light[l]= light[6+0][l];
+			v[4+2].light[l]= light[0+0][l];
+			v[4+3].light[l]= light[0+5][l];
+		}
 		// forward_right and back_left
 		for( unsigned int side= 0; side < 2; side++ )
 		{
@@ -1419,6 +1499,19 @@ void rBuildChunkFailingBlocks( const r_ChunkInfo& chunk_info, std::vector<r_Worl
 			v+=4;
 		}
 
+		for( unsigned int l= 0; l < 2; l++ )
+		{
+			v[0].light[l]= light[6+3][l];
+			v[1].light[l]= light[6+4][l];
+			v[2].light[l]= light[0+4][l];
+			v[3].light[l]= light[0+3][l];
+
+			v[4+0].light[l]= light[6+1][l];
+			v[4+1].light[l]= light[6+0][l];
+			v[4+2].light[l]= light[0+0][l];
+			v[4+3].light[l]= light[0+1][l];
+		}
+		// forward_left and back_right
 		for( unsigned int side= 0; side < 2; side++ )
 		{
 			unsigned char tex_id= r_TextureManager::GetTextureId(
@@ -1447,18 +1540,6 @@ void rBuildChunkFailingBlocks( const r_ChunkInfo& chunk_info, std::vector<r_Worl
 				std::swap( v[1], v[3] );
 
 			v+=4;
-		}
-
-		// Light are common for all block
-		unsigned char light[2];
-		unsigned int addr= BlockAddr( block->GetX(), block->GetY(), block->GetZ() >> 16 );
-		light[0]= chunk_info.chunk_->GetSunLightData ()[ addr ] << 4;
-		light[1]= chunk_info.chunk_->GetFireLightData()[ addr ] << 4;
-
-		for( ; v0 < v; v0++ )
-		{
-			v0[0].light[0]= light[0];
-			v0[0].light[1]= light[1];
 		}
 	} // for failing blocks in chunk
 }
