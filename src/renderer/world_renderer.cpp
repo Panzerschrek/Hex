@@ -1285,7 +1285,6 @@ void r_WorldRenderer::LoadShaders()
 	r_GLSLVersion glsl_version( r_GLSLVersion::v400 );
 
 	char define_str[128];
-
 	{
 		std::snprintf(
 			define_str, sizeof(define_str), "TEX_SCALE_VECTOR vec3( %1.8f, %1.8f, %1.8f )",
@@ -1308,9 +1307,14 @@ void r_WorldRenderer::LoadShaders()
 	world_shader_.SetAttribLocation( "light", 3 );
 	world_shader_.Create();
 
+	std::snprintf(
+		define_str, sizeof(define_str), "TEX_SCALE_VECTOR vec2( %1.8f, %1.8f )",
+		0.25f / 4.0f,
+		0.25f / 2.0f );
+
 	water_shader_.ShaderSource(
 		rLoadShader( "water_frag.glsl", glsl_version ),
-		rLoadShader( "water_vert.glsl", glsl_version ) );
+		rLoadShader( "water_vert.glsl", glsl_version, { define_str } ) );
 
 	water_shader_.SetAttribLocation( "coord", 0 );
 	water_shader_.SetAttribLocation( "light", 1 );
@@ -1507,11 +1511,13 @@ void r_WorldRenderer::InitVertexBuffers()
 
 void r_WorldRenderer::LoadTextures()
 {
-	texture_manager_.SetTextureDetalization( settings_->GetInt( h_SettingsKeys::textures_detalization ) );
+	unsigned int textures_detalization= settings_->GetInt( h_SettingsKeys::textures_detalization );
+
+	texture_manager_.SetTextureDetalization( textures_detalization );
 	texture_manager_.SetFiltration( settings_->GetBool( h_SettingsKeys::filter_textures, true ) );
 	texture_manager_.LoadTextures();
 
-	r_ImgUtils::LoadTexture( &water_texture_, "textures/water2.tga" );
+	r_ImgUtils::LoadTexture( &water_texture_, "textures/water2.tga", textures_detalization );
 	r_ImgUtils::LoadTexture( &sun_texture_, "textures/sun.tga" );
 	r_ImgUtils::LoadTexture( &console_bg_texture_, "textures/console_bg_normalized.png" );
 	r_ImgUtils::LoadTexture( &crosshair_texture_, "textures/crosshair.bmp" );

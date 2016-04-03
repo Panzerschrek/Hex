@@ -74,6 +74,17 @@ void r_ImgUtils::R8_To_RGBA8( const unsigned char* in, unsigned char* out, int w
 	}
 }
 
+void r_ImgUtils::R8_GetMip( const unsigned char* in, unsigned char* out, int width, int height )
+{
+	unsigned char* dst= out;
+	for( int y= 0; y< height; y+= 2 )
+	{
+		const unsigned char* src[2]= { in + y * width, in + (y+1) * width };
+		for( int x= 0; x< width; x+= 2, src[0]+= 2, src[1]+= 2, dst+= 4 )
+			dst[0]= ( src[0][0] + src[0][1] + src[1][0] + src[1][1] ) >> 2;
+	}
+}
+
 void r_ImgUtils::RGBA8_GetMip( const unsigned char* in, unsigned char* out, int width, int height )
 {
 	unsigned char* dst= out;
@@ -160,8 +171,10 @@ void r_ImgUtils::RGBA8_MirrorVerticalAndSwapRB( unsigned char* in_out, int width
 		}
 }
 
-void r_ImgUtils::LoadTexture( r_Texture* texture, const char* filename )
+void r_ImgUtils::LoadTexture( r_Texture* texture, const char* filename, unsigned int lod )
 {
+	const unsigned int c_min_texture_size= 4;
+
 	QImage img( filename );
 
 	if ( img.isNull() )
@@ -171,26 +184,65 @@ void r_ImgUtils::LoadTexture( r_Texture* texture, const char* filename )
 		goto after_creating;
 	}
 
-	if( img.depth() == 1 )
+	if( img.width() < int(c_min_texture_size) || img.height() < int(c_min_texture_size) )
 	{
-		std::vector<unsigned char> tmp_data( img.width() * img.height() );
-		R1_To_R8( img.constBits(), tmp_data.data(), img.width(), img.height() );
-		RGBA8_MirrorVertical( img.bits(), img.width(), img.height() );
-		*texture= r_Texture( r_Texture::PixelFormat::R8, img.width(), img.height(), tmp_data.data() );
+		h_Console::Warning( "Texture is too small: \"", filename, "\"" );
+		MakeStub(texture);
+		goto after_creating;
 	}
-	else if( img.depth() == 8 )
+
+	if( img.depth() == 1 || img.depth() == 8 )
 	{
-		RGBA8_MirrorVertical( img.bits(), img.width(), img.height() );
-		*texture= r_Texture( r_Texture::PixelFormat::R8, img.width(), img.height(), img.bits() );
+		unsigned char* img_data= img.bits();
+		std::vector<unsigned char> tmp_data;
+
+		if( img.depth() == 1 )
+		{
+			tmp_data.resize( img.width() * img.height() );
+			img_data= tmp_data.data();
+			R1_To_R8( img_data, img_data, img.width(), img.height() );
+		}
+		RGBA8_MirrorVertical( img_data, img.width(), img.height() );
+
+		if( lod == 0 )
+			*texture= r_Texture( r_Texture::PixelFormat::R8, img.width(), img.height(), img_data );
+		else
+		{
+			std::vector<unsigned char> tmp_lod_data( ( img.width() / 2 ) * ( img.height() / 2 ) );
+			unsigned char* d[2]= { img_data, tmp_lod_data.data() };
+
+			unsigned int l= 0, w= img.width(), h= img.height();
+			for( ;
+				l < lod && w >= c_min_texture_size && h >= c_min_texture_size;
+				l++, w >>= 1, h >>= 1 )
+				R8_GetMip( d[ l&1 ], d[ (l^1)&1 ], w, h );
+
+			*texture= r_Texture( r_Texture::PixelFormat::R8, w, h, d[ l&1 ] );
+		}
 	}
 	else if( img.depth() == 32 )
 	{
 		RGBA8_MirrorVerticalAndSwapRB( img.bits(), img.width(), img.height() );
-		*texture= r_Texture( r_Texture::PixelFormat::RGBA8, img.width(), img.height(), img.bits() );
+
+		if( lod == 0 )
+			*texture= r_Texture( r_Texture::PixelFormat::RGBA8, img.width(), img.height(), img.bits() );
+		else
+		{
+			std::vector<unsigned char> tmp_data( 4 * ( img.width() / 2 ) * ( img.height() / 2 ) );
+			unsigned char* d[2]= { img.bits(), tmp_data.data() };
+
+			unsigned int l= 0, w= img.width(), h= img.height();
+			for( ;
+				l < lod && w >= c_min_texture_size && h >= c_min_texture_size;
+				l++, w >>= 1, h >>= 1 )
+				RGBA8_GetMip( d[ l&1 ], d[ (l^1)&1 ], w, h );
+
+			*texture= r_Texture( r_Texture::PixelFormat::RGBA8, w, h, d[ l&1 ] );
+		}
 	}
 	else
 	{
-		h_Console::Warning( "Can not convert texture: \"", filename, "\"" );
+		h_Console::Warning( "Can not convert texture: \"", filename, "\". Unsupported image depth." );
 		MakeStub(texture);
 	}
 
