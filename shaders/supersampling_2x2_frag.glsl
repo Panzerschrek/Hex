@@ -1,5 +1,3 @@
-#version 330
-
 uniform sampler2D frame_buffer;
 
 out vec4 color;

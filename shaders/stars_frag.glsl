@@ -1,5 +1,3 @@
-#version 330
-
 uniform float brightness;
 
 out vec4 color;

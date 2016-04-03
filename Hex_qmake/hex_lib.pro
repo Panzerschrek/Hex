@@ -62,7 +62,8 @@ HEADERS += \
     ../src/math_lib/rand.hpp \
     ../src/time.hpp \
     ../src/ui/loading_menu.hpp \
-    ../src/blocks_list.hpp
+    ../src/blocks_list.hpp \
+    ../../panzer_ogl_lib/shaders_loading.hpp
 
 SOURCES += \
     ../src/block.cpp \
@@ -107,4 +108,5 @@ SOURCES += \
     ../src/world_header.cpp \
     ../src/math_lib/math.cpp \
     ../src/time.cpp \
-    ../src/ui/loading_menu.cpp
+    ../src/ui/loading_menu.cpp \
+    ../../panzer_ogl_lib/shaders_loading.cpp

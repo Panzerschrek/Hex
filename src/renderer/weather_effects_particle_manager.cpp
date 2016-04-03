@@ -8,6 +8,7 @@
 #include "../console.hpp"
 #include "../time.hpp"
 #include "ogl_state_manager.hpp"
+#include "shaders_loading.hpp"
 
 r_WeatherEffectsParticleManager::r_WeatherEffectsParticleManager()
 	: particles_count_(0)
@@ -41,10 +42,12 @@ void r_WeatherEffectsParticleManager::Create( unsigned int particles_count, cons
 		vbo_.VertexAttribPointer( 0, 4, GL_UNSIGNED_SHORT, true, 0 );
 	}
 
-	if( !shader_.Load( "shaders/rain_frag.glsl", "shaders/rain_vert.glsl" ) )
-		h_Console::Error( "particles shader not found" );
-	shader_.SetAttribLocation( "coord", 0 );
+	r_GLSLVersion glsl_version( r_GLSLVersion::v330 );
+	shader_.ShaderSource(
+		rLoadShader( "rain_frag.glsl", glsl_version ),
+		rLoadShader( "rain_vert.glsl", glsl_version ) );
 
+	shader_.SetAttribLocation( "coord", 0 );
 	shader_.Create();
 
 	r_ImgUtils::LoadTexture( &particle_texture_, "textures/rain_particle.png" );

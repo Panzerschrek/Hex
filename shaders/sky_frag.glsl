@@ -1,5 +1,3 @@
-#version 330
-
 uniform vec3 sky_color;
 
 out vec4 color;

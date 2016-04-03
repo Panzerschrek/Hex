@@ -1,5 +1,6 @@
-#include <vector>
+#include <cstring>
 #include <thread>
+#include <vector>
 
 #include "world_renderer.hpp"
 #include "glcorearb.h"
@@ -9,6 +10,7 @@
 #include "../settings_keys.hpp"
 #include "../time.hpp"
 #include "ogl_state_manager.hpp"
+#include "shaders_loading.hpp"
 #include "img_utils.hpp"
 #include "chunk_info.hpp"
 #include "wvb.hpp"
@@ -125,12 +127,12 @@ r_WorldRenderer::r_WorldRenderer(
 		antialiasing_= Antialiasing::SuperSampling2x2;
 		pixel_size_= 2;
 	}
-	else if( strcmp( antialiasing, g_depth_based_antialiasing_key_value ) == 0 )
+	else if( std::strcmp( antialiasing, g_depth_based_antialiasing_key_value ) == 0 )
 	{
 		antialiasing_= Antialiasing::DepthBased;
 		pixel_size_= 1;
 	}
-	else if( strcmp( antialiasing, g_fast_approximate_antialiasing_key_value ) == 0 )
+	else if( std::strcmp( antialiasing, g_fast_approximate_antialiasing_key_value ) == 0 )
 	{
 		antialiasing_= Antialiasing::FastApproximate;
 		pixel_size_= 1;
@@ -1280,76 +1282,90 @@ void r_WorldRenderer::InitGL( const h_LongLoadingCallback& long_loading_callback
 
 void r_WorldRenderer::LoadShaders()
 {
+	r_GLSLVersion glsl_version( r_GLSLVersion::v400 );
+
 	char define_str[128];
 
-	if( !world_shader_.Load( "shaders/world_frag.glsl", "shaders/world_vert.glsl", nullptr ) )
-		h_Console::Error( "wold shader not found" );
+	{
+		std::snprintf(
+			define_str, sizeof(define_str), "TEX_SCALE_VECTOR vec3( %1.8f, %1.8f, %1.8f )",
+			1.0f / float( 4 * H_TEXTURE_SCALE_MULTIPLIER ),
+			1.0f / float( 2 * H_TEXTURE_SCALE_MULTIPLIER ),
+			1.0f );
+
+		std::vector<std::string> defines;
+		defines.emplace_back( define_str );
+		if( settings_->GetBool( h_SettingsKeys::lighting_only ) ) defines.emplace_back( "LIGHTING_ONLY"  );
+
+		world_shader_.ShaderSource(
+			rLoadShader( "world_frag.glsl", glsl_version, defines ),
+			rLoadShader( "world_vert.glsl", glsl_version, defines ) );
+	}
 
 	world_shader_.SetAttribLocation( "coord", 0 );
 	world_shader_.SetAttribLocation( "tex_coord", 1 );
 	// world_shader_.SetAttribLocation( "normal", 2 );
 	world_shader_.SetAttribLocation( "light", 3 );
-	sprintf(
-		define_str, "TEX_SCALE_VECTOR vec3( %1.8f, %1.8f, %1.8f )",
-		1.0f / float( 4 * H_TEXTURE_SCALE_MULTIPLIER ),
-		1.0f / float( 2 * H_TEXTURE_SCALE_MULTIPLIER ),
-		1.0f );
-	world_shader_.Define( define_str );
-	if( settings_->GetBool( h_SettingsKeys::lighting_only ) )
-	{
-		sprintf( define_str, "LIGHTING_ONLY" );
-		world_shader_.Define( define_str );
-	}
 	world_shader_.Create();
 
-	if( !water_shader_.Load( "shaders/water_frag.glsl", "shaders/water_vert.glsl", nullptr ) )
-		h_Console::Error( "water shader not found" );
+	water_shader_.ShaderSource(
+		rLoadShader( "water_frag.glsl", glsl_version ),
+		rLoadShader( "water_vert.glsl", glsl_version ) );
 
 	water_shader_.SetAttribLocation( "coord", 0 );
 	water_shader_.SetAttribLocation( "light", 1 );
 	water_shader_.Create();
 
-	if( !build_prism_shader_.Load( "shaders/build_prism_frag.glsl", "shaders/build_prism_vert.glsl", "shaders/build_prism_geom.glsl" ) )
-		h_Console::Error( "build prism shader not found" );
+	build_prism_shader_.ShaderSource(
+		rLoadShader( "build_prism_frag.glsl", glsl_version ),
+		rLoadShader( "build_prism_vert.glsl", glsl_version ),
+		rLoadShader( "build_prism_geom.glsl", glsl_version ) );
 	build_prism_shader_.SetAttribLocation( "coord", 0 );
 	build_prism_shader_.Create();
 
-	if( !skybox_shader_.Load( "shaders/sky_frag.glsl", "shaders/sky_vert.glsl", nullptr ) )
-		h_Console::Error( "skybox shader not found" );
+	skybox_shader_.ShaderSource(
+		rLoadShader( "sky_frag.glsl", glsl_version ),
+		rLoadShader( "sky_vert.glsl", glsl_version ) );
 	skybox_shader_.SetAttribLocation( "coord", 0 );
 	skybox_shader_.Create();
 
-	if( !stars_shader_.Load( "shaders/stars_frag.glsl", "shaders/stars_vert.glsl" ) )
-		h_Console::Error( "stars shader not found" );
+	stars_shader_.ShaderSource(
+		rLoadShader( "stars_frag.glsl", glsl_version ),
+		rLoadShader( "stars_vert.glsl", glsl_version ) );
 	stars_shader_.SetAttribLocation( "coord", 0 );
 	stars_shader_.SetAttribLocation( "birghtness_spectre", 1 );
 	stars_shader_.Create();
 
-	if( !sun_shader_.Load( "shaders/sun_frag.glsl",  "shaders/sun_vert.glsl", nullptr ) )
-		h_Console::Error( "sun shader not found" );
-
-	sprintf( define_str, "SUN_SIZE %3.0f", float( viewport_height_ * pixel_size_ ) * 0.1f );
-	sun_shader_.Define( define_str );
+	std::snprintf( define_str, sizeof(define_str), "SUN_SIZE %3.0f", float( viewport_height_ * pixel_size_ ) * 0.1f );
+	sun_shader_.ShaderSource(
+		rLoadShader( "sun_frag.glsl", glsl_version ),
+		rLoadShader( "sun_vert.glsl", glsl_version, { define_str } ) );
 	sun_shader_.Create();
 
-	if( !console_bg_shader_.Load( "shaders/console_bg_frag.glsl", "shaders/console_bg_vert.glsl", "shaders/console_bg_geom.glsl" ) )
-		h_Console::Error( "console bg shader not found" );
+	console_bg_shader_.ShaderSource(
+		rLoadShader( "console_bg_frag.glsl", glsl_version ),
+		rLoadShader( "console_bg_vert.glsl", glsl_version ),
+		rLoadShader( "console_bg_geom.glsl", glsl_version ) );
 	console_bg_shader_.Create();
 
-	if( !crosshair_shader_.Load( "shaders/crosshair_frag.glsl", "shaders/crosshair_vert.glsl" ) )
-		h_Console::Error( "crosshair shader not found" );
+	crosshair_shader_.ShaderSource(
+		rLoadShader( "crosshair_frag.glsl", glsl_version ),
+		rLoadShader( "crosshair_vert.glsl", glsl_version ) );
 	crosshair_shader_.Create();
 
-	if( !supersampling_final_shader_.Load( "shaders/supersampling_2x2_frag.glsl", "shaders/fullscreen_quad_vert.glsl" ) )
-		h_Console::Error( "supersampling final shader not found" );
+	supersampling_final_shader_.ShaderSource(
+		rLoadShader( "supersampling_2x2_frag.glsl", glsl_version ),
+		rLoadShader( "fullscreen_quad_vert.glsl", glsl_version ) );
 	supersampling_final_shader_.Create();
 
-	if( !depth_based_antialiasing_shader_.Load( "shaders/depth_based_antialiasing_frag.glsl", "shaders/fullscreen_quad_vert.glsl" ) )
-		h_Console::Error( "depth based antialiasing shader not found" );
+	depth_based_antialiasing_shader_.ShaderSource(
+		rLoadShader( "depth_based_antialiasing_frag.glsl", glsl_version ),
+		rLoadShader( "fullscreen_quad_vert.glsl", glsl_version ) );
 	depth_based_antialiasing_shader_.Create();
 
-	if( !fast_approximate_antialiasing_shader_.Load( "shaders/fxaa_frag.glsl", "shaders/fullscreen_quad_vert.glsl" ) )
-		h_Console::Error( "fast approximate antialiasing shader not found" );
+	fast_approximate_antialiasing_shader_.ShaderSource(
+		rLoadShader( "fxaa_frag.glsl", glsl_version ),
+		rLoadShader( "fullscreen_quad_vert.glsl", glsl_version ) );
 	fast_approximate_antialiasing_shader_.Create();
 }
 

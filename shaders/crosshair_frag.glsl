@@ -1,5 +1,3 @@
-#version 330
-
 out vec4 color;
 
 uniform sampler2D tex;

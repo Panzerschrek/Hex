@@ -1,4 +1,3 @@
-#version 330
 
 uniform float particle_size= 64.0;
 

@@ -20,6 +20,7 @@
 #include "ui/ui_painter.hpp"
 
 #include "ogl_state_manager.hpp"
+#include "shaders_loading.hpp"
 
 
 static const constexpr int g_min_screen_width = 640;
@@ -162,6 +163,9 @@ void h_MainLoop::initializeGL()
 		{
 			h_Console::Warning( out );
 		} );
+
+	rSetShaderLoadingLogCallback( []( const char* text ) { h_Console::Error( text ); } );
+	rSetShadersDir( "shaders" );
 
 	r_Framebuffer::SetScreenFramebufferSize( screen_width_, screen_height_ );
 

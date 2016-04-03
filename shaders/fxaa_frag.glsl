@@ -1,5 +1,3 @@
-#version 330
-
 // Modyfied by "Panzerschrek"
 /**
 Basic FXAA implementation based on the code on geeks3d.com with the

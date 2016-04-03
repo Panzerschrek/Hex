@@ -1,5 +1,3 @@
-#version 330
-
 uniform sampler2D tex;
 out vec4 color;
 void main()

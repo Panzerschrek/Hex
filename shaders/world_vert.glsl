@@ -1,5 +1,3 @@
-#version 400
-
 #ifndef TEX_SCALE_VECTOR
 #error
 #endif

@@ -2,6 +2,7 @@
 
 #include "framebuffer.hpp"
 #include "ogl_state_manager.hpp"
+#include "shaders_loading.hpp"
 
 #include "../console.hpp"
 #include "img_utils.hpp"
@@ -47,8 +48,8 @@ r_Text::r_Text( const char* font_file )
 		text_vbo_.VertexAttribPointer( 2, 4, GL_UNSIGNED_BYTE, true, offset );//color
 	}
 
-	if( !shader_.Load( "shaders/text_frag.glsl", "shaders/text_vert.glsl" ) )
-		h_Console::Error( "Text shader not found\n" );
+	r_GLSLVersion glsl_version( r_GLSLVersion::v330 );
+	shader_.ShaderSource( rLoadShader( "text_frag.glsl", glsl_version ), rLoadShader( "text_vert.glsl", glsl_version ) );
 
 	shader_.SetAttribLocation( "coord", 0 );
 	shader_.SetAttribLocation( "tex_coord", 1 );

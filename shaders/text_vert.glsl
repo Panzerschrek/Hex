@@ -1,5 +1,3 @@
-#version 330
-
 uniform float inv_letters_in_texture;
 
 in vec2 coord;

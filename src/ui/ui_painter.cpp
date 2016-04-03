@@ -5,6 +5,7 @@
 #include "ui_painter.hpp"
 #include "matrix.hpp"
 #include "../renderer/text.hpp"
+#include "shaders_loading.hpp"
 
 ui_Painter::ui_Painter()
 {
@@ -16,13 +17,13 @@ ui_Painter::ui_Painter()
 	offset= ((char*)vert.color) - ((char*)&vert);
 	ui_vbo_.VertexAttribPointer( 1, 4, GL_UNSIGNED_BYTE, true, offset );
 
-	ui_shader_.Load( "shaders/ui_frag.glsl", "shaders/ui_vert.glsl" );
+	r_GLSLVersion glsl_version( r_GLSLVersion::v330 );
+	ui_shader_.ShaderSource( rLoadShader( "ui_frag.glsl", glsl_version ), rLoadShader( "ui_vert.glsl", glsl_version ) );
+
 	ui_shader_.SetAttribLocation( "coord", 0 );
 	ui_shader_.SetAttribLocation( "color", 1 );
 	ui_shader_.Create();
 
-	//static const char*const font_files[]= { "textures/courier_new_18.bmp", "textures/courier_new_24.bmp", "textures/courier_new_32.bmp" };
-	//text_manager= new r_Text( font_files[1] );
 	text_manager_.reset( new r_Text( "textures/mono_font_sdf.tga" ) );
 }
 

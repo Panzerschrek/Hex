@@ -1,5 +1,3 @@
-#version 330
-
 uniform vec3 sun_vector;
 
 uniform sampler2D tex;

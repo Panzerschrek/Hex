@@ -1,5 +1,3 @@
-#version 330
-
 in vec2 coord;
 in vec4 color;
 

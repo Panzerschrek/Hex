@@ -153,6 +153,8 @@
 		<Unit filename="..\panzer_ogl_lib\panzer_ogl_lib.hpp" />
 		<Unit filename="..\panzer_ogl_lib\polygon_buffer.cpp" />
 		<Unit filename="..\panzer_ogl_lib\polygon_buffer.hpp" />
+		<Unit filename="..\panzer_ogl_lib\shaders_loading.cpp" />
+		<Unit filename="..\panzer_ogl_lib\shaders_loading.hpp" />
 		<Unit filename="..\panzer_ogl_lib\texture.cpp" />
 		<Unit filename="..\panzer_ogl_lib\texture.hpp" />
 		<Unit filename="..\panzer_ogl_lib\vec.hpp" />

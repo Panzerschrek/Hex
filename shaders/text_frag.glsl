@@ -1,5 +1,3 @@
-#version 330
-
 const float SMOOTH_EDGE= 0.15;
 uniform sampler2D tex;
 

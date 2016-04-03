@@ -1,5 +1,3 @@
-#version 330
-
 #ifndef SUN_SIZE
 #error
 #endif

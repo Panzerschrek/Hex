@@ -1,5 +1,3 @@
-#version 330
-
 uniform mat4 view_matrix;
 
 in vec3 coord;

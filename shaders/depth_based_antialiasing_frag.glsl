@@ -1,5 +1,3 @@
-#version 330
-
 uniform sampler2D frame_buffer;
 uniform sampler2D depth_buffer;
 

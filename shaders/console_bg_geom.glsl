@@ -1,5 +1,3 @@
-#version 330
-
 uniform vec3 screen_size;
 uniform float pos;
 
@@ -11,7 +9,7 @@ noperspective out vec2 f_tex_coord;
 void main()
 {
 	float aspect= 1.5 * screen_size.x / ( screen_size.y );
-	
+
 	gl_Position= vec4( -1.0, pos, -1.0, 1.0 ); f_tex_coord= 2.0 * vec2( 0.0, 0.0 );
 	EmitVertex();
 	gl_Position= vec4( -1.0, 1.0, -1.0, 1.0 ); f_tex_coord= 2.0 * vec2( 0.0, 1.0-pos );

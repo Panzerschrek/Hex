@@ -1,4 +1,3 @@
-#version 330
 #define STRIP_SIZE 0.02
 
 layout( lines, invocations= 1) in;
