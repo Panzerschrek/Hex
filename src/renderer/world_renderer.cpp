@@ -13,6 +13,7 @@
 #include "shaders_loading.hpp"
 #include "img_utils.hpp"
 #include "chunk_info.hpp"
+#include "weather_effects_particle_manager.hpp"
 #include "wvb.hpp"
 #include "../math_lib/math.hpp"
 #include "../math_lib/assert.hpp"
@@ -591,7 +592,7 @@ void r_WorldRenderer::Draw()
 	DrawSky();
 	DrawStars();
 	DrawSun();
-	//weather_effects_particle_manager_.Draw( view_matrix_, cam_pos_ );
+	weather_effects_particle_manager_->Draw( view_matrix_, cam_pos_ );
 	DrawWater();
 	DrawBuildPrism();
 	//DrawTestMob();
@@ -1506,7 +1507,10 @@ void r_WorldRenderer::InitVertexBuffers()
 		}
 	}
 
-	weather_effects_particle_manager_.Create( 65536*2, m_Vec3(72.0f, 72.0f, 96.0f) );
+	weather_effects_particle_manager_.reset(
+		new r_WeatherEffectsParticleManager(
+			65536*2,
+			m_Vec3(72.0f, 72.0f, 96.0f) ) );
 }
 
 void r_WorldRenderer::LoadTextures()

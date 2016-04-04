@@ -10,21 +10,13 @@
 #include "ogl_state_manager.hpp"
 #include "shaders_loading.hpp"
 
-r_WeatherEffectsParticleManager::r_WeatherEffectsParticleManager()
-	: particles_count_(0)
+r_WeatherEffectsParticleManager::r_WeatherEffectsParticleManager(
+	unsigned int particles_count,
+	const m_Vec3& rain_zone_size )
+	: rain_zone_size_( rain_zone_size )
+	, particles_count_( particles_count )
 	, startup_time_(hGetTimeMS())
 {
-}
-
-r_WeatherEffectsParticleManager::~r_WeatherEffectsParticleManager()
-{
-}
-
-void r_WeatherEffectsParticleManager::Create( unsigned int particles_count, const m_Vec3& rain_zone_size )
-{
-	particles_count_= particles_count;
-	rain_zone_size_= rain_zone_size;
-
 	{
 		std::vector<unsigned short> particle_coords( particles_count_ * 4 );
 
@@ -53,7 +45,7 @@ void r_WeatherEffectsParticleManager::Create( unsigned int particles_count, cons
 	r_ImgUtils::LoadTexture( &particle_texture_, "textures/rain_particle.png" );
 }
 
-void r_WeatherEffectsParticleManager::Destroy()
+r_WeatherEffectsParticleManager::~r_WeatherEffectsParticleManager()
 {
 }
 

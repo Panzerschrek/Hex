@@ -12,7 +12,6 @@
 #include "glsl_program.hpp"
 #include "text.hpp"
 #include "texture_manager.hpp"
-#include "weather_effects_particle_manager.hpp"
 
 #include "matrix.hpp"
 
@@ -175,7 +174,7 @@ private:
 	//text out
 	std::unique_ptr<r_Text> text_manager_;
 
-	r_WeatherEffectsParticleManager weather_effects_particle_manager_;
+	std::unique_ptr< r_WeatherEffectsParticleManager > weather_effects_particle_manager_;
 
 	uint64_t startup_time_;
 };
