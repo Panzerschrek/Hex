@@ -11,7 +11,9 @@ public:
 	r_WeatherEffectsParticleManager( unsigned int particles_count, const m_Vec3& rain_zone_size );
 	~r_WeatherEffectsParticleManager();
 
-	void Draw( const m_Mat4& view_matrix, const m_Vec3& cam_pos );
+	void Draw(
+		const m_Mat4& view_matrix, const m_Vec3& cam_pos,
+		const r_Texture& heightmap_texture, const m_Mat4& heightmap_matrix );
 
 private:
 	m_Vec3 rain_zone_size_;

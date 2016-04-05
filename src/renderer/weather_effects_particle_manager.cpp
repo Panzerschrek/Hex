@@ -49,7 +49,9 @@ r_WeatherEffectsParticleManager::~r_WeatherEffectsParticleManager()
 {
 }
 
-void r_WeatherEffectsParticleManager::Draw( const m_Mat4& view_matrix, const m_Vec3& cam_pos )
+void r_WeatherEffectsParticleManager::Draw(
+	const m_Mat4& view_matrix, const m_Vec3& cam_pos,
+	const r_Texture& heightmap_texture, const m_Mat4& heightmap_matrix )
 {
 	static const GLenum blend_func[2]= { GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA };
 	static const r_OGLState state(
@@ -60,6 +62,7 @@ void r_WeatherEffectsParticleManager::Draw( const m_Mat4& view_matrix, const m_V
 	vbo_.Bind();
 
 	particle_texture_.Bind(0);
+	heightmap_texture.Bind(1);
 
 	shader_.Bind();
 	shader_.Uniform( "particle_coord_delta", float(hGetTimeMS() - startup_time_) * 0.001f * m_Vec3( 0.0f, 0.0f, -2.8f ) );
@@ -67,6 +70,9 @@ void r_WeatherEffectsParticleManager::Draw( const m_Mat4& view_matrix, const m_V
 	shader_.Uniform( "particle_zone_size", rain_zone_size_ );
 	shader_.Uniform( "mat", view_matrix );
 	shader_.Uniform( "tex", 0 );
+
+	shader_.Uniform( "heightmap", 1 );
+	shader_.Uniform( "heightmap_matrix", heightmap_matrix );
 
 	glDrawArrays( GL_POINTS, 0, particles_count_ );
 }

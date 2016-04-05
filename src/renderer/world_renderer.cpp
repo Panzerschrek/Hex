@@ -599,7 +599,7 @@ void r_WorldRenderer::Draw()
 	DrawSky();
 	DrawStars();
 	DrawSun();
-	weather_effects_particle_manager_->Draw( view_matrix_, cam_pos_ );
+	DrawRain();
 	DrawWater();
 	DrawBuildPrism();
 	//DrawTestMob();
@@ -973,6 +973,15 @@ void r_WorldRenderer::DrawWorld()
 
 	failing_blocks_vbo_.Bind();
 	glDrawElements( GL_TRIANGLES, failing_blocks_vertex_count_ / 4 * 6, GL_UNSIGNED_SHORT, nullptr );
+}
+
+void r_WorldRenderer::DrawRain()
+{
+	weather_effects_particle_manager_->Draw(
+		view_matrix_,
+		cam_pos_,
+		rain_zone_heightmap_framebuffer_.GetDepthTexture(),
+		rain_zone_matrix_ );
 }
 
 void r_WorldRenderer::DrawSky()
@@ -1530,6 +1539,8 @@ void r_WorldRenderer::InitFrameBuffers()
 			std::vector<r_Texture::PixelFormat>(),
 			r_Texture::PixelFormat::Depth16,
 			512,512 );
+
+	rain_zone_heightmap_framebuffer_.GetDepthTexture().SetCompareMode(true);
 }
 
 void r_WorldRenderer::InitVertexBuffers()

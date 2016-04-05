@@ -88,6 +88,7 @@ private:
 	void DrawWater();
 
 	void GenRainZoneHeightmap();
+	void DrawRain();
 	void DrawSky();
 	void DrawStars();
 	void DrawSun();
