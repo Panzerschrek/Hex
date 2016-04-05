@@ -8,6 +8,11 @@ const m_Vec3 R_AMBIENT_LIGHT_COLOR( 0.06f, 0.06f, 0.06f );
 
 const m_Vec3 R_SKYBOX_COLOR( 1.0f, 1.0f, 1.5f );
 
+const float R_RAIN_ZONE_RADIUS_M= 32.0f;
+const float R_RAIN_ZONE_HEIGHT_M= 64.0f;
+const float R_RAIN_SPEED_MPS= 6.0f;
+const float R_RAIN_DENSITY= 0.3f;// particles per cubic meter
+
 #define R_MAX_TEXTURES 256
 
 #define R_MAX_TEXTURE_RESOLUTION_LOG2 8

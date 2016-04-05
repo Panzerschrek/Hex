@@ -2,6 +2,7 @@
 #include <time.h>
 
 #include "weather_effects_particle_manager.hpp"
+#include "rendering_constants.hpp"
 
 #include "img_utils.hpp"
 #include "../math_lib/rand.hpp"
@@ -65,7 +66,7 @@ void r_WeatherEffectsParticleManager::Draw(
 	heightmap_texture.Bind(1);
 
 	shader_.Bind();
-	shader_.Uniform( "particle_coord_delta", float(hGetTimeMS() - startup_time_) * 0.001f * m_Vec3( 0.0f, 0.0f, -2.8f ) );
+	shader_.Uniform( "particle_coord_delta", float(hGetTimeMS() - startup_time_) * 0.001f * m_Vec3( 0.0f, 0.0f, -R_RAIN_SPEED_MPS ) );
 	shader_.Uniform( "particle_zone_coord", cam_pos - rain_zone_size_ * 0.5f );
 	shader_.Uniform( "particle_zone_size", rain_zone_size_ );
 	shader_.Uniform( "mat", view_matrix );
