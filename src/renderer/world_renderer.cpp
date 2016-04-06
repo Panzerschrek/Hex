@@ -599,8 +599,16 @@ void r_WorldRenderer::Draw()
 	DrawSky();
 	DrawStars();
 	DrawSun();
-	DrawRain();
-	DrawWater();
+	if( player_->IsUnderwater() )
+	{
+		DrawRain();
+		DrawWater();
+	}
+	else
+	{
+		DrawWater();
+		DrawRain();
+	}
 	DrawBuildPrism();
 	//DrawTestMob();
 
@@ -980,11 +988,24 @@ void r_WorldRenderer::DrawWorld()
 
 void r_WorldRenderer::DrawRain()
 {
+	m_Vec3 light=
+		lighting_data_.current_sun_light * float( H_MAX_SUN_LIGHT * 16 ) +
+		lighting_data_.current_ambient_light;
+
+	const float c_particle_world_size= 0.2f;
+
+	float particle_size_px=
+		c_particle_world_size *
+		0.5f * float( viewport_height_ ) /
+		std::tan( fov_y_ * 0.5f );
+
 	weather_effects_particle_manager_->Draw(
 		view_matrix_,
 		cam_pos_,
 		rain_zone_heightmap_framebuffer_.GetDepthTexture(),
-		rain_zone_matrix_ );
+		rain_zone_matrix_,
+		particle_size_px,
+		light );
 }
 
 void r_WorldRenderer::DrawSky()

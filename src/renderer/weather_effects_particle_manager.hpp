@@ -13,7 +13,9 @@ public:
 
 	void Draw(
 		const m_Mat4& view_matrix, const m_Vec3& cam_pos,
-		const r_Texture& heightmap_texture, const m_Mat4& heightmap_matrix );
+		const r_Texture& heightmap_texture, const m_Mat4& heightmap_matrix,
+		float particel_size_px,
+		const m_Vec3& light );
 
 private:
 	m_Vec3 rain_zone_size_;

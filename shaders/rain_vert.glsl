@@ -1,5 +1,5 @@
 
-uniform float particle_size= 64.0;
+uniform float particle_size;
 
 uniform vec3 particle_coord_delta = vec3(0.0, 0.0, 0.0);
 uniform vec3 particle_zone_size;
