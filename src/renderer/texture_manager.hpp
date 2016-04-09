@@ -3,11 +3,12 @@
 #include "../fwd.hpp"
 #include "../hex.hpp"
 #include "panzer_ogl_lib.hpp"
+#include "texture.hpp"
 
 class r_TextureManager
 {
 public:
-	r_TextureManager();
+	r_TextureManager( unsigned int detalization, bool filter_textures );
 	~r_TextureManager();
 
 	static unsigned char GetTextureId( h_BlockType block_type, unsigned char normal_id );
@@ -19,16 +20,12 @@ public:
 	static unsigned char GetTextureScale( unsigned char tex_id );
 	static bool TexturePerBlock( unsigned char tex_id );
 
-	void LoadTextures();
-
-	void BindTextureArray( unsigned int unit= 0 );
-
-	// Detail level. 0 - maximum, 1 - half resolution, 2 - quater resolution
-	void SetTextureDetalization( unsigned int detalization );
-	void SetFiltration( bool filter_textures );
+	void BindTextureArray( unsigned int unit );
+	void BindWaterTexture( unsigned int unit );
 
 private:
 	void InitTextureTable();
+	void LoadWorldTextures();
 
 private:
 	static unsigned char texture_table_[ size_t(h_BlockType::NumBlockTypes) * 8 ];
@@ -37,9 +34,10 @@ private:
 
 	// OpenGL id for array texture
 	GLuint texture_array_;
+	r_Texture water_texture_;
 
-	unsigned int texture_detalization_;
-	bool filter_textures_;
+	const unsigned int texture_detalization_;
+	const bool filter_textures_;
 };
 
 inline unsigned char r_TextureManager::GetTextureId( h_BlockType block_type, unsigned char normal_id )

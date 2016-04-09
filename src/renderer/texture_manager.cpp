@@ -116,20 +116,35 @@ static void DrawNullTexture( QImage& img, const char* text= nullptr )
 	p.drawText( 20, 180, "Texture not found" );
 }
 
-r_TextureManager::r_TextureManager()
+r_TextureManager::r_TextureManager( unsigned int detalization, bool filter_textures )
 	: texture_array_( c_texture_not_created )
-	, texture_detalization_( 0 )
-	, filter_textures_( true )
+	, texture_detalization_( std::min( detalization, (unsigned int)(R_MAX_TEXTURE_RESOLUTION_LOG2 - R_MIN_TEXTURE_RESOLUTION_LOG2) ) )
+	, filter_textures_( filter_textures )
 {
 	InitTextureTable();
+	LoadWorldTextures();
+
+	r_ImgUtils::LoadTexture( &water_texture_, "textures/water2.tga", texture_detalization_ );
+	if( filter_textures_ )
+		water_texture_.SetFiltration( r_Texture::Filtration::Linear, r_Texture::Filtration::LinearMipmapLinear );
+	else
+		water_texture_.SetFiltration( r_Texture::Filtration::Nearest, r_Texture::Filtration::NearestMipmapLinear );
 }
 
 r_TextureManager::~r_TextureManager()
 {
-	if( texture_array_ != c_texture_not_created )
-	{
-		glDeleteTextures( 1, &texture_array_ );
-	}
+	glDeleteTextures( 1, &texture_array_ );
+}
+
+void r_TextureManager::BindTextureArray( unsigned int unit )
+{
+	glActiveTexture( GL_TEXTURE0 + unit );
+	glBindTexture( GL_TEXTURE_2D_ARRAY, texture_array_ );
+}
+
+void r_TextureManager::BindWaterTexture( unsigned int unit )
+{
+	water_texture_.Bind( unit );
 }
 
 void r_TextureManager::InitTextureTable()
@@ -142,7 +157,7 @@ void r_TextureManager::InitTextureTable()
 		tex_scale= H_TEXTURE_SCALE_MULTIPLIER;
 }
 
-void r_TextureManager::LoadTextures()
+void r_TextureManager::LoadWorldTextures()
 {
 	unsigned int texture_size= 1 << (R_MAX_TEXTURE_RESOLUTION_LOG2 - texture_detalization_);
 
@@ -270,19 +285,4 @@ void r_TextureManager::LoadTextures()
 	glGenerateMipmap( GL_TEXTURE_2D_ARRAY );
 }
 
-void r_TextureManager::BindTextureArray( unsigned int unit )
-{
-	glActiveTexture( GL_TEXTURE0 + unit );
-	glBindTexture( GL_TEXTURE_2D_ARRAY, texture_array_ );
-}
-
-void r_TextureManager::SetTextureDetalization( unsigned int detalization )
-{
-	texture_detalization_= std::min( detalization, (unsigned int)(R_MAX_TEXTURE_RESOLUTION_LOG2 - R_MIN_TEXTURE_RESOLUTION_LOG2) );
-}
-
-void r_TextureManager::SetFiltration( bool filter_textures )
-{
-	filter_textures_= filter_textures;
-}
 

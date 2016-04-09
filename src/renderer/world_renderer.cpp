@@ -13,6 +13,8 @@
 #include "shaders_loading.hpp"
 #include "img_utils.hpp"
 #include "chunk_info.hpp"
+#include "text.hpp"
+#include "texture_manager.hpp"
 #include "weather_effects_particle_manager.hpp"
 #include "wvb.hpp"
 #include "../math_lib/math.hpp"
@@ -971,7 +973,7 @@ void r_WorldRenderer::DrawWorld()
 		r_OGLState::default_clear_color );
 	r_OGLStateManager::UpdateState( state );
 
-	texture_manager_.BindTextureArray( 0 );
+	texture_manager_->BindTextureArray( 0 );
 
 	world_shader_.Bind();
 	world_shader_.Uniform( "tex", 0 );
@@ -1097,7 +1099,7 @@ void r_WorldRenderer::DrawWater()
 		r_OGLState::default_clear_color );
 	r_OGLStateManager::UpdateState( state );
 
-	water_texture_.Bind(0);
+	texture_manager_->BindWaterTexture(0);
 
 	water_shader_.Bind();
 
@@ -1714,13 +1716,11 @@ void r_WorldRenderer::InitVertexBuffers()
 
 void r_WorldRenderer::LoadTextures()
 {
-	unsigned int textures_detalization= settings_->GetInt( h_SettingsKeys::textures_detalization );
+	texture_manager_.reset(
+		new r_TextureManager(
+			settings_->GetInt( h_SettingsKeys::textures_detalization ),
+			settings_->GetBool( h_SettingsKeys::filter_textures, true ) ) );
 
-	texture_manager_.SetTextureDetalization( textures_detalization );
-	texture_manager_.SetFiltration( settings_->GetBool( h_SettingsKeys::filter_textures, true ) );
-	texture_manager_.LoadTextures();
-
-	r_ImgUtils::LoadTexture( &water_texture_, "textures/water2.tga", textures_detalization );
 	r_ImgUtils::LoadTexture( &sun_texture_, "textures/sun.tga" );
 	r_ImgUtils::LoadTexture( &console_bg_texture_, "textures/console_bg_normalized.png" );
 	r_ImgUtils::LoadTexture( &crosshair_texture_, "textures/crosshair.bmp" );

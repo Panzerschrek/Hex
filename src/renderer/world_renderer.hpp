@@ -10,8 +10,6 @@
 #include "framebuffer.hpp"
 #include "polygon_buffer.hpp"
 #include "glsl_program.hpp"
-#include "text.hpp"
-#include "texture_manager.hpp"
 
 #include "matrix.hpp"
 
@@ -148,9 +146,8 @@ private:
 	unsigned int pixel_size_;
 
 	//textures
-	r_TextureManager texture_manager_;
+	std::unique_ptr<r_TextureManager> texture_manager_;
 	r_Texture sun_texture_;
-	r_Texture water_texture_;
 	r_Texture console_bg_texture_;
 	r_Texture crosshair_texture_;
 
