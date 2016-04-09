@@ -1,5 +1,15 @@
 #pragma once
 #include <cstdint>
+#include <random>
+
+// Simple and fast generator.
+// Produces good result for bits 0-31.
+// Parameters, same as in rand() from glibc.
+typedef std::linear_congruential_engine< unsigned int, 1103515245u, 12345u, 1u << 31u > m_LongRand;
+
+// Helper for getting state, without generator modification.
+unsigned int mLongRandGetState( const m_LongRand& long_rand );
+void mLongRandSetState( m_LongRand& long_rand, unsigned int state );
 
 class m_Rand
 {

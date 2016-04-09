@@ -13,10 +13,12 @@
 #include "shaders_loading.hpp"
 #include "img_utils.hpp"
 #include "chunk_info.hpp"
+#include "weather_effects_particle_manager.hpp"
 #include "wvb.hpp"
 #include "../math_lib/math.hpp"
 #include "../math_lib/assert.hpp"
 
+#include "../block_collision.hpp"
 #include "../player.hpp"
 #include "../world.hpp"
 
@@ -532,6 +534,8 @@ void r_WorldRenderer::CalculateMatrices()
 
 void r_WorldRenderer::CalculateLight()
 {
+	rain_intensity_= world_->GetRainIntensity();
+
 	lighting_data_.sun_direction=
 		world_->GetCalendar().GetSunVector( world_->GetTimeOfYear(), world_->GetGlobalWorldLatitude() );
 
@@ -557,6 +561,10 @@ void r_WorldRenderer::CalculateLight()
 	lighting_data_.sky_color= R_SKYBOX_COLOR * daynight_k;
 	lighting_data_.stars_brightness= 1.0f - daynight_k;
 
+	float rain_fade_k= R_SUN_LIGHT_FADE_WHILE_RAIN * rain_intensity_ + 1.0f * ( 1.0f - rain_intensity_ );
+	lighting_data_.current_sun_light*= rain_fade_k;
+	lighting_data_.sky_color*= rain_fade_k;
+
 	if( player_->IsUnderwater() )
 	{
 		static const m_Vec3 c_underwater_color( 0.4f, 0.4f, 0.7f );
@@ -576,6 +584,13 @@ void r_WorldRenderer::Draw()
 	CalculateLight();
 	CalculateChunksVisibility();
 
+	if( rain_intensity_ > 0.0f )
+	{
+		rain_zone_heightmap_framebuffer_.Bind();
+		glClear( GL_DEPTH_BUFFER_BIT );
+		GenRainZoneHeightmap();
+	}
+
 	bool draw_to_additional_framebuffer=
 		antialiasing_ == Antialiasing::SuperSampling2x2 ||
 		antialiasing_ == Antialiasing::DepthBased ||
@@ -586,13 +601,23 @@ void r_WorldRenderer::Draw()
 		additional_framebuffer_.Bind();
 		glClear( GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT );
 	}
+	else
+		r_Framebuffer::BindScreenFramebuffer();
 
 	DrawWorld();
 	DrawSky();
 	DrawStars();
 	DrawSun();
-	//weather_effects_particle_manager_.Draw( view_matrix_, cam_pos_ );
-	DrawWater();
+	if( player_->IsUnderwater() )
+	{
+		DrawRain();
+		DrawWater();
+	}
+	else
+	{
+		DrawWater();
+		DrawRain();
+	}
 	DrawBuildPrism();
 	//DrawTestMob();
 
@@ -691,6 +716,9 @@ void r_WorldRenderer::Draw()
 
 		text_manager_->AddMultiText( 0, i++, text_scale, r_Text::default_color,
 			"sun z: %f", lighting_data_.sun_direction.z );
+
+		text_manager_->AddMultiText( 0, i++, text_scale, r_Text::default_color,
+			"rain intensity: %1.3f", rain_intensity_ );
 
 		//text_manager->AddMultiText( 0, 11, text_scale, r_Text::default_color, "quick brown fox jumps over the lazy dog\nQUICK BROWN FOX JUMPS OVER THE LAZY DOG\n9876543210-+/\\" );
 		//text_manager->AddMultiText( 0, 0, 8.0f, r_Text::default_color, "#A@Kli\nO01-eN" );
@@ -877,6 +905,63 @@ unsigned int r_WorldRenderer::DrawClusterMatrix( r_WVB* wvb, unsigned int triang
 	return vertex_count;
 }
 
+unsigned int r_WorldRenderer::DrawClusterMatrix(
+	r_WVB* wvb,
+	unsigned int triangles_per_primitive, unsigned int vertices_per_primitive,
+	unsigned int start_chunk_x, unsigned int start_chunk_y,
+	unsigned int   end_chunk_x, unsigned int   end_chunk_y )
+{
+	H_ASSERT( start_chunk_x <= end_chunk_x );
+	H_ASSERT( start_chunk_y <= end_chunk_y );
+	H_ASSERT( end_chunk_x < chunks_info_.matrix_size[0] );
+	H_ASSERT( end_chunk_y < chunks_info_.matrix_size[1] );
+
+	unsigned int vertex_count= 0;
+
+	int dx= wvb->gpu_cluster_matrix_coord_[0] - chunks_info_for_drawing_.matrix_position[0];
+	int dy= wvb->gpu_cluster_matrix_coord_[1] - chunks_info_for_drawing_.matrix_position[1];
+
+	int cx_start= ( int(start_chunk_x) - dx ) / int(wvb->cluster_size_[0]);
+	int cx_end  = ( int(  end_chunk_x) - dy ) / int(wvb->cluster_size_[0]);
+
+	int cy_start= ( int(start_chunk_y) - dx ) / int(wvb->cluster_size_[1]);
+	int cy_end  = ( int(  end_chunk_y) - dy ) / int(wvb->cluster_size_[1]);
+
+	for( int cy= cy_start; cy <= cy_end; cy++ )
+	for( int cx= cx_start; cx <= cx_end; cx++ )
+	{
+		r_WorldVBOClusterGPUPtr& cluster= wvb->gpu_cluster_matrix_[ cx + cy * wvb->cluster_matrix_size_[0] ];
+		if( !cluster ) continue;
+
+		cluster->BindVBO();
+
+		for( int y= 0; y < int(wvb->cluster_size_[1]); y++ )
+		for( int x= 0; x < int(wvb->cluster_size_[0]); x++ )
+		{
+			int cm_x= x + cx * int(wvb->cluster_size_[0]) + dx;
+			int cm_y= y + cy * int(wvb->cluster_size_[1]) + dy;
+
+			if( cm_x < int(start_chunk_x) || cm_x > int(end_chunk_x) ||
+				cm_y < int(start_chunk_y) || cm_y > int(end_chunk_y) )
+				continue;
+
+			r_WorldVBOClusterSegment& segment= cluster->segments_[ x + y * wvb->cluster_size_[0] ];
+			if( segment.vertex_count > 0 )
+			{
+				glDrawElementsBaseVertex(
+					GL_TRIANGLES,
+					segment.vertex_count * 3 * triangles_per_primitive / vertices_per_primitive,
+					GL_UNSIGNED_SHORT,
+					nullptr, segment.first_vertex_index );
+
+				vertex_count+= segment.vertex_count;
+			}
+		}
+	}
+
+	return vertex_count;
+}
+
 void r_WorldRenderer::DrawWorld()
 {
 	static const GLenum state_blend_mode[]= { GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA };
@@ -911,6 +996,32 @@ void r_WorldRenderer::DrawWorld()
 
 	failing_blocks_vbo_.Bind();
 	glDrawElements( GL_TRIANGLES, failing_blocks_vertex_count_ / 4 * 6, GL_UNSIGNED_SHORT, nullptr );
+}
+
+void r_WorldRenderer::DrawRain()
+{
+	if( rain_intensity_ <= 0.0f )
+		return;
+
+	m_Vec3 light=
+		lighting_data_.current_sun_light * float( H_MAX_SUN_LIGHT * 16 ) +
+		lighting_data_.current_ambient_light;
+
+	const float c_particle_world_size= 0.2f;
+
+	float particle_size_px=
+		c_particle_world_size *
+		0.5f * float( viewport_height_ ) /
+		std::tan( fov_y_ * 0.5f );
+
+	weather_effects_particle_manager_->Draw(
+		view_matrix_,
+		cam_pos_,
+		rain_zone_heightmap_framebuffer_.GetDepthTexture(),
+		rain_zone_matrix_,
+		particle_size_px,
+		light,
+		rain_intensity_ );
 }
 
 void r_WorldRenderer::DrawSky()
@@ -1003,6 +1114,71 @@ void r_WorldRenderer::DrawWater()
 
 	unsigned int vertex_count= DrawClusterMatrix( world_water_vertex_buffer_.get(), 4, 6 );
 	water_hexagons_in_frame_= vertex_count / 6;
+}
+
+void r_WorldRenderer::GenRainZoneHeightmap()
+{
+	static const GLenum state_blend_mode[]= { GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA };
+	static const r_OGLState world_state(
+		false, true, true, false,
+		state_blend_mode );
+	static const r_OGLState water_state(
+		false, false, true, false,
+		state_blend_mode );
+
+	rain_zone_heightmap_shader_.Bind();
+
+	m_Mat4 world_scale_mat, water_scale_mat, scale_mat, translate_mat;
+
+	world_scale_mat.Scale( m_Vec3( 1.0, 1.0f, 0.5f ) );
+	water_scale_mat.Scale( m_Vec3( 1.0f, 1.0f, 1.0f / float(R_WATER_VERTICES_Z_SCALER) ) );
+
+	scale_mat.Scale(
+		m_Vec3(
+			1.0f / R_RAIN_ZONE_RADIUS_M,
+			1.0f / R_RAIN_ZONE_RADIUS_M,
+			-1.0f / float(H_CHUNK_HEIGHT) ) );
+
+	translate_mat.Translate( m_Vec3( -cam_pos_.xy(), 0.0f ) );
+	rain_zone_matrix_= translate_mat * scale_mat;
+
+	m_Vec2 zone_size( R_RAIN_ZONE_RADIUS_M + 1.5f, R_RAIN_ZONE_RADIUS_M + 1.5f );
+	short start_coord[2];
+	short   end_coord[2];
+	pGetHexogonCoord( cam_pos_.xy() - zone_size, &start_coord[0], &start_coord[1] );
+	pGetHexogonCoord( cam_pos_.xy() + zone_size, &  end_coord[0], &  end_coord[1] );
+	for( unsigned int i= 0; i < 2; i++ )
+	{
+		start_coord[i]-= chunks_info_for_drawing_.matrix_position[i] << H_CHUNK_WIDTH_LOG2;
+		  end_coord[i]-= chunks_info_for_drawing_.matrix_position[i] << H_CHUNK_WIDTH_LOG2;
+	}
+
+	int min_x= std::max( 0, start_coord[0] >> H_CHUNK_WIDTH_LOG2 );
+	int max_x= std::min( int(chunks_info_.matrix_size[0]) - 1, end_coord[0] >> H_CHUNK_WIDTH_LOG2 );
+	int min_y= std::max( 0, start_coord[1] >> H_CHUNK_WIDTH_LOG2 );
+	int max_y= std::min( int(chunks_info_.matrix_size[1]) - 1, end_coord[1] >> H_CHUNK_WIDTH_LOG2 );
+
+	rain_zone_heightmap_shader_.Uniform(
+		"view_matrix",
+		block_scale_matrix_ * world_scale_mat * rain_zone_matrix_ );
+
+	r_OGLStateManager::UpdateState( world_state );
+
+	DrawClusterMatrix(
+		world_vertex_buffer_.get(), 2, 4,
+		min_x, min_y,
+		max_x, max_y );
+
+	rain_zone_heightmap_shader_.Uniform(
+		"view_matrix",
+		block_scale_matrix_ * water_scale_mat * rain_zone_matrix_ );
+
+	r_OGLStateManager::UpdateState( water_state );
+
+	DrawClusterMatrix(
+		world_water_vertex_buffer_.get(), 4, 6,
+		min_x, min_y,
+		max_x, max_y );
 }
 
 void r_WorldRenderer::DrawBuildPrism()
@@ -1320,6 +1496,12 @@ void r_WorldRenderer::LoadShaders()
 	water_shader_.SetAttribLocation( "light", 1 );
 	water_shader_.Create();
 
+	rain_zone_heightmap_shader_.ShaderSource(
+		std::string(),
+		rLoadShader( "rain_heightmap_vert.glsl", glsl_version ));
+	rain_zone_heightmap_shader_.SetAttribLocation( "coord", 0 );
+	rain_zone_heightmap_shader_.Create();
+
 	build_prism_shader_.ShaderSource(
 		rLoadShader( "build_prism_frag.glsl", glsl_version ),
 		rLoadShader( "build_prism_vert.glsl", glsl_version ),
@@ -1406,6 +1588,15 @@ void r_WorldRenderer::InitFrameBuffers()
 			r_Texture::Filtration::Linear,
 			r_Texture::Filtration::Linear );
 	}
+
+	rain_zone_heightmap_framebuffer_=
+		r_Framebuffer(
+			std::vector<r_Texture::PixelFormat>(),
+			r_Texture::PixelFormat::Depth16,
+			512,512 );
+
+	rain_zone_heightmap_framebuffer_.GetDepthTexture().Bind();
+	rain_zone_heightmap_framebuffer_.GetDepthTexture().SetCompareMode( r_Texture::CompareMode::Less );
 }
 
 void r_WorldRenderer::InitVertexBuffers()
@@ -1506,7 +1697,19 @@ void r_WorldRenderer::InitVertexBuffers()
 		}
 	}
 
-	weather_effects_particle_manager_.Create( 65536*2, m_Vec3(72.0f, 72.0f, 96.0f) );
+	unsigned int rain_particle_count= (unsigned int)(
+		( R_RAIN_ZONE_RADIUS_M * 2.0f ) *
+		( R_RAIN_ZONE_RADIUS_M * 2.0f ) *
+		R_RAIN_ZONE_HEIGHT_M *
+		R_RAIN_DENSITY );
+
+	weather_effects_particle_manager_.reset(
+		new r_WeatherEffectsParticleManager(
+			rain_particle_count,
+			m_Vec3(
+				R_RAIN_ZONE_RADIUS_M * 2.0f,
+				R_RAIN_ZONE_RADIUS_M * 2.0f,
+				R_RAIN_ZONE_HEIGHT_M) ) );
 }
 
 void r_WorldRenderer::LoadTextures()

@@ -34,9 +34,17 @@ void h_WorldHeader::Load( const char* world_dir )
 	}
 
 	QJsonObject obj= doc.object();
-	QJsonObject player_obj= obj["player"].toObject();
 
 	ticks= obj["ticks"].toInt();
+
+	QJsonObject rain_data_obj= obj["rain_data"].toObject();
+	rain_data.is_rain= rain_data_obj["is_rain"].toBool();
+	rain_data.start_tick= rain_data_obj["start_tick"].toInt();
+	rain_data.duration= rain_data_obj["duration"].toInt();
+	rain_data.rand_state= rain_data_obj["rand_state"].toInt();
+	rain_data.base_intensity= rain_data_obj["base_intensity"].toDouble();
+
+	QJsonObject player_obj= obj["player"].toObject();
 
 	player.x= player_obj["x"].toDouble();
 	player.y= player_obj["y"].toDouble();
@@ -48,7 +56,17 @@ void h_WorldHeader::Load( const char* world_dir )
 void h_WorldHeader::Save( const char* world_dir ) const
 {
 	QJsonObject obj;
+
 	obj["ticks"]= double(ticks);
+
+	QJsonObject rain_data_obj;
+	rain_data_obj["is_rain"]= rain_data.is_rain;
+	rain_data_obj["start_tick"]= int(rain_data.start_tick);
+	rain_data_obj["duration"]= int(rain_data.duration);
+	rain_data_obj["rand_state"]= int(rain_data.rand_state);
+	rain_data_obj["base_intensity"]= double(rain_data.base_intensity);
+
+	obj["rain_data"]= rain_data_obj;
 
 	QJsonObject player_obj;
 	player_obj["x"]= double(player.x);

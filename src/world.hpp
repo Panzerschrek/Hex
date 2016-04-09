@@ -91,6 +91,9 @@ public:
 	// Latitude of "World" on planet. [-pi; pi]
 	float GetGlobalWorldLatitude() const;
 
+	// Current rain intensity. Thread safe.
+	float GetRainIntensity() const;
+
 	// Set global coordinates of test mob.
 	// THREAD UNSAFE. REMOVE THIS.
 	void TestMobSetTargetPosition( int x, int y, int z );
@@ -159,6 +162,8 @@ private:
 
 	void GrassPhysTick();
 
+	void RainTick();
+
 	h_Block* NormalBlock( h_BlockType block_type );
 	h_GrassBlock* UnactiveGrassBlock();
 
@@ -199,6 +204,22 @@ private:
 
 	mutable std::mutex phys_mesh_mutex_;
 	p_WorldPhysMeshConstPtr phys_mesh_;
+
+	struct
+	{
+		bool is_rain= false;
+		unsigned int start_tick;
+		unsigned int duration;
+		float base_intensity;
+
+		std::atomic<float> current_intensity{ 0.0f };
+
+		const float c_duration_rand_pow= 0.5f;
+		m_LongRand rand_generator;
+		std::lognormal_distribution<float> duration_rand{ 0.0f, 0.5f };
+		std::uniform_real_distribution<float> intensity_rand{ 0.3f, 1.0f };
+
+	} rain_data_;
 
 	int test_mob_discret_pos_[3];
 	int test_mob_target_pos_[3];

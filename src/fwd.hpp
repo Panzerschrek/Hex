@@ -42,6 +42,8 @@ class r_WorldVBOClusterGPU;
 typedef std::unique_ptr<r_WorldVBOClusterGPU> r_WorldVBOClusterGPUPtr;
 class r_WVB;
 
+class r_WeatherEffectsParticleManager;
+
 class r_Text;
 
 class ui_Painter;

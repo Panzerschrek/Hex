@@ -12,7 +12,6 @@
 #include "glsl_program.hpp"
 #include "text.hpp"
 #include "texture_manager.hpp"
-#include "weather_effects_particle_manager.hpp"
 
 #include "matrix.hpp"
 
@@ -71,12 +70,25 @@ private:
 	void DrawTestMob();
 	void DrawCrosshair();
 
-	// helper. returns vertex count
 	void CalculateChunksVisibility();
-	unsigned int DrawClusterMatrix( r_WVB* wvb, unsigned int triangles_per_primitive, unsigned int vertices_per_primitive );
+
+	// Draw cluster matrix. Returns vertex count.
+	unsigned int DrawClusterMatrix(
+		r_WVB* wvb,
+		unsigned int triangles_per_primitive, unsigned int vertices_per_primitive );
+
+	// Draw cluster matrix witch chunks from start to end (include end).
+	unsigned int DrawClusterMatrix(
+		r_WVB* wvb,
+		unsigned int triangles_per_primitive, unsigned int vertices_per_primitive,
+		unsigned int start_chunk_x, unsigned int start_chunk_y,
+		unsigned int   end_chunk_x, unsigned int   end_chunk_y );
+
 	void DrawWorld();
 	void DrawWater();
 
+	void GenRainZoneHeightmap();
+	void DrawRain();
 	void DrawSky();
 	void DrawStars();
 	void DrawSun();
@@ -100,6 +112,7 @@ private:
 	r_GLSLProgram world_shader_;
 	r_GLSLProgram build_prism_shader_;
 	r_GLSLProgram water_shader_;
+	r_GLSLProgram rain_zone_heightmap_shader_;
 	r_GLSLProgram skybox_shader_;
 	r_GLSLProgram stars_shader_;
 	r_GLSLProgram sun_shader_;
@@ -129,6 +142,7 @@ private:
 
 	//framebuffers
 	unsigned viewport_width_, viewport_height_;
+	r_Framebuffer rain_zone_heightmap_framebuffer_;
 	r_Framebuffer additional_framebuffer_; // used in supersampling and depth based antialiasing
 	Antialiasing antialiasing_;
 	unsigned int pixel_size_;
@@ -148,7 +162,9 @@ private:
 	m_Mat4 block_scale_matrix_;
 	m_Mat4 block_final_matrix_;
 	m_Mat4 water_final_matrix_;
+	m_Mat4 rain_zone_matrix_;
 	m_Vec3 cam_ang_, cam_pos_;
+	float rain_intensity_;
 
 	struct
 	{
@@ -175,7 +191,7 @@ private:
 	//text out
 	std::unique_ptr<r_Text> text_manager_;
 
-	r_WeatherEffectsParticleManager weather_effects_particle_manager_;
+	std::unique_ptr< r_WeatherEffectsParticleManager > weather_effects_particle_manager_;
 
 	uint64_t startup_time_;
 };

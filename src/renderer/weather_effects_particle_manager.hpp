@@ -5,19 +5,20 @@
 #include "glsl_program.hpp"
 #include "polygon_buffer.hpp"
 
-class r_WeatherEffectsParticleManager
+class r_WeatherEffectsParticleManager final
 {
-
 public:
-	r_WeatherEffectsParticleManager();
+	r_WeatherEffectsParticleManager( unsigned int particles_count, const m_Vec3& rain_zone_size );
 	~r_WeatherEffectsParticleManager();
-	void Create( unsigned int particles_count, const m_Vec3& rain_zone_size );
-	void Destroy();
 
-	void Draw( const m_Mat4& view_matrix, const m_Vec3& cam_pos );
+	void Draw(
+		const m_Mat4& view_matrix, const m_Vec3& cam_pos,
+		const r_Texture& heightmap_texture, const m_Mat4& heightmap_matrix,
+		float particel_size_px,
+		const m_Vec3& light,
+		float intensity );
 
 private:
-
 	m_Vec3 rain_zone_size_;
 
 	unsigned int particles_count_;
