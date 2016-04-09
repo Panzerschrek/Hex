@@ -1595,7 +1595,8 @@ void r_WorldRenderer::InitFrameBuffers()
 			r_Texture::PixelFormat::Depth16,
 			512,512 );
 
-	rain_zone_heightmap_framebuffer_.GetDepthTexture().SetCompareMode(true);
+	rain_zone_heightmap_framebuffer_.GetDepthTexture().Bind();
+	rain_zone_heightmap_framebuffer_.GetDepthTexture().SetCompareMode( r_Texture::CompareMode::Less );
 }
 
 void r_WorldRenderer::InitVertexBuffers()
