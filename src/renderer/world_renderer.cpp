@@ -534,6 +534,8 @@ void r_WorldRenderer::CalculateMatrices()
 
 void r_WorldRenderer::CalculateLight()
 {
+	rain_intensity_= world_->GetRainIntensity();
+
 	lighting_data_.sun_direction=
 		world_->GetCalendar().GetSunVector( world_->GetTimeOfYear(), world_->GetGlobalWorldLatitude() );
 
@@ -559,6 +561,10 @@ void r_WorldRenderer::CalculateLight()
 	lighting_data_.sky_color= R_SKYBOX_COLOR * daynight_k;
 	lighting_data_.stars_brightness= 1.0f - daynight_k;
 
+	float rain_fade_k= R_SUN_LIGHT_FADE_WHILE_RAIN * rain_intensity_ + 1.0f * ( 1.0f - rain_intensity_ );
+	lighting_data_.current_sun_light*= rain_fade_k;
+	lighting_data_.sky_color*= rain_fade_k;
+
 	if( player_->IsUnderwater() )
 	{
 		static const m_Vec3 c_underwater_color( 0.4f, 0.4f, 0.7f );
@@ -573,8 +579,6 @@ void r_WorldRenderer::CalculateLight()
 
 void r_WorldRenderer::Draw()
 {
-	rain_intensity_= world_->GetRainIntensity();
-
 	UpdateGPUData();
 	CalculateMatrices();
 	CalculateLight();
