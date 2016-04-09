@@ -5,6 +5,7 @@
 #include "rendering_constants.hpp"
 
 #include "img_utils.hpp"
+#include "../math_lib/assert.hpp"
 #include "../math_lib/rand.hpp"
 #include "../console.hpp"
 #include "../time.hpp"
@@ -54,8 +55,15 @@ void r_WeatherEffectsParticleManager::Draw(
 	const m_Mat4& view_matrix, const m_Vec3& cam_pos,
 	const r_Texture& heightmap_texture, const m_Mat4& heightmap_matrix,
 	float particel_size_px,
-	const m_Vec3& light )
+	const m_Vec3& light,
+	float intensity )
 {
+	if( intensity > 1.0f )
+	{
+		H_ASSERT(false);
+		intensity= 1.0f;
+	}
+
 	static const GLenum blend_func[2]= { GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA };
 	static const r_OGLState state(
 		true, false, true, true,
@@ -80,7 +88,10 @@ void r_WeatherEffectsParticleManager::Draw(
 
 	shader_.Uniform( "light", light );
 
-	glDrawArrays( GL_POINTS, 0, particles_count_ );
+	glDrawArrays(
+		GL_POINTS,
+		0,
+		(unsigned int)( float(particles_count_) * intensity ) );
 }
 
 

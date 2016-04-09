@@ -573,14 +573,19 @@ void r_WorldRenderer::CalculateLight()
 
 void r_WorldRenderer::Draw()
 {
+	rain_intensity_= world_->GetRainIntensity();
+
 	UpdateGPUData();
 	CalculateMatrices();
 	CalculateLight();
 	CalculateChunksVisibility();
 
-	rain_zone_heightmap_framebuffer_.Bind();
-	glClear( GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT );
-	GenRainZoneHeightmap();
+	if( rain_intensity_ > 0.0f )
+	{
+		rain_zone_heightmap_framebuffer_.Bind();
+		glClear( GL_DEPTH_BUFFER_BIT );
+		GenRainZoneHeightmap();
+	}
 
 	bool draw_to_additional_framebuffer=
 		antialiasing_ == Antialiasing::SuperSampling2x2 ||
@@ -707,6 +712,9 @@ void r_WorldRenderer::Draw()
 
 		text_manager_->AddMultiText( 0, i++, text_scale, r_Text::default_color,
 			"sun z: %f", lighting_data_.sun_direction.z );
+
+		text_manager_->AddMultiText( 0, i++, text_scale, r_Text::default_color,
+			"rain intensity: %1.3f", rain_intensity_ );
 
 		//text_manager->AddMultiText( 0, 11, text_scale, r_Text::default_color, "quick brown fox jumps over the lazy dog\nQUICK BROWN FOX JUMPS OVER THE LAZY DOG\n9876543210-+/\\" );
 		//text_manager->AddMultiText( 0, 0, 8.0f, r_Text::default_color, "#A@Kli\nO01-eN" );
@@ -988,6 +996,9 @@ void r_WorldRenderer::DrawWorld()
 
 void r_WorldRenderer::DrawRain()
 {
+	if( rain_intensity_ <= 0.0f )
+		return;
+
 	m_Vec3 light=
 		lighting_data_.current_sun_light * float( H_MAX_SUN_LIGHT * 16 ) +
 		lighting_data_.current_ambient_light;
@@ -1005,7 +1016,8 @@ void r_WorldRenderer::DrawRain()
 		rain_zone_heightmap_framebuffer_.GetDepthTexture(),
 		rain_zone_matrix_,
 		particle_size_px,
-		light );
+		light,
+		rain_intensity_ );
 }
 
 void r_WorldRenderer::DrawSky()

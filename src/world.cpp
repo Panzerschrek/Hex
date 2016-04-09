@@ -54,6 +54,12 @@ h_World::h_World(
 	const float c_progres_per_chunk= 0.01f;
 	const float c_lighting_progress= 0.2f;
 
+	rain_data_.is_rain= header_->rain_data.is_rain;
+	rain_data_.start_tick= header_->rain_data.start_tick;
+	rain_data_.duration= header_->rain_data.duration;
+	mLongRandSetState( rain_data_.rand_generator, header_->rain_data.rand_state );
+	rain_data_.base_intensity= header->rain_data.base_intensity;
+
 	InitNormalBlocks();
 
 	chunk_number_x_= std::max( std::min( settings_->GetInt( h_SettingsKeys::chunk_number_x, 14 ), H_MAX_CHUNKS ), H_MIN_CHUNKS );
@@ -128,6 +134,12 @@ h_World::h_World(
 h_World::~h_World()
 {
 	header_->ticks= phys_tick_count_;
+
+	header_->rain_data.is_rain= rain_data_.is_rain;
+	header_->rain_data.start_tick= rain_data_.start_tick;
+	header_->rain_data.duration= rain_data_.duration;
+	header_->rain_data.rand_state= mLongRandGetState( rain_data_.rand_generator );
+	header_->rain_data.base_intensity= rain_data_.base_intensity;
 
 	H_ASSERT(!phys_thread_);
 
@@ -269,6 +281,11 @@ const h_Calendar& h_World::GetCalendar() const
 float h_World::GetGlobalWorldLatitude() const
 {
 	return g_global_world_latitude;
+}
+
+float h_World::GetRainIntensity() const
+{
+	return rain_data_.current_intensity.load();
 }
 
 void h_World::TestMobSetTargetPosition( int x, int y, int z )
@@ -1028,6 +1045,7 @@ void h_World::PhysTick()
 		WaterPhysTick();
 		GrassPhysTick();
 		RelightWaterModifedChunksLight();
+		RainTick();
 
 		// player logic
 		{
@@ -1406,6 +1424,73 @@ void h_World::GrassPhysTick()
 			i++;
 		} // for grass blocks
 	} // for chunks
+}
+
+void h_World::RainTick()
+{
+	static constexpr unsigned int c_rain_try_start_interval_ticks= 6 * g_updates_frequency;
+
+	// Chanse of rain start for N attempts is "1 - (1 - start_chanse) ^ N"
+	static constexpr unsigned int c_rain_start_chanse= rain_data_.rand_generator.max() /256;
+
+	static constexpr unsigned int c_middle_rain_duration_ticks= g_day_duration_ticks / 8;
+	static constexpr unsigned int c_min_rain_duration_ticks= g_day_duration_ticks / 16;
+	static constexpr unsigned int c_max_rain_duration_ticks= g_day_duration_ticks * 3 / 2;
+
+	static constexpr unsigned int c_rain_edge_time_ticks= 10 * g_updates_frequency;
+	static_assert( c_rain_edge_time_ticks * 2 < c_min_rain_duration_ticks, "Invalid rain parameters" );
+
+ 	if( !rain_data_.is_rain )
+	{
+		if( phys_tick_count_ % c_rain_try_start_interval_ticks == 0 )
+		{
+			if( rain_data_.rand_generator() < c_rain_start_chanse )
+			{
+				rain_data_.is_rain= true;
+				rain_data_.start_tick= phys_tick_count_;
+
+				// c_middle_rain_duration_ticks= k * e ^ ( pow * pow * 0.5 )
+				const float k=
+					float(c_middle_rain_duration_ticks) /
+					std::exp( rain_data_.c_duration_rand_pow * rain_data_.c_duration_rand_pow * 0.5f );
+
+				rain_data_.duration= (unsigned int)( k * rain_data_.duration_rand( rain_data_.rand_generator ) );
+				rain_data_.duration=
+					std::min(
+						c_max_rain_duration_ticks,
+						std::max(
+							c_min_rain_duration_ticks,
+							rain_data_.duration ) );
+
+				rain_data_.base_intensity= rain_data_.intensity_rand( rain_data_.rand_generator );
+			}
+		}
+	}
+
+	if( rain_data_.is_rain )
+	{
+		unsigned int ticks_since_rain_start= phys_tick_count_ - rain_data_.start_tick;
+
+		if( ticks_since_rain_start >= rain_data_.duration )
+		{
+			rain_data_.is_rain= false;
+			rain_data_.current_intensity.store( 0.0f );
+		}
+		else
+		{
+			float current_intencity;
+
+			if( ticks_since_rain_start < c_rain_edge_time_ticks )
+				current_intencity= float( ticks_since_rain_start ) / float( c_rain_edge_time_ticks );
+			else if( rain_data_.duration - ticks_since_rain_start < c_rain_edge_time_ticks )
+				current_intencity= float( rain_data_.duration - ticks_since_rain_start ) / float( c_rain_edge_time_ticks );
+			else
+				current_intencity= 1.0f;
+
+			rain_data_.current_intensity.store( rain_data_.base_intensity * current_intencity );
+		}
+
+	}
 }
 
 void h_World::InitNormalBlocks()

@@ -164,6 +164,7 @@ private:
 	m_Mat4 water_final_matrix_;
 	m_Mat4 rain_zone_matrix_;
 	m_Vec3 cam_ang_, cam_pos_;
+	float rain_intensity_;
 
 	struct
 	{
