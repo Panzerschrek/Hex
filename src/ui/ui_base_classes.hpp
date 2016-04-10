@@ -2,6 +2,7 @@
 #include <array>
 #include <functional>
 #include <memory>
+#include <string>
 #include <vector>
 
 #define H_UI_MAX_ELEMENTS 128
@@ -245,7 +246,7 @@ protected:
 class ui_Button : public ui_Base
 {
 public:
-	ui_Button( const char* text, int cell_x, int cell_y, int cell_size_x, int cell_size_y, const ui_Style& style= ui_Style() );
+	ui_Button( std::string text, int cell_x, int cell_y, int cell_size_x, int cell_size_y, const ui_Style& style= ui_Style() );
 	virtual ~ui_Button() override;
 
 	void SetCallback( const ui_Callback& callback )
@@ -292,13 +293,13 @@ class ui_Text : public ui_Base
 {
 public:
 	ui_Text(
-		const char* text,
+		std::string text,
 		int cell_x, int cell_y,
 		int cell_width, int cell_height,
 		const ui_Style& style= ui_Style() );
 	virtual ~ui_Text() override;
 
-	void SetText( const char* text );
+	void SetText( std::string text );
 	virtual void Draw( ui_Painter* painter ) const override;
 
 private:

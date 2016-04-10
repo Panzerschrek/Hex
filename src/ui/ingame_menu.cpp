@@ -73,7 +73,7 @@ public:
 
 			std::unique_ptr<ui_Button> button(
 				new ui_Button(
-					BlockNameSpaceSplitted( type ).data(),
+					BlockNameSpaceSplitted( type ),
 					column, row + p,
 					8, 1,
 					c_ui_main_style ) );
@@ -341,9 +341,5 @@ void ui_IngameMenu::OnBlockSelected( h_BlockType block_type )
 	if( block_type == h_BlockType::Unknown )
 		block_type_text_->SetText("");
 	else
-	{
-		std::string str= "Block: ";
-		str+= h_Block::GetBlockName( block_type );
-		block_type_text_->SetText( str.data() );
-	}
+		block_type_text_->SetText( "Block: " + BlockNameSpaceSplitted( block_type ) );
 }

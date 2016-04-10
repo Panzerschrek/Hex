@@ -376,7 +376,7 @@ void ui_MenuBase::ControllerMove( int dx, int dy )
 ---------------ui_Button-------------
 */
 
-ui_Button::ui_Button( const char* text, int cell_x, int cell_y, int cell_size_x, int cell_size_y, const ui_Style& style )
+ui_Button::ui_Button( std::string text, int cell_x, int cell_y, int cell_size_x, int cell_size_y, const ui_Style& style )
 	: ui_Base(
 		cell_x * ui_Base::CellSize() + ui_Base::CellOffset(),
 		cell_y * ui_Base::CellSize() + ui_Base::CellOffset(),
@@ -384,7 +384,7 @@ ui_Button::ui_Button( const char* text, int cell_x, int cell_y, int cell_size_x,
 		cell_size_y * ui_Base::CellSize() - ui_Base::CellOffset()*2,
 		style )
 	, callback_(nullptr)
-	, button_text_(text ? text : "")
+	, button_text_( std::move(text) )
 {
 }
 
@@ -465,12 +465,12 @@ void ui_Checkbox::Draw( ui_Painter* painter ) const
 -------------ui_Text---------------
 */
 
-ui_Text::ui_Text( const char* text, int cell_x, int cell_y , int cell_width, int cell_height, const ui_Style& style )
+ui_Text::ui_Text( std::string text, int cell_x, int cell_y , int cell_width, int cell_height, const ui_Style& style )
 	: ui_Base(
 		cell_x * ui_Base::CellSize() + ui_Base::CellOffset(), cell_y * ui_Base::CellSize() + ui_Base::CellOffset(),
 		ui_Base::CellSize() * cell_width - 2*ui_Base::CellOffset(), ui_Base::CellSize() * cell_height - 2*ui_Base::CellOffset(),
 		style )
-	, text_(text ? text : "")
+	, text_( std::move(text) )
 {
 }
 
@@ -478,12 +478,12 @@ ui_Text::~ui_Text()
 {
 }
 
-void ui_Text::SetText( const char* text )
+void ui_Text::SetText( std::string text )
 {
-	text_= text ? text : "";
+	text_= std::move(text);
 }
 
-void ui_Text::Draw( ui_Painter* painter )const
+void ui_Text::Draw( ui_Painter* painter ) const
 {
 	ui_Base::TextDraw( painter, text_.data() );
 }
