@@ -1,6 +1,7 @@
 #include <clocale>
 
 #include <QApplication>
+#include <QDir>
 
 #include "hex.hpp"
 #include "main_loop.hpp"
@@ -8,12 +9,15 @@
 
 int main( int argc, char* argv[] )
 {
-	QApplication hex(argc, argv);
+	QApplication app( argc, argv );
+
+	// We can not work outside executable directory.
+	QDir::setCurrent( app.applicationDirPath() );
 
 	std::setlocale( LC_NUMERIC, "C" );
 
 	h_Console::Info( "hex not first version" );
 	h_MainLoop::Start();
 
-	return hex.exec();
+	return app.exec();
 }
