@@ -19,6 +19,7 @@
 #include "wvb.hpp"
 #include "../math_lib/math.hpp"
 #include "../math_lib/assert.hpp"
+#include "../world_generator/noise.hpp"
 
 #include "../block_collision.hpp"
 #include "../player.hpp"
@@ -511,7 +512,8 @@ void r_WorldRenderer::CalculateMatrices()
 		std::cos( std::max( fov_x_, fov_y_ ) * 0.5f )
 		* 0.95f;
 
-	float z_far= 1024.0f;
+	// Take half diagonal of scene cube.
+	float z_far= R_SCENE_RADIUS * std::sqrt( 3.0f + 0.1f );
 
 	perspective_matrix_.PerspectiveProjection(
 		float(viewport_width_)/float(viewport_height_),
@@ -560,12 +562,14 @@ void r_WorldRenderer::CalculateLight()
 	lighting_data_.current_fire_light= R_FIRE_LIGHT_COLOR / float ( H_MAX_FIRE_LIGHT * 16 );
 	lighting_data_.current_ambient_light= R_AMBIENT_LIGHT_COLOR;
 
+	lighting_data_.clouds_color= R_CLOUDS_COLOR * daynight_k + R_CLOUDS_NIGHT_COLOR * (1.0f - daynight_k);
 	lighting_data_.sky_color= R_SKYBOX_COLOR * daynight_k;
 	lighting_data_.stars_brightness= 1.0f - daynight_k;
 
 	float rain_fade_k= R_SUN_LIGHT_FADE_WHILE_RAIN * rain_intensity_ + 1.0f * ( 1.0f - rain_intensity_ );
 	lighting_data_.current_sun_light*= rain_fade_k;
 	lighting_data_.sky_color*= rain_fade_k;
+	lighting_data_.clouds_color*= rain_fade_k;
 
 	if( player_->IsUnderwater() )
 	{
@@ -581,6 +585,8 @@ void r_WorldRenderer::CalculateLight()
 
 void r_WorldRenderer::Draw()
 {
+	current_frame_time_= float(hGetTimeMS() - startup_time_) * 0.001;
+
 	UpdateGPUData();
 	CalculateMatrices();
 	CalculateLight();
@@ -610,6 +616,7 @@ void r_WorldRenderer::Draw()
 	DrawSky();
 	DrawStars();
 	DrawSun();
+	DrawClouds();
 	if( player_->IsUnderwater() )
 	{
 		DrawRain();
@@ -1090,6 +1097,33 @@ void r_WorldRenderer::DrawSun()
 	glDrawArrays( GL_POINTS, 0, 1 );
 }
 
+void r_WorldRenderer::DrawClouds()
+{
+	static const GLenum state_blend_mode[]= { GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA };
+	static const r_OGLState state(
+		true, false, true, true,
+		state_blend_mode,
+		r_OGLState::default_clear_color );
+	r_OGLStateManager::UpdateState( state );
+
+	clouds_texture_.Bind(0);
+
+	clouds_shader_.Bind();
+	clouds_shader_.Uniform( "mat", view_matrix_ );
+	clouds_shader_.Uniform( "pos", cam_pos_.xy() );
+	clouds_shader_.Uniform( "tex", 0 );
+
+	clouds_shader_.Uniform( "clouds_size", R_SCENE_RADIUS );
+
+	const m_Vec2 c_clouds_speed( -6.0f, 0.0f );
+	clouds_shader_.Uniform( "clouds_shift", c_clouds_speed * current_frame_time_ );
+
+	clouds_shader_.Uniform( "clouds_edge", 1.0f - (rain_intensity_ * 0.7f + 0.25f) );
+	clouds_shader_.Uniform( "clouds_color", lighting_data_.clouds_color );
+
+	glDrawArrays( GL_TRIANGLES, 0, 6 );
+}
+
 void r_WorldRenderer::DrawWater()
 {
 	static const GLenum state_blend_mode[]= { GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA };
@@ -1108,7 +1142,7 @@ void r_WorldRenderer::DrawWater()
 	water_final_matrix_= water_matrix * block_final_matrix_;
 	water_shader_.Uniform( "view_matrix", water_final_matrix_ );
 	water_shader_.Uniform( "tex", 0 );
-	water_shader_.Uniform( "time", float(hGetTimeMS() - startup_time_) * 0.001f );
+	water_shader_.Uniform( "time", current_frame_time_ );
 
 	water_shader_.Uniform( "sun_light_color", lighting_data_.current_sun_light );
 	water_shader_.Uniform( "fire_light_color", lighting_data_.current_fire_light );
@@ -1530,6 +1564,11 @@ void r_WorldRenderer::LoadShaders()
 		rLoadShader( "sun_vert.glsl", glsl_version, { define_str } ) );
 	sun_shader_.Create();
 
+	clouds_shader_.ShaderSource(
+		rLoadShader( "clouds_frag.glsl", glsl_version ),
+		rLoadShader( "clouds_vert.glsl", glsl_version ) );
+	clouds_shader_.Create();
+
 	console_bg_shader_.ShaderSource(
 		rLoadShader( "console_bg_frag.glsl", glsl_version ),
 		rLoadShader( "console_bg_vert.glsl", glsl_version ),
@@ -1610,12 +1649,12 @@ void r_WorldRenderer::InitVertexBuffers()
 		GL_UNSIGNED_SHORT, GL_LINES );
 	build_prism_vbo_.VertexAttribPointer( 0, 3, GL_FLOAT, false, 0 );
 
-	static const short sky_vertices[]=
+	static const float sky_vertices[]=
 	{
-		256, 256, 256, -256, 256, 256,
-		256, -256, 256, -256, -256, 256,
-		256, 256, -256, -256, 256, -256,
-		256, -256, -256, -256, -256, -256
+		R_SCENE_RADIUS,  R_SCENE_RADIUS,  R_SCENE_RADIUS,  -R_SCENE_RADIUS,  R_SCENE_RADIUS,  R_SCENE_RADIUS,
+		R_SCENE_RADIUS, -R_SCENE_RADIUS,  R_SCENE_RADIUS,  -R_SCENE_RADIUS, -R_SCENE_RADIUS,  R_SCENE_RADIUS,
+		R_SCENE_RADIUS,  R_SCENE_RADIUS, -R_SCENE_RADIUS,  -R_SCENE_RADIUS,  R_SCENE_RADIUS, -R_SCENE_RADIUS,
+		R_SCENE_RADIUS, -R_SCENE_RADIUS, -R_SCENE_RADIUS,  -R_SCENE_RADIUS, -R_SCENE_RADIUS, -R_SCENE_RADIUS,
 	};
 	static const unsigned short sky_indeces[]=
 	{
@@ -1626,9 +1665,9 @@ void r_WorldRenderer::InitVertexBuffers()
 		2, 7, 3,  2, 6, 7,
 		1, 3, 7,  1, 7, 5
 	};
-	skybox_vbo_.VertexData( sky_vertices, sizeof(short) * 8 * 3, sizeof(short) * 3 );
+	skybox_vbo_.VertexData( sky_vertices, sizeof(float) * 8 * 3, sizeof(float) * 3 );
 	skybox_vbo_.IndexData( sky_indeces, sizeof(unsigned short) * 36, GL_UNSIGNED_SHORT, GL_TRIANGLES );
-	skybox_vbo_.VertexAttribPointer( 0, 3, GL_SHORT, false, 0 );
+	skybox_vbo_.VertexAttribPointer( 0, 3, GL_FLOAT, false, 0 );
 
 	{
 		m_Rand randomizer;
@@ -1724,4 +1763,27 @@ void r_WorldRenderer::LoadTextures()
 	r_ImgUtils::LoadTexture( &sun_texture_, "textures/sun.tga" );
 	r_ImgUtils::LoadTexture( &console_bg_texture_, "textures/console_bg_normalized.png" );
 	r_ImgUtils::LoadTexture( &crosshair_texture_, "textures/crosshair.bmp" );
+
+	{
+		const int c_tex_size_log2= 8;
+		const int c_tex_size= 1 << c_tex_size_log2;
+		const int c_octaves= 3;
+
+		int inv_multiplier= 0;
+		for( int i= 0; i < c_octaves; i++ )
+			inv_multiplier+= 1 << ( 8 - i );
+		int multiplier= 65536 / inv_multiplier;
+
+		std::vector<unsigned char> tex_data( c_tex_size * c_tex_size );
+
+		for( int y= 0; y < c_tex_size; y++ )
+		for( int x= 0; x < c_tex_size; x++ )
+		{
+			int val= g_TriangularOctaveNoiseWraped( x, y, 0, c_octaves, c_tex_size_log2 );
+			tex_data[ x + (y<<c_tex_size_log2) ]= ( val * multiplier ) >> 16;
+		}
+
+		clouds_texture_= r_Texture( r_Texture::PixelFormat::R8, c_tex_size, c_tex_size, tex_data.data() );
+		clouds_texture_.SetFiltration( r_Texture::Filtration::Nearest, r_Texture::Filtration::Nearest );
+	}
 }

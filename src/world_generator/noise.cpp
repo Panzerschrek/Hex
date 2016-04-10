@@ -54,7 +54,7 @@ int g_InterpolatedNoise( int x, int y, int seed, int shift )
 	return ( interp_x[1] * dx + interp_x[0] * (shift_pow2 - dx) ) >> (shift + shift);
 }
 
-int g_TriangularInterpolatedNoise( int x, int y, int seed, int shift )
+int g_TriangularInterpolatedNoise( int x, int y, int seed, int shift, int coord_mask )
 {
 	int X= x>>shift, Y= y>>shift;
 	int shift_pow2= 1 << shift;
@@ -83,9 +83,9 @@ int g_TriangularInterpolatedNoise( int x, int y, int seed, int shift )
 
 		if( dy >= 2 * dx )
 		{
-			noise[0]= g_Noise2( X  , Y  , seed );
-			noise[1]= g_Noise2( X  , Y+1, seed );
-			noise[2]= g_Noise2( X+1, Y+1, seed );
+			noise[0]= g_Noise2( (X  ) & coord_mask, (Y  ) & coord_mask, seed );
+			noise[1]= g_Noise2( (X  ) & coord_mask, (Y+1) & coord_mask, seed );
+			noise[2]= g_Noise2( (X+1) & coord_mask, (Y+1) & coord_mask, seed );
 
 			dx-= (dy1>>1) - (shift_pow2>>1);
 			dx1= shift_pow2 - dy1 - dx;
@@ -98,9 +98,9 @@ int g_TriangularInterpolatedNoise( int x, int y, int seed, int shift )
 		}
 		else if( dy >= shift_pow2 * 2 - 2 * dx )
 		{
-			noise[0]= g_Noise2( X+1, Y  , seed );
-			noise[1]= g_Noise2( X+1, Y+1, seed );
-			noise[2]= g_Noise2( X+2, Y+1, seed );
+			noise[0]= g_Noise2( (X+1) & coord_mask, (Y  ) & coord_mask, seed );
+			noise[1]= g_Noise2( (X+1) & coord_mask, (Y+1) & coord_mask, seed );
+			noise[2]= g_Noise2( (X+2) & coord_mask, (Y+1) & coord_mask, seed );
 
 			dx-= (shift_pow2>>1) + (dy1>>1);
 			dx1= shift_pow2 - dy1 - dx;
@@ -113,9 +113,9 @@ int g_TriangularInterpolatedNoise( int x, int y, int seed, int shift )
 		}
 		else
 		{
-			noise[0]= g_Noise2( X  , Y  , seed );
-			noise[1]= g_Noise2( X+1, Y  , seed );
-			noise[2]= g_Noise2( X+1, Y+1, seed );
+			noise[0]= g_Noise2( (X  ) & coord_mask, (Y  ) & coord_mask, seed );
+			noise[1]= g_Noise2( (X+1) & coord_mask, (Y  ) & coord_mask, seed );
+			noise[2]= g_Noise2( (X+1) & coord_mask, (Y+1) & coord_mask, seed );
 
 			dx -= dy >> 1;
 			dx1= shift_pow2 - dy - dx;
@@ -143,9 +143,9 @@ int g_TriangularInterpolatedNoise( int x, int y, int seed, int shift )
 		*/
 		if( dy <= shift_pow2 - 2 * dx )
 		{
-			noise[0]= g_Noise2( X  , Y  , seed );
-			noise[1]= g_Noise2( X+1, Y  , seed );
-			noise[2]= g_Noise2( X  , Y+1, seed );
+			noise[0]= g_Noise2( (X  ) & coord_mask, (Y  ) & coord_mask, seed );
+			noise[1]= g_Noise2( (X+1) & coord_mask, (Y  ) & coord_mask, seed );
+			noise[2]= g_Noise2( (X  ) & coord_mask, (Y+1) & coord_mask, seed );
 
 			dx+= (shift_pow2>>1) - (dy>>1);
 			dx1= shift_pow2 - dy - dx;
@@ -159,9 +159,9 @@ int g_TriangularInterpolatedNoise( int x, int y, int seed, int shift )
 		else if( dy <= 2 * dx - shift_pow2 )
 		{
 
-			noise[0]= g_Noise2( X+1, Y  , seed );
-			noise[1]= g_Noise2( X+2, Y  , seed );
-			noise[2]= g_Noise2( X+1, Y+1, seed );
+			noise[0]= g_Noise2( (X+1) & coord_mask, (Y  ) & coord_mask, seed );
+			noise[1]= g_Noise2( (X+2) & coord_mask, (Y  ) & coord_mask, seed );
+			noise[2]= g_Noise2( (X+1) & coord_mask, (Y+1) & coord_mask, seed );
 
 			dx-= (shift_pow2>>1) + (dy>>1);
 			dx1= shift_pow2 - dy - dx;
@@ -174,9 +174,9 @@ int g_TriangularInterpolatedNoise( int x, int y, int seed, int shift )
 		}
 		else
 		{
-			noise[0]= g_Noise2( X+1, Y  , seed );
-			noise[1]= g_Noise2( X  , Y+1, seed );
-			noise[2]= g_Noise2( X+1, Y+1, seed );
+			noise[0]= g_Noise2( (X+1) & coord_mask, (Y  ) & coord_mask, seed );
+			noise[1]= g_Noise2( (X  ) & coord_mask, (Y+1) & coord_mask, seed );
+			noise[2]= g_Noise2( (X+1) & coord_mask, (Y+1) & coord_mask, seed );
 
 			dx-= dy1 >> 1;
 			dx1= shift_pow2 - dy1 - dx;
@@ -208,6 +208,22 @@ int g_TriangularOctaveNoise( int x, int y, int seed, int octaves )
 	int r= 0;
 	for( int i= 0; i < octaves; i++ )
 		r += g_TriangularInterpolatedNoise( x, y, seed, octaves - i - 1 ) >> i;
+
+	return r;
+}
+
+int g_TriangularOctaveNoiseWraped( int x, int y, int seed, int octaves, int size_log2 )
+{
+	int r= 0;
+	for( int i= 0; i < octaves; i++ )
+	{
+		int shift= octaves - i - 1;
+		r += g_TriangularInterpolatedNoise(
+			x, y,
+			seed,
+			shift,
+			(1<<(size_log2 - shift)) - 1 ) >> i;
+	}
 
 	return r;
 }

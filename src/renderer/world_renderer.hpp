@@ -90,6 +90,7 @@ private:
 	void DrawSky();
 	void DrawStars();
 	void DrawSun();
+	void DrawClouds();
 	void DrawConsole();
 
 private:
@@ -114,6 +115,7 @@ private:
 	r_GLSLProgram skybox_shader_;
 	r_GLSLProgram stars_shader_;
 	r_GLSLProgram sun_shader_;
+	r_GLSLProgram clouds_shader_;
 	r_GLSLProgram console_bg_shader_;
 	r_GLSLProgram crosshair_shader_;
 	r_GLSLProgram supersampling_final_shader_;
@@ -135,6 +137,7 @@ private:
 		m_Vec3 current_ambient_light;
 		m_Vec3 sun_direction;
 		m_Vec3 sky_color;
+		m_Vec3 clouds_color;
 		float stars_brightness;
 	} lighting_data_;
 
@@ -150,6 +153,7 @@ private:
 	r_Texture sun_texture_;
 	r_Texture console_bg_texture_;
 	r_Texture crosshair_texture_;
+	r_Texture clouds_texture_;
 
 	//matrices and vectors
 	float fov_x_, fov_y_;
@@ -162,6 +166,8 @@ private:
 	m_Mat4 rain_zone_matrix_;
 	m_Vec3 cam_ang_, cam_pos_;
 	float rain_intensity_;
+
+	float current_frame_time_;
 
 	struct
 	{
