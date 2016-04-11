@@ -126,9 +126,9 @@ r_TextureManager::r_TextureManager( unsigned int detalization, bool filter_textu
 
 	r_ImgUtils::LoadTexture( &water_texture_, "textures/water2.tga", texture_detalization_ );
 	if( filter_textures_ )
-		water_texture_.SetFiltration( r_Texture::Filtration::Linear, r_Texture::Filtration::LinearMipmapLinear );
+		water_texture_.SetFiltration( r_Texture::Filtration::LinearMipmapLinear, r_Texture::Filtration::Linear );
 	else
-		water_texture_.SetFiltration( r_Texture::Filtration::Nearest, r_Texture::Filtration::NearestMipmapLinear );
+		water_texture_.SetFiltration( r_Texture::Filtration::NearestMipmapLinear, r_Texture::Filtration::Nearest );
 }
 
 r_TextureManager::~r_TextureManager()
