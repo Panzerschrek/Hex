@@ -58,6 +58,8 @@ h_Chunk::h_Chunk( h_World* world, const HEXCHUNK_header& header, QDataStream& st
 
 h_Chunk::~h_Chunk()
 {
+	for( h_LightSource* source : light_source_list_ )
+		delete source;
 }
 
 bool h_Chunk::IsEdgeChunk() const
