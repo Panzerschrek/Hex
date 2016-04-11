@@ -1,50 +1,64 @@
 #pragma once
+#include <cstdint>
+#include <limits>
+
 #include "assert.hpp"
 
-typedef int fixed_base_t;
+typedef std::int32_t fixed_base_t;
+typedef std::int64_t fixed_base_square_t;
+
+#define ASSERT_INVALID_BASE \
+	static_assert( base >= 0 && base <= std::numeric_limits<fixed_base_t>::digits, "Invalid fixed base" );
 
 template< int base >
 fixed_base_t mFixedMul( fixed_base_t x, fixed_base_t y )
 {
-	return ( ((long long int)x) * y ) >> base;
+	ASSERT_INVALID_BASE
+	return ( fixed_base_square_t(x) * y ) >> base;
 }
 
 template< int base >
 fixed_base_t mFixedSquare( fixed_base_t x )
 {
-	return ( ((long long int)x) * x ) >> base;
+	ASSERT_INVALID_BASE
+	return ( fixed_base_square_t(x) * x ) >> base;
 }
 
 template< int base >
 int mFixedMulResultToInt( fixed_base_t x, fixed_base_t y )
 {
-	return ( ((long long int)x) * y ) >> (base + base);
+	ASSERT_INVALID_BASE
+	return ( fixed_base_square_t(x) * y ) >> ( fixed_base_square_t(base) * 2 );
 }
 
 template< int base >
 fixed_base_t mFixedRound( fixed_base_t x )
 {
+	ASSERT_INVALID_BASE
 	return ( x + (1 << (base - 1)) ) & (~( (1 << base) - 1 ));
 }
 
 template< int base >
 int mFixedRoundToInt( fixed_base_t x )
 {
+	ASSERT_INVALID_BASE
 	return ( x + (1 << (base - 1)) ) >> base;
 }
 
 template< int base >
 fixed_base_t mFixedDiv( fixed_base_t x, fixed_base_t y )
 {
+	ASSERT_INVALID_BASE
 	// TODO - check range of result
 	H_ASSERT( y != 0 );
-	return ( ((long long int)x) << base ) / y;
+	return ( fixed_base_square_t(x) << base ) / y;
 }
 
 template< int base >
 fixed_base_t mFixedInvert( fixed_base_t x )
 {
-	return (1 << (base + base)) / ((long long int)x);
+	ASSERT_INVALID_BASE
+	return ( 1 << ( fixed_base_square_t(base) * 2 ) ) / fixed_base_square_t(x);
 }
 
 // If you wish - you can add fixedXX_t and additional direct functions.
@@ -86,4 +100,4 @@ inline fixed16_t mFixed16Invert( fixed16_t x )
 	return mFixedInvert<16>( x );
 }
 
-
+#undef ASSERT_INVALID_BASE

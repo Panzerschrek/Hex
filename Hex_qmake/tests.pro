@@ -15,7 +15,8 @@ SOURCES += \
     ../src/test/math_test.cpp \
     ../src/test/calendar_test.cpp \
     ../src/test/allocation_free_list_test.cpp \
-    ../src/test/allocation_free_set_test.cpp
+    ../src/test/allocation_free_set_test.cpp \
+    ../src/test/fixed_test.cpp
 
 HEADERS += \
     ../src/test/test.h
