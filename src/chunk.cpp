@@ -112,6 +112,12 @@ void h_Chunk::SaveBlock( QDataStream& stream, const h_Block* block )
 		}
 		break;
 
+	case h_BlockType::Fire:
+		{
+			const h_Fire* fire= static_cast< const h_Fire* >( block );
+			stream << fire->power_;
+		} break;
+
 	case h_BlockType::NumBlockTypes:
 	case h_BlockType::Unknown:
 		break;
@@ -220,6 +226,24 @@ h_Block* h_Chunk::LoadBlock( QDataStream& stream, unsigned int block_addr )
 					block_id, static_cast<h_Direction>(direction) );
 		}
 		break;
+
+	case h_BlockType::Fire:
+		{
+			unsigned char power;
+			stream >> power;
+
+			h_Fire* fire= new h_Fire();
+
+			fire->x_= BlockAddrToX(block_addr);
+			fire->y_= BlockAddrToY(block_addr);
+			fire->z_= BlockAddrToZ(block_addr);
+			fire->power_= power;
+
+			fire_list_.push_back( fire );
+			light_source_list_.push_back( fire );
+
+			block= fire;
+		} break;
 
 	default:
 		H_ASSERT(false);

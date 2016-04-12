@@ -65,10 +65,22 @@ class h_LightSource : public h_Block
 	//h_Block::AdditionalData in this class is light power
 public:
 	h_LightSource( h_BlockType type, unsigned char light_level= H_MAX_FIRE_LIGHT );
+
+	virtual ~h_LightSource();
+
 	unsigned char LightLevel() const;
 	void SetLightLevel( unsigned char level );
 
 	unsigned char x_, y_, z_, reserved_; // relative light source block coordinates ( in chunk )
+};
+
+class h_Fire : public h_LightSource
+{
+public:
+	h_Fire();
+	virtual ~h_Fire() override;
+
+	unsigned char power_;
 };
 
 class h_FailingBlock : public h_Block

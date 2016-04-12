@@ -36,6 +36,9 @@ public:
 	const std::vector< h_LiquidBlock* >& GetWaterList() const;
 	const std::vector< h_NonstandardFormBlock* >& GetNonstandartFormBlocksList() const;
 	const std::vector< h_LightSource* >& GetLightSourceList() const;
+	const std::vector< h_Fire* >& GetFireList() const;
+
+
 	h_World* GetWorld();
 	const h_World* GetWorld() const;
 
@@ -123,6 +126,8 @@ private:
 	//light management
 	std::vector< h_LightSource* > light_source_list_;
 
+	std::vector< h_Fire* > fire_list_;
+
 	// Large arrays - put back.
 	h_Block* blocks_                     [ H_CHUNK_WIDTH * H_CHUNK_WIDTH * H_CHUNK_HEIGHT ];
 	h_CombinedTransparency transparency_ [ H_CHUNK_WIDTH * H_CHUNK_WIDTH * H_CHUNK_HEIGHT ];
@@ -199,6 +204,11 @@ inline const std::vector< h_NonstandardFormBlock* >& h_Chunk::GetNonstandartForm
 inline const std::vector<h_LightSource*>& h_Chunk::GetLightSourceList() const
 {
 	return light_source_list_;
+}
+
+inline const std::vector< h_Fire* >& h_Chunk::GetFireList() const
+{
+	return fire_list_;
 }
 
 inline const h_World* h_Chunk::GetWorld() const

@@ -337,6 +337,21 @@ void h_World::Build(
 		ch->SetBlock( local_x, local_y, z, s );
 		AddFireLight_r( x, y, z, H_MAX_FIRE_LIGHT );
 	}
+	else if( block_type == h_BlockType::Fire )
+	{
+		h_Chunk* ch= GetChunk( chunk_x, chunk_y );
+
+		h_Fire* fire= new h_Fire();
+		fire->x_= local_x;
+		fire->y_= local_y;
+		fire->z_= z;
+
+		ch->light_source_list_.push_back( fire );
+		ch->fire_list_.push_back( fire );
+
+		ch->SetBlock( local_x, local_y, z, fire );
+		AddFireLight_r( x, y, z, fire->LightLevel() );
+	}
 	else if( block_type == h_BlockType::Grass )
 	{
 		h_Chunk* ch= GetChunk( chunk_x, chunk_y );

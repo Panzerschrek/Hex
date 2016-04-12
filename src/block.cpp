@@ -148,6 +148,17 @@ static const constexpr BlockProperties g_blocks_properties[ size_t(h_BlockType::
 		.is_failing= false,
 		.is_technical= false,
 	},
+
+	[size_t(h_BlockType::Fire)]=
+	{
+		.default_transparency= TRANSPARENCY_AIR,
+		.form= h_BlockForm::Full,
+		.transparent_for_fire_light= true,
+		.transparent_for_direct_sun_light= true,
+		.transparent_for_secondary_sun_light= true,
+		.is_failing= false,
+		.is_technical= false,
+	},
 };
 
 static const constexpr h_CombinedTransparency g_blocks_combined_transparency[ size_t(h_BlockType::NumBlockTypes) ]=
@@ -352,6 +363,9 @@ h_LightSource::h_LightSource( h_BlockType type, unsigned char light_level )
 	: h_Block( type, light_level )
 {}
 
+h_LightSource::~h_LightSource()
+{}
+
 unsigned char h_LightSource::LightLevel() const
 {
 	return h_Block::additional_data_;
@@ -361,6 +375,17 @@ void h_LightSource::SetLightLevel( unsigned char level )
 {
 	h_Block::additional_data_= level;
 }
+
+/*
+-------------------h_Fire-----------------
+*/
+
+h_Fire::h_Fire()
+	: h_LightSource( h_BlockType::Fire )
+{}
+
+h_Fire::~h_Fire()
+{}
 
 /*
 ----------------h_FailingBlock--------------
