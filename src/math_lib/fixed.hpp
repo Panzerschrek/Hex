@@ -58,7 +58,7 @@ template< int base >
 fixed_base_t mFixedInvert( fixed_base_t x )
 {
 	ASSERT_INVALID_BASE
-	return ( 1 << ( fixed_base_square_t(base) * 2 ) ) / fixed_base_square_t(x);
+	return ( fixed_base_square_t(1) << ( fixed_base_square_t(base) * 2 ) ) / fixed_base_square_t(x);
 }
 
 // If you wish - you can add fixedXX_t and additional direct functions.
