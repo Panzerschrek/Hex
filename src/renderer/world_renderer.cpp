@@ -1477,6 +1477,7 @@ void r_WorldRenderer::BuildFire()
 			v->pos[0]= float( X + fire->x_ ) * H_SPACE_SCALE_VECTOR_X + H_HEXAGON_EDGE_SIZE;
 			v->pos[1]= float( Y + fire->y_ + 1 ) - 0.5f * float( fire->x_ & 1 );
 			v->pos[2]= float( fire->z_ ) + 0.5f;
+			v->power= 0.2f + 0.8f * float(fire->power_) / float(h_Fire::c_max_power_);
 
 			v++;
 		}
@@ -1586,6 +1587,7 @@ void r_WorldRenderer::LoadShaders()
 		rLoadShader( "fire_frag.glsl", glsl_version ),
 		rLoadShader( "fire_vert.glsl", glsl_version ) );
 	fire_shader_.SetAttribLocation( "pos", 0 );
+	fire_shader_.SetAttribLocation( "power", 1 );
 	fire_shader_.Create();
 
 	rain_zone_heightmap_shader_.ShaderSource(

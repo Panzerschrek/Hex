@@ -161,6 +161,7 @@ private:
 	bool WaterFlowDown( h_LiquidBlock* from, short to_x, short to_y, short to_z );
 
 	void GrassPhysTick();
+	void FirePhysTick();
 
 	void RainTick();
 

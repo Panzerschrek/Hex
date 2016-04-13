@@ -1059,6 +1059,7 @@ void h_World::PhysTick()
 
 		WaterPhysTick();
 		GrassPhysTick();
+		FirePhysTick();
 		RelightWaterModifedChunksLight();
 		RainTick();
 
@@ -1439,6 +1440,166 @@ void h_World::GrassPhysTick()
 			i++;
 		} // for grass blocks
 	} // for chunks
+}
+
+void h_World::FirePhysTick()
+{
+	auto gen_neighbors=
+	[]( int x, int y, int neighbors[6][2] )
+	{
+		int forward_side_y= y + ( (x^1) & 1 );
+		int back_side_y= y - (x & 1);
+
+		neighbors[0][0]= x    ; neighbors[0][1]= y + 1;
+		neighbors[1][0]= x    ; neighbors[1][1]= y - 1;
+		neighbors[2][0]= x + 1; neighbors[2][1]= forward_side_y;
+		neighbors[3][0]= x + 1; neighbors[3][1]= back_side_y;
+		neighbors[4][0]= x - 1; neighbors[4][1]= forward_side_y;
+		neighbors[5][0]= x - 1; neighbors[5][1]= back_side_y;
+	};
+
+	auto can_place_fire=
+	[this, &gen_neighbors]( int x, int y, int z )
+	{
+		h_Chunk* ch= GetChunk(
+			x >> H_CHUNK_WIDTH_LOG2,
+			y >> H_CHUNK_WIDTH_LOG2 );
+
+		int addr= BlockAddr( x & (H_CHUNK_WIDTH - 1), y & (H_CHUNK_WIDTH - 1), z );
+		if( ch->blocks_[ addr + 1 ]->Type() == h_BlockType::Wood ||
+			ch->blocks_[ addr - 1 ]->Type() == h_BlockType::Wood )
+			return true;
+
+		int neighbors[6][2];
+		gen_neighbors( x, y, neighbors );
+		for( unsigned int n= 0; n < 6; n++ )
+		{
+			h_Chunk* ch2= GetChunk(
+				neighbors[n][0] >> H_CHUNK_WIDTH_LOG2,
+				neighbors[n][1] >> H_CHUNK_WIDTH_LOG2 );
+
+			h_Block* b= ch2->GetBlock(
+				neighbors[n][0] & (H_CHUNK_WIDTH - 1),
+				neighbors[n][1] & (H_CHUNK_WIDTH - 1),
+				z );
+
+			if( b->Type() == h_BlockType::Wood )
+				return true;
+		}
+
+		return false;
+	};
+
+	for( unsigned int y= active_area_margins_[1]; y < chunk_number_y_ - active_area_margins_[1]; y++ )
+	for( unsigned int x= active_area_margins_[0]; x < chunk_number_x_ - active_area_margins_[0]; x++ )
+	{
+		h_Chunk* chunk= GetChunk( x, y );
+		int X= x << H_CHUNK_WIDTH_LOG2;
+		int Y= y << H_CHUNK_WIDTH_LOG2;
+
+		std::vector< h_Fire* >& fire_list= chunk->fire_list_;
+		for( unsigned int i= 0; i < fire_list.size(); i++ )
+		{
+			h_Fire* fire= fire_list[i];
+
+			if( fire->power_ < h_Fire::c_max_power_ )
+				fire->power_++;
+
+			if( !( phys_processes_rand_.Rand() < m_Rand::max_rand / 16 ) ) continue;
+
+			int fire_global_x= X + fire->x_;
+			int fire_global_y= Y + fire->y_;
+
+			int neighbors[6][2];
+			gen_neighbors( fire_global_x, fire_global_y, neighbors );
+			for( unsigned int n= 0; n < 6; n++ )
+			{
+				h_Chunk* ch2= GetChunk(
+					neighbors[n][0] >> H_CHUNK_WIDTH_LOG2,
+					neighbors[n][1] >> H_CHUNK_WIDTH_LOG2 );
+
+				int local_x= neighbors[n][0] & (H_CHUNK_WIDTH - 1);
+				int local_y= neighbors[n][1] & (H_CHUNK_WIDTH - 1);
+				int addr= BlockAddr( local_x, local_y, fire->z_ );
+
+				if( ch2->blocks_[ addr ]->Type() != h_BlockType::Air ) continue;
+
+				for( int dz= -1; dz<= 1; dz++ )
+				{
+					int z= fire->z_ + dz;
+
+					if( !( phys_processes_rand_.Rand() < m_Rand::max_rand / 8 ) ) continue;
+					if( ch2->blocks_[ addr + dz ]->Type() != h_BlockType::Air ) continue;
+
+					if( can_place_fire( neighbors[n][0], neighbors[n][1], z ) )
+					{
+						h_Fire* new_fire= new h_Fire();
+						new_fire->x_= local_x;
+						new_fire->y_= local_y;
+						new_fire->z_= z;
+
+						ch2->light_source_list_.push_back( new_fire );
+						ch2->fire_list_.push_back( new_fire );
+						ch2->SetBlock( addr + dz, new_fire );
+
+						AddFireLight_r( neighbors[n][0], neighbors[n][1], z, new_fire->LightLevel() );
+					}
+				} // for z
+			} // for fire neighbors
+
+			int addr= BlockAddr( fire->x_, fire->y_, fire->z_ );
+			for( int dz= -1; dz <= 1; dz+= 2 )
+			{
+				int z= fire->z_ + dz;
+
+				if( chunk->blocks_[ addr + dz ]->Type() != h_BlockType::Air ) continue;
+
+				if( can_place_fire( fire_global_x, fire_global_y, z ) )
+				{
+					h_Fire* new_fire= new h_Fire();
+					new_fire->x_= fire->x_;
+					new_fire->y_= fire->y_;
+					new_fire->z_= z;
+
+					chunk->light_source_list_.push_back( new_fire );
+					chunk->fire_list_.push_back( new_fire );
+					chunk->SetBlock( addr + dz, new_fire );
+
+					AddFireLight_r( fire_global_x, fire_global_y, z, new_fire->LightLevel() );
+				}
+
+				// Up and down block neighbors
+				for( unsigned int n= 0; n < 6; n++ )
+				{
+					h_Chunk* ch2= GetChunk(
+						neighbors[n][0] >> H_CHUNK_WIDTH_LOG2,
+						neighbors[n][1] >> H_CHUNK_WIDTH_LOG2 );
+
+					int local_x= neighbors[n][0] & (H_CHUNK_WIDTH - 1);
+					int local_y= neighbors[n][1] & (H_CHUNK_WIDTH - 1);
+					int addr2= BlockAddr( local_x, local_y, z );
+
+					if( ch2->blocks_[ addr2 ]->Type() != h_BlockType::Air ) continue;
+
+					if( can_place_fire( neighbors[n][0], neighbors[n][1], z ) )
+					{
+						h_Fire* new_fire= new h_Fire();
+						new_fire->x_= local_x;
+						new_fire->y_= local_y;
+						new_fire->z_= z;
+
+						ch2->light_source_list_.push_back( new_fire );
+						ch2->fire_list_.push_back( new_fire );
+						ch2->SetBlock( addr2, new_fire );
+
+						AddFireLight_r( neighbors[n][0], neighbors[n][1], z, new_fire->LightLevel() );
+					}
+				}
+
+			} // for up and down neighbors
+
+		} // for fire blocks
+	} // for xy chunks
 }
 
 void h_World::RainTick()

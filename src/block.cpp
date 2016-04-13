@@ -380,8 +380,9 @@ void h_LightSource::SetLightLevel( unsigned char level )
 -------------------h_Fire-----------------
 */
 
-h_Fire::h_Fire()
+h_Fire::h_Fire( unsigned char power )
 	: h_LightSource( h_BlockType::Fire )
+	, power_( power )
 {}
 
 h_Fire::~h_Fire()

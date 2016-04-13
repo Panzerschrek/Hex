@@ -77,8 +77,11 @@ public:
 class h_Fire : public h_LightSource
 {
 public:
-	h_Fire();
+	h_Fire( unsigned char power= c_power_after_build_ );
 	virtual ~h_Fire() override;
+
+	static constexpr unsigned char c_max_power_= 128;
+	static constexpr unsigned char c_power_after_build_= 0;
 
 	unsigned char power_;
 };
