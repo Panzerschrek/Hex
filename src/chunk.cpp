@@ -580,22 +580,27 @@ h_LightSource* h_Chunk::NewLightSource( short x, short y, short z, h_BlockType t
 	return s;
 }
 
-void h_Chunk::DeleteLightSource( short x, short y, short z )
+void h_Chunk::DeleteLightSource( h_LightSource* source )
 {
-	h_LightSource* s= static_cast<h_LightSource*>( GetBlock( x, y, z ) );
-
 	for( size_t i= 0; i < light_source_list_.size(); i++ )
 	{
-		if( light_source_list_[i] == s )
+		if( light_source_list_[i] == source )
 		{
-			delete s;
-			if( i < light_source_list_.size() - 1 )
+			delete source;
+			if( i + 1 < light_source_list_.size() )
 				light_source_list_[i]= light_source_list_.back();
 
 			light_source_list_.pop_back();
-			break;
+			return;
 		}
 	}
+
+	H_ASSERT( false );
+}
+
+void h_Chunk::DeleteLightSource( short x, short y, short z )
+{
+	DeleteLightSource( static_cast<h_LightSource*>( GetBlock( x, y, z ) ) );
 }
 
 h_NonstandardFormBlock* h_Chunk::NewNonstandardFormBlock(

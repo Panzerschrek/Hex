@@ -81,6 +81,7 @@ private:
 	void DeleteWaterBlock( h_LiquidBlock* b );
 //lights management
 	h_LightSource* NewLightSource( short x, short y, short z, h_BlockType type );
+	void DeleteLightSource( h_LightSource* source );
 	void DeleteLightSource( short x, short y, short z );
 
 	h_NonstandardFormBlock* NewNonstandardFormBlock(

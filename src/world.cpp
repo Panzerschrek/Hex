@@ -1510,6 +1510,44 @@ void h_World::FirePhysTick()
 		UpdateWaterInRadius( x, y, light_level );
 	};
 
+	auto can_pace_fire=
+	[this, &gen_neighbors]( int x, int y, int z )
+	{
+		h_Chunk* ch= GetChunk(
+			x >> H_CHUNK_WIDTH_LOG2,
+			y >> H_CHUNK_WIDTH_LOG2 );
+		int local_x= x & (H_CHUNK_WIDTH - 1);
+		int local_y= y & (H_CHUNK_WIDTH - 1);
+
+		bool near_block_is_wood= false;
+
+		int addr= BlockAddr( local_x, local_y, z );
+
+		if( ch->GetBlock( addr + 1 )->Type() == h_BlockType::Wood ||
+			ch->GetBlock( addr - 1 )->Type() == h_BlockType::Wood )
+			near_block_is_wood= true;
+
+		int neighbors[6][2];
+		gen_neighbors( x, y, neighbors );
+		for( unsigned int n= 0; n < 6; n++ )
+		{
+			h_Chunk* ch2= GetChunk(
+				neighbors[n][0] >> H_CHUNK_WIDTH_LOG2,
+				neighbors[n][1] >> H_CHUNK_WIDTH_LOG2 );
+
+			h_Block* b= ch2->GetBlock(
+				neighbors[n][0] & (H_CHUNK_WIDTH - 1),
+				neighbors[n][1] & (H_CHUNK_WIDTH - 1),
+				z );
+
+			if( b->Type() == h_BlockType::Wood )
+				near_block_is_wood= true;
+		}
+
+		return near_block_is_wood;
+	};
+
+	// Try add fire blocks.
 	for( unsigned int y= active_area_margins_[1]; y < chunk_number_y_ - active_area_margins_[1]; y++ )
 	for( unsigned int x= active_area_margins_[0]; x < chunk_number_x_ - active_area_margins_[0]; x++ )
 	{
@@ -1553,11 +1591,13 @@ void h_World::FirePhysTick()
 
 				// Try burn near block.
 				if( ch2->GetBlock( addr )->Type() == h_BlockType::Wood &&
-					phys_processes_rand_.Rand() < m_Rand::max_rand / 32 )
+					phys_processes_rand_.Rand() < m_Rand::max_rand / 16 )
 				{
 					ch2->SetBlock( addr, NormalBlock( h_BlockType::Air ) );
 					RelightBlockRemove( neighbors[n][0], neighbors[n][1], fire->z_ );
 					try_place_fire( neighbors[n][0], neighbors[n][1], fire->z_ );
+
+					CheckBlockNeighbors( neighbors[n][0], neighbors[n][1], fire->z_ );
 				}
 				// Try move fire to near block.
 				else if(
@@ -1585,11 +1625,13 @@ void h_World::FirePhysTick()
 
 				// Try burn near block.
 				if( chunk->GetBlock( fire_addr + dz )->Type() == h_BlockType::Wood &&
-					phys_processes_rand_.Rand() < m_Rand::max_rand / 32 )
+					phys_processes_rand_.Rand() < m_Rand::max_rand / 16 )
 				{
 					chunk->SetBlock( fire_addr + dz, NormalBlock( h_BlockType::Air ) );
 					RelightBlockRemove( fire_global_x, fire_global_y, z );
 					try_place_fire( fire_global_x, fire_global_y, z );
+
+					CheckBlockNeighbors( fire_global_x, fire_global_y, fire->z_ );
 				}
 				// Try move fire to near block.
 				else if( up_down_is_air[ dz == -1 ? 0 : 1 ] &&
@@ -1597,6 +1639,48 @@ void h_World::FirePhysTick()
 					try_place_fire( fire_global_x, fire_global_y, z );
 			}
 
+		} // for fire blocks
+	} // for xy chunks
+
+	// Remove fire blocks
+	for( unsigned int y= active_area_margins_[1]; y < chunk_number_y_ - active_area_margins_[1]; y++ )
+	for( unsigned int x= active_area_margins_[0]; x < chunk_number_x_ - active_area_margins_[0]; x++ )
+	{
+		h_Chunk* chunk= GetChunk( x, y );
+		int X= x << H_CHUNK_WIDTH_LOG2;
+		int Y= y << H_CHUNK_WIDTH_LOG2;
+
+		std::vector< h_Fire* >& fire_list= chunk->fire_list_;
+		for( unsigned int i= 0; i < fire_list.size(); )
+		{
+			h_Fire* fire= fire_list[i];
+			i++;
+
+			int global_x= X + fire->x_;
+			int global_y= Y + fire->y_;
+			if( !can_pace_fire( global_x, global_y, fire->z_ ) )
+			{
+				int local_x= fire->x_;
+				int local_y= fire->y_;
+				int z= fire->z_;
+
+				chunk->DeleteLightSource( fire );
+				chunk->SetBlock( local_x, local_y, z, NormalBlock( h_BlockType::Air ) );
+
+				i--;
+				if( i + 1 != fire_list.size() )
+					fire_list[i]= fire_list.back();
+				fire_list.pop_back();
+
+				chunk->SetBlock( local_x, local_y, z, NormalBlock( h_BlockType::Air ) );
+
+				int r= chunk->FireLightLevel( local_x, local_y, z );
+				RelightBlockAdd( global_x, global_y, z );
+				RelightBlockRemove( global_x, global_y, z );
+
+				UpdateInRadius( global_x, global_y, r );
+				UpdateWaterInRadius( global_x, global_y, r );
+			}
 		} // for fire blocks
 	} // for xy chunks
 }
