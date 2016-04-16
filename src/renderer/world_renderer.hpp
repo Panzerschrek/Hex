@@ -162,6 +162,9 @@ private:
 	r_Texture crosshair_texture_;
 	r_Texture clouds_texture_;
 
+	r_Texture fire_spectre_texture_;
+	r_Texture fire_noise_texture_;
+
 	//matrices and vectors
 	float fov_x_, fov_y_;
 	m_Mat4 perspective_matrix_;

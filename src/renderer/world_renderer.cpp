@@ -1167,6 +1167,14 @@ void r_WorldRenderer::DrawFire()
 	fire_shader_.Bind();
 	fire_shader_.Uniform( "mat", view_matrix_ );
 
+	fire_noise_texture_.Bind(0);
+	fire_spectre_texture_.Bind(1);
+
+	fire_shader_.Uniform( "tex", 0 );
+	fire_shader_.Uniform( "spectre", 1 );
+
+	fire_shader_.Uniform( "time", current_frame_time_ );
+
 	fire_vbo_.Bind();
 	glDrawArrays( GL_POINTS, 0, fire_vertex_count_ );
 }
@@ -1477,7 +1485,7 @@ void r_WorldRenderer::BuildFire()
 			v->pos[0]= float( X + fire->x_ ) * H_SPACE_SCALE_VECTOR_X + H_HEXAGON_EDGE_SIZE;
 			v->pos[1]= float( Y + fire->y_ + 1 ) - 0.5f * float( fire->x_ & 1 );
 			v->pos[2]= float( fire->z_ ) + 0.5f;
-			v->power= 0.2f + 0.8f * float(fire->power_) / float(h_Fire::c_max_power_);
+			v->power= float(fire->power_) / float(h_Fire::c_max_power_);
 
 			v++;
 		}
@@ -1852,4 +1860,30 @@ void r_WorldRenderer::LoadTextures()
 		clouds_texture_= r_Texture( r_Texture::PixelFormat::R8, c_tex_size, c_tex_size, tex_data.data() );
 		clouds_texture_.SetFiltration( r_Texture::Filtration::Nearest, r_Texture::Filtration::Nearest );
 	}
+
+	{
+		const int c_tex_size_log2= 8;
+		const int c_tex_size= 1 << c_tex_size_log2;
+		const int c_octaves= 4;
+
+		int inv_multiplier= 0;
+		for( int i= 0; i < c_octaves; i++ )
+			inv_multiplier+= 1 << ( 8 - i );
+		int multiplier= 65536 / inv_multiplier;
+
+		std::vector<unsigned char> tex_data( c_tex_size * c_tex_size );
+
+		for( int y= 0; y < c_tex_size; y++ )
+		for( int x= 0; x < c_tex_size; x++ )
+		{
+			int val= g_TriangularOctaveNoiseWraped( x, y, 0, c_octaves, c_tex_size_log2 );
+			tex_data[ x + (y<<c_tex_size_log2) ]= ( val * multiplier ) >> 16;
+		}
+
+		fire_noise_texture_= r_Texture( r_Texture::PixelFormat::R8, c_tex_size, c_tex_size, tex_data.data() );
+		fire_noise_texture_.SetFiltration( r_Texture::Filtration::LinearMipmapLinear, r_Texture::Filtration::Linear );
+		fire_noise_texture_.BuildMips();
+	}
+
+	r_ImgUtils::LoadTexture( &fire_spectre_texture_, "textures/fire_gradient.png" );
 }
