@@ -39,6 +39,8 @@
 #define H_MAX_SUN_LIGHT 8
 #define H_MAX_FIRE_LIGHT 13
 
+#define H_MAX_FLAMMABILITY 128
+
 /* COORDINATE SYSTEM:
   __
  /  \

@@ -9,6 +9,7 @@ struct BlockProperties
 {
 	h_VisibleTransparency default_transparency;
 	h_BlockForm form;
+	std::uint8_t flammability;
 
 	bool transparent_for_fire_light : 1;
 	bool transparent_for_direct_sun_light : 1;
@@ -16,8 +17,6 @@ struct BlockProperties
 	bool is_failing : 1;
 	bool is_technical : 1;
 };
-
-static_assert( sizeof(BlockProperties) == 3, "Unexpected size" );
 
 static constexpr h_CombinedTransparency GetCombinedTransparency( const BlockProperties& properties )
 {
@@ -34,6 +33,7 @@ static constexpr h_CombinedTransparency GetCombinedTransparency( const BlockProp
 {\
 	.default_transparency= TRANSPARENCY_SOLID,\
 	.form= h_BlockForm::Full,\
+	.flammability= 0,\
 	.transparent_for_fire_light= false,\
 	.transparent_for_direct_sun_light= false,\
 	.transparent_for_secondary_sun_light= false,\
@@ -47,6 +47,7 @@ static const constexpr BlockProperties g_blocks_properties[ size_t(h_BlockType::
 	{
 		.default_transparency= TRANSPARENCY_AIR,
 		.form= h_BlockForm::Full,
+		.flammability= 0,
 		.transparent_for_fire_light= true,
 		.transparent_for_direct_sun_light= true,
 		.transparent_for_secondary_sun_light= true,
@@ -64,7 +65,16 @@ static const constexpr BlockProperties g_blocks_properties[ size_t(h_BlockType::
 	g_trivial_blocks_properties,
 
 	[size_t(h_BlockType::Wood)]=
-	g_trivial_blocks_properties,
+	{
+		.default_transparency= TRANSPARENCY_SOLID,
+		.form= h_BlockForm::Full,
+		.flammability= H_MAX_FLAMMABILITY * 2 / 3,
+		.transparent_for_fire_light= false,
+		.transparent_for_direct_sun_light= false,
+		.transparent_for_secondary_sun_light= false,
+		.is_failing= false,
+		.is_technical= false,
+	},
 
 	[size_t(h_BlockType::Grass)]=
 	g_trivial_blocks_properties,
@@ -73,6 +83,7 @@ static const constexpr BlockProperties g_blocks_properties[ size_t(h_BlockType::
 	{
 		.default_transparency= TRANSPARENCY_LIQUID,
 		.form= h_BlockForm::Full,
+		.flammability= 0,
 		.transparent_for_fire_light= true,
 		.transparent_for_direct_sun_light= false,
 		.transparent_for_secondary_sun_light= true,
@@ -84,6 +95,7 @@ static const constexpr BlockProperties g_blocks_properties[ size_t(h_BlockType::
 	{
 		.default_transparency= TRANSPARENCY_SOLID,
 		.form= h_BlockForm::Full,
+		.flammability= 0,
 		.transparent_for_fire_light= false,
 		.transparent_for_direct_sun_light= false,
 		.transparent_for_secondary_sun_light= false,
@@ -95,6 +107,7 @@ static const constexpr BlockProperties g_blocks_properties[ size_t(h_BlockType::
 	{
 		.default_transparency= TRANSPARENCY_GREENERY,
 		.form= h_BlockForm::Full,
+		.flammability= H_MAX_FLAMMABILITY,
 		.transparent_for_fire_light= true,
 		.transparent_for_direct_sun_light= false,
 		.transparent_for_secondary_sun_light= true,
@@ -106,6 +119,7 @@ static const constexpr BlockProperties g_blocks_properties[ size_t(h_BlockType::
 	{
 		.default_transparency= TRANSPARENCY_SOLID,
 		.form= h_BlockForm::Full,
+		.flammability= 0,
 		.transparent_for_fire_light= true,
 		.transparent_for_direct_sun_light= false,
 		.transparent_for_secondary_sun_light= false,
@@ -120,6 +134,7 @@ static const constexpr BlockProperties g_blocks_properties[ size_t(h_BlockType::
 	{
 		.default_transparency= TRANSPARENCY_AIR,
 		.form= h_BlockForm::Full,
+		.flammability= 0,
 		.transparent_for_fire_light= true,
 		.transparent_for_direct_sun_light= true,
 		.transparent_for_secondary_sun_light= true,
@@ -131,6 +146,7 @@ static const constexpr BlockProperties g_blocks_properties[ size_t(h_BlockType::
 	{
 		.default_transparency= TRANSPARENCY_AIR,
 		.form= h_BlockForm::Plate,
+		.flammability= 0,
 		.transparent_for_fire_light= false,
 		.transparent_for_direct_sun_light= false,
 		.transparent_for_secondary_sun_light= false,
@@ -142,6 +158,7 @@ static const constexpr BlockProperties g_blocks_properties[ size_t(h_BlockType::
 	{
 		.default_transparency= TRANSPARENCY_AIR,
 		.form= h_BlockForm::Bisected,
+		.flammability= 0,
 		.transparent_for_fire_light= false,
 		.transparent_for_direct_sun_light= false,
 		.transparent_for_secondary_sun_light= false,
@@ -153,6 +170,7 @@ static const constexpr BlockProperties g_blocks_properties[ size_t(h_BlockType::
 	{
 		.default_transparency= TRANSPARENCY_AIR,
 		.form= h_BlockForm::Full,
+		.flammability= 0,
 		.transparent_for_fire_light= true,
 		.transparent_for_direct_sun_light= true,
 		.transparent_for_secondary_sun_light= true,
@@ -276,6 +294,10 @@ unsigned short h_Block::AdditionalData() const
 	return additional_data_;
 }
 
+std::uint8_t h_Block::Flammability() const
+{
+	return g_blocks_properties[ size_t(type_) ].flammability;
+}
 
 /*
 ---------------h_NonstandardFormBlock-----------

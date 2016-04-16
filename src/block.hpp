@@ -19,6 +19,7 @@ public:
 
 	h_CombinedTransparency CombinedTransparency() const;
 	unsigned short AdditionalData() const;
+	std::uint8_t Flammability() const;
 
 protected:
 	h_BlockType type_;
