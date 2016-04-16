@@ -536,6 +536,43 @@ void h_World::FlushActionQueue()
 	}
 }
 
+void h_World::RemoveFire( int x, int y, int z )
+{
+	h_Chunk* chunk= GetChunk( x >> H_CHUNK_WIDTH_LOG2, y >> H_CHUNK_WIDTH_LOG2 );
+
+	int local_x= x & (H_CHUNK_WIDTH - 1);
+	int local_y= y & (H_CHUNK_WIDTH - 1);
+	int addr= BlockAddr( local_x, local_y, z );
+
+	h_Block* block= chunk->GetBlock( addr );
+	H_ASSERT( block->Type() == h_BlockType::Fire );
+
+	h_Fire* fire= static_cast<h_Fire*>( block );
+
+	chunk->DeleteLightSource( fire );
+	chunk->SetBlock( addr, NormalBlock( h_BlockType::Air ) );
+
+	int r= chunk->FireLightLevel( addr );
+	RelightBlockAdd( x, y, z );
+	RelightBlockRemove( x, y, z );
+
+	UpdateInRadius( x, y, r );
+	UpdateWaterInRadius( x, y, r );
+
+	for( unsigned int i= 0; i < chunk->fire_list_.size(); i++ )
+	{
+		if( chunk->fire_list_[i] == fire )
+		{
+			if( i + 1 != chunk->fire_list_.size() )
+				chunk->fire_list_[i]= chunk->fire_list_.back();
+			chunk->fire_list_.pop_back();
+
+			return;
+		}
+	}
+	H_ASSERT(false);
+}
+
 void h_World::CheckBlockNeighbors( short x, short y, short z )
 {
 	int forward_side_y= y + ( (x^1) & 1 );
@@ -584,7 +621,8 @@ void h_World::CheckBlockNeighbors( short x, short y, short z )
 				case h_BlockType::Sand:
 				{
 					h_BlockType lower_block_type= chunk->blocks_[ neighbor_addr + neighbor_z - 1 ]->Type();
-					if( lower_block_type == h_BlockType::Air || lower_block_type == h_BlockType::Water )
+					if( lower_block_type == h_BlockType::Air || lower_block_type == h_BlockType::Water  ||
+						lower_block_type == h_BlockType::Fire )
 					{
 						h_FailingBlock* failing_block= chunk->failing_blocks_alocatior_.New( block, local_x, local_y, neighbor_z );
 						chunk->failing_blocks_.push_back( failing_block );
@@ -1254,10 +1292,13 @@ bool h_World::WaterFlow( h_LiquidBlock* from, short to_x, short to_y, short to_z
 	int addr= BlockAddr( local_x, local_y, to_z );
 	h_Block* block= ch->GetBlock( addr );
 
-	if( block->Type() == h_BlockType::Air )
+	if( block->Type() == h_BlockType::Air || block->Type() == h_BlockType::Fire )
 	{
 		if( from->LiquidLevel() > 1 )
 		{
+			if( block->Type() == h_BlockType::Fire )
+				RemoveFire( to_x, to_y, to_z );
+
 			short level_delta= from->LiquidLevel() / 2;
 			from->DecreaseLiquidLevel( level_delta );
 
@@ -1631,7 +1672,7 @@ void h_World::FirePhysTick()
 					RelightBlockRemove( fire_global_x, fire_global_y, z );
 					try_place_fire( fire_global_x, fire_global_y, z );
 
-					CheckBlockNeighbors( fire_global_x, fire_global_y, fire->z_ );
+					CheckBlockNeighbors( fire_global_x, fire_global_y, z );
 				}
 				// Try move fire to near block.
 				else if( up_down_is_air[ dz == -1 ? 0 : 1 ] &&
@@ -1658,7 +1699,8 @@ void h_World::FirePhysTick()
 
 			int global_x= X + fire->x_;
 			int global_y= Y + fire->y_;
-			if( !can_pace_fire( global_x, global_y, fire->z_ ) )
+			if( chunk->GetBlock( fire->x_, fire->y_, fire->z_ + 1 )->Type() == h_BlockType::Water ||
+				!can_pace_fire( global_x, global_y, fire->z_ ) )
 			{
 				int local_x= fire->x_;
 				int local_y= fire->y_;
@@ -1671,8 +1713,6 @@ void h_World::FirePhysTick()
 				if( i + 1 != fire_list.size() )
 					fire_list[i]= fire_list.back();
 				fire_list.pop_back();
-
-				chunk->SetBlock( local_x, local_y, z, NormalBlock( h_BlockType::Air ) );
 
 				int r= chunk->FireLightLevel( local_x, local_y, z );
 				RelightBlockAdd( global_x, global_y, z );

@@ -657,6 +657,12 @@ void h_Chunk::ProcessFailingBlocks()
 
 					world_->UpdateWaterInRadius( global_x, global_y, new_z );
 				}
+				else if( lower_block->Type() == h_BlockType::Fire )
+				{
+					world_->RemoveFire( global_x, global_y, old_z - 1 );
+					SetBlock( block_addr + old_z, world_->NormalBlock( h_BlockType::Air ) );
+					SetBlock( block_addr + new_z, b );
+				}
 				else
 				{
 					SetBlock( block_addr + old_z, b->GetBlock() );
