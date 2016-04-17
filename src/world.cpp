@@ -1493,6 +1493,8 @@ void h_World::FirePhysTick()
 		m_Rand::max_rand / 12, m_Rand::max_rand / 6,
 	};
 
+	unsigned int c_rain_check_base_chance= m_Rand::max_rand / 24;
+
 	auto gen_neighbors=
 	[]( int x, int y, int neighbors[6][2] )
 	{
@@ -1731,6 +1733,10 @@ void h_World::FirePhysTick()
 		} // for fire blocks
 	} // for xy chunks
 
+	float current_rain_intensity= rain_data_.current_intensity.load();
+	bool is_rain= current_rain_intensity > 0.0f;
+	unsigned int rain_check_chance= (unsigned int)( float( c_rain_check_base_chance ) * current_rain_intensity );
+
 	// Remove fire blocks
 	for( unsigned int y= active_area_margins_[1]; y < chunk_number_y_ - active_area_margins_[1]; y++ )
 	for( unsigned int x= active_area_margins_[0]; x < chunk_number_x_ - active_area_margins_[0]; x++ )
@@ -1745,9 +1751,28 @@ void h_World::FirePhysTick()
 			h_Fire* fire= fire_list[i];
 			i++;
 
+			bool is_extinguished= false;
+
+			if( is_rain &&
+				phys_processes_rand_.Rand() < rain_check_chance )
+			{
+				bool is_sky= true;
+
+				h_Block** blocks= chunk->blocks_ + BlockAddr( fire->x_, fire->y_, 0 );
+				for( int z= fire->z_ + 1; z < H_CHUNK_HEIGHT - 1; z++ )
+					if( blocks[z]->Type() != h_BlockType::Air )
+					{
+						is_sky= false;
+						break;
+					}
+
+				is_extinguished= is_sky;
+			}
+
 			int global_x= X + fire->x_;
 			int global_y= Y + fire->y_;
-			if( chunk->GetBlock( fire->x_, fire->y_, fire->z_ + 1 )->Type() == h_BlockType::Water ||
+			if( is_extinguished ||
+				chunk->GetBlock( fire->x_, fire->y_, fire->z_ + 1 )->Type() == h_BlockType::Water ||
 				!can_pace_fire( global_x, global_y, fire->z_ ) )
 			{
 				int local_x= fire->x_;
