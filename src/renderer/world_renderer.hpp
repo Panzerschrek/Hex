@@ -4,6 +4,7 @@
 #include "../hex.hpp"
 #include "../fwd.hpp"
 #include "../ticks_counter.hpp"
+#include "fire_mesh.hpp"
 #include "i_world_renderer.hpp"
 
 #include "texture.hpp"
@@ -201,12 +202,7 @@ private:
 	std::unique_ptr<r_WVB> world_water_vertex_buffer_;
 	std::mutex world_vertex_buffer_mutex_;
 
-	struct FireVertex
-	{
-		float pos[3];
-		float power;
-	};
-	std::vector< FireVertex > fire_vertices_;
+	std::vector< r_FireMeshVertex > fire_vertices_;
 
 	//text out
 	std::unique_ptr<r_Text> text_manager_;

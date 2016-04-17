@@ -91,6 +91,8 @@
 		<Unit filename="src\player.hpp" />
 		<Unit filename="src\renderer\chunk_info.cpp" />
 		<Unit filename="src\renderer\chunk_info.hpp" />
+		<Unit filename="src\renderer\fire_mesh.cpp" />
+		<Unit filename="src\renderer\fire_mesh.hpp" />
 		<Unit filename="src\renderer\i_world_renderer.hpp" />
 		<Unit filename="src\renderer\img_utils.cpp" />
 		<Unit filename="src\renderer\img_utils.hpp" />

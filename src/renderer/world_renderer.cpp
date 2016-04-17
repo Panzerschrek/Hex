@@ -1176,7 +1176,7 @@ void r_WorldRenderer::DrawFire()
 	fire_shader_.Uniform( "time", current_frame_time_ );
 
 	fire_vbo_.Bind();
-	glDrawArrays( GL_POINTS, 0, fire_vertex_count_ );
+	glDrawElements( GL_TRIANGLES, fire_vertex_count_ / 4 * 6, GL_UNSIGNED_SHORT, nullptr );
 }
 
 void r_WorldRenderer::GenRainZoneHeightmap()
@@ -1471,24 +1471,7 @@ void r_WorldRenderer::BuildFire()
 	for( unsigned int x= 0; x < chunks_info_.matrix_size[0]; x++ )
 	{
 		r_ChunkInfo& chunk_info= *chunks_info_.chunk_matrix[ x + y * chunks_info_.matrix_size[0] ];
-
-		int X= chunk_info.chunk_->Longitude() << H_CHUNK_WIDTH_LOG2;
-		int Y= chunk_info.chunk_->Latitude () << H_CHUNK_WIDTH_LOG2;
-
-		const std::vector< h_Fire* >& fire_list= chunk_info.chunk_->GetFireList();
-
-		fire_vertices_.resize( fire_vertices_.size() + fire_list.size() );
-		FireVertex* v= fire_vertices_.data() + fire_vertices_.size() - fire_list.size();
-
-		for( const h_Fire* fire : fire_list )
-		{
-			v->pos[0]= float( X + fire->x_ ) * H_SPACE_SCALE_VECTOR_X + H_HEXAGON_EDGE_SIZE;
-			v->pos[1]= float( Y + fire->y_ + 1 ) - 0.5f * float( fire->x_ & 1 );
-			v->pos[2]= float( fire->z_ ) + 0.5f;
-			v->power= float(fire->power_) / float(h_Fire::c_max_power_);
-
-			v++;
-		}
+		rGenChunkFireMesh( *chunk_info.chunk_, fire_vertices_ );
 	}
 }
 
@@ -1515,7 +1498,11 @@ void r_WorldRenderer::UpdateGPUData()
 	failing_blocks_vbo_.VertexData( failing_blocks_vertices_.data(), failing_blocks_vertices_.size() * sizeof(r_WorldVertex), sizeof(r_WorldVertex) );
 	failing_blocks_vertex_count_= failing_blocks_vertices_.size();
 
-	fire_vbo_.VertexData( fire_vertices_.data(), fire_vertices_.size() * sizeof(FireVertex), sizeof(FireVertex) );
+	fire_vbo_.VertexData(
+		fire_vertices_.data(),
+		fire_vertices_.size() * sizeof(r_FireMeshVertex),
+		sizeof(r_FireMeshVertex) );
+
 	fire_vertex_count_= fire_vertices_.size();
 }
 
@@ -1595,7 +1582,8 @@ void r_WorldRenderer::LoadShaders()
 		rLoadShader( "fire_frag.glsl", glsl_version ),
 		rLoadShader( "fire_vert.glsl", glsl_version ) );
 	fire_shader_.SetAttribLocation( "pos", 0 );
-	fire_shader_.SetAttribLocation( "power", 1 );
+	fire_shader_.SetAttribLocation( "tex_coord", 1 );
+	fire_shader_.SetAttribLocation( "power", 2 );
 	fire_shader_.Create();
 
 	rain_zone_heightmap_shader_.ShaderSource(
@@ -1804,12 +1792,16 @@ void r_WorldRenderer::InitVertexBuffers()
 		}
 	}
 	{ // Fire
-		fire_vbo_.VertexData( nullptr, 1 * sizeof(FireVertex), sizeof(FireVertex) );
+		fire_vbo_.VertexData( nullptr, 1 * sizeof(r_FireMeshVertex), sizeof(r_FireMeshVertex) );
 
-		FireVertex v;
+		r_FireMeshVertex v;
 
 		fire_vbo_.VertexAttribPointer( 0, 3, GL_FLOAT, false, ((char*)v.pos)- ((char*)&v) );
-		fire_vbo_.VertexAttribPointer( 1, 1, GL_FLOAT, false, ((char*)&v.power)- ((char*)&v) );
+		fire_vbo_.VertexAttribPointer( 1, 2, GL_FLOAT, false, ((char*)&v.tex_coord)- ((char*)&v) );
+		fire_vbo_.VertexAttribPointer( 2, 1, GL_FLOAT, false, ((char*)&v.power)- ((char*)&v) );
+
+		std::vector<unsigned short> indeces= GetQuadsIndeces();
+		fire_vbo_.IndexData( indeces.data(), sizeof(unsigned short) * indeces.size(), GL_UNSIGNED_SHORT, GL_TRIANGLES );
 	}
 
 	unsigned int rain_particle_count= (unsigned int)(
