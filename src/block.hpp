@@ -19,6 +19,7 @@ public:
 
 	h_CombinedTransparency CombinedTransparency() const;
 	unsigned short AdditionalData() const;
+	std::uint8_t Flammability() const;
 
 protected:
 	h_BlockType type_;
@@ -65,10 +66,25 @@ class h_LightSource : public h_Block
 	//h_Block::AdditionalData in this class is light power
 public:
 	h_LightSource( h_BlockType type, unsigned char light_level= H_MAX_FIRE_LIGHT );
+
+	virtual ~h_LightSource();
+
 	unsigned char LightLevel() const;
 	void SetLightLevel( unsigned char level );
 
 	unsigned char x_, y_, z_, reserved_; // relative light source block coordinates ( in chunk )
+};
+
+class h_Fire : public h_LightSource
+{
+public:
+	h_Fire( unsigned char power= c_power_after_build_ );
+	virtual ~h_Fire() override;
+
+	static constexpr unsigned char c_max_power_= 128;
+	static constexpr unsigned char c_power_after_build_= 0;
+
+	unsigned char power_;
 };
 
 class h_FailingBlock : public h_Block

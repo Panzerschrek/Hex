@@ -20,5 +20,6 @@ BLOCK_PROCESS_FUNC(Brick),
 BLOCK_PROCESS_FUNC(FailingBlock),
 BLOCK_PROCESS_FUNC(BrickPlate),
 BLOCK_PROCESS_FUNC(BrickHalfblock),
+BLOCK_PROCESS_FUNC(Fire),
 // Put new blocks here
 

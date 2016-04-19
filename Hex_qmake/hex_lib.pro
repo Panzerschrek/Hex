@@ -63,7 +63,8 @@ HEADERS += \
     ../src/time.hpp \
     ../src/ui/loading_menu.hpp \
     ../src/blocks_list.hpp \
-    ../../panzer_ogl_lib/shaders_loading.hpp
+    ../../panzer_ogl_lib/shaders_loading.hpp \
+    ../src/renderer/fire_mesh.hpp
 
 SOURCES += \
     ../src/block.cpp \
@@ -109,4 +110,5 @@ SOURCES += \
     ../src/math_lib/math.cpp \
     ../src/time.cpp \
     ../src/ui/loading_menu.cpp \
-    ../../panzer_ogl_lib/shaders_loading.cpp
+    ../../panzer_ogl_lib/shaders_loading.cpp \
+    ../src/renderer/fire_mesh.cpp

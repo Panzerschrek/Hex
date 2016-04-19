@@ -112,6 +112,12 @@ void h_Chunk::SaveBlock( QDataStream& stream, const h_Block* block )
 		}
 		break;
 
+	case h_BlockType::Fire:
+		{
+			const h_Fire* fire= static_cast< const h_Fire* >( block );
+			stream << fire->power_;
+		} break;
+
 	case h_BlockType::NumBlockTypes:
 	case h_BlockType::Unknown:
 		break;
@@ -220,6 +226,24 @@ h_Block* h_Chunk::LoadBlock( QDataStream& stream, unsigned int block_addr )
 					block_id, static_cast<h_Direction>(direction) );
 		}
 		break;
+
+	case h_BlockType::Fire:
+		{
+			unsigned char power;
+			stream >> power;
+
+			h_Fire* fire= new h_Fire();
+
+			fire->x_= BlockAddrToX(block_addr);
+			fire->y_= BlockAddrToY(block_addr);
+			fire->z_= BlockAddrToZ(block_addr);
+			fire->power_= power;
+
+			fire_list_.push_back( fire );
+			light_source_list_.push_back( fire );
+
+			block= fire;
+		} break;
 
 	default:
 		H_ASSERT(false);
@@ -556,22 +580,27 @@ h_LightSource* h_Chunk::NewLightSource( short x, short y, short z, h_BlockType t
 	return s;
 }
 
-void h_Chunk::DeleteLightSource( short x, short y, short z )
+void h_Chunk::DeleteLightSource( h_LightSource* source )
 {
-	h_LightSource* s= static_cast<h_LightSource*>( GetBlock( x, y, z ) );
-
 	for( size_t i= 0; i < light_source_list_.size(); i++ )
 	{
-		if( light_source_list_[i] == s )
+		if( light_source_list_[i] == source )
 		{
-			delete s;
-			if( i < light_source_list_.size() - 1 )
+			delete source;
+			if( i + 1 < light_source_list_.size() )
 				light_source_list_[i]= light_source_list_.back();
 
 			light_source_list_.pop_back();
-			break;
+			return;
 		}
 	}
+
+	H_ASSERT( false );
+}
+
+void h_Chunk::DeleteLightSource( short x, short y, short z )
+{
+	DeleteLightSource( static_cast<h_LightSource*>( GetBlock( x, y, z ) ) );
 }
 
 h_NonstandardFormBlock* h_Chunk::NewNonstandardFormBlock(
@@ -627,6 +656,12 @@ void h_Chunk::ProcessFailingBlocks()
 					SetBlock( block_addr + new_z, b );
 
 					world_->UpdateWaterInRadius( global_x, global_y, new_z );
+				}
+				else if( lower_block->Type() == h_BlockType::Fire )
+				{
+					world_->RemoveFire( global_x, global_y, old_z - 1 );
+					SetBlock( block_addr + old_z, world_->NormalBlock( h_BlockType::Air ) );
+					SetBlock( block_addr + new_z, b );
 				}
 				else
 				{

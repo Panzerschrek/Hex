@@ -422,6 +422,7 @@ void r_WorldRenderer::Update()
 	} // for chunks matrix
 
 	BuildFailingBlocks();
+	BuildFire();
 
 	// Not thread safe. writes here, reads in GPU thread.
 	chunks_updates_counter_.Tick( chunks_rebuilded );
@@ -620,12 +621,14 @@ void r_WorldRenderer::Draw()
 	if( player_->IsUnderwater() )
 	{
 		DrawRain();
+		DrawFire();
 		DrawWater();
 	}
 	else
 	{
 		DrawWater();
 		DrawRain();
+		DrawFire();
 	}
 	DrawBuildPrism();
 	//DrawTestMob();
@@ -1152,6 +1155,30 @@ void r_WorldRenderer::DrawWater()
 	water_hexagons_in_frame_= vertex_count / 6;
 }
 
+void r_WorldRenderer::DrawFire()
+{
+	static const GLenum state_blend_mode[]= { GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA };
+	static const r_OGLState state(
+		true, false, true, true,
+		state_blend_mode,
+		r_OGLState::default_clear_color );
+	r_OGLStateManager::UpdateState( state );
+
+	fire_shader_.Bind();
+	fire_shader_.Uniform( "mat", view_matrix_ );
+
+	fire_noise_texture_.Bind(0);
+	fire_spectre_texture_.Bind(1);
+
+	fire_shader_.Uniform( "tex", 0 );
+	fire_shader_.Uniform( "spectre", 1 );
+
+	fire_shader_.Uniform( "time", current_frame_time_ );
+
+	fire_vbo_.Bind();
+	glDrawElements( GL_TRIANGLES, fire_vertex_count_ / 4 * 6, GL_UNSIGNED_SHORT, nullptr );
+}
+
 void r_WorldRenderer::GenRainZoneHeightmap()
 {
 	static const GLenum state_blend_mode[]= { GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA };
@@ -1436,6 +1463,18 @@ void r_WorldRenderer::BuildFailingBlocks()
 			failing_blocks_vertices_ );
 }
 
+void r_WorldRenderer::BuildFire()
+{
+	fire_vertices_.clear();
+
+	for( unsigned int y= 0; y < chunks_info_.matrix_size[1]; y++ )
+	for( unsigned int x= 0; x < chunks_info_.matrix_size[0]; x++ )
+	{
+		r_ChunkInfo& chunk_info= *chunks_info_.chunk_matrix[ x + y * chunks_info_.matrix_size[0] ];
+		rGenChunkFireMesh( *chunk_info.chunk_, fire_vertices_ );
+	}
+}
+
 void r_WorldRenderer::UpdateGPUData()
 {
 	std::lock_guard<std::mutex> lock(world_vertex_buffer_mutex_);
@@ -1458,6 +1497,13 @@ void r_WorldRenderer::UpdateGPUData()
 
 	failing_blocks_vbo_.VertexData( failing_blocks_vertices_.data(), failing_blocks_vertices_.size() * sizeof(r_WorldVertex), sizeof(r_WorldVertex) );
 	failing_blocks_vertex_count_= failing_blocks_vertices_.size();
+
+	fire_vbo_.VertexData(
+		fire_vertices_.data(),
+		fire_vertices_.size() * sizeof(r_FireMeshVertex),
+		sizeof(r_FireMeshVertex) );
+
+	fire_vertex_count_= fire_vertices_.size();
 }
 
 void r_WorldRenderer::InitGL( const h_LongLoadingCallback& long_loading_callback  )
@@ -1531,6 +1577,14 @@ void r_WorldRenderer::LoadShaders()
 	water_shader_.SetAttribLocation( "coord", 0 );
 	water_shader_.SetAttribLocation( "light", 1 );
 	water_shader_.Create();
+
+	fire_shader_.ShaderSource(
+		rLoadShader( "fire_frag.glsl", glsl_version ),
+		rLoadShader( "fire_vert.glsl", glsl_version ) );
+	fire_shader_.SetAttribLocation( "pos", 0 );
+	fire_shader_.SetAttribLocation( "tex_coord", 1 );
+	fire_shader_.SetAttribLocation( "power", 2 );
+	fire_shader_.Create();
 
 	rain_zone_heightmap_shader_.ShaderSource(
 		std::string(),
@@ -1713,7 +1767,7 @@ void r_WorldRenderer::InitVertexBuffers()
 		stars_vbo_.VertexAttribPointer( 1, 2, GL_UNSIGNED_BYTE, true, ((char*)v.brightness_spectre) - ((char*)&v) );
 	}
 
-	{
+	{ // Failing blocks
 		std::vector<unsigned short> indeces= GetQuadsIndeces();
 
 		failing_blocks_vbo_.IndexData( indeces.data(), indeces.size() * sizeof(unsigned short), GL_UNSIGNED_SHORT, GL_TRIANGLES );
@@ -1736,6 +1790,18 @@ void r_WorldRenderer::InitVertexBuffers()
 
 			i++;
 		}
+	}
+	{ // Fire
+		fire_vbo_.VertexData( nullptr, 1 * sizeof(r_FireMeshVertex), sizeof(r_FireMeshVertex) );
+
+		r_FireMeshVertex v;
+
+		fire_vbo_.VertexAttribPointer( 0, 3, GL_FLOAT, false, ((char*)v.pos)- ((char*)&v) );
+		fire_vbo_.VertexAttribPointer( 1, 2, GL_FLOAT, false, ((char*)&v.tex_coord)- ((char*)&v) );
+		fire_vbo_.VertexAttribPointer( 2, 1, GL_FLOAT, false, ((char*)&v.power)- ((char*)&v) );
+
+		std::vector<unsigned short> indeces= GetQuadsIndeces();
+		fire_vbo_.IndexData( indeces.data(), sizeof(unsigned short) * indeces.size(), GL_UNSIGNED_SHORT, GL_TRIANGLES );
 	}
 
 	unsigned int rain_particle_count= (unsigned int)(
@@ -1786,4 +1852,30 @@ void r_WorldRenderer::LoadTextures()
 		clouds_texture_= r_Texture( r_Texture::PixelFormat::R8, c_tex_size, c_tex_size, tex_data.data() );
 		clouds_texture_.SetFiltration( r_Texture::Filtration::Nearest, r_Texture::Filtration::Nearest );
 	}
+
+	{
+		const int c_tex_size_log2= 8;
+		const int c_tex_size= 1 << c_tex_size_log2;
+		const int c_octaves= 4;
+
+		int inv_multiplier= 0;
+		for( int i= 0; i < c_octaves; i++ )
+			inv_multiplier+= 1 << ( 8 - i );
+		int multiplier= 65536 / inv_multiplier;
+
+		std::vector<unsigned char> tex_data( c_tex_size * c_tex_size );
+
+		for( int y= 0; y < c_tex_size; y++ )
+		for( int x= 0; x < c_tex_size; x++ )
+		{
+			int val= g_TriangularOctaveNoiseWraped( x, y, 0, c_octaves, c_tex_size_log2 );
+			tex_data[ x + (y<<c_tex_size_log2) ]= ( val * multiplier ) >> 16;
+		}
+
+		fire_noise_texture_= r_Texture( r_Texture::PixelFormat::R8, c_tex_size, c_tex_size, tex_data.data() );
+		fire_noise_texture_.SetFiltration( r_Texture::Filtration::LinearMipmapLinear, r_Texture::Filtration::Linear );
+		fire_noise_texture_.BuildMips();
+	}
+
+	r_ImgUtils::LoadTexture( &fire_spectre_texture_, "textures/fire_gradient.png" );
 }

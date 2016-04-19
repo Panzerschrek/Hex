@@ -36,6 +36,9 @@ public:
 	const std::vector< h_LiquidBlock* >& GetWaterList() const;
 	const std::vector< h_NonstandardFormBlock* >& GetNonstandartFormBlocksList() const;
 	const std::vector< h_LightSource* >& GetLightSourceList() const;
+	const std::vector< h_Fire* >& GetFireList() const;
+
+
 	h_World* GetWorld();
 	const h_World* GetWorld() const;
 
@@ -46,6 +49,9 @@ public:
 	unsigned int GetWaterColumnHeight( short x, short y, short z );
 	unsigned char SunLightLevel( short x, short y, short z ) const;
 	unsigned char FireLightLevel( short x, short y, short z ) const;
+
+	unsigned char SunLightLevel( unsigned int addr ) const;
+	unsigned char FireLightLevel( unsigned int addr ) const;
 
 	// Get sun and fire light levels. out_lights[0]= sun, out_lights[1]= fire
 	void GetLightsLevel( short x, short y, short z, unsigned char* out_lights ) const;
@@ -78,6 +84,7 @@ private:
 	void DeleteWaterBlock( h_LiquidBlock* b );
 //lights management
 	h_LightSource* NewLightSource( short x, short y, short z, h_BlockType type );
+	void DeleteLightSource( h_LightSource* source );
 	void DeleteLightSource( short x, short y, short z );
 
 	h_NonstandardFormBlock* NewNonstandardFormBlock(
@@ -122,6 +129,8 @@ private:
 
 	//light management
 	std::vector< h_LightSource* > light_source_list_;
+
+	std::vector< h_Fire* > fire_list_;
 
 	// Large arrays - put back.
 	h_Block* blocks_                     [ H_CHUNK_WIDTH * H_CHUNK_WIDTH * H_CHUNK_HEIGHT ];
@@ -201,6 +210,11 @@ inline const std::vector<h_LightSource*>& h_Chunk::GetLightSourceList() const
 	return light_source_list_;
 }
 
+inline const std::vector< h_Fire* >& h_Chunk::GetFireList() const
+{
+	return fire_list_;
+}
+
 inline const h_World* h_Chunk::GetWorld() const
 {
 	return world_;
@@ -237,6 +251,20 @@ inline unsigned char h_Chunk::FireLightLevel( short x, short y, short z ) const
 	H_ASSERT( z >= 0 && z < H_CHUNK_HEIGHT );
 
 	return fire_light_map_[ BlockAddr( x, y, z ) ];
+}
+
+inline unsigned char h_Chunk::SunLightLevel( unsigned int addr ) const
+{
+	H_ASSERT( addr < H_CHUNK_WIDTH * H_CHUNK_WIDTH * H_CHUNK_HEIGHT );
+
+	return sun_light_map_[ addr ];
+}
+
+inline unsigned char h_Chunk::FireLightLevel( unsigned int addr ) const
+{
+	H_ASSERT( addr < H_CHUNK_WIDTH * H_CHUNK_WIDTH * H_CHUNK_HEIGHT );
+
+	return fire_light_map_[ addr ];
 }
 
 inline void h_Chunk::GetLightsLevel( short x, short y, short z, unsigned char* out_lights ) const

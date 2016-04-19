@@ -4,6 +4,7 @@
 #include "../hex.hpp"
 #include "../fwd.hpp"
 #include "../ticks_counter.hpp"
+#include "fire_mesh.hpp"
 #include "i_world_renderer.hpp"
 
 #include "texture.hpp"
@@ -58,6 +59,8 @@ private:
 
 	// CPU thread. Reads failing blocks from world and places it in failing_blocks_vertices_
 	void BuildFailingBlocks();
+	// CPU thread. Reads fire from world.
+	void BuildFire();
 
 	void UpdateGPUData();
 
@@ -84,6 +87,7 @@ private:
 
 	void DrawWorld();
 	void DrawWater();
+	void DrawFire();
 
 	void GenRainZoneHeightmap();
 	void DrawRain();
@@ -111,6 +115,7 @@ private:
 	r_GLSLProgram world_shader_;
 	r_GLSLProgram build_prism_shader_;
 	r_GLSLProgram water_shader_;
+	r_GLSLProgram fire_shader_;
 	r_GLSLProgram rain_zone_heightmap_shader_;
 	r_GLSLProgram skybox_shader_;
 	r_GLSLProgram stars_shader_;
@@ -125,6 +130,9 @@ private:
 	//VBO
 	r_PolygonBuffer failing_blocks_vbo_;
 	unsigned int failing_blocks_vertex_count_;
+
+	r_PolygonBuffer fire_vbo_;
+	unsigned int fire_vertex_count_;
 
 	r_PolygonBuffer build_prism_vbo_;
 	r_PolygonBuffer skybox_vbo_;
@@ -154,6 +162,9 @@ private:
 	r_Texture console_bg_texture_;
 	r_Texture crosshair_texture_;
 	r_Texture clouds_texture_;
+
+	r_Texture fire_spectre_texture_;
+	r_Texture fire_noise_texture_;
 
 	//matrices and vectors
 	float fov_x_, fov_y_;
@@ -190,6 +201,8 @@ private:
 	std::unique_ptr<r_WVB> world_vertex_buffer_;
 	std::unique_ptr<r_WVB> world_water_vertex_buffer_;
 	std::mutex world_vertex_buffer_mutex_;
+
+	std::vector< r_FireMeshVertex > fire_vertices_;
 
 	//text out
 	std::unique_ptr<r_Text> text_manager_;

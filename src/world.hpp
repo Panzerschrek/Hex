@@ -109,6 +109,7 @@ private:
 	void Destroy( short x, short y, short z );
 	void FlushActionQueue();
 
+	void RemoveFire( int x, int y, int z );
 	void CheckBlockNeighbors( short x, short y, short z );
 
 	void UpdateInRadius( short x, short y, short r );//update chunks in square [x-r;x+r] [y-r;x+r]
@@ -161,6 +162,7 @@ private:
 	bool WaterFlowDown( h_LiquidBlock* from, short to_x, short to_y, short to_z );
 
 	void GrassPhysTick();
+	void FirePhysTick();
 
 	void RainTick();
 
