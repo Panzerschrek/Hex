@@ -46,6 +46,7 @@ private:
 	const h_SettingsPtr settings_;
 
 	QCursor cursor_;
+	bool cursor_was_grabbed_;
 
 	int screen_width_, screen_height_;
 

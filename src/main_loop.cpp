@@ -88,6 +88,7 @@ h_MainLoop::h_MainLoop(
 	const QGLFormat& format )
 	: QGLWidget( format )
 	, settings_(settings)
+	, cursor_was_grabbed_(false)
 	, game_started_(false)
 {
 	QDesktopWidget* desktop= QApplication::desktop();
@@ -215,10 +216,9 @@ void h_MainLoop::UpdateCursor()
 	QPoint cur_local_pos= this->mapFromGlobal( cursor_.pos() );
 	ui_CursorHandler::UpdateCursorPos( cur_local_pos.x(), cur_local_pos.y() );
 
-	if( !game_started_ )
-		return;
+	bool cursor_grabbed= hasFocus() && ui_CursorHandler::IsMouseGrabbed();
 
-	if( hasFocus() && ui_CursorHandler::IsMouseGrabbed() )
+	if( cursor_grabbed )
 	{
 		if( cursor_.shape() != Qt::BlankCursor )
 		{
@@ -227,7 +227,12 @@ void h_MainLoop::UpdateCursor()
 		}
 
 		QPoint cursor_lock_pos( screen_width_ >> 1, screen_height_ >> 1 );
-		ui_CursorHandler::ControllerMove( cursor_lock_pos.x() - cur_local_pos.x(), cursor_lock_pos.y() - cur_local_pos.y() );
+
+		if( cursor_was_grabbed_ )
+			ui_CursorHandler::ControllerMove(
+				cursor_lock_pos.x() - cur_local_pos.x(),
+				cursor_lock_pos.y() - cur_local_pos.y() );
+
 		cursor_.setPos( this->mapToGlobal(cursor_lock_pos) );
 	}
 	else
@@ -238,6 +243,8 @@ void h_MainLoop::UpdateCursor()
 			this->setCursor( cursor_ );
 		}
 	}
+
+	cursor_was_grabbed_= cursor_grabbed;
 }
 
 void h_MainLoop::ProcessMenuKey( QKeyEvent* e, bool pressed )
