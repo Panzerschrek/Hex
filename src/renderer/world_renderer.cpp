@@ -980,7 +980,9 @@ void r_WorldRenderer::DrawWorld()
 	static const r_OGLState state(
 		false, true, true, false,
 		state_blend_mode,
-		r_OGLState::default_clear_color );
+		r_OGLState::default_clear_color,
+		r_OGLState::default_clear_depth,
+		GL_FRONT );
 	r_OGLStateManager::UpdateState( state );
 
 	texture_manager_->BindTextureArray( 0 );
