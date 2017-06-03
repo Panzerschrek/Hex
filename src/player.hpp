@@ -65,6 +65,8 @@ private:
 	bool in_air_;
 	float water_submerging_; // 0 - fully in air, 1 - fully in water
 	bool eyes_is_underwater_;
+	float on_floor_ratio_; // 1.0f - on floor, 0.0f - in air/flying/swiming
+	float bobbing_height_delta_;
 	m_Vec3 view_angle_;
 
 	uint64_t prev_move_time_ms_;
@@ -87,7 +89,7 @@ inline m_Vec3 h_Player::Pos() const
 inline m_Vec3 h_Player::EyesPos() const
 {
 	std::unique_lock<std::mutex> lock( player_data_mutex_ );
-	return m_Vec3( pos_.xy(), pos_.z + eyes_level_ );
+	return m_Vec3( pos_.xy(), pos_.z + eyes_level_ + bobbing_height_delta_ );
 }
 
 inline m_Vec3 h_Player::Angle() const

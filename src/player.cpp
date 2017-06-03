@@ -22,7 +22,7 @@ static const float g_water_deceleration= 8.0f;
 static const float g_vertical_acceleration= -9.8f * 1.5f;
 static const float g_vertical_water_acceleration= g_vertical_acceleration * 0.03f;
 static const float g_max_speed= 5.0f;
-static const float g_max_underwater_speed_= 3.0f;
+static const float g_max_underwater_speed= 3.0f;
 static const float g_max_vertical_speed= 30.0f;
 static const float g_max_underwater_vertical_speed= 2.0f;
 
@@ -55,6 +55,8 @@ h_Player::h_Player(
 	, in_air_(true)
 	, water_submerging_(0.0f)
 	, eyes_is_underwater_(false)
+	, on_floor_ratio_(0.0f)
+	, bobbing_height_delta_(0.0f)
 	, view_angle_( world_header->player.rotation_x, 0.0f, world_header->player.rotation_z )
 	, prev_move_time_ms_(0)
 	, build_direction_( h_Direction::Unknown )
@@ -155,7 +157,7 @@ void h_Player::Tick()
 
 	float speed_value= speed_.Length();
 	float max_speed=
-		g_max_underwater_speed_ * water_submerging_ +
+		g_max_underwater_speed * water_submerging_ +
 		g_max_speed * (1.0f - water_submerging_);
 	if( speed_value > max_speed )
 		speed_*= max_speed / speed_value;
@@ -199,6 +201,22 @@ void h_Player::Tick()
 	Move( m_Vec3( speed_.xy(), speed_.z + vertical_speed_ ) * dt_s, *phys_mesh );
 	UpdateBuildPos( *phys_mesh );
 	CheckUnderwater( *phys_mesh );
+
+	if( !in_air_ && !is_flying_ )
+		on_floor_ratio_= std::min( on_floor_ratio_ + dt_s, 1.0f );
+	else
+		on_floor_ratio_= std::max( on_floor_ratio_ - dt_s, 0.0f );
+
+	{
+		const float c_bobbing_amplitude= 0.0625f;
+		const float c_bobbing_frequensy= 1.75f * m_Math::two_pi;
+		const float speed_factor= speed_.Length() / std::max( g_max_speed, g_max_underwater_speed );
+		bobbing_height_delta_=
+			on_floor_ratio_ *
+			speed_factor *
+			c_bobbing_amplitude *
+			std::sin( c_bobbing_frequensy * ( static_cast<float>(current_time_ms) / 1000.0f ) ) ;
+	}
 }
 
 void h_Player::PauseWorldUpdates()
