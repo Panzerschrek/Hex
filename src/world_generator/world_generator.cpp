@@ -1,4 +1,5 @@
 #include <cmath>
+#include <cstring>
 #include <limits>
 #include <vector>
 
@@ -248,7 +249,7 @@ static void GenDistanceFiled(
 		}
 
 		in_data_lods[0].resize( size[0] * size[1] );
-		memcpy( in_data_lods[0].data(), in_data, size[0] * size[1] );
+		std::memcpy( in_data_lods[0].data(), in_data, size[0] * size[1] );
 
 		for( unsigned int lod= 1; lod < in_data_lods.size(); lod++ )
 		{
