@@ -2,9 +2,6 @@
 #include <limits>
 #include <vector>
 
-#include <QImage>
-#include <QPainter>
-
 #include "../hex.hpp"
 #include "../math_lib/assert.hpp"
 #include "../math_lib/math.hpp"
@@ -413,6 +410,8 @@ void g_WorldGenerator::Generate()
 
 void g_WorldGenerator::DumpDebugResult()
 {
+	// TODO - rewrite this code, using "stb_image" library.
+	/*
 	{
 		QImage img( parameters_.size[0], parameters_.size[1], QImage::Format_RGBX8888 );
 		img.fill(Qt::black);
@@ -511,6 +510,7 @@ void g_WorldGenerator::DumpDebugResult()
 
 		img.save( QString::fromStdString(parameters_.world_dir + "/rivers.png") );
 	}
+	*/
 }
 
 unsigned char g_WorldGenerator::GetGroundLevel( int x, int y ) const

@@ -9,15 +9,11 @@ if( ${CMAKE_BUILD_TYPE} STREQUAL Debug )
 else()
 endif()
 
-set( Qt5_DIR C:/Qt5.3.0/5.3/mingw482_32/lib/cmake/Qt5 ) # Set your path to Qt here.
-set(CMAKE_AUTOMOC ON)
-find_package(Qt5 COMPONENTS core gui REQUIRED)
 
 set( SDL_BASE_DIR ../SDL2-2.0.3 )
 set( SDL_INCLUDES_DIR ${SDL_BASE_DIR}/include )
 set( SDL_LIBS_DIR ${SDL_BASE_DIR}/lib/x86 )
 get_filename_component( SDL_LIBSDIR_ABSOLUTE ${SDL_LIBS_DIR} ABSOLUTE )
-#link_directories( ${SDL_LIBS_DIR} )
 
 #
 # HexLib
@@ -158,8 +154,6 @@ set( STB_IMAGE_HEADERS stb/stb_image.h )
 
 include_directories( panzer_ogl_lib )
 include_directories( PanzerJson/include )
-include_directories( ${Qt5Core_INCLUDE_DIRS}/.. )
-include_directories( ${Qt5Gui_INCLUDE_DIRS}/.. )
 include_directories( ${SDL_INCLUDES_DIR} )
 
 add_library(
@@ -169,7 +163,6 @@ add_library(
 	${PANZER_JSON_HEADERS} ${PANZER_JSON_SOURCES}
 	${STB_IMAGE_HEADERS} )
 
-target_link_libraries( HexLib Qt5::Core Qt5::Gui )
 target_link_libraries( HexLib opengl32 )
 target_link_libraries( HexLib ${SDL_LIBSDIR_ABSOLUTE}/SDL2main.lib )
 target_link_libraries( HexLib ${SDL_LIBSDIR_ABSOLUTE}/SDL2.lib )
