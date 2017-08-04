@@ -227,5 +227,3 @@ void r_TextureManager::LoadWorldTextures()
 	}
 	glGenerateMipmap( GL_TEXTURE_2D_ARRAY );
 }
-
-

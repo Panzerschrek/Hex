@@ -343,10 +343,9 @@ bool h_MainLoop::Loop()
 
 void h_MainLoop::UpdateCursor()
 {
-	/*
-	QPoint cur_local_pos= this->mapFromGlobal( cursor_.pos() );
-	ui_CursorHandler::UpdateCursorPos( cur_local_pos.x(), cur_local_pos.y() );
-
+	//QPoint cur_local_pos= this->mapFromGlobal( cursor_.pos() );
+	//ui_CursorHandler::UpdateCursorPos( cur_local_pos.x(), cur_local_pos.y() );
+/*
 	bool cursor_grabbed= hasFocus() && ui_CursorHandler::IsMouseGrabbed();
 
 	if( cursor_grabbed )
@@ -389,7 +388,8 @@ void h_MainLoop::ProcessEvents()
 		case SDL_WINDOWEVENT:
 			if( event.window.event == SDL_WINDOWEVENT_CLOSE )
 			{
-				quit_requested_= true;
+				Quit();
+				return;
 			}
 			break;
 
@@ -421,9 +421,7 @@ void h_MainLoop::ProcessEvents()
 			break;
 
 		case SDL_MOUSEMOTION:
-			ui_CursorHandler::UpdateCursorPos(
-				event.motion.x,
-				event.motion.y );
+			ui_CursorHandler::UpdateCursorPos( event.motion.x, event.motion.y );
 			break;
 
 		default:
@@ -435,6 +433,7 @@ void h_MainLoop::ProcessEvents()
 
 void h_MainLoop::Quit()
 {
+	QuitToMainMenu();
 	quit_requested_= true;
 }
 
