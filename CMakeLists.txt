@@ -154,6 +154,8 @@ set( PANZER_JSON_SOURCES
 	PanzerJson/src/serializers_common.inl
 	PanzerJson/src/value.cpp )
 
+set( STB_IMAGE_HEADERS stb/stb_image.h )
+
 include_directories( panzer_ogl_lib )
 include_directories( PanzerJson/include )
 include_directories( ${Qt5Core_INCLUDE_DIRS}/.. )
@@ -164,7 +166,8 @@ add_library(
 	HexLib
 	${HEX_LIB_HEADERS} ${HEX_LIB_SOURCES}
 	${PANZER_OGL_LIB_HEADERS} ${PANZER_OGL_LIB_SOURCES}
-	${PANZER_JSON_HEADERS} ${PANZER_JSON_SOURCES} )
+	${PANZER_JSON_HEADERS} ${PANZER_JSON_SOURCES}
+	${STB_IMAGE_HEADERS} )
 
 target_link_libraries( HexLib Qt5::Core Qt5::Gui )
 target_link_libraries( HexLib opengl32 )

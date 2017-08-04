@@ -1,8 +1,14 @@
-#include "img_utils.hpp"
+#include <cstring>
 
-#include <QImage>
+// This is single place, where this library included.
+// So, we can include implementation here.
+#define STB_IMAGE_IMPLEMENTATION
+#include "../stb/stb_image.h"
+
 #include "texture.hpp"
 #include "../console.hpp"
+
+#include "img_utils.hpp"
 
 static void MakeStub( r_Texture* texture )
 {
@@ -175,78 +181,138 @@ void r_ImgUtils::LoadTexture( r_Texture* texture, const char* filename, unsigned
 {
 	const unsigned int c_min_texture_size= 4;
 
-	QImage img( filename );
+	int width, height;
+	int channels= 0;
+	unsigned char* stbi_img_data = stbi_load(filename, &width, &height, &channels, 0 );
 
-	if ( img.isNull() )
+	unsigned char* data= stbi_img_data;
+
+	if ( data == nullptr )
 	{
 		h_Console::Warning( "Can not load texture: \"", filename, "\"" );
 		MakeStub(texture);
 		goto after_creating;
 	}
 
-	if( img.width() < int(c_min_texture_size) || img.height() < int(c_min_texture_size) )
+	if( width < int(c_min_texture_size) || height < int(c_min_texture_size) )
 	{
+		stbi_image_free( stbi_img_data );
 		h_Console::Warning( "Texture is too small: \"", filename, "\"" );
 		MakeStub(texture);
 		goto after_creating;
 	}
 
-	if( img.depth() == 1 || img.depth() == 8 )
+	if( channels == 1 )
 	{
-		unsigned char* img_data= img.bits();
-		std::vector<unsigned char> tmp_data;
-
-		if( img.depth() == 1 )
-		{
-			tmp_data.resize( img.width() * img.height() );
-			img_data= tmp_data.data();
-			R1_To_R8( img_data, img_data, img.width(), img.height() );
-		}
-		RGBA8_MirrorVertical( img_data, img.width(), img.height() );
-
 		if( lod == 0 )
-			*texture= r_Texture( r_Texture::PixelFormat::R8, img.width(), img.height(), img_data );
+			*texture= r_Texture( r_Texture::PixelFormat::R8, width, height, data );
 		else
 		{
-			std::vector<unsigned char> tmp_lod_data( ( img.width() / 2 ) * ( img.height() / 2 ) );
-			unsigned char* d[2]= { img_data, tmp_lod_data.data() };
+			std::vector<unsigned char> tmp_lod_data( ( width / 2 ) * ( height / 2 ) );
+			unsigned char* d[2]= { data, tmp_lod_data.data() };
 
-			unsigned int l= 0, w= img.width(), h= img.height();
+			unsigned int l= 0, lod_w= width, lod_h= height;
 			for( ;
-				l < lod && w >= c_min_texture_size && h >= c_min_texture_size;
-				l++, w >>= 1, h >>= 1 )
-				R8_GetMip( d[ l&1 ], d[ (l^1)&1 ], w, h );
+				l < lod && lod_w >= c_min_texture_size && lod_h >= c_min_texture_size;
+				l++, lod_w >>= 1, lod_h >>= 1 )
+				R8_GetMip( d[ l&1 ], d[ (l^1)&1 ], lod_w, lod_h );
 
-			*texture= r_Texture( r_Texture::PixelFormat::R8, w, h, d[ l&1 ] );
+			*texture= r_Texture( r_Texture::PixelFormat::R8, lod_w, lod_h, d[ l&1 ] );
 		}
 	}
-	else if( img.depth() == 32 )
+	else if( channels == 3 || channels == 4 )
 	{
-		RGBA8_MirrorVerticalAndSwapRB( img.bits(), img.width(), img.height() );
+		std::vector<unsigned char> data_rgba;
+		if( channels == 3 )
+		{
+			data_rgba.resize( width * height * 4u );
+			for( unsigned int i= 0u; i < static_cast<unsigned int>( width * height ); i++ )
+			{
+				data_rgba[i*4u+0u]= data[i*3u+0u];
+				data_rgba[i*4u+1u]= data[i*3u+1u];
+				data_rgba[i*4u+2u]= data[i*3u+2u];
+				data_rgba[i*4u+3u]= 255u;
+			}
+			data= data_rgba.data();
+		}
+
+		RGBA8_MirrorVertical( data, width, height );
 
 		if( lod == 0 )
-			*texture= r_Texture( r_Texture::PixelFormat::RGBA8, img.width(), img.height(), img.bits() );
+			*texture= r_Texture( r_Texture::PixelFormat::RGBA8, width, height, data );
 		else
 		{
-			std::vector<unsigned char> tmp_data( 4 * ( img.width() / 2 ) * ( img.height() / 2 ) );
-			unsigned char* d[2]= { img.bits(), tmp_data.data() };
+			std::vector<unsigned char> tmp_data( 4 * ( width / 2 ) * ( height / 2 ) );
+			unsigned char* d[2]= { data, tmp_data.data() };
 
-			unsigned int l= 0, w= img.width(), h= img.height();
+			unsigned int l= 0, lod_w= width, lod_h= height;
 			for( ;
-				l < lod && w >= c_min_texture_size && h >= c_min_texture_size;
-				l++, w >>= 1, h >>= 1 )
-				RGBA8_GetMip( d[ l&1 ], d[ (l^1)&1 ], w, h );
+				l < lod && lod_w >= c_min_texture_size && lod_h >= c_min_texture_size;
+				l++, lod_w >>= 1, lod_h >>= 1 )
+				RGBA8_GetMip( d[ l&1 ], d[ (l^1)&1 ], lod_w, lod_h );
 
-			*texture= r_Texture( r_Texture::PixelFormat::RGBA8, w, h, d[ l&1 ] );
+			*texture= r_Texture( r_Texture::PixelFormat::RGBA8, lod_w, lod_h, d[ l&1 ] );
 		}
 	}
 	else
 	{
-		h_Console::Warning( "Can not convert texture: \"", filename, "\". Unsupported image depth." );
+		h_Console::Warning( "Can not convert texture: \"", filename, "\". Unsupported image depth: ", channels );
 		MakeStub(texture);
 	}
+
+	stbi_image_free( stbi_img_data );
 
 after_creating:
 	texture->SetFiltration( r_Texture::Filtration::LinearMipmapLinear, r_Texture::Filtration::Linear );
 	texture->BuildMips();
+}
+
+void r_ImgUtils::LoadImageRGBA(
+	const char* filename,
+	std::vector<unsigned char>& out_data,
+	unsigned int& out_width, unsigned int& out_height )
+{
+	out_data.clear();
+
+	int width, height;
+	int channels= 0;
+	unsigned char* const stbi_img_data = stbi_load(filename, &width, &height, &channels, 0 );
+	if( stbi_img_data == nullptr )
+	{
+		h_Console::Warning( "Can not load image: \"", filename, "\"" );
+		return;
+	}
+
+	if( width <= 0 || height <= 0 )
+	{
+		h_Console::Warning( "Can not load image: \"", filename, "\" - bad size: ", width, "x", height );
+		stbi_image_free( stbi_img_data );
+		return;
+	}
+	if( channels > 4 || channels < 3 )
+	{
+		h_Console::Warning( "Can not load image: \"", filename, "\" - srange channel count: ", channels );
+		stbi_image_free( stbi_img_data );
+		return;
+	}
+
+	out_width = width ;
+	out_height= height;
+
+	out_data.resize( out_width * out_height * 4u );
+
+	if( channels == 4 )
+		std::memcpy( out_data.data(), stbi_img_data, out_data.size() );
+	else
+		for( unsigned int i= 0u; i < out_width * out_height; i++ )
+		{
+			out_data[i*4u+0u]= stbi_img_data[i*3u+0u];
+			out_data[i*4u+1u]= stbi_img_data[i*3u+1u];
+			out_data[i*4u+2u]= stbi_img_data[i*3u+2u];
+			out_data[i*4u+3u]= 255u;
+		}
+
+	stbi_image_free( stbi_img_data );
+
+	RGBA8_MirrorVertical( out_data.data(), out_width, out_height );
 }

@@ -4,3 +4,6 @@
 [submodule "PanzerJson"]
 	path = PanzerJson
 	url = https://github.com/Panzerschrek/PanzerJson.git
+[submodule "stb"]
+	path = stb
+	url = https://github.com/Panzerschrek/stb.git

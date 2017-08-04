@@ -9,8 +9,6 @@
 #include <PanzerJson/parser.hpp>
 #include <PanzerJson/value.hpp>
 
-#include <QImage>
-#include <QPainter>
 
 unsigned char r_TextureManager::texture_table_[ size_t(h_BlockType::NumBlockTypes) * 8 ];
 bool r_TextureManager::texture_mode_table_[ size_t(h_BlockType::NumBlockTypes) * 8 ];
@@ -28,30 +26,7 @@ static unsigned char* RescaleAndPrepareTexture( unsigned char* in_data, unsigned
 	for( unsigned int i= R_MAX_TEXTURE_RESOLUTION; i > requrided_size; i>>=1, s^=1, d^=1 )
 		r_ImgUtils::RGBA8_GetMip( tex_data_pointers[s], tex_data_pointers[d], i, i );
 
-	r_ImgUtils::RGBA8_MirrorVerticalAndSwapRB( tex_data_pointers[s], requrided_size, requrided_size );
 	return tex_data_pointers[s];
-}
-
-static void DrawNullTexture( QImage& img, const char* text= nullptr )
-{return;
-	QPainter p( &img );
-
-	p.fillRect( 0, 0, 128, 128, Qt::black );
-	p.fillRect( 128, 0, 128, 128, Qt::magenta );
-	p.fillRect( 0, 128, 128, 128, Qt::magenta );
-	p.fillRect( 128, 128, 128, 128, Qt::black );
-
-	p.fillRect( 112, 112, 16, 16, Qt::red );
-	p.fillRect( 128, 112, 16, 16, Qt::green );
-	p.fillRect( 112, 128, 16, 16, Qt::blue );
-	p.fillRect( 128, 128, 16, 16, Qt::gray );
-
-	QFont f( "Courier New", 16 );
-	p.setFont( f );
-	p.setPen( QColor( Qt::white ) );
-	p.drawText( 20, 80, "Texture not found" );
-	if( text) p.drawText( 20, 130, text );
-	p.drawText( 20, 180, "Texture not found" );
 }
 
 r_TextureManager::r_TextureManager( unsigned int detalization, bool filter_textures )
@@ -100,7 +75,6 @@ void r_TextureManager::LoadWorldTextures()
 	unsigned int texture_size= 1 << (R_MAX_TEXTURE_RESOLUTION_LOG2 - texture_detalization_);
 
 	unsigned int tex_id= 0;
-	QSize required_texture_size( R_MAX_TEXTURE_RESOLUTION, R_MAX_TEXTURE_RESOLUTION );
 	std::vector<unsigned char> tmp_data( R_MAX_TEXTURE_RESOLUTION * R_MAX_TEXTURE_RESOLUTION * 4 );
 
 	PanzerJson::Parser parser;
@@ -136,16 +110,11 @@ void r_TextureManager::LoadWorldTextures()
 		texture_size, texture_size, texture_layers,
 		0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr );
 
-	QImage img( required_texture_size, QImage::Format_RGBA8888 );
+	// TODO - create stub texture with number 0.
 
-	DrawNullTexture( img );
-	glTexSubImage3D(
-		GL_TEXTURE_2D_ARRAY,
-		0, 0, 0,
-		tex_id,
-		texture_size, texture_size,
-		1, GL_RGBA, GL_UNSIGNED_BYTE,
-		RescaleAndPrepareTexture( img.bits(), tmp_data.data(), texture_size ) );
+	unsigned int required_image_size[2]= { R_MAX_TEXTURE_RESOLUTION, R_MAX_TEXTURE_RESOLUTION };
+	unsigned int image_size[2];
+	std::vector<unsigned char> image_data_rgba;
 
 	//for each texture
 	for( const PanzerJson::Value obj : json_root_array.array_elements() )
@@ -154,9 +123,22 @@ void r_TextureManager::LoadWorldTextures()
 			continue;
 
 		const char* const filename= obj[ "filename" ].AsString();
-		if( !img.load( QString("textures/") + filename ) )
+
+		// TODO - cache textures, do not load texture multiple times for different blocks/sides.
+		r_ImgUtils::LoadImageRGBA(
+			( std::string("textures/") + filename ).c_str(),
+			image_data_rgba,
+			image_size[0], image_size[1] );
+
+		if( image_data_rgba.empty() )
+			continue;
+		if( !( image_size[0] == required_image_size[0] && image_size[1] == required_image_size[1] ) )
 		{
-			h_Console::Warning( "texture \"", filename, "\" not found" );
+			h_Console::Error(
+				"texture \"",
+				filename,
+				"\" has unexpected size: ", image_size[0], "x", image_size[1] ," expected ",
+				required_image_size[0], "x", required_image_size[1] );
 			continue;
 		}
 
@@ -167,24 +149,13 @@ void r_TextureManager::LoadWorldTextures()
 			break;
 		}
 
-		if( img.size() != required_texture_size )
-		{
-			h_Console::Warning(
-				"texture \"",
-				filename,
-				"\" has unexpected size: ", img.width(), "x", img.height() ," expected ",
-				required_texture_size.width(), "x", required_texture_size.height() );
-
-			img= img.scaled( required_texture_size, Qt::IgnoreAspectRatio, Qt::SmoothTransformation );
-		}
-
 		glTexSubImage3D(
 			GL_TEXTURE_2D_ARRAY,
 			0, 0, 0,
 			tex_id,
 			texture_size, texture_size,
 			1, GL_RGBA, GL_UNSIGNED_BYTE,
-			RescaleAndPrepareTexture( img.bits(), tmp_data.data(), texture_size ) );
+			RescaleAndPrepareTexture( image_data_rgba.data(), tmp_data.data(), texture_size ) );
 
 		const PanzerJson::Value scale_val= obj[ "scale" ];
 		if( scale_val.IsNumber() )
