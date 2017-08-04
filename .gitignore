@@ -3,19 +3,20 @@ out/*
 Deug/*
 Release/*
 obj/*
+build/*
+build-*/
 *.dll
 *.exe
 *.out
 
-# CodeBlocks settings
+# IDE settings
 *.layout
 *.depend
+*.user
 
 # Game settings
 *.ini
 
-# Qt MOC output
-src/moc*
 
 # Textures and other content - not place it in repo
 textures/*
