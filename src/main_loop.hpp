@@ -41,7 +41,7 @@ private:
 	h_WorldPtr world_;
 	h_PlayerPtr player_;
 
-	bool game_started_;
+	bool game_started_= false;
 
 	std::unique_ptr<ui_Painter> ui_painter_;
 	std::unique_ptr<ui_MenuBase> root_menu_;
