@@ -1,6 +1,8 @@
 #include <chrono>
 #include <cstring>
 
+#include <zlib.h>
+
 #include "world.hpp"
 #include "player.hpp"
 #include "math_lib/math.hpp"
@@ -24,56 +26,67 @@ static constexpr const unsigned int g_northern_hemisphere_summer_solstice_day= g
 static constexpr const float g_planet_rotation_axis_inclination= 23.439281f * m_Math::deg2rad;
 static constexpr const float g_global_world_latitude= 40.0f * m_Math::deg2rad;
 
-#include <zlib.h>
-
-h_BinaryStorage CompressChunkData( const h_BinaryStorage& data )
+// Returns true, if all is ok.
+// Replaces "out_data_compressed" content on success.
+// Clears "out_data_compressed" on failure.
+static bool CompressChunkData(
+	const h_BinaryStorage& data,
+	h_BinaryStorage& out_data_compressed )
 {
-	h_BinaryStorage result;
+	out_data_compressed.clear();
+
 	const int compress_bound= ::compressBound( data.size() );
-	result.resize( sizeof(uint32_t) + compress_bound );
+	out_data_compressed.resize( sizeof(uint32_t) + compress_bound );
 	uLongf result_size= compress_bound;
-	int compress_code=
+	const int compress_code=
 		::compress(
-			reinterpret_cast<Bytef*>(&result[0] + sizeof(uint32_t)), &result_size,
-			reinterpret_cast<const Bytef*>(data.data()), data.size() );
-	if( compress_code != 0 )
+			out_data_compressed.data() + sizeof(uint32_t), &result_size,
+			data.data(), data.size() );
+	if( compress_code != Z_OK )
 	{
-		h_Console::Error( "Can not compress" );
-		return h_BinaryStorage();
+		h_Console::Error( "Can not compress, code: ", compress_code );
+		return false;
 	}
 
-	result.resize( sizeof(uint32_t) + result_size );
+	out_data_compressed.resize( sizeof(uint32_t) + result_size );
 
 	const uint32_t uncompressed_size= static_cast<uint32_t>(data.size());
-	std::memcpy( &result[0], &uncompressed_size, sizeof(uint32_t) );
+	std::memcpy( out_data_compressed.data(), &uncompressed_size, sizeof(uint32_t) );
 
-	return result;
+	return true;
 }
 
-h_BinaryStorage DecompressChunkData( const h_BinaryStorage& data_compressed )
+// Returns true, if all is ok.
+// Replaces "out_data_decompressed" content on success.
+// Clears "out_data_decompressed" on failure.
+static bool DecompressChunkData(
+	const h_BinaryStorage& data_compressed,
+	h_BinaryStorage& out_data_decompressed )
 {
+	out_data_decompressed.clear();
+
 	uint32_t uncompressed_size;
 	std::memcpy( &uncompressed_size, data_compressed.data(), sizeof(uint32_t) );
 
-	h_BinaryStorage result;
-	result.resize( uncompressed_size );
+	out_data_decompressed.resize( uncompressed_size );
 
 	uLongf uncompressed_size_returned= uncompressed_size;
-	const int uncompress_code= ::uncompress(
-		reinterpret_cast<Bytef*>(&result[0]), &uncompressed_size_returned,
-		reinterpret_cast<const Bytef*>(data_compressed.data() + sizeof(uint32_t)), data_compressed.size() - sizeof(uint32_t) );
-	if( uncompress_code != 0 )
+	const int uncompress_code=
+		::uncompress(
+			out_data_decompressed.data(), &uncompressed_size_returned,
+			data_compressed.data() + sizeof(uint32_t), data_compressed.size() - sizeof(uint32_t) );
+	if( uncompress_code != Z_OK )
 	{
-		h_Console::Error( "Can not uncompress" );
-		return h_BinaryStorage();
+		h_Console::Error( "Can not uncompress, code: ", uncompress_code );
+		return false;
 	}
 	if( uncompressed_size_returned != uncompressed_size )
 	{
 		h_Console::Error( "Can not uncompress - bad size" );
-		return h_BinaryStorage();
+		return false;
 	}
 
-	return result;
+	return true;
 }
 
 // day of spring equinox
@@ -879,24 +892,21 @@ void h_World::SaveChunk( h_Chunk* ch )
 	header.Write( stream );
 	ch->SaveChunkToFile( stream );
 
-	h_BinaryStorage data_compressed= CompressChunkData( data_uncompressed );
-	if( !data_compressed.empty() )
-	{
-		chunk_loader_.GetChunkData( ch->Longitude(), ch->Latitude() )= data_compressed;
-	}
+	CompressChunkData(
+		data_uncompressed,
+		chunk_loader_.GetChunkData( ch->Longitude(), ch->Latitude() ) );
 }
 
 h_Chunk* h_World::LoadChunk( int lon, int lat )
 {
 	const h_BinaryStorage& chunk_data_compressed= chunk_loader_.GetChunkData( lon, lat );
-	if( chunk_data_compressed.size() == 0 )
+	if( chunk_data_compressed.empty() )
 		return new h_Chunk( this, lon, lat, world_generator_.get() );
 
-	const h_BinaryStorage chunk_data_uncompressed= DecompressChunkData( chunk_data_compressed );
-	if( chunk_data_uncompressed.empty() )
+	if( !DecompressChunkData( chunk_data_compressed, decompressed_chunk_data_buffer_ ) )
 		return new h_Chunk( this, lon, lat, world_generator_.get() );
 
-	h_BinaryInputStream stream( chunk_data_uncompressed );
+	h_BinaryInputStream stream( decompressed_chunk_data_buffer_ );
 
 	HEXCHUNK_header header;
 	header.Read( stream );

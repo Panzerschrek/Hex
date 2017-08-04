@@ -228,6 +228,8 @@ private:
 	unsigned int test_mob_last_think_tick_= 0;
 	m_Vec3 test_mob_pos_;
 
+	h_BinaryStorage decompressed_chunk_data_buffer_; // Cache buffer for chunks decompression.
+
 	// All arrays - put at the end of class.
 
 	h_Block normal_blocks_[ size_t(h_BlockType::NumBlockTypes) ];
