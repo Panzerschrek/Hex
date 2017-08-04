@@ -1,4 +1,7 @@
 #include <chrono>
+#include <cstring>
+
+#include <zlib.h>
 
 #include "world.hpp"
 #include "player.hpp"
@@ -22,6 +25,69 @@ static constexpr const unsigned int g_days_in_year= 32;
 static constexpr const unsigned int g_northern_hemisphere_summer_solstice_day= g_days_in_year / 4;
 static constexpr const float g_planet_rotation_axis_inclination= 23.439281f * m_Math::deg2rad;
 static constexpr const float g_global_world_latitude= 40.0f * m_Math::deg2rad;
+
+// Returns true, if all is ok.
+// Replaces "out_data_compressed" content on success.
+// Clears "out_data_compressed" on failure.
+static bool CompressChunkData(
+	const h_BinaryStorage& data,
+	h_BinaryStorage& out_data_compressed )
+{
+	out_data_compressed.clear();
+
+	const int compress_bound= ::compressBound( data.size() );
+	out_data_compressed.resize( sizeof(uint32_t) + compress_bound );
+	uLongf result_size= compress_bound;
+	const int compress_code=
+		::compress(
+			out_data_compressed.data() + sizeof(uint32_t), &result_size,
+			data.data(), data.size() );
+	if( compress_code != Z_OK )
+	{
+		h_Console::Error( "Can not compress, code: ", compress_code );
+		return false;
+	}
+
+	out_data_compressed.resize( sizeof(uint32_t) + result_size );
+
+	const uint32_t uncompressed_size= static_cast<uint32_t>(data.size());
+	std::memcpy( out_data_compressed.data(), &uncompressed_size, sizeof(uint32_t) );
+
+	return true;
+}
+
+// Returns true, if all is ok.
+// Replaces "out_data_decompressed" content on success.
+// Clears "out_data_decompressed" on failure.
+static bool DecompressChunkData(
+	const h_BinaryStorage& data_compressed,
+	h_BinaryStorage& out_data_decompressed )
+{
+	out_data_decompressed.clear();
+
+	uint32_t uncompressed_size;
+	std::memcpy( &uncompressed_size, data_compressed.data(), sizeof(uint32_t) );
+
+	out_data_decompressed.resize( uncompressed_size );
+
+	uLongf uncompressed_size_returned= uncompressed_size;
+	const int uncompress_code=
+		::uncompress(
+			out_data_decompressed.data(), &uncompressed_size_returned,
+			data_compressed.data() + sizeof(uint32_t), data_compressed.size() - sizeof(uint32_t) );
+	if( uncompress_code != Z_OK )
+	{
+		h_Console::Error( "Can not uncompress, code: ", uncompress_code );
+		return false;
+	}
+	if( uncompressed_size_returned != uncompressed_size )
+	{
+		h_Console::Error( "Can not uncompress - bad size" );
+		return false;
+	}
+
+	return true;
+}
 
 // day of spring equinox
 // some time after sunrise.
@@ -814,8 +880,8 @@ void h_World::MoveWorld( h_WorldMoveDirection dir )
 
 void h_World::SaveChunk( h_Chunk* ch )
 {
-	QByteArray array;
-	QDataStream stream( &array, QIODevice::WriteOnly );
+	h_BinaryStorage data_uncompressed;
+	h_BinaryOuptutStream stream( data_uncompressed );
 
 	HEXCHUNK_header header;
 
@@ -826,17 +892,21 @@ void h_World::SaveChunk( h_Chunk* ch )
 	header.Write( stream );
 	ch->SaveChunkToFile( stream );
 
-	chunk_loader_.GetChunkData( ch->Longitude(), ch->Latitude() )= qCompress( array );
+	CompressChunkData(
+		data_uncompressed,
+		chunk_loader_.GetChunkData( ch->Longitude(), ch->Latitude() ) );
 }
 
 h_Chunk* h_World::LoadChunk( int lon, int lat )
 {
-	QByteArray& ba= chunk_loader_.GetChunkData( lon, lat );
-	if( ba.size() == 0 )
+	const h_BinaryStorage& chunk_data_compressed= chunk_loader_.GetChunkData( lon, lat );
+	if( chunk_data_compressed.empty() )
 		return new h_Chunk( this, lon, lat, world_generator_.get() );
 
-	QByteArray uncompressed_chunk= qUncompress( ba );
-	QDataStream stream( &uncompressed_chunk, QIODevice::ReadOnly );
+	if( !DecompressChunkData( chunk_data_compressed, decompressed_chunk_data_buffer_ ) )
+		return new h_Chunk( this, lon, lat, world_generator_.get() );
+
+	h_BinaryInputStream stream( decompressed_chunk_data_buffer_ );
 
 	HEXCHUNK_header header;
 	header.Read( stream );

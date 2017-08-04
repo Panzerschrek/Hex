@@ -18,6 +18,7 @@ find_package(Qt5 COMPONENTS core gui widgets opengl REQUIRED)
 #
 
 set( HEX_LIB_HEADERS
+	src/math_lib/binary_stream.hpp
 	src/block.hpp
 	src/block_collision.hpp
 	src/blocks_list.hpp
@@ -137,6 +138,10 @@ include_directories( ${Qt5OpenGL_INCLUDE_DIRS}/.. )
 add_library( HexLib ${HEX_LIB_HEADERS} ${HEX_LIB_SOURCES} ${PANZER_OGL_LIB_HEADERS} ${PANZER_OGL_LIB_SOURCES} )
 target_link_libraries( HexLib Qt5::Core Qt5::Gui Qt5::Widgets Qt5::OpenGL )
 target_link_libraries( HexLib opengl32 )
+
+# On GNU/Linux systems zlib is system, so we can found it.
+# MinGW contains zlib too.
+target_link_libraries( HexLib z )
 
 #
 # Hex
