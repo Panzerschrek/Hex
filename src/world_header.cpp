@@ -8,14 +8,14 @@
 
 static const char g_world_header_filename[]= "world.json";
 
-static QString GetFullFileName( const char* world_dir )
+static std::string GetFullFileName( const char* const world_dir )
 {
-	return QString(world_dir) + "/" + g_world_header_filename;
+	return std::string(world_dir) + "/" + g_world_header_filename;
 }
 
 void h_WorldHeader::Load( const char* world_dir )
 {
-	QFile file( GetFullFileName(world_dir) );
+	QFile file( QString::fromStdString(GetFullFileName(world_dir)) );
 	if( !file.open( QIODevice::ReadOnly ) )
 	{
 		h_Console::Error( "Can not open world header file ", g_world_header_filename );
@@ -80,7 +80,7 @@ void h_WorldHeader::Save( const char* world_dir ) const
 	QJsonDocument doc(obj);
 	QByteArray ba = doc.toJson();
 
-	QFile file( GetFullFileName(world_dir) );
+	QFile file( QString::fromStdString(GetFullFileName(world_dir)) );
 	if( !file.open( QIODevice::WriteOnly ) )
 	{
 		h_Console::Error( "Can not open world header file ", g_world_header_filename, "for saving." );

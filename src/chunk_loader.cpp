@@ -34,8 +34,8 @@ struct h_ChunkLoader::RegionData final
 	}
 };
 
-h_ChunkLoader::h_ChunkLoader( QString world_directory )
-	: regions_path_(world_directory)
+h_ChunkLoader::h_ChunkLoader( std::string world_directory )
+	: regions_path_(std::move(world_directory))
 {}
 
 h_ChunkLoader::~h_ChunkLoader()
@@ -105,20 +105,20 @@ h_ChunkLoader::RegionData& h_ChunkLoader::GetRegionForCoordinates( int longitude
 	return *regions_.back();
 }
 
-void h_ChunkLoader::GetRegionFileName( QString& out_name, int reg_longitude, int reg_latitude ) const
+void h_ChunkLoader::GetRegionFileName( std::string& out_name, int reg_longitude, int reg_latitude ) const
 {
 	out_name= regions_path_ + "/lon_";
-	out_name+= QString::number( reg_longitude ) + "_lat_";
-	out_name+= QString::number( reg_latitude  ) + "_.region";
+	out_name+= std::to_string( reg_longitude ) + "_lat_";
+	out_name+= std::to_string( reg_latitude  ) + "_.region";
 	//for example: "world/lon_42_lat_-34_.region"
 }
 
 void h_ChunkLoader::LoadRegion( RegionData& region )
 {
 	//todo: add reading of file with unicode name
-	QString file_name;
+	std::string file_name;
 	GetRegionFileName( file_name, region.longitude, region.latitude );
-	FILE* f= fopen( file_name.toLocal8Bit().constData(), "rb" );
+	FILE* f= fopen( file_name.data(), "rb" );
 	if( f == nullptr )
 	{
 		//make new region, with no chunks
@@ -148,13 +148,13 @@ void h_ChunkLoader::LoadRegion( RegionData& region )
 void h_ChunkLoader::SaveRegion( const RegionData& region ) const
 {
 	//todo: add reading of file with unicode name
-	QString file_name;
+	std::string file_name;
 	GetRegionFileName( file_name, region.longitude, region.latitude );
-	FILE* f= fopen( file_name.toLocal8Bit().constData(), "wb" );
+	FILE* f= fopen( file_name.data(), "wb" );
 	if( f == nullptr )
 	{
 		h_Console::Error(
-			"Can not open file \"", file_name.toLocal8Bit().constData(), "\" for region saving." );
+			"Can not open file \"", file_name, "\" for region saving." );
 		return;
 	}
 

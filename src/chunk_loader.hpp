@@ -1,15 +1,14 @@
 #pragma once
 #include <memory>
+#include <string>
 #include <vector>
-
-#include <QString>
 
 #include "math_lib/binary_stream.hpp"
 
 class h_ChunkLoader final
 {
 public:
-	h_ChunkLoader( QString world_directory );
+	h_ChunkLoader( std::string world_directory );
 	~h_ChunkLoader();
 
 	//in\out - compressed data
@@ -30,9 +29,9 @@ private:
 	void LoadRegion( RegionData& region );
 	void SaveRegion( const RegionData& region ) const;
 
-	void GetRegionFileName( QString& out_name, int reg_longitude, int reg_latitude ) const;
+	void GetRegionFileName( std::string& out_name, int reg_longitude, int reg_latitude ) const;
 
 private:
 	std::vector< RegionDataPtr > regions_;
-	QString regions_path_;
+	std::string regions_path_;
 };
