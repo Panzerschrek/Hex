@@ -11,7 +11,7 @@ endif()
 
 set( Qt5_DIR C:/Qt5.3.0/5.3/mingw482_32/lib/cmake/Qt5 ) # Set your path to Qt here.
 set(CMAKE_AUTOMOC ON)
-find_package(Qt5 COMPONENTS core gui widgets opengl REQUIRED)
+find_package(Qt5 COMPONENTS core gui REQUIRED)
 
 set( SDL_BASE_DIR ../SDL2-2.0.3 )
 set( SDL_INCLUDES_DIR ${SDL_BASE_DIR}/include )
@@ -158,8 +158,6 @@ include_directories( panzer_ogl_lib )
 include_directories( PanzerJson/include )
 include_directories( ${Qt5Core_INCLUDE_DIRS}/.. )
 include_directories( ${Qt5Gui_INCLUDE_DIRS}/.. )
-include_directories( ${Qt5Widgets_INCLUDE_DIRS}/.. )
-include_directories( ${Qt5OpenGL_INCLUDE_DIRS}/.. )
 include_directories( ${SDL_INCLUDES_DIR} )
 
 add_library(
@@ -168,7 +166,7 @@ add_library(
 	${PANZER_OGL_LIB_HEADERS} ${PANZER_OGL_LIB_SOURCES}
 	${PANZER_JSON_HEADERS} ${PANZER_JSON_SOURCES} )
 
-target_link_libraries( HexLib Qt5::Core Qt5::Gui Qt5::Widgets Qt5::OpenGL )
+target_link_libraries( HexLib Qt5::Core Qt5::Gui )
 target_link_libraries( HexLib opengl32 )
 target_link_libraries( HexLib ${SDL_LIBSDIR_ABSOLUTE}/SDL2main.lib )
 target_link_libraries( HexLib ${SDL_LIBSDIR_ABSOLUTE}/SDL2.lib )
