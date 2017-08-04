@@ -1,8 +1,7 @@
 #pragma once
 
-#include <QDataStream>
-
 #include "hex.hpp"
+#include "math_lib/binary_stream.hpp"
 
 #define H_CHUNK_FORMAT_VERSION 1
 #define H_REGION_FORMAT_VERSION 1
@@ -18,8 +17,8 @@ struct FileLump
 	int size;
 
 	//if struct changed, this must be changed too
-	void Read( QDataStream& stream );
-	void Write( QDataStream& stream );
+	void Read( h_BinaryInputStream& stream );
+	void Write( h_BinaryOuptutStream& stream ) const;
 };
 
 struct HEXCHUNK_header
@@ -36,8 +35,8 @@ struct HEXCHUNK_header
 	FileLump blocks_data;
 
 	//if struct changed, this must be changed too
-	void Read( QDataStream& stream );
-	void Write( QDataStream& stream );
+	void Read( h_BinaryInputStream& stream );
+	void Write( h_BinaryOuptutStream& stream ) const;
 };
 
 struct HEXREGION_header
@@ -54,8 +53,8 @@ struct HEXREGION_header
 	FileLump chunk_lumps[ H_WORLD_REGION_SIZE_X * H_WORLD_REGION_SIZE_Y ];
 
 	//if struct changed, this must be changed too
-	void Read( QDataStream& stream );
-	void Write( QDataStream& stream );
+	void Read( h_BinaryInputStream& stream );
+	void Write( h_BinaryOuptutStream& stream ) const;
 };
 
 struct WORLD_header
@@ -65,6 +64,6 @@ struct WORLD_header
 	int datalen;
 
 	//if struct changed, this must be changed too
-	void Read( QDataStream& stream );
-	void Write( QDataStream& stream );
+	void Read( h_BinaryInputStream& stream );
+	void Write( h_BinaryOuptutStream& stream ) const;
 };

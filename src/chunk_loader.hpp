@@ -2,8 +2,9 @@
 #include <memory>
 #include <vector>
 
-#include <QByteArray>
 #include <QString>
+
+#include "math_lib/binary_stream.hpp"
 
 class h_ChunkLoader final
 {
@@ -13,7 +14,7 @@ public:
 
 	//in\out - compressed data
 	//returns container for compressed chunk data ( id need, load it from disk )
-	QByteArray& GetChunkData( int longitude, int latitude );
+	h_BinaryStorage& GetChunkData( int longitude, int latitude );
 	void FreeChunkData( int longitude, int latitude );
 
 	//save all data of all regions, but not delete it

@@ -22,7 +22,7 @@ struct h_ChunkLoader::RegionData final
 	bool chunks_used_flags[ H_WORLD_REGION_SIZE_X * H_WORLD_REGION_SIZE_Y ];
 
 	//data of each chunk in region ( each chunk stored separatly ). Data is compressed
-	QByteArray chunk_data[ H_WORLD_REGION_SIZE_X * H_WORLD_REGION_SIZE_Y ];
+	h_BinaryStorage chunk_data[ H_WORLD_REGION_SIZE_X * H_WORLD_REGION_SIZE_Y ];
 
 	RegionData( int in_longitude, int in_latitude )
 		: longitude(in_longitude)
@@ -43,7 +43,7 @@ h_ChunkLoader::~h_ChunkLoader()
 	H_ASSERT( regions_.empty() && "All chunks must be released before ChunkLoader destruction" );
 }
 
-QByteArray& h_ChunkLoader::GetChunkData( int longitude, int latitude )
+h_BinaryStorage& h_ChunkLoader::GetChunkData( int longitude, int latitude )
 {
 	RegionData& reg= GetRegionForCoordinates( longitude, latitude );
 	int ind= GetChunkIndexInRegion( longitude, latitude );
@@ -174,7 +174,7 @@ void h_ChunkLoader::SaveRegion( const RegionData& region ) const
 		if( chunk_data_size == 0 )
 			continue;
 
-		fwrite( region.chunk_data[i].constData(), 1, chunk_data_size, f );
+		fwrite( region.chunk_data[i].data(), 1, chunk_data_size, f );
 	}
 
 	fclose(f);

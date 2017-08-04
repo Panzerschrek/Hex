@@ -12,7 +12,7 @@ int main( int argc, char* argv[] )
 	QApplication app( argc, argv );
 
 	// We can not work outside executable directory.
-	QDir::setCurrent( app.applicationDirPath() );
+	//QDir::setCurrent( app.applicationDirPath() );
 
 	std::setlocale( LC_NUMERIC, "C" );
 

@@ -18,6 +18,7 @@ find_package(Qt5 COMPONENTS core gui widgets opengl REQUIRED)
 #
 
 set( HEX_LIB_HEADERS
+	src/math_lib/binary_stream.hpp
 	src/block.hpp
 	src/block_collision.hpp
 	src/blocks_list.hpp

@@ -5,6 +5,7 @@
 #include "fwd.hpp"
 #include "block.hpp"
 #include "world_loading.hpp"
+#include "math_lib/binary_stream.hpp"
 #include "math_lib/small_objects_allocator.hpp"
 
 #define BlockAddr( x, y, z ) ( (z) |\
@@ -17,7 +18,7 @@ class h_Chunk
 
 public:
 	h_Chunk( h_World* world, int longitude, int latitude, const g_WorldGenerator* generator );
-	h_Chunk( h_World* world, const HEXCHUNK_header& header, QDataStream& stream  );
+	h_Chunk( h_World* world, const HEXCHUNK_header& header, h_BinaryInputStream& stream );
 
 	~h_Chunk();
 
@@ -60,14 +61,14 @@ public:
 	const unsigned char* GetFireLightData() const;
 
 private:
-	void SaveBlock( QDataStream& stream, const h_Block* block );
-	h_Block* LoadBlock( QDataStream& stream, unsigned int block_addr );
+	void SaveBlock( h_BinaryOuptutStream& stream, const h_Block* block ) const;
+	h_Block* LoadBlock( h_BinaryInputStream& stream, unsigned int block_addr );
 
 	void GenChunk( const g_WorldGenerator* generator );
 
 	//chunk save\load
-	void GenChunkFromFile(QDataStream& stream );
-	void SaveChunkToFile( QDataStream& stream );
+	void GenChunkFromFile( h_BinaryInputStream& stream );
+	void SaveChunkToFile( h_BinaryOuptutStream& stream ) const;
 
 	void PlantTrees( const g_WorldGenerator* generator );
 	void PlantTree( short x, short y, short z );//local coordinates

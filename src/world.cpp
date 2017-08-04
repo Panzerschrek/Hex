@@ -26,20 +26,20 @@ static constexpr const float g_global_world_latitude= 40.0f * m_Math::deg2rad;
 
 #include <zlib.h>
 
-std::string CompressChunkData( const std::string& data )
+h_BinaryStorage CompressChunkData( const h_BinaryStorage& data )
 {
-	std::string result;
-	const int compress_bound= compressBound( data.size() );
+	h_BinaryStorage result;
+	const int compress_bound= ::compressBound( data.size() );
 	result.resize( sizeof(uint32_t) + compress_bound );
 	uLongf result_size= compress_bound;
 	int compress_code=
-		compress(
+		::compress(
 			reinterpret_cast<Bytef*>(&result[0] + sizeof(uint32_t)), &result_size,
 			reinterpret_cast<const Bytef*>(data.data()), data.size() );
 	if( compress_code != 0 )
 	{
 		h_Console::Error( "Can not compress" );
-		return "";
+		return h_BinaryStorage();
 	}
 
 	result.resize( sizeof(uint32_t) + result_size );
@@ -50,27 +50,27 @@ std::string CompressChunkData( const std::string& data )
 	return result;
 }
 
-std::string DecompressChunkData( const std::string& data_compressed )
+h_BinaryStorage DecompressChunkData( const h_BinaryStorage& data_compressed )
 {
 	uint32_t uncompressed_size;
 	std::memcpy( &uncompressed_size, data_compressed.data(), sizeof(uint32_t) );
 
-	std::string result;
+	h_BinaryStorage result;
 	result.resize( uncompressed_size );
 
 	uLongf uncompressed_size_returned= uncompressed_size;
-	const int uncompress_code= uncompress(
+	const int uncompress_code= ::uncompress(
 		reinterpret_cast<Bytef*>(&result[0]), &uncompressed_size_returned,
 		reinterpret_cast<const Bytef*>(data_compressed.data() + sizeof(uint32_t)), data_compressed.size() - sizeof(uint32_t) );
 	if( uncompress_code != 0 )
 	{
 		h_Console::Error( "Can not uncompress" );
-		return "";
+		return h_BinaryStorage();
 	}
 	if( uncompressed_size_returned != uncompressed_size )
 	{
 		h_Console::Error( "Can not uncompress - bad size" );
-		return "";
+		return h_BinaryStorage();
 	}
 
 	return result;
@@ -867,8 +867,8 @@ void h_World::MoveWorld( h_WorldMoveDirection dir )
 
 void h_World::SaveChunk( h_Chunk* ch )
 {
-	QByteArray array;
-	QDataStream stream( &array, QIODevice::WriteOnly );
+	h_BinaryStorage data_uncompressed;
+	h_BinaryOuptutStream stream( data_uncompressed );
 
 	HEXCHUNK_header header;
 
@@ -879,28 +879,24 @@ void h_World::SaveChunk( h_Chunk* ch )
 	header.Write( stream );
 	ch->SaveChunkToFile( stream );
 
-	const std::string array_compressed= CompressChunkData( std::string( array.data(), array.size() ) );
-	if( !array_compressed.empty() )
+	h_BinaryStorage data_compressed= CompressChunkData( data_uncompressed );
+	if( !data_compressed.empty() )
 	{
-		chunk_loader_.GetChunkData( ch->Longitude(), ch->Latitude() )=
-			QByteArray( array_compressed.data(), array_compressed.size() );
+		chunk_loader_.GetChunkData( ch->Longitude(), ch->Latitude() )= data_compressed;
 	}
 }
 
 h_Chunk* h_World::LoadChunk( int lon, int lat )
 {
-	QByteArray& ba= chunk_loader_.GetChunkData( lon, lat );
-	if( ba.size() == 0 )
+	const h_BinaryStorage& chunk_data_compressed= chunk_loader_.GetChunkData( lon, lat );
+	if( chunk_data_compressed.size() == 0 )
 		return new h_Chunk( this, lon, lat, world_generator_.get() );
 
-	std::string uncompressed_chunk= DecompressChunkData( std::string( ba.data(), ba.size() ) );
-	if( uncompressed_chunk.empty() )
-	{
+	const h_BinaryStorage chunk_data_uncompressed= DecompressChunkData( chunk_data_compressed );
+	if( chunk_data_uncompressed.empty() )
 		return new h_Chunk( this, lon, lat, world_generator_.get() );
-	}
 
-	QByteArray arr( uncompressed_chunk.data(), uncompressed_chunk.size() );
-	QDataStream stream( &arr, QIODevice::ReadOnly );
+	h_BinaryInputStream stream( chunk_data_uncompressed );
 
 	HEXCHUNK_header header;
 	header.Read( stream );

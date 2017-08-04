@@ -46,7 +46,7 @@ h_Chunk::h_Chunk( h_World* world, int longitude, int latitude, const g_WorldGene
 	MakeLight();
 }
 
-h_Chunk::h_Chunk( h_World* world, const HEXCHUNK_header& header, QDataStream& stream )
+h_Chunk::h_Chunk( h_World* world, const HEXCHUNK_header& header, h_BinaryInputStream& stream )
 	: world_(world)
 	, longitude_(header.longitude)
 	, latitude_ (header.latitude )
@@ -70,7 +70,7 @@ bool h_Chunk::IsEdgeChunk() const
 		latitude_  == ( world_->Latitude () + int(world_->ChunkNumberY()) - 1 );
 }
 
-void h_Chunk::SaveBlock( QDataStream& stream, const h_Block* block )
+void h_Chunk::SaveBlock( h_BinaryOuptutStream& stream, const h_Block* block ) const
 {
 	stream << ((unsigned short)block->Type());
 
@@ -124,7 +124,7 @@ void h_Chunk::SaveBlock( QDataStream& stream, const h_Block* block )
 	};
 }
 
-h_Block* h_Chunk::LoadBlock( QDataStream& stream, unsigned int block_addr )
+h_Block* h_Chunk::LoadBlock( h_BinaryInputStream& stream, unsigned int block_addr )
 {
 	unsigned short s_block_id;
 	//HACK. if block type basic integer type changed, this must be changed too
@@ -292,7 +292,7 @@ void h_Chunk::GenChunk( const g_WorldGenerator* generator )
 	}//for x
 }
 
-void h_Chunk::GenChunkFromFile( QDataStream& stream )
+void h_Chunk::GenChunkFromFile( h_BinaryInputStream& stream )
 {
 	for( int i= 0; i< H_CHUNK_WIDTH * H_CHUNK_WIDTH * H_CHUNK_HEIGHT; i++ )
 	{
@@ -301,7 +301,7 @@ void h_Chunk::GenChunkFromFile( QDataStream& stream )
 	}
 }
 
-void h_Chunk::SaveChunkToFile( QDataStream& stream )
+void h_Chunk::SaveChunkToFile( h_BinaryOuptutStream& stream ) const
 {
 	for( int i= 0; i< H_CHUNK_WIDTH * H_CHUNK_WIDTH * H_CHUNK_HEIGHT; i++ )
 		SaveBlock( stream, blocks_[i] );
