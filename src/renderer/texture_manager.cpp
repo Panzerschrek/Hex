@@ -1,14 +1,15 @@
+#include <cstdio>
+
 #include "texture_manager.hpp"
 #include "img_utils.hpp"
 #include "rendering_constants.hpp"
 #include "../block.hpp"
 #include "../console.hpp"
 
+#include <PanzerJson/parser.hpp>
+#include <PanzerJson/value.hpp>
+
 #include <QImage>
-#include <QJsonDocument>
-#include <QJsonObject>
-#include <QJsonArray>
-#include <QFile>
 #include <QPainter>
 
 unsigned char r_TextureManager::texture_table_[ size_t(h_BlockType::NumBlockTypes) * 8 ];
@@ -16,69 +17,6 @@ bool r_TextureManager::texture_mode_table_[ size_t(h_BlockType::NumBlockTypes) *
 unsigned char r_TextureManager::texture_scale_table_[ size_t(h_BlockType::NumBlockTypes) * 8 ];
 
 static const GLuint c_texture_not_created= std::numeric_limits<GLuint>::max();
-
-static void ValidateTexturesConfig( const QJsonDocument& doc )
-{
-	h_Console::Info( "Validate textures config." );
-
-	if( !doc.isArray() )
-	{
-		h_Console::Error( "Expected, that textures config is valid json array" );
-		return;
-	}
-
-	const QJsonArray array= doc.array();
-	for( const QJsonValue value : array )
-	{
-		if( !value.isObject() )
-		{
-			h_Console::Warning( "Expected, that values in array are objects" );
-			continue;
-		}
-
-		const QJsonObject object= value.toObject();
-
-		if( !object.contains( "filename" ) )
-			h_Console::Warning( "Expected, that objects contains property \"filename\"" );
-
-		const QJsonValue blocks= object["blocks"];
-		if( blocks == QJsonValue::Undefined )
-		{
-			h_Console::Warning( "Expected, that objects contains \"blocks\" array" );
-			continue;
-		}
-
-		if( !blocks.isArray() )
-		{
-			h_Console::Warning( "Expected, that \"blocks\" is array" );
-			continue;
-		}
-
-		const QJsonArray blocks_array= blocks.toArray();
-		for( const QJsonValue block_value : blocks_array )
-		{
-			if( !block_value.isObject() )
-			{
-				h_Console::Warning( "Expected, that array \"blocks\" contains objects" );
-				continue;
-			}
-			const QJsonObject block_object= block_value.toObject();
-
-			if( !block_object.contains( "blockname" ) )
-				h_Console::Warning( "Expected, that \"block\" object has property \"\blockname\"" );
-
-			if( !block_object.contains( "blockside" ) )
-				h_Console::Warning( "Expected, that \"block\" object has property \"\blockside\"" );
-
-		} // for blocks
-
-		if( blocks_array.size() == 0 )
-		{
-			h_Console::Warning( "Expected, that \"blocks\" is non empty array" );
-			continue;
-		}
-	} // for objects in array
-}
 
 static unsigned char* RescaleAndPrepareTexture( unsigned char* in_data, unsigned char* tmp_data, unsigned int requrided_size )
 {
@@ -165,24 +103,31 @@ void r_TextureManager::LoadWorldTextures()
 	QSize required_texture_size( R_MAX_TEXTURE_RESOLUTION, R_MAX_TEXTURE_RESOLUTION );
 	std::vector<unsigned char> tmp_data( R_MAX_TEXTURE_RESOLUTION * R_MAX_TEXTURE_RESOLUTION * 4 );
 
-	QJsonArray arr;
+	PanzerJson::Parser parser;
+	PanzerJson::Value json_root_array;
+	PanzerJson::Parser::ResultPtr parse_result;
 	{
-		const char* config_file_name= "textures/textures.json";
-		QFile f( config_file_name );
-		if( f.open( QIODevice::ReadOnly ) )
+		const char* const config_file_name= "textures/textures.json";
+		std::FILE* const f= std::fopen( config_file_name, "rb" );
+		if( f != nullptr )
 		{
-			QByteArray ba= f.readAll();
-			f.close();
+			std::fseek( f, 0, SEEK_END );
+			const size_t file_size= std::ftell( f );
+			std::fseek( f, 0, SEEK_SET );
 
-			QJsonDocument doc= QJsonDocument::fromJson( ba );
-			ValidateTexturesConfig( doc );
-			arr= doc.array();
+			std::vector<char> file_content( file_size );
+			std::fread( file_content.data(), 1, file_size, f ); // TODO - check file errors
+			std::fclose(f);
+
+			parse_result= parser.Parse( file_content.data(), file_content.size() );
+			if( parse_result->error != PanzerJson::Parser::Result::Error::NoError )
+				h_Console::Error( "Error, parsing json config" );
+			json_root_array= parse_result->root;
 		}
 		else
 			h_Console::Error( "fatal error, textures config file \"", config_file_name, "\" not found" );
-
 	}
-	unsigned texture_layers= std::min( arr.size() + 1, R_MAX_TEXTURES );
+	unsigned texture_layers= std::min( int(json_root_array.ElementCount()) + 1, R_MAX_TEXTURES );
 
 	glGenTextures( 1, &texture_array_ );
 	glBindTexture( GL_TEXTURE_2D_ARRAY, texture_array_ );
@@ -203,15 +148,15 @@ void r_TextureManager::LoadWorldTextures()
 		RescaleAndPrepareTexture( img.bits(), tmp_data.data(), texture_size ) );
 
 	//for each texture
-	for( const QJsonValue arr_val : arr )
+	for( const PanzerJson::Value obj : json_root_array.array_elements() )
 	{
-		QJsonObject obj= arr_val.toObject();
-		QJsonValue val;
+		if( ! obj.IsObject() )
+			continue;
 
-		QString filename= obj[ "filename" ].toString();
-		if( !img.load( "textures/" + filename ) )
+		const char* const filename= obj[ "filename" ].AsString();
+		if( !img.load( QString("textures/") + filename ) )
 		{
-			h_Console::Warning( "texture \"", filename.toLocal8Bit().constData(), "\" not found" );
+			h_Console::Warning( "texture \"", filename, "\" not found" );
 			continue;
 		}
 
@@ -226,7 +171,7 @@ void r_TextureManager::LoadWorldTextures()
 		{
 			h_Console::Warning(
 				"texture \"",
-				filename.toLocal8Bit().constData(),
+				filename,
 				"\" has unexpected size: ", img.width(), "x", img.height() ," expected ",
 				required_texture_size.width(), "x", required_texture_size.height() );
 
@@ -241,32 +186,30 @@ void r_TextureManager::LoadWorldTextures()
 			1, GL_RGBA, GL_UNSIGNED_BYTE,
 			RescaleAndPrepareTexture( img.bits(), tmp_data.data(), texture_size ) );
 
-		val= obj[ "scale" ];
-		if( val.isDouble() )
-			texture_scale_table_[ tex_id ]= std::min( std::max( val.toInt(), 1 ), H_TEXTURE_SCALE_MULTIPLIER * H_TEXTURE_MAX_SCALE );
+		const PanzerJson::Value scale_val= obj[ "scale" ];
+		if( scale_val.IsNumber() )
+			texture_scale_table_[ tex_id ]= std::min( std::max( scale_val.AsInt(), 1 ), H_TEXTURE_SCALE_MULTIPLIER * H_TEXTURE_MAX_SCALE );
 
-		val= obj[ "perblock" ];
-		if( val.isBool() )
-			texture_mode_table_[ tex_id ]= val.toBool();
+		const PanzerJson::Value perblock_val= obj[ "perblock" ];
+		if( perblock_val.IsBool() )
+			texture_mode_table_[ tex_id ]= perblock_val.AsInt() != 0;
 
-		QJsonArray blocks= obj[ "blocks" ].toArray();
+		const PanzerJson::Value blocks= obj[ "blocks" ];
 
 		//for each block for texture
-		for( const QJsonValue block_val : blocks )
+		for( const PanzerJson::Value block_obj : blocks )
 		{
-			QJsonObject block_obj= block_val.toObject();
+			const char* const blockname= block_obj[ "blockname" ].AsString();
+			const char* const blockside= block_obj[ "blockside" ].AsString();
 
-			QString blockname= block_obj[ "blockname" ].toString();
-			QString blockside= block_obj[ "blockside" ].toString();
-
-			h_BlockType t= h_Block::GetGetBlockTypeByName( blockname.toLocal8Bit().data() );
+			h_BlockType t= h_Block::GetGetBlockTypeByName( blockname );
 			if( t == h_BlockType::Unknown ) continue;
 
-			if( blockside == "universal" )
+			if( std::strcmp( blockside, "universal" ) == 0 )
 				for( unsigned int k= 0; k< 8; k++ )
 					texture_table_[ ( static_cast<unsigned int>(t) << 3 ) | k ]= tex_id;
 
-			h_Direction d= h_Block::GetDirectionByName( blockside.toLocal8Bit().data() );
+			h_Direction d= h_Block::GetDirectionByName( blockside );
 			if( d != h_Direction::Unknown )
 				texture_table_[ ( static_cast<unsigned int>(t) << 3 ) | static_cast<unsigned int>(d) ]= tex_id;
 		}//for blocks

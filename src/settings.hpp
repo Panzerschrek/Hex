@@ -42,7 +42,7 @@ private:
 		h_SettingsStringContainer( const h_SettingsStringContainer& other );
 		~h_SettingsStringContainer();
 
-		explicit operator std::string() const;
+		const char* c_str() const;
 
 		bool operator < ( const h_SettingsStringContainer& other ) const;
 
