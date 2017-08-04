@@ -38,15 +38,6 @@ HEADERS += \
     ../src/ui/main_menu.hpp \
     ../src/ui/ui_base_classes.hpp \
     ../src/ui/ui_painter.hpp \
-    ../../panzer_ogl_lib/framebuffer.hpp \
-    ../../panzer_ogl_lib/func_declarations.hpp \
-    ../../panzer_ogl_lib/glcorearb.h \
-    ../../panzer_ogl_lib/glsl_program.hpp \
-    ../../panzer_ogl_lib/matrix.hpp \
-    ../../panzer_ogl_lib/ogl_state_manager.hpp \
-    ../../panzer_ogl_lib/panzer_ogl_lib.hpp \
-    ../../panzer_ogl_lib/polygon_buffer.hpp \
-	../../panzer_ogl_lib/texture.hpp \
     ../../panzer_ogl_lib/vec.hpp \
     ../src/renderer/chunk_info.hpp \
     ../src/ui/ingame_menu.hpp \
@@ -93,13 +84,6 @@ SOURCES += \
     ../src/ui/main_menu.cpp \
     ../src/ui/ui_base_classes.cpp \
     ../src/ui/ui_painter.cpp \
-    ../../panzer_ogl_lib/framebuffer.cpp \
-    ../../panzer_ogl_lib/func_addresses.cpp \
-    ../../panzer_ogl_lib/glsl_program.cpp \
-    ../../panzer_ogl_lib/matrix.cpp \
-    ../../panzer_ogl_lib/ogl_state_manager.cpp \
-    ../../panzer_ogl_lib/polygon_buffer.cpp \
-	../../panzer_ogl_lib/texture.cpp \
     ../src/ui/ingame_menu.cpp \
     ../src/world_generator/world_generator.cpp \
     ../src/world_generator/noise.cpp \
@@ -112,3 +96,23 @@ SOURCES += \
     ../src/ui/loading_menu.cpp \
     ../../panzer_ogl_lib/shaders_loading.cpp \
     ../src/renderer/fire_mesh.cpp
+
+HEADERS += \
+	../panzer_ogl_lib/framebuffer.hpp \
+	../panzer_ogl_lib/func_declarations.hpp \
+	../panzer_ogl_lib/glcorearb.h \
+	../panzer_ogl_lib/glsl_program.hpp \
+	../panzer_ogl_lib/matrix.hpp \
+	../panzer_ogl_lib/ogl_state_manager.hpp \
+	../panzer_ogl_lib/panzer_ogl_lib.hpp \
+	../panzer_ogl_lib/polygon_buffer.hpp \
+	../panzer_ogl_lib/texture.hpp \
+
+SOURCES += \
+	../panzer_ogl_lib/framebuffer.cpp \
+	../panzer_ogl_lib/func_addresses.cpp \
+	../panzer_ogl_lib/glsl_program.cpp \
+	../panzer_ogl_lib/matrix.cpp \
+	../panzer_ogl_lib/ogl_state_manager.cpp \
+	../panzer_ogl_lib/polygon_buffer.cpp \
+	../panzer_ogl_lib/texture.cpp \
