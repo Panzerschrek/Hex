@@ -1,7 +1,7 @@
-#include <QFile>
-#include <QJsonDocument>
-#include <QJsonObject>
-#include <QJsonArray>
+#include <fstream>
+
+#include <PanzerJson/parser.hpp>
+#include <PanzerJson/streamed_serializer.hpp>
 
 #include "console.hpp"
 #include "world_header.hpp"
@@ -13,80 +13,72 @@ static std::string GetFullFileName( const char* const world_dir )
 	return std::string(world_dir) + "/" + g_world_header_filename;
 }
 
-void h_WorldHeader::Load( const char* world_dir )
+void h_WorldHeader::Load( const char* const world_dir )
 {
-	QFile file( QString::fromStdString(GetFullFileName(world_dir)) );
-	if( !file.open( QIODevice::ReadOnly ) )
+	const std::string header_path= GetFullFileName( world_dir );
+	std::FILE* const f= std::fopen( header_path.c_str() , "rb" );
+	if( f == nullptr )
 	{
-		h_Console::Error( "Can not open world header file ", g_world_header_filename );
+		h_Console::Error( "Can not open world header file ", header_path );
 		return;
 	}
 
-	QByteArray ba= file.readAll();
-	file.close();
+	std::fseek( f, 0, SEEK_END );
+	const size_t file_size= std::ftell( f );
+	std::fseek( f, 0, SEEK_SET );
 
-	QJsonParseError err;
-	QJsonDocument doc= QJsonDocument::fromJson( ba, &err );
-	if( err.error != QJsonParseError::NoError )
+	std::vector<char> file_content( file_size );
+	std::fread( file_content.data(), 1, file_size, f ); // TODO - check file errors
+	std::fclose(f);
+
+	const PanzerJson::Parser::ResultPtr parse_result=
+		PanzerJson::Parser().Parse( file_content.data(), file_content.size() );
+	if( parse_result->error != PanzerJson::Parser::Result::Error::NoError )
 	{
-		h_Console::Error( "Error parsing region header ", g_world_header_filename );
+		h_Console::Error( "Error, parsing json" );
 		return;
 	}
 
-	QJsonObject obj= doc.object();
+	const PanzerJson::Value obj= parse_result->root;
 
-	ticks= obj["ticks"].toInt();
+	ticks= obj["ticks"].AsUint();
 
-	QJsonObject rain_data_obj= obj["rain_data"].toObject();
-	rain_data.is_rain= rain_data_obj["is_rain"].toBool();
-	rain_data.start_tick= rain_data_obj["start_tick"].toInt();
-	rain_data.duration= rain_data_obj["duration"].toInt();
-	rain_data.rand_state= rain_data_obj["rand_state"].toInt();
-	rain_data.base_intensity= rain_data_obj["base_intensity"].toDouble();
+	const PanzerJson::Value rain_data_obj= obj["rain_data"];
+	rain_data.is_rain= rain_data_obj["is_rain"].AsInt() != 0;
+	rain_data.start_tick= rain_data_obj["start_tick"].AsUint();
+	rain_data.duration= rain_data_obj["duration"].AsUint();
+	rain_data.rand_state= rain_data_obj["rand_state"].AsUint();
+	rain_data.base_intensity= rain_data_obj["base_intensity"].AsFloat();
 
-	QJsonObject player_obj= obj["player"].toObject();
-
-	player.x= player_obj["x"].toDouble();
-	player.y= player_obj["y"].toDouble();
-	player.z= player_obj["z"].toDouble();
-	player.rotation_x= player_obj["rotation_x"].toDouble();
-	player.rotation_z= player_obj["rotation_z"].toDouble();
+	const PanzerJson::Value player_obj= obj["player"];
+	player.x= player_obj["x"].AsFloat();
+	player.y= player_obj["y"].AsFloat();
+	player.z= player_obj["z"].AsFloat();
+	player.rotation_x= player_obj["rotation_x"].AsFloat();
+	player.rotation_z= player_obj["rotation_z"].AsFloat();
 }
 
-void h_WorldHeader::Save( const char* world_dir ) const
+void h_WorldHeader::Save( const char* const world_dir ) const
 {
-	QJsonObject obj;
+	std::ofstream stream( GetFullFileName( world_dir ) );
 
-	obj["ticks"]= double(ticks);
-
-	QJsonObject rain_data_obj;
-	rain_data_obj["is_rain"]= rain_data.is_rain;
-	rain_data_obj["start_tick"]= int(rain_data.start_tick);
-	rain_data_obj["duration"]= int(rain_data.duration);
-	rain_data_obj["rand_state"]= int(rain_data.rand_state);
-	rain_data_obj["base_intensity"]= double(rain_data.base_intensity);
-
-	obj["rain_data"]= rain_data_obj;
-
-	QJsonObject player_obj;
-	player_obj["x"]= double(player.x);
-	player_obj["y"]= double(player.y);
-	player_obj["z"]= double(player.z);
-	player_obj["rotation_x"]= player.rotation_x;
-	player_obj["rotation_z"]= player.rotation_z;
-
-	obj["player"]= player_obj;
-
-	QJsonDocument doc(obj);
-	QByteArray ba = doc.toJson();
-
-	QFile file( QString::fromStdString(GetFullFileName(world_dir)) );
-	if( !file.open( QIODevice::WriteOnly ) )
+	PanzerJson::StreamedSerializer<std::ofstream> serializer( stream );
+	auto obj= serializer.AddObject();
+	obj.AddNumber( "ticks", ticks );
 	{
-		h_Console::Error( "Can not open world header file ", g_world_header_filename, "for saving." );
-		return;
+		auto raind_data_obj= obj.AddObject( "rain_data" );
+		raind_data_obj.AddBool( "is_rain", rain_data.is_rain );
+		raind_data_obj.AddNumber( "start_tick", rain_data.is_rain );
+		raind_data_obj.AddNumber( "duration", rain_data.duration );
+		raind_data_obj.AddNumber( "rand_state", rain_data.rand_state );
+		raind_data_obj.AddNumber( "base_intensity", rain_data.base_intensity );
 	}
-
-	file.write(ba);
-	file.close();
+	{
+		auto player_obj= obj.AddObject( "player" );
+		player_obj.AddNumber( "x", player.x );
+		player_obj.AddNumber( "y", player.y );
+		player_obj.AddNumber( "z", player.z );
+		player_obj.AddNumber( "rotation_x", player.rotation_x );
+		player_obj.AddNumber( "rotation_z", player.rotation_z );
+	}
 }
