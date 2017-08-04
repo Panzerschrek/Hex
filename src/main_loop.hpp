@@ -5,13 +5,9 @@
 
 #include <SDL.h>
 
-//#include <QtGlobal>
-//#include <QObject>
-//#include <QtOpenGL>
 
-class h_MainLoop final //: public QGLWidget
+class h_MainLoop final
 {
-	//Q_OBJECT
 
 public:
 	h_MainLoop();
@@ -25,6 +21,7 @@ public://main menu interface logic
 	void QuitToMainMenu();
 
 private:
+	void Paint();
 	void UpdateCursor();
 	void ProcessEvents();
 
@@ -35,7 +32,6 @@ private:
 	SDL_Window* window_= nullptr;
 	SDL_GLContext gl_context_= nullptr;
 
-	//QCursor cursor_;
 	bool cursor_was_grabbed_;
 
 	int screen_width_, screen_height_;

@@ -1,8 +1,5 @@
 #include <cstring>
 
-//#include <QApplication>
-//#include <QDesktopWidget>
-
 #include "main_loop.hpp"
 #include "renderer/world_renderer.hpp"
 #include "world.hpp"
@@ -78,20 +75,18 @@ static ui_Key TranslateKey( const SDL_Scancode scan_code )
 
 	case SDL_SCANCODE_MINUS: return ui_Key::Minus;
 	case SDL_SCANCODE_EQUALS: return ui_Key::Equal;
-		/*
-	case Qt::Key_Backslash: return ui_Key::Backslash;
 
-	case Qt::Key_BracketLeft : return ui_Key::BracketLeft ;
-	case Qt::Key_BracketRight: return ui_Key::BracketRight;
+	case SDL_SCANCODE_BACKSLASH: return ui_Key::Backslash;
 
-	case Qt::Key_Semicolon: return ui_Key::Semicolon;
-	case Qt::Key_Apostrophe: return ui_Key::Apostrophe;
-	case Qt::Key_QuoteLeft: return ui_Key::GraveAccent;
+	case SDL_SCANCODE_LEFTBRACKET : return ui_Key::BracketLeft ;
+	case SDL_SCANCODE_RIGHTBRACKET: return ui_Key::BracketRight;
 
-	case Qt::Key_Comma: return ui_Key::Comma;
-	case Qt::Key_Period: return ui_Key::Dot;
-	case Qt::Key_Slash: return ui_Key::Slash;
-	*/
+	case SDL_SCANCODE_SEMICOLON: return ui_Key::Semicolon;
+	case SDL_SCANCODE_APOSTROPHE: return ui_Key::Apostrophe;
+
+	case SDL_SCANCODE_COMMA: return ui_Key::Comma;
+	case SDL_SCANCODE_PERIOD: return ui_Key::Dot;
+	case SDL_SCANCODE_SLASH: return ui_Key::Slash;
 
 	default:
 		break;
@@ -111,105 +106,6 @@ static ui_MouseButton TranslateMouseButton( const Uint8 button )
 
 	return ui_MouseButton::Left;
 }
-
-/*
-static ui_MouseButton MouseKey( const QMouseEvent* e )
-{
-	switch( e->button() )
-	{
-	case Qt::LeftButton:
-	default:
-		return ui_MouseButton::Left;
-
-	case Qt::RightButton:
-		return ui_MouseButton::Right;
-
-	case Qt::MiddleButton:
-		return ui_MouseButton::Middle;
-	};
-}
-*/
-/*
-void h_MainLoop::Start()
-{
-	QGLFormat format;
-
-	h_SettingsPtr settings= std::make_shared<h_Settings>( "config.json" );
-
-	int samples= GetSamples( *settings );
-	if( samples )
-		format.setSamples( samples );
-
-	format.setVersion( 3, 3 );
-	format.setProfile( QGLFormat::CoreProfile );
-
-	bool vsync= settings->GetBool( h_SettingsKeys::vsync, true );
-	settings->SetSetting( h_SettingsKeys::vsync, vsync );
-
-	format.setSwapInterval( vsync ? 1 : 0 );
-
-	new h_MainLoop( settings, format );
-}
-*/
-
-/*
-h_MainLoop::h_MainLoop(
-	const h_SettingsPtr& settings,
-	const QGLFormat& format )
-	: QGLWidget( format )
-	, settings_(settings)
-	, cursor_was_grabbed_(false)
-	, game_started_(false)
-{
-	QDesktopWidget* desktop= QApplication::desktop();
-
-	bool fullscreen= settings_->GetBool( h_SettingsKeys::fullscreen );
-	int screen_number= settings_->GetInt( h_SettingsKeys::screen_number, desktop->primaryScreen() );
-
-	screen_width_=  std::min( std::max( settings_->GetInt( h_SettingsKeys::screen_width  ), g_min_screen_width ), g_max_screen_width  );
-	screen_height_= std::min( std::max( settings_->GetInt( h_SettingsKeys::screen_height ), g_min_screen_height), g_max_screen_height );
-
-	settings_->SetSetting( h_SettingsKeys::screen_width , screen_width_  );
-	settings_->SetSetting( h_SettingsKeys::screen_height, screen_height_ );
-
-	settings_->SetSetting( h_SettingsKeys::fullscreen, fullscreen );
-	settings_->SetSetting( h_SettingsKeys::screen_number, screen_number );
-
-	QRect screen_geometry= desktop->screenGeometry( screen_number );
-
-	if( fullscreen )
-	{
-		screen_width_ = screen_geometry.width ();
-		screen_height_= screen_geometry.height();
-	}
-
-	setFixedSize( screen_width_, screen_height_ );
-
-	if( fullscreen )
-		move( screen_geometry.topLeft() );
-	else
-		move( 0, 0 );
-
-	setAttribute( Qt::WA_DeleteOnClose, true );
-	setAttribute( Qt::WA_QuitOnClose, true );
-
-	setWindowTitle( "Hex" );
-	setWindowIcon( QIcon( "src/hex-logo.ico" ) );
-
-	setFocusPolicy( Qt::ClickFocus );
-	setAutoFillBackground( false );
-
-	if( fullscreen )
-		showFullScreen();
-
-	setFocus();
-	show();
-
-	QuitToMainMenu();
-
-	h_Console::Info( "MainLoop started" );
-}
-*/
 
 h_MainLoop::h_MainLoop()
 	: settings_(std::make_shared<h_Settings>( "config.json" ))
@@ -311,7 +207,13 @@ bool h_MainLoop::Loop()
 {
 	ProcessEvents();
 	UpdateCursor();
+	Paint();
 
+	return !quit_requested_;
+}
+
+void h_MainLoop::Paint()
+{
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
 	root_menu_->Tick();
@@ -337,45 +239,11 @@ bool h_MainLoop::Loop()
 	if( root_menu_ ) root_menu_->Draw( ui_painter_.get() );
 
 	SDL_GL_SwapWindow( window_ );
-
-	return !quit_requested_;
 }
 
 void h_MainLoop::UpdateCursor()
 {
-	//QPoint cur_local_pos= this->mapFromGlobal( cursor_.pos() );
-	//ui_CursorHandler::UpdateCursorPos( cur_local_pos.x(), cur_local_pos.y() );
-/*
-	bool cursor_grabbed= hasFocus() && ui_CursorHandler::IsMouseGrabbed();
-
-	if( cursor_grabbed )
-	{
-		if( cursor_.shape() != Qt::BlankCursor )
-		{
-			cursor_.setShape( Qt::BlankCursor );
-			this->setCursor( cursor_ );
-		}
-
-		QPoint cursor_lock_pos( screen_width_ >> 1, screen_height_ >> 1 );
-
-		if( cursor_was_grabbed_ )
-			ui_CursorHandler::ControllerMove(
-				cursor_lock_pos.x() - cur_local_pos.x(),
-				cursor_lock_pos.y() - cur_local_pos.y() );
-
-		cursor_.setPos( this->mapToGlobal(cursor_lock_pos) );
-	}
-	else
-	{
-		if( cursor_.shape() != Qt::ArrowCursor )
-		{
-			cursor_.setShape( Qt::ArrowCursor );
-			this->setCursor( cursor_ );
-		}
-	}
-
-	cursor_was_grabbed_= cursor_grabbed;
-	*/
+	SDL_SetRelativeMouseMode( ui_CursorHandler::IsMouseGrabbed() ? SDL_TRUE : SDL_FALSE );
 }
 
 void h_MainLoop::ProcessEvents()
@@ -422,6 +290,7 @@ void h_MainLoop::ProcessEvents()
 
 		case SDL_MOUSEMOTION:
 			ui_CursorHandler::UpdateCursorPos( event.motion.x, event.motion.y );
+			ui_CursorHandler::ControllerMove( -event.motion.xrel, -event.motion.yrel );
 			break;
 
 		default:
@@ -457,10 +326,9 @@ void h_MainLoop::StartGame()
 				prev_progress_time_ms= time_ms;
 				loading_menu->SetProgress( progress );
 
-				// Schedule repaint.
-				//update();
-				// Process events, include "paint" event.
-				//QCoreApplication::processEvents();
+				ProcessEvents();
+				UpdateCursor();
+				Paint();
 			}
 		};
 		const float c_world_loading_relative_progress= 0.75f;
