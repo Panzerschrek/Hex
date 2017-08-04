@@ -3,35 +3,21 @@
 #include "hex.hpp"
 #include "fwd.hpp"
 
-#include <QtGlobal>
-#include <QObject>
-#include <QtOpenGL>
+#include <SDL.h>
 
-class h_MainLoop final : public QGLWidget
+//#include <QtGlobal>
+//#include <QObject>
+//#include <QtOpenGL>
+
+class h_MainLoop final //: public QGLWidget
 {
-	Q_OBJECT
+	//Q_OBJECT
 
 public:
-	static void Start();
+	h_MainLoop();
+	~h_MainLoop();
 
-protected:
-	h_MainLoop( const h_SettingsPtr& settings, const QGLFormat& format );
-	virtual ~h_MainLoop() override;
-
-	virtual void initializeGL() override;
-	virtual void resizeGL(int w , int h) override;
-	virtual void paintGL() override;
-
-	virtual void mousePressEvent(QMouseEvent* e) override;
-	virtual void mouseReleaseEvent(QMouseEvent* e) override;
-	virtual void mouseMoveEvent(QMouseEvent* e) override;
-	virtual void keyPressEvent(QKeyEvent* e) override;
-	virtual void keyReleaseEvent(QKeyEvent* e) override;
-	virtual void closeEvent(QCloseEvent* e) override;
-
-	virtual void initializeOverlayGL() override;
-	virtual void resizeOverlayGL(int w, int h) override;
-	virtual void paintOverlayGL() override;
+	bool Loop();
 
 public://main menu interface logic
 	void Quit();
@@ -40,12 +26,16 @@ public://main menu interface logic
 
 private:
 	void UpdateCursor();
-	void ProcessMenuKey( QKeyEvent* e, bool pressed );
+	void ProcessEvents();
 
 private:
 	const h_SettingsPtr settings_;
+	bool quit_requested_= false;
 
-	QCursor cursor_;
+	SDL_Window* window_= nullptr;
+	SDL_GLContext gl_context_= nullptr;
+
+	//QCursor cursor_;
 	bool cursor_was_grabbed_;
 
 	int screen_width_, screen_height_;

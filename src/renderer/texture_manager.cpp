@@ -33,7 +33,7 @@ static unsigned char* RescaleAndPrepareTexture( unsigned char* in_data, unsigned
 }
 
 static void DrawNullTexture( QImage& img, const char* text= nullptr )
-{
+{return;
 	QPainter p( &img );
 
 	p.fillRect( 0, 0, 128, 128, Qt::black );

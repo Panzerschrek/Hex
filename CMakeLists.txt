@@ -13,6 +13,12 @@ set( Qt5_DIR C:/Qt5.3.0/5.3/mingw482_32/lib/cmake/Qt5 ) # Set your path to Qt he
 set(CMAKE_AUTOMOC ON)
 find_package(Qt5 COMPONENTS core gui widgets opengl REQUIRED)
 
+set( SDL_BASE_DIR ../SDL2-2.0.3 )
+set( SDL_INCLUDES_DIR ${SDL_BASE_DIR}/include )
+set( SDL_LIBS_DIR ${SDL_BASE_DIR}/lib/x86 )
+get_filename_component( SDL_LIBSDIR_ABSOLUTE ${SDL_LIBS_DIR} ABSOLUTE )
+#link_directories( ${SDL_LIBS_DIR} )
+
 #
 # HexLib
 #
@@ -154,6 +160,7 @@ include_directories( ${Qt5Core_INCLUDE_DIRS}/.. )
 include_directories( ${Qt5Gui_INCLUDE_DIRS}/.. )
 include_directories( ${Qt5Widgets_INCLUDE_DIRS}/.. )
 include_directories( ${Qt5OpenGL_INCLUDE_DIRS}/.. )
+include_directories( ${SDL_INCLUDES_DIR} )
 
 add_library(
 	HexLib
@@ -163,6 +170,8 @@ add_library(
 
 target_link_libraries( HexLib Qt5::Core Qt5::Gui Qt5::Widgets Qt5::OpenGL )
 target_link_libraries( HexLib opengl32 )
+target_link_libraries( HexLib ${SDL_LIBSDIR_ABSOLUTE}/SDL2main.lib )
+target_link_libraries( HexLib ${SDL_LIBSDIR_ABSOLUTE}/SDL2.lib )
 
 # On GNU/Linux systems zlib is system, so we can found it.
 # MinGW contains zlib too.
