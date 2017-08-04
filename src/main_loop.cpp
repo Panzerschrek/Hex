@@ -114,7 +114,8 @@ h_MainLoop::h_MainLoop()
 		h_Console::Error( "Can not initialize sdl video" );
 
 	bool fullscreen= settings_->GetBool( h_SettingsKeys::fullscreen );
-	int screen_number= settings_->GetInt( h_SettingsKeys::screen_number, 0 );
+	int display_number= settings_->GetInt( h_SettingsKeys::screen_number, 0 );
+	display_number= std::min( display_number, std::max( 0, SDL_GetNumVideoDisplays() - 1 ) );
 
 	screen_width_=  std::min( std::max( settings_->GetInt( h_SettingsKeys::screen_width  ), g_min_screen_width ), g_max_screen_width  );
 	screen_height_= std::min( std::max( settings_->GetInt( h_SettingsKeys::screen_height ), g_min_screen_height), g_max_screen_height );
@@ -123,9 +124,17 @@ h_MainLoop::h_MainLoop()
 	settings_->SetSetting( h_SettingsKeys::screen_height, screen_height_ );
 
 	settings_->SetSetting( h_SettingsKeys::fullscreen, fullscreen );
-	settings_->SetSetting( h_SettingsKeys::screen_number, screen_number );
+	settings_->SetSetting( h_SettingsKeys::screen_number, display_number );
 
-	// OpenGL attrinutes
+	if( fullscreen )
+	{
+		SDL_DisplayMode display_mode;
+		SDL_GetCurrentDisplayMode( display_number, &display_mode );
+		screen_width_ = display_mode.w;
+		screen_height_= display_mode.h;
+	}
+
+	// OpenGL attributes
 	SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
 	SDL_GL_SetAttribute( SDL_GL_DEPTH_SIZE, 24 );
 
