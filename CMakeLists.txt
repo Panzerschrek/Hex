@@ -9,9 +9,15 @@ if( ${CMAKE_BUILD_TYPE} STREQUAL Debug )
 else()
 endif()
 
-set( Qt5_DIR C:/Qt5.3.0/5.3/mingw482_32/lib/cmake/Qt5 ) # Set your path to Qt here.
-set(CMAKE_AUTOMOC ON)
-find_package(Qt5 COMPONENTS core gui widgets opengl REQUIRED)
+# Set path to your SDL2 here.
+if( WIN32 )
+	set( SDL_BASE_DIR ../SDL2-2.0.3 )
+	set( SDL_INCLUDES_DIR ${SDL_BASE_DIR}/include )
+	set( SDL_LIBS_DIR ${SDL_BASE_DIR}/lib/x86 )
+	get_filename_component( SDL_LIBS_DIR_ABSOLUTE ${SDL_LIBS_DIR} ABSOLUTE )
+else()
+	set( SDL_INCLUDES_DIR /usr/include/SDL2 )
+endif()
 
 #
 # HexLib
@@ -148,21 +154,27 @@ set( PANZER_JSON_SOURCES
 	PanzerJson/src/serializers_common.inl
 	PanzerJson/src/value.cpp )
 
+set( STB_IMAGE_HEADERS stb/stb_image.h )
+
 include_directories( panzer_ogl_lib )
 include_directories( PanzerJson/include )
-include_directories( ${Qt5Core_INCLUDE_DIRS}/.. )
-include_directories( ${Qt5Gui_INCLUDE_DIRS}/.. )
-include_directories( ${Qt5Widgets_INCLUDE_DIRS}/.. )
-include_directories( ${Qt5OpenGL_INCLUDE_DIRS}/.. )
+include_directories( ${SDL_INCLUDES_DIR} )
 
 add_library(
 	HexLib
 	${HEX_LIB_HEADERS} ${HEX_LIB_SOURCES}
 	${PANZER_OGL_LIB_HEADERS} ${PANZER_OGL_LIB_SOURCES}
-	${PANZER_JSON_HEADERS} ${PANZER_JSON_SOURCES} )
+	${PANZER_JSON_HEADERS} ${PANZER_JSON_SOURCES}
+	${STB_IMAGE_HEADERS} )
 
-target_link_libraries( HexLib Qt5::Core Qt5::Gui Qt5::Widgets Qt5::OpenGL )
-target_link_libraries( HexLib opengl32 )
+if( WIN32 )
+	target_link_libraries( HexLib opengl32 )
+	target_link_libraries( HexLib ${SDL_LIBS_DIR_ABSOLUTE}/SDL2main.lib )
+	target_link_libraries( HexLib ${SDL_LIBS_DIR_ABSOLUTE}/SDL2.lib )
+else()
+	target_link_libraries( HexLib GL )
+	target_link_libraries( HexLib SDL2 )
+endif()
 
 # On GNU/Linux systems zlib is system, so we can found it.
 # MinGW contains zlib too.

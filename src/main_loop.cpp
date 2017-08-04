@@ -1,8 +1,5 @@
 #include <cstring>
 
-#include <QApplication>
-#include <QDesktopWidget>
-
 #include "main_loop.hpp"
 #include "renderer/world_renderer.hpp"
 #include "world.hpp"
@@ -46,55 +43,79 @@ static int GetSamples( const h_Settings& settings )
 	return 0;
 }
 
-static ui_MouseButton MouseKey( const QMouseEvent* e )
+static ui_Key TranslateKey( const SDL_Scancode scan_code )
 {
-	switch( e->button() )
+	if( scan_code >= SDL_SCANCODE_A && scan_code <= SDL_SCANCODE_Z )
+		return ui_Key( int(ui_Key::A) + (scan_code - SDL_SCANCODE_A) );
+	else if( scan_code == SDL_SCANCODE_0 )
+		return ui_Key::Zero;
+	if( scan_code >= SDL_SCANCODE_1 && scan_code <= SDL_SCANCODE_9 )
+		return ui_Key( int(ui_Key::One) + (scan_code - SDL_SCANCODE_1) );
+
+	switch( scan_code )
 	{
-	case Qt::LeftButton:
+	case SDL_SCANCODE_ESCAPE: return ui_Key::Escape;
+	case SDL_SCANCODE_TAB: return  ui_Key::Tab;
+	case SDL_SCANCODE_BACKSPACE: return ui_Key::Back;
+	case SDL_SCANCODE_RETURN: return ui_Key::Enter;
+
+	case SDL_SCANCODE_UP   : return ui_Key::Up   ;
+	case SDL_SCANCODE_DOWN : return ui_Key::Down ;
+	case SDL_SCANCODE_LEFT : return ui_Key::Left ;
+	case SDL_SCANCODE_RIGHT: return ui_Key::Right;
+
+	case SDL_SCANCODE_LSHIFT: return ui_Key::Shift;
+	case SDL_SCANCODE_RSHIFT: return ui_Key::Shift;
+	case SDL_SCANCODE_LCTRL: return ui_Key::Control;
+	case SDL_SCANCODE_RCTRL: return ui_Key::Control;
+	case SDL_SCANCODE_LALT: return ui_Key::Alt;
+	case SDL_SCANCODE_RALT: return ui_Key::Alt;
+
+	case SDL_SCANCODE_SPACE: return ui_Key::Space;
+
+	case SDL_SCANCODE_MINUS: return ui_Key::Minus;
+	case SDL_SCANCODE_EQUALS: return ui_Key::Equal;
+
+	case SDL_SCANCODE_BACKSLASH: return ui_Key::Backslash;
+
+	case SDL_SCANCODE_LEFTBRACKET : return ui_Key::BracketLeft ;
+	case SDL_SCANCODE_RIGHTBRACKET: return ui_Key::BracketRight;
+
+	case SDL_SCANCODE_SEMICOLON: return ui_Key::Semicolon;
+	case SDL_SCANCODE_APOSTROPHE: return ui_Key::Apostrophe;
+
+	case SDL_SCANCODE_COMMA: return ui_Key::Comma;
+	case SDL_SCANCODE_PERIOD: return ui_Key::Dot;
+	case SDL_SCANCODE_SLASH: return ui_Key::Slash;
+
 	default:
-		return ui_MouseButton::Left;
-
-	case Qt::RightButton:
-		return ui_MouseButton::Right;
-
-	case Qt::MiddleButton:
-		return ui_MouseButton::Middle;
+		break;
 	};
+
+	return ui_Key::Unknown;
 }
 
-void h_MainLoop::Start()
+static ui_MouseButton TranslateMouseButton( const Uint8 button )
 {
-	QGLFormat format;
+	switch(button)
+	{
+	case SDL_BUTTON_LEFT: return ui_MouseButton::Left;
+	case SDL_BUTTON_RIGHT: return ui_MouseButton::Right;
+	case SDL_BUTTON_MIDDLE: return ui_MouseButton::Middle;
+	};
 
-	h_SettingsPtr settings= std::make_shared<h_Settings>( "config.json" );
-
-	int samples= GetSamples( *settings );
-	if( samples )
-		format.setSamples( samples );
-
-	format.setVersion( 3, 3 );
-	format.setProfile( QGLFormat::CoreProfile );
-
-	bool vsync= settings->GetBool( h_SettingsKeys::vsync, true );
-	settings->SetSetting( h_SettingsKeys::vsync, vsync );
-
-	format.setSwapInterval( vsync ? 1 : 0 );
-
-	new h_MainLoop( settings, format );
+	return ui_MouseButton::Left;
 }
 
-h_MainLoop::h_MainLoop(
-	const h_SettingsPtr& settings,
-	const QGLFormat& format )
-	: QGLWidget( format )
-	, settings_(settings)
-	, cursor_was_grabbed_(false)
-	, game_started_(false)
+h_MainLoop::h_MainLoop()
+	: settings_(std::make_shared<h_Settings>( "config.json" ))
 {
-	QDesktopWidget* desktop= QApplication::desktop();
+	if( SDL_Init( SDL_INIT_VIDEO ) < 0 )
+		h_Console::Error( "Can not initialize sdl video" );
 
 	bool fullscreen= settings_->GetBool( h_SettingsKeys::fullscreen );
-	int screen_number= settings_->GetInt( h_SettingsKeys::screen_number, desktop->primaryScreen() );
+	int display_number= settings_->GetInt( h_SettingsKeys::screen_number, 0 );
+	display_number= std::min( display_number, std::max( 0, SDL_GetNumVideoDisplays() - 1 ) );
 
 	screen_width_=  std::min( std::max( settings_->GetInt( h_SettingsKeys::screen_width  ), g_min_screen_width ), g_max_screen_width  );
 	screen_height_= std::min( std::max( settings_->GetInt( h_SettingsKeys::screen_height ), g_min_screen_height), g_max_screen_height );
@@ -103,57 +124,66 @@ h_MainLoop::h_MainLoop(
 	settings_->SetSetting( h_SettingsKeys::screen_height, screen_height_ );
 
 	settings_->SetSetting( h_SettingsKeys::fullscreen, fullscreen );
-	settings_->SetSetting( h_SettingsKeys::screen_number, screen_number );
-
-	QRect screen_geometry= desktop->screenGeometry( screen_number );
+	settings_->SetSetting( h_SettingsKeys::screen_number, display_number );
 
 	if( fullscreen )
 	{
-		screen_width_ = screen_geometry.width ();
-		screen_height_= screen_geometry.height();
+		SDL_DisplayMode display_mode;
+		SDL_GetCurrentDisplayMode( display_number, &display_mode );
+		screen_width_ = display_mode.w;
+		screen_height_= display_mode.h;
 	}
 
-	setFixedSize( screen_width_, screen_height_ );
+	// OpenGL attributes
+	SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
+	SDL_GL_SetAttribute( SDL_GL_DEPTH_SIZE, 24 );
 
-	if( fullscreen )
-		move( screen_geometry.topLeft() );
+	SDL_GL_SetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, 3 );
+	SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, 3 );
+	SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE );
+
+	const int msaa_samples= GetSamples( *settings_ );
+	if( msaa_samples > 0 )
+	{
+		SDL_GL_SetAttribute( SDL_GL_MULTISAMPLEBUFFERS, 1 );
+		SDL_GL_SetAttribute( SDL_GL_MULTISAMPLESAMPLES, msaa_samples );
+	}
+
+	// Window creation.
+
+	window_=
+		SDL_CreateWindow(
+			"Hex",
+			SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+			screen_width_, screen_height_,
+			SDL_WINDOW_OPENGL | ( fullscreen ? SDL_WINDOW_FULLSCREEN : 0 ) | SDL_WINDOW_SHOWN );
+
+	if( window_ == nullptr )
+		h_Console::Error( "Can not create window" );
+
+	// GL Context creation
+
+	gl_context_= SDL_GL_CreateContext( window_ );
+	if( gl_context_ == nullptr )
+		h_Console::Error( "Can not create OpenGL context" );
+
+	h_Console::Info("");
+	h_Console::Info( "OpenGL configuration: " );
+	h_Console::Info( "Vendor: ", glGetString( GL_VENDOR ) );
+	h_Console::Info( "Renderer: ", glGetString( GL_RENDERER ) );
+	h_Console::Info( "Version: ", glGetString( GL_VERSION ) );
+	h_Console::Info("");
+
+	if( settings_->GetBool( h_SettingsKeys::vsync, true ) )
+		SDL_GL_SetSwapInterval(1);
 	else
-		move( 0, 0 );
+		SDL_GL_SetSwapInterval(0);
 
-	setAttribute( Qt::WA_DeleteOnClose, true );
-	setAttribute( Qt::WA_QuitOnClose, true );
-
-	setWindowTitle( "Hex" );
-	setWindowIcon( QIcon( "src/hex-logo.ico" ) );
-
-	setFocusPolicy( Qt::ClickFocus );
-	setAutoFillBackground( false );
-
-	if( fullscreen )
-		showFullScreen();
-
-	setFocus();
-	show();
-
-	QuitToMainMenu();
-
-	h_Console::Info( "MainLoop started" );
-}
-
-h_MainLoop::~h_MainLoop()
-{
-	h_Console::Info( "MainLoop destoryed" );
-}
-
-void h_MainLoop::initializeGL()
-{
 	h_Console::Info( "Initialize OpenGL" );
 
+	// OpenGL setup
 	GetGLFunctions(
-		[](const char* name)
-		{
-			return (void*)QOpenGLContext::currentContext()->getProcAddress(name);
-		},
+		SDL_GL_GetProcAddress,
 		[](const char* name)
 		{
 			h_Console::Warning( "Function ", name, " not found" );
@@ -170,20 +200,30 @@ void h_MainLoop::initializeGL()
 
 	r_Framebuffer::SetScreenFramebufferSize( screen_width_, screen_height_ );
 
+	// Final preparations
+
 	ui_painter_.reset( new ui_Painter() );
+
+	QuitToMainMenu();
 }
 
-void h_MainLoop::resizeGL(int w , int h)
+h_MainLoop::~h_MainLoop()
 {
-	glViewport(0,0,w,h);
+	h_Console::Info( "MainLoop destoryed" );
 }
 
-//Main rendering loop here
-void h_MainLoop::paintGL()
+bool h_MainLoop::Loop()
+{
+	ProcessEvents();
+	UpdateCursor();
+	Paint();
+
+	return !quit_requested_;
+}
+
+void h_MainLoop::Paint()
 {
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-
-	UpdateCursor();
 
 	root_menu_->Tick();
 
@@ -207,147 +247,72 @@ void h_MainLoop::paintGL()
 
 	if( root_menu_ ) root_menu_->Draw( ui_painter_.get() );
 
-	glFlush();
-	update();
+	SDL_GL_SwapWindow( window_ );
 }
 
 void h_MainLoop::UpdateCursor()
 {
-	QPoint cur_local_pos= this->mapFromGlobal( cursor_.pos() );
-	ui_CursorHandler::UpdateCursorPos( cur_local_pos.x(), cur_local_pos.y() );
-
-	bool cursor_grabbed= hasFocus() && ui_CursorHandler::IsMouseGrabbed();
-
-	if( cursor_grabbed )
-	{
-		if( cursor_.shape() != Qt::BlankCursor )
-		{
-			cursor_.setShape( Qt::BlankCursor );
-			this->setCursor( cursor_ );
-		}
-
-		QPoint cursor_lock_pos( screen_width_ >> 1, screen_height_ >> 1 );
-
-		if( cursor_was_grabbed_ )
-			ui_CursorHandler::ControllerMove(
-				cursor_lock_pos.x() - cur_local_pos.x(),
-				cursor_lock_pos.y() - cur_local_pos.y() );
-
-		cursor_.setPos( this->mapToGlobal(cursor_lock_pos) );
-	}
-	else
-	{
-		if( cursor_.shape() != Qt::ArrowCursor )
-		{
-			cursor_.setShape( Qt::ArrowCursor );
-			this->setCursor( cursor_ );
-		}
-	}
-
-	cursor_was_grabbed_= cursor_grabbed;
+	SDL_SetRelativeMouseMode( ui_CursorHandler::IsMouseGrabbed() ? SDL_TRUE : SDL_FALSE );
 }
 
-void h_MainLoop::ProcessMenuKey( QKeyEvent* e, bool pressed )
+void h_MainLoop::ProcessEvents()
 {
-	if( !root_menu_ ) return;
-
-	int key= e->key();
-	ui_Key ui_key;
-
-	if( key >= Qt::Key_A && key <= Qt::Key_Z )
-		ui_key= ui_Key( int(ui_Key::A) + (key - Qt::Key_A) );
-	else if( key >= Qt::Key_0 && key <= Qt::Key_9 )
-		ui_key= ui_Key( int(ui_Key::Zero) + (key - Qt::Key_0) );
-	else
+	SDL_Event event;
+	while( SDL_PollEvent(&event) )
 	{
-		switch( key )
+		switch(event.type)
 		{
-		case Qt::Key_Escape: ui_key= ui_Key::Escape; break;
-		case Qt::Key_Tab: ui_key= ui_Key::Tab; break;
-		case Qt::Key_Backspace : ui_key= ui_Key::Back; break;
-		case Qt::Key_Enter:
-		case Qt::Key_Return:
-			ui_key= ui_Key::Enter; break;
+		case SDL_WINDOWEVENT:
+			if( event.window.event == SDL_WINDOWEVENT_CLOSE )
+			{
+				Quit();
+				return;
+			}
+			break;
 
-		case Qt::Key_Up   : ui_key= ui_Key::Up   ; break;
-		case Qt::Key_Down : ui_key= ui_Key::Down ; break;
-		case Qt::Key_Left : ui_key= ui_Key::Left ; break;
-		case Qt::Key_Right: ui_key= ui_Key::Right; break;
+		case SDL_QUIT:
+			break;
 
-		case Qt::Key_Shift: ui_key= ui_Key::Shift; break;
-		case Qt::Key_Control: ui_key= ui_Key::Control; break;
-		case Qt::Key_Alt: ui_key= ui_Key::Alt; break;
+		case SDL_KEYUP:
+		case SDL_KEYDOWN:
+			if( root_menu_ != nullptr )
+			{
+				const ui_Key key= TranslateKey( event.key.keysym.scancode );
+				if( key != ui_Key::Unknown )
+				{
+					if( event.type == SDL_KEYDOWN )
+						root_menu_->KeyPress( key );
+					else
+						root_menu_->KeyRelease( key );
+				}
+			}
+			break;
 
-		case Qt::Key_Space: ui_key= ui_Key::Space; break;
+		case SDL_MOUSEBUTTONUP:
+		case SDL_MOUSEBUTTONDOWN:
+			ui_CursorHandler::CursorPress(
+				event.button.x,
+				event.button.y,
+				TranslateMouseButton(event.button.button),
+				event.type == SDL_MOUSEBUTTONUP );
+			break;
 
-		case Qt::Key_Minus: ui_key= ui_Key::Minus; break;
-		case Qt::Key_Equal: ui_key= ui_Key::Equal; break;
-		case Qt::Key_Backslash: ui_key= ui_Key::Backslash; break;
+		case SDL_MOUSEMOTION:
+			ui_CursorHandler::UpdateCursorPos( event.motion.x, event.motion.y );
+			ui_CursorHandler::ControllerMove( -event.motion.xrel, -event.motion.yrel );
+			break;
 
-		case Qt::Key_BracketLeft : ui_key= ui_Key::BracketLeft ; break;
-		case Qt::Key_BracketRight: ui_key= ui_Key::BracketRight; break;
-
-		case Qt::Key_Semicolon: ui_key= ui_Key::Semicolon; break;
-		case Qt::Key_Apostrophe: ui_key= ui_Key::Apostrophe; break;
-		case Qt::Key_QuoteLeft: ui_key= ui_Key::GraveAccent; break;
-
-		case Qt::Key_Comma: ui_key= ui_Key::Comma; break;
-		case Qt::Key_Period: ui_key= ui_Key::Dot; break;
-		case Qt::Key_Slash: ui_key= ui_Key::Slash; break;
-
-		default: ui_key= ui_Key::Unknown; break;
+		default:
+			break;
 		};
-	}
-
-	// HACK. Remove from here.
-	if( pressed && ui_key == ui_Key::GraveAccent )
-	{
-		h_Console::Toggle();
-		return;
-	}
-
-	if( pressed ) root_menu_->KeyPress( ui_key );
-	else root_menu_->KeyRelease( ui_key );
+	} // while has events
 }
 
-void h_MainLoop::mouseReleaseEvent(QMouseEvent* e)
-{
-	ui_CursorHandler::CursorPress( e->x(), e->y(), MouseKey(e), false );
-}
-
-void h_MainLoop::mousePressEvent( QMouseEvent* e )
-{
-	ui_CursorHandler::CursorPress( e->x(), e->y(), MouseKey(e), true );
-}
-
-void h_MainLoop::mouseMoveEvent(QMouseEvent*){}
-
-void h_MainLoop::keyPressEvent(QKeyEvent* e)
-{
-	ProcessMenuKey( e, true );
-}
-
-void h_MainLoop::keyReleaseEvent(QKeyEvent* e)
-{
-	ProcessMenuKey( e, false );
-}
-
-void h_MainLoop::closeEvent( QCloseEvent* e )
-{
-	e->accept();
-
-	QuitToMainMenu();
-}
-
-void h_MainLoop::initializeOverlayGL() {}
-
-void h_MainLoop::resizeOverlayGL(int, int){}
-
-void h_MainLoop::paintOverlayGL(){}
 
 void h_MainLoop::Quit()
 {
-	close();
+	QuitToMainMenu();
+	quit_requested_= true;
 }
 
 void h_MainLoop::StartGame()
@@ -370,10 +335,9 @@ void h_MainLoop::StartGame()
 				prev_progress_time_ms= time_ms;
 				loading_menu->SetProgress( progress );
 
-				// Schedule repaint.
-				update();
-				// Process events, include "paint" event.
-				QCoreApplication::processEvents();
+				ProcessEvents();
+				UpdateCursor();
+				Paint();
 			}
 		};
 		const float c_world_loading_relative_progress= 0.75f;
