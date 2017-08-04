@@ -1,9 +1,9 @@
-#include "settings.hpp"
+#include <fstream>
 
-#include <QFile>
-#include <QJsonDocument>
-#include <QJsonObject>
-#include <QJsonArray>
+#include <PanzerJson/parser.hpp>
+#include <PanzerJson/streamed_serializer.hpp>
+
+#include "settings.hpp"
 
 #include "console.hpp"
 
@@ -67,49 +67,44 @@ static bool hStrToFloat( const char* str, float* f )
 	return true;
 }
 
-h_Settings::h_Settings( const char* file_name )
+h_Settings::h_Settings( const char* const file_name )
 	: file_name_(file_name)
 {
-	QFile f( QString::fromStdString(file_name_) );
-	if( !f.open( QIODevice::ReadOnly ) )
+	std::FILE* const f= std::fopen( file_name , "rb" );
+	if( f == nullptr )
+		return;
+
+	std::fseek( f, 0, SEEK_END );
+	const size_t file_size= std::ftell( f );
+	std::fseek( f, 0, SEEK_SET );
+
+	std::vector<char> file_content( file_size );
+	std::fread( file_content.data(), 1, file_size, f ); // TODO - check file errors
+	std::fclose(f);
+
+	const PanzerJson::Parser::ResultPtr parse_result=
+		PanzerJson::Parser().Parse( file_content.data(), file_content.size() );
+	if( parse_result->error != PanzerJson::Parser::Result::Error::NoError )
 	{
-		h_Console::Warning( "can not read file \"", file_name_, "\"" );
+		h_Console::Error( "Error, parsing json" );
 		return;
 	}
 
-	QByteArray ba= f.readAll();
-	f.close();
-
-	QJsonDocument doc= QJsonDocument::fromJson( ba );
-
-	if (doc.isObject())
-	{
-		QJsonObject obj= doc.object();
-
-		for( auto cit= obj.constBegin(); cit != obj.constEnd(); cit++ )
-			map_[ h_SettingsStringContainer(cit.key().toStdString().data()) ] = cit.value().toString().toStdString();
-	}
+	for( const auto key_value_pair : parse_result->root.object_elements() )
+		map_[ h_SettingsStringContainer(key_value_pair.first) ] = key_value_pair.second.AsString();
 }
 
 h_Settings::~h_Settings()
 {
-	QJsonObject obj;
+	std::ofstream stream( file_name_ );
+
+	PanzerJson::StreamedSerializer<std::ofstream> serializer( stream );
+	auto obj= serializer.AddObject();
+
 	for( const auto& key_value_pair : map_ )
-		obj[ QString::fromStdString(std::string(key_value_pair.first)) ]=
-			QString::fromStdString(key_value_pair.second);
-
-	QJsonDocument doc(obj);
-	QByteArray ba= doc.toJson();
-
-	QFile f( QString::fromStdString(file_name_) );
-	if( !f.open( QIODevice::WriteOnly ) )
 	{
-		h_Console::Warning( "can not write file \"", file_name_, "\"" );
-		return;
+		obj.AddString( key_value_pair.first.c_str(), key_value_pair.second.c_str() );
 	}
-
-	f.write( ba );
-	f.close();
 }
 
 void h_Settings::SetSetting( const char* name, const char* value )
@@ -206,13 +201,13 @@ h_Settings::h_SettingsStringContainer::h_SettingsStringContainer( const h_Settin
 {
 }
 
-h_Settings::h_SettingsStringContainer::operator std::string() const
-{
-	return c_str_ ? std::string(c_str_) : str_;
-}
-
 h_Settings::h_SettingsStringContainer::~h_SettingsStringContainer()
 {
+}
+
+const char* h_Settings::h_SettingsStringContainer::c_str() const
+{
+	return c_str_ == nullptr ? str_.c_str() : c_str_;
 }
 
 bool h_Settings::h_SettingsStringContainer::operator < ( const h_SettingsStringContainer& other ) const
