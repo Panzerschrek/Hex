@@ -1,0 +1,4 @@
+language: cpp
+compiler: gcc
+before_install: sudo apt-get install libsdl2-dev
+script: cmake -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug && make
