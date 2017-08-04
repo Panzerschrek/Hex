@@ -1,3 +1,6 @@
 [submodule "panzer_ogl_lib"]
 	path = panzer_ogl_lib
 	url = https://github.com/Panzerschrek/panzer_ogl_lib.git
+[submodule "PanzerJson"]
+	path = PanzerJson
+	url = https://github.com/Panzerschrek/PanzerJson.git
