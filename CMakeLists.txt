@@ -134,12 +134,18 @@ set( PANZER_JSON_HEADERS
 	PanzerJson/include/PanzerJson/value.hpp
 	PanzerJson/include/PanzerJson/value.inl
 	PanzerJson/include/PanzerJson/parser.hpp
-	PanzerJson/include/PanzerJson/serializer.hpp )
+	PanzerJson/include/PanzerJson/serializer.hpp
+	PanzerJson/include/PanzerJson/serializer.inl
+	PanzerJson/include/PanzerJson/streamed_serializer.hpp
+	PanzerJson/include/PanzerJson/streamed_serializer.inl )
 
 set( PANZER_JSON_SOURCES
 	PanzerJson/src/panzer_json_assert.hpp
 	PanzerJson/src/parser.cpp
 	PanzerJson/src/serializer.cpp
+	PanzerJson/src/serializers_common.cpp
+	PanzerJson/src/serializers_common.hpp
+	PanzerJson/src/serializers_common.inl
 	PanzerJson/src/value.cpp )
 
 include_directories( panzer_ogl_lib )
