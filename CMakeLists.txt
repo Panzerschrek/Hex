@@ -9,11 +9,15 @@ if( ${CMAKE_BUILD_TYPE} STREQUAL Debug )
 else()
 endif()
 
-
-set( SDL_BASE_DIR ../SDL2-2.0.3 )
-set( SDL_INCLUDES_DIR ${SDL_BASE_DIR}/include )
-set( SDL_LIBS_DIR ${SDL_BASE_DIR}/lib/x86 )
-get_filename_component( SDL_LIBSDIR_ABSOLUTE ${SDL_LIBS_DIR} ABSOLUTE )
+# Set path to your SDL2 here.
+if( WIN32 )
+	set( SDL_BASE_DIR ../SDL2-2.0.3 )
+	set( SDL_INCLUDES_DIR ${SDL_BASE_DIR}/include )
+	set( SDL_LIBS_DIR ${SDL_BASE_DIR}/lib/x86 )
+	get_filename_component( SDL_LIBS_DIR_ABSOLUTE ${SDL_LIBS_DIR} ABSOLUTE )
+else()
+	set( SDL_INCLUDES_DIR /usr/include/SDL2 )
+endif()
 
 #
 # HexLib
@@ -163,9 +167,14 @@ add_library(
 	${PANZER_JSON_HEADERS} ${PANZER_JSON_SOURCES}
 	${STB_IMAGE_HEADERS} )
 
-target_link_libraries( HexLib opengl32 )
-target_link_libraries( HexLib ${SDL_LIBSDIR_ABSOLUTE}/SDL2main.lib )
-target_link_libraries( HexLib ${SDL_LIBSDIR_ABSOLUTE}/SDL2.lib )
+if( WIN32 )
+	target_link_libraries( HexLib opengl32 )
+	target_link_libraries( HexLib ${SDL_LIBS_DIR_ABSOLUTE}/SDL2main.lib )
+	target_link_libraries( HexLib ${SDL_LIBS_DIR_ABSOLUTE}/SDL2.lib )
+else()
+	target_link_libraries( HexLib GL )
+	target_link_libraries( HexLib SDL2 )
+endif()
 
 # On GNU/Linux systems zlib is system, so we can found it.
 # MinGW contains zlib too.
