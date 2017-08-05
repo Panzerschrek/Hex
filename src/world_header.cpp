@@ -62,7 +62,7 @@ void h_WorldHeader::Save( const char* const world_dir ) const
 {
 	std::ofstream stream( GetFullFileName( world_dir ) );
 
-	PanzerJson::StreamedSerializer<std::ofstream> serializer( stream );
+	PanzerJson::StreamedSerializer<std::ofstream, PanzerJson::SerializationFormatting::TabIndents> serializer( stream );
 	auto obj= serializer.AddObject();
 	obj.AddNumber( "ticks", ticks );
 	{
