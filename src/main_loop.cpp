@@ -209,6 +209,11 @@ h_MainLoop::h_MainLoop()
 
 h_MainLoop::~h_MainLoop()
 {
+	SDL_GL_DeleteContext( gl_context_ );
+	SDL_DestroyWindow( window_ );
+	SDL_QuitSubSystem( SDL_INIT_VIDEO );
+	SDL_Quit();
+
 	h_Console::Info( "MainLoop destoryed" );
 }
 
