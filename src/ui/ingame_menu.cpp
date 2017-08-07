@@ -242,6 +242,11 @@ void ui_IngameMenu::KeyPress( ui_Key key )
 		return;
 	}
 
+	if( key == ui_Key::X )
+	{
+		player_->Build();
+	}
+
 	if( key == g_inventory_key )
 	{
 		child_menu_.reset(

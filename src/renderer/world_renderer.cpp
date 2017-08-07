@@ -1542,7 +1542,7 @@ void r_WorldRenderer::InitGL( const h_LongLoadingCallback& long_loading_callback
 
 void r_WorldRenderer::LoadShaders()
 {
-	r_GLSLVersion glsl_version( r_GLSLVersion::v400 );
+	r_GLSLVersion glsl_version( r_GLSLVersion::v140 );
 
 	char define_str[128];
 	{
@@ -1596,8 +1596,8 @@ void r_WorldRenderer::LoadShaders()
 
 	build_prism_shader_.ShaderSource(
 		rLoadShader( "build_prism_frag.glsl", glsl_version ),
-		rLoadShader( "build_prism_vert.glsl", glsl_version ),
-		rLoadShader( "build_prism_geom.glsl", glsl_version ) );
+		rLoadShader( "build_prism_vert.glsl", glsl_version )/*,
+		rLoadShader( "build_prism_geom.glsl", glsl_version )*/ );
 	build_prism_shader_.SetAttribLocation( "coord", 0 );
 	build_prism_shader_.Create();
 
@@ -1627,8 +1627,8 @@ void r_WorldRenderer::LoadShaders()
 
 	console_bg_shader_.ShaderSource(
 		rLoadShader( "console_bg_frag.glsl", glsl_version ),
-		rLoadShader( "console_bg_vert.glsl", glsl_version ),
-		rLoadShader( "console_bg_geom.glsl", glsl_version ) );
+		rLoadShader( "console_bg_vert.glsl", glsl_version )/*,
+		rLoadShader( "console_bg_geom.glsl", glsl_version )*/ );
 	console_bg_shader_.Create();
 
 	crosshair_shader_.ShaderSource(

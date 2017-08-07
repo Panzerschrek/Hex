@@ -48,7 +48,7 @@ r_Text::r_Text( const char* font_file )
 		text_vbo_.VertexAttribPointer( 2, 4, GL_UNSIGNED_BYTE, true, offset );//color
 	}
 
-	r_GLSLVersion glsl_version( r_GLSLVersion::v330 );
+	r_GLSLVersion glsl_version( r_GLSLVersion::v140 );
 	shader_.ShaderSource( rLoadShader( "text_frag.glsl", glsl_version ), rLoadShader( "text_vert.glsl", glsl_version ) );
 
 	shader_.SetAttribLocation( "coord", 0 );

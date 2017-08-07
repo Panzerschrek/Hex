@@ -1,13 +1,13 @@
-﻿cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 2.8)
 
 project(Hex)
 
 set( CMAKE_CXX_STANDARD 11 )
 
-if( ${CMAKE_BUILD_TYPE} STREQUAL Debug )
-	add_definitions( -DDEBUG )
-else()
-endif()
+#if( ${CMAKE_BUILD_TYPE} EQUAL Debug )
+#	add_definitions( -DDEBUG )
+#else()
+#endif()
 
 # Set path to your SDL2 here.
 if( WIN32 )
@@ -172,6 +172,7 @@ if( WIN32 )
 	target_link_libraries( HexLib ${SDL_LIBS_DIR_ABSOLUTE}/SDL2main.lib )
 	target_link_libraries( HexLib ${SDL_LIBS_DIR_ABSOLUTE}/SDL2.lib )
 else()
+	target_link_libraries( HexLib pthread )
 	target_link_libraries( HexLib GL )
 	target_link_libraries( HexLib SDL2 )
 endif()

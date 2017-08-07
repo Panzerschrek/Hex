@@ -36,7 +36,7 @@ r_WeatherEffectsParticleManager::r_WeatherEffectsParticleManager(
 		vbo_.VertexAttribPointer( 0, 4, GL_UNSIGNED_SHORT, true, 0 );
 	}
 
-	r_GLSLVersion glsl_version( r_GLSLVersion::v330 );
+	r_GLSLVersion glsl_version( r_GLSLVersion::v140 );
 	shader_.ShaderSource(
 		rLoadShader( "rain_frag.glsl", glsl_version ),
 		rLoadShader( "rain_vert.glsl", glsl_version ) );

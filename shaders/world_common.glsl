@@ -28,9 +28,27 @@ ivec2 GetHexagonTexCoordY( in vec2 tex_coord )
 		return nearest_cell;
 }
 
+float GetLod( in sampler2DArray tex, in vec3 tex_coord )
+{
+	vec2 pixel_coords= tex_coord.xy * vec2( textureSize( tex, 0 ).xy );
+
+	vec2 ddx= dFdx( pixel_coords );
+	vec2 ddy= dFdy( pixel_coords );
+	return log2( max( dot(ddx, ddx), dot(ddy, ddy) ) ) * 0.5;
+}
+
+float GetLod( in sampler2D tex, in vec2 tex_coord )
+{
+	vec2 pixel_coords= tex_coord * vec2( textureSize( tex, 0 ) );
+
+	vec2 ddx= dFdx( pixel_coords );
+	vec2 ddy= dFdy( pixel_coords );
+	return log2( max( dot(ddx, ddx), dot(ddy, ddy) ) ) * 0.5;
+}
+
 vec4 HexagonFetch( in sampler2DArray tex, in vec3 tex_coord )
 {
-	float lod= textureQueryLod( tex, tex_coord.xy ).x;
+	float lod= GetLod( tex, tex_coord );
 
 	if( lod <= c_hexagon_fetch_lod_edge )
 	{
@@ -50,7 +68,7 @@ vec4 HexagonFetch( in sampler2DArray tex, in vec3 tex_coord )
 
 vec4 HexagonFetch( in sampler2D tex, in vec2 tex_coord )
 {
-	float lod= textureQueryLod( tex, tex_coord ).x;
+	float lod= GetLod( tex, tex_coord );
 
 	if( lod <= c_hexagon_fetch_lod_edge )
 	{

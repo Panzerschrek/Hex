@@ -17,7 +17,7 @@ ui_Painter::ui_Painter()
 	offset= ((char*)vert.color) - ((char*)&vert);
 	ui_vbo_.VertexAttribPointer( 1, 4, GL_UNSIGNED_BYTE, true, offset );
 
-	r_GLSLVersion glsl_version( r_GLSLVersion::v330 );
+	r_GLSLVersion glsl_version( r_GLSLVersion::v140 );
 	ui_shader_.ShaderSource( rLoadShader( "ui_frag.glsl", glsl_version ), rLoadShader( "ui_vert.glsl", glsl_version ) );
 
 	ui_shader_.SetAttribLocation( "coord", 0 );
