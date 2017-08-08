@@ -86,7 +86,7 @@ void r_ImgUtils::R8_GetMip( const unsigned char* in, unsigned char* out, int wid
 	for( int y= 0; y< height; y+= 2 )
 	{
 		const unsigned char* src[2]= { in + y * width, in + (y+1) * width };
-		for( int x= 0; x< width; x+= 2, src[0]+= 2, src[1]+= 2, dst+= 4 )
+		for( int x= 0; x< width; x+= 2, src[0]+= 2, src[1]+= 2, dst++ )
 			dst[0]= ( src[0][0] + src[0][1] + src[1][0] + src[1][1] ) >> 2;
 	}
 }
