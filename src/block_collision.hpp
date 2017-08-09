@@ -8,7 +8,7 @@ class p_UpperBlockFace
 {
 public:
 	p_UpperBlockFace(){};
-	p_UpperBlockFace( short x, short y, float z, h_Direction dir );
+	p_UpperBlockFace( int x, int y, float z, h_Direction dir );
 
 	bool HasCollisionWithCircle( const m_Vec2& pos, float radius ) const;
 
@@ -24,8 +24,8 @@ class p_BlockSide
 {
 public:
 	p_BlockSide(){};
-	p_BlockSide( short x, short y, short z, h_Direction dir );
-	p_BlockSide( short x, short y, float z0, float z1, h_Direction dir );
+	p_BlockSide( int x, int y, int z, h_Direction dir );
+	p_BlockSide( int x, int y, float z0, float z1, h_Direction dir );
 
 	bool HasCollisionWithCircle( const m_Vec2& pos, float radius ) const;
 	m_Vec2 CollideWithCirlce( const m_Vec2& pos, float radius ) const;// returns new position of circle
@@ -36,7 +36,7 @@ public:
 	h_Direction dir;
 
 private:
-	void SetupEdge( short x, short y );
+	void SetupEdge( int x, int y );
 };
 
 struct p_WaterBlock
