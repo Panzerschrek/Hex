@@ -78,7 +78,7 @@ static bool TriangleIntersectWithCircle( const m_Vec2* triangle, const m_Vec2& c
 ------------------p_UpperBlockFace--------------------
 */
 
-p_UpperBlockFace::p_UpperBlockFace( short x, short y, float in_z, h_Direction in_dir )
+p_UpperBlockFace::p_UpperBlockFace( int x, int y, float in_z, h_Direction in_dir )
 	: radius( H_HEXAGON_EDGE_SIZE )
 	, z( in_z )
 	, vertex_count(6)
@@ -129,7 +129,7 @@ bool p_UpperBlockFace::HasCollisionWithCircle( const m_Vec2& pos, float circle_r
 ------------------p_BlockSide--------------------
 */
 
-p_BlockSide::p_BlockSide( short x, short y, short in_z, h_Direction in_dir )
+p_BlockSide::p_BlockSide( int x, int y, int in_z, h_Direction in_dir )
 	: z0(in_z)
 	, z1(in_z + 1.0f)
 	, dir(in_dir)
@@ -137,7 +137,7 @@ p_BlockSide::p_BlockSide( short x, short y, short in_z, h_Direction in_dir )
 	SetupEdge( x, y );
 }
 
-p_BlockSide::p_BlockSide( short x, short y, float in_z0, float in_z1, h_Direction in_dir )
+p_BlockSide::p_BlockSide( int x, int y, float in_z0, float in_z1, h_Direction in_dir )
 	: z0(in_z0)
 	, z1(in_z1)
 	, dir(in_dir)
@@ -209,7 +209,7 @@ m_Vec2 p_BlockSide::CollideWithCirlce( const m_Vec2& pos, float radius ) const
 	return pos;
 }
 
-void p_BlockSide::SetupEdge( short x, short y )
+void p_BlockSide::SetupEdge( int x, int y )
 {
 	switch( dir )
 	{
@@ -303,12 +303,12 @@ void pGetHexogonCoord( const m_Vec2& pos, int* x, int* y )
 {
 	float transformed_x= pos.x / H_SPACE_SCALE_VECTOR_X;
 	float floor_x= std::floor( transformed_x );
-	short nearest_x= short( floor_x );
+	int nearest_x= int( floor_x );
 	float dx= transformed_x - floor_x;
 
 	float transformed_y= pos.y - 0.5f * float( (nearest_x^1) & 1 );
 	float floor_y= std::floor( transformed_y );
-	short nearest_y= short( floor_y );
+	int nearest_y= int( floor_y );
 	float dy= transformed_y - floor_y;
 
 	// Upper part   y=  0.5 + 1.5 * x
