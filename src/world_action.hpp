@@ -16,6 +16,6 @@ struct h_WorldAction
 	h_Direction horizontal_direction;
 	h_Direction vertical_direction;
 
-	short coord[3];
+	int coord[3];
 };
 

@@ -151,7 +151,7 @@ h_World::h_World(
 	settings_->SetSetting( h_SettingsKeys::active_area_margins_y, (int)active_area_margins_[1] );
 
 	{ // Move world to player position
-		short player_xy[2];
+		int player_xy[2];
 		pGetHexogonCoord( m_Vec2(header_->player.x, header->player.y), &player_xy[0], &player_xy[1] );
 		int player_longitude= ( player_xy[0] + (H_CHUNK_WIDTH >> 1) ) >> H_CHUNK_WIDTH_LOG2;
 		int player_latitude = ( player_xy[1] + (H_CHUNK_WIDTH >> 1) ) >> H_CHUNK_WIDTH_LOG2;
@@ -220,7 +220,7 @@ h_World::~h_World()
 }
 
 void h_World::AddBuildEvent(
-	short x, short y, short z,
+	const int x, const int y, const int z,
 	h_BlockType block_type,
 	h_Direction horizontal_direction, h_Direction vertical_direction )
 {
@@ -238,7 +238,7 @@ void h_World::AddBuildEvent(
 	action_queue_[0].push( act );
 }
 
-void h_World::AddDestroyEvent( short x, short y, short z )
+void h_World::AddDestroyEvent( const int x, const int y, const int z )
 {
 	h_WorldAction act;
 	act.type= h_WorldAction::Type::Destroy;
@@ -250,19 +250,19 @@ void h_World::AddDestroyEvent( short x, short y, short z )
 	action_queue_[0].push( act );
 }
 
-void h_World::Blast( short x, short y, short z, short radius )
+void h_World::Blast( int x, int y, int z, int radius )
 {
 	if( !InBorders( x, y, z ) )
 		return;
 
-	for( short k= z, r=radius; k< z+radius; k++, r-- )
+	for( int k= z, r=radius; k< z+radius; k++, r-- )
 		BlastBlock_r( x, y, k, r );
-	for( short k= z-1, r=radius-1; k> z-radius; k--, r-- )
+	for( int k= z-1, r=radius-1; k> z-radius; k--, r-- )
 		BlastBlock_r( x, y, k, r );
 
-	for( short i= x - radius; i< x+radius; i++ )
-		for( short j= y - radius; j< y+radius; j++ )
-			for( short k= z - radius; k< z+radius; k++ )
+	for( int i= x - radius; i< x+radius; i++ )
+		for( int j= y - radius; j< y+radius; j++ )
+			for( int k= z - radius; k< z+radius; k++ )
 				RelightBlockRemove( i, j, k );
 
 	UpdateInRadius( x, y, radius );
@@ -367,7 +367,7 @@ const m_Vec3& h_World::TestMobGetPosition() const
 }
 
 void h_World::Build(
-	short x, short y, short z,
+	int x, int y, int z,
 	h_BlockType block_type,
 	h_Direction horizontal_direction, h_Direction vertical_direction )
 {
@@ -450,7 +450,7 @@ void h_World::Build(
 		}
 	}
 
-	short r= 1;
+	int r= 1;
 	if( block_type != h_BlockType::Water )
 		r= RelightBlockAdd( x, y, z ) + 1;
 
@@ -460,7 +460,7 @@ void h_World::Build(
 	CheckBlockNeighbors( x, y, z );
 }
 
-void h_World::Destroy( short x, short y, short z )
+void h_World::Destroy( const int x, const int y, const int z )
 {
 	if( !InBorders( x, y, z ) )
 		return;
@@ -602,13 +602,13 @@ void h_World::FlushActionQueue()
 	}
 }
 
-void h_World::RemoveFire( int x, int y, int z )
+void h_World::RemoveFire( const int x, const int y, const int z )
 {
 	h_Chunk* chunk= GetChunk( x >> H_CHUNK_WIDTH_LOG2, y >> H_CHUNK_WIDTH_LOG2 );
 
-	int local_x= x & (H_CHUNK_WIDTH - 1);
-	int local_y= y & (H_CHUNK_WIDTH - 1);
-	int addr= BlockAddr( local_x, local_y, z );
+	const int local_x= x & (H_CHUNK_WIDTH - 1);
+	const int local_y= y & (H_CHUNK_WIDTH - 1);
+	const int addr= BlockAddr( local_x, local_y, z );
 
 	h_Block* block= chunk->GetBlock( addr );
 	H_ASSERT( block->Type() == h_BlockType::Fire );
@@ -618,7 +618,7 @@ void h_World::RemoveFire( int x, int y, int z )
 	chunk->DeleteLightSource( fire );
 	chunk->SetBlock( addr, NormalBlock( h_BlockType::Air ) );
 
-	int r= chunk->FireLightLevel( addr );
+	const int r= chunk->FireLightLevel( addr );
 	RelightBlockAdd( x, y, z );
 	RelightBlockRemove( x, y, z );
 
@@ -639,7 +639,7 @@ void h_World::RemoveFire( int x, int y, int z )
 	H_ASSERT(false);
 }
 
-void h_World::CheckBlockNeighbors( short x, short y, short z )
+void h_World::CheckBlockNeighbors( const int x, const int y, const int z )
 {
 	int forward_side_y= y + ( (x^1) & 1 );
 	int back_side_y= y - (x & 1);
@@ -657,14 +657,14 @@ void h_World::CheckBlockNeighbors( short x, short y, short z )
 
 	for( unsigned int n= 0; n < 7; n++ )
 	{
-		int chunk_x= neighbors[n][0] >> H_CHUNK_WIDTH_LOG2;
-		int chunk_y= neighbors[n][1] >> H_CHUNK_WIDTH_LOG2;
+		const int chunk_x= neighbors[n][0] >> H_CHUNK_WIDTH_LOG2;
+		const int chunk_y= neighbors[n][1] >> H_CHUNK_WIDTH_LOG2;
 
 		h_Chunk* chunk= GetChunk( chunk_x, chunk_y );
 
-		int local_x= neighbors[n][0] & (H_CHUNK_WIDTH-1);
-		int local_y= neighbors[n][1] & (H_CHUNK_WIDTH-1);
-		int neighbor_addr= BlockAddr( local_x, local_y, 0 );
+		const int local_x= neighbors[n][0] & (H_CHUNK_WIDTH-1);
+		const int local_y= neighbors[n][1] & (H_CHUNK_WIDTH-1);
+		const int neighbor_addr= BlockAddr( local_x, local_y, 0 );
 
 		for( int neighbor_z= std::max(0, int(z) - 2);
 			 neighbor_z <= std::min(int(z) + 1, H_CHUNK_HEIGHT - 1);
@@ -713,9 +713,9 @@ void h_World::CheckBlockNeighbors( short x, short y, short z )
 	} // for xy neighbors
 }
 
-void h_World::UpdateInRadius( short x, short y, short r )
+void h_World::UpdateInRadius( const int x, const int y, const int r )
 {
-	short x_min, x_max, y_min, y_max;
+	int x_min, x_max, y_min, y_max;
 	x_min= ClampX( x - r );
 	x_max= ClampX( x + r );
 	y_min= ClampY( y - r );
@@ -725,14 +725,14 @@ void h_World::UpdateInRadius( short x, short y, short r )
 	x_max>>= H_CHUNK_WIDTH_LOG2;
 	y_min>>= H_CHUNK_WIDTH_LOG2;
 	y_max>>= H_CHUNK_WIDTH_LOG2;
-	for( short i= x_min; i<= x_max; i++ )
-	for( short j= y_min; j<= y_max; j++ )
+	for( int i= x_min; i<= x_max; i++ )
+	for( int j= y_min; j<= y_max; j++ )
 		renderer_->UpdateChunk( i, j );
 }
 
-void h_World::UpdateWaterInRadius( short x, short y, short r )
+void h_World::UpdateWaterInRadius( const int x, const int y, const int r )
 {
-	short x_min, x_max, y_min, y_max;
+	int x_min, x_max, y_min, y_max;
 	x_min= ClampX( x - r );
 	x_max= ClampX( x + r );
 	y_min= ClampY( y - r );
@@ -742,8 +742,8 @@ void h_World::UpdateWaterInRadius( short x, short y, short r )
 	x_max>>= H_CHUNK_WIDTH_LOG2;
 	y_min>>= H_CHUNK_WIDTH_LOG2;
 	y_max>>= H_CHUNK_WIDTH_LOG2;
-	for( short i= x_min; i<= x_max; i++ )
-	for( short j= y_min; j<= y_max; j++ )
+	for( int i= x_min; i<= x_max; i++ )
+	for( int j= y_min; j<= y_max; j++ )
 		renderer_->UpdateChunkWater( i, j );
 }
 
@@ -914,25 +914,25 @@ h_Chunk* h_World::LoadChunk( int lon, int lat )
 	return new h_Chunk( this, header, stream );
 }
 
-void h_World::UpdatePhysMesh( short x_min, short x_max, short y_min, short y_max, short z_min, short z_max )
+void h_World::UpdatePhysMesh( int x_min, int x_max, int y_min, int y_max, int z_min, int z_max )
 {
 	p_WorldPhysMesh phys_mesh;
 
-	short X= Longitude() * H_CHUNK_WIDTH;
-	short Y= Latitude () * H_CHUNK_WIDTH;
+	int X= Longitude() * H_CHUNK_WIDTH;
+	int Y= Latitude () * H_CHUNK_WIDTH;
 
-	x_min= std::max( short(2), x_min );
-	y_min= std::max( short(2), y_min );
-	z_min= std::max( short(0), z_min );
-	x_max= std::min( x_max, short( chunk_number_x_ * H_CHUNK_WIDTH - 2 ) );
-	y_max= std::min( y_max, short( chunk_number_y_ * H_CHUNK_WIDTH - 2 ) );
-	z_max= std::min( z_max, short( H_CHUNK_HEIGHT - 1 ) );
+	x_min= std::max( int(2), x_min );
+	y_min= std::max( int(2), y_min );
+	z_min= std::max( int(0), z_min );
+	x_max= std::min( x_max, int( chunk_number_x_ * H_CHUNK_WIDTH - 2 ) );
+	y_max= std::min( y_max, int( chunk_number_y_ * H_CHUNK_WIDTH - 2 ) );
+	z_max= std::min( z_max, int( H_CHUNK_HEIGHT - 1 ) );
 
-	for( short x= x_min; x< x_max; x++ )
-	for( short y= y_min; y< y_max; y++ )
+	for( int x= x_min; x< x_max; x++ )
+	for( int y= y_min; y< y_max; y++ )
 	{
 		const unsigned char *t_p, *t_f_p, *t_fr_p, *t_br_p;
-		short x1, y1;
+		int x1, y1;
 
 		t_p=
 			GetChunk( x >> H_CHUNK_WIDTH_LOG2, y >> H_CHUNK_WIDTH_LOG2 )->GetTransparencyData() +
@@ -955,7 +955,7 @@ void h_World::UpdatePhysMesh( short x_min, short x_max, short y_min, short y_max
 			GetChunk( x1 >> H_CHUNK_WIDTH_LOG2, y1 >> H_CHUNK_WIDTH_LOG2 )->GetTransparencyData() +
 			BlockAddr( x1&(H_CHUNK_WIDTH-1), y1&(H_CHUNK_WIDTH-1), 0 );
 
-		for( short z= z_min; z < z_max; z++ )
+		for( int z= z_min; z < z_max; z++ )
 		{
 			unsigned char t, t_up, t_f, t_fr, t_br;
 			t= t_p[z] & H_VISIBLY_TRANSPARENCY_BITS;
@@ -992,15 +992,15 @@ void h_World::UpdatePhysMesh( short x_min, short x_max, short y_min, short y_max
 		} // for z
 	} // for xy
 
-	for( short x= x_min; x< x_max; x++ )
-	for( short y= y_min; y< y_max; y++ )
+	for( int x= x_min; x< x_max; x++ )
+	for( int y= y_min; y< y_max; y++ )
 	{
 		h_Chunk* chunk= GetChunk( x >> H_CHUNK_WIDTH_LOG2, y >> H_CHUNK_WIDTH_LOG2 );
 		const h_Block* const* blocks=
 			chunk->GetBlocksData() +
 			BlockAddr( x&(H_CHUNK_WIDTH-1), y&(H_CHUNK_WIDTH-1), 0 );
 
-		for( short z= z_min; z < z_max; z++ )
+		for( int z= z_min; z < z_max; z++ )
 		{
 			if( blocks[z]->Type() == h_BlockType::Water )
 			{
@@ -1102,7 +1102,7 @@ void h_World::UpdatePhysMesh( short x_min, short x_max, short y_min, short y_max
 	phys_mesh_= std::make_shared< p_WorldPhysMesh >( std::move(phys_mesh ) );
 }
 
-void h_World::BlastBlock_r( short x, short y, short z, short blast_power )
+void h_World::BlastBlock_r( int x, int y, int z, int blast_power )
 {
 	if( blast_power == 0 )
 		return;
@@ -1124,7 +1124,7 @@ void h_World::BlastBlock_r( short x, short y, short z, short blast_power )
 	BlastBlock_r( x-1, y-(x&1), z, blast_power-1 );
 }
 
-bool h_World::InBorders( short x, short y, short z ) const
+bool h_World::InBorders( int x, int y, int z ) const
 {
 	bool outside=
 		x < 0 || y < 0 ||
@@ -1133,7 +1133,7 @@ bool h_World::InBorders( short x, short y, short z ) const
 	return !outside;
 }
 
-bool h_World::CanBuild( short x, short y, short z ) const
+bool h_World::CanBuild( int x, int y, int z ) const
 {
 	return
 		GetChunk( x>> H_CHUNK_WIDTH_LOG2, y>> H_CHUNK_WIDTH_LOG2 )->
@@ -1174,7 +1174,7 @@ void h_World::PhysTick()
 		// player logic
 		{
 			m_Vec3 player_pos= player_->EyesPos();
-			short player_coord_global[2];
+			int player_coord_global[2];
 			pGetHexogonCoord( player_pos.xy(), &player_coord_global[0], &player_coord_global[1] );
 
 			int player_coord[3];
@@ -1353,7 +1353,7 @@ void h_World::WaterPhysTick()
 	}//for chunks
 }
 
-bool h_World::WaterFlow( h_LiquidBlock* from, short to_x, short to_y, short to_z )
+bool h_World::WaterFlow( h_LiquidBlock* from, int to_x, int to_y, int to_z )
 {
 	int local_x= to_x & ( H_CHUNK_WIDTH-1 );
 	int local_y= to_y & ( H_CHUNK_WIDTH-1 );
@@ -1369,7 +1369,7 @@ bool h_World::WaterFlow( h_LiquidBlock* from, short to_x, short to_y, short to_z
 			if( block->Type() == h_BlockType::Fire )
 				RemoveFire( to_x, to_y, to_z );
 
-			short level_delta= from->LiquidLevel() / 2;
+			int level_delta= from->LiquidLevel() / 2;
 			from->DecreaseLiquidLevel( level_delta );
 
 			h_LiquidBlock* new_block= ch->NewWaterBlock();
@@ -1387,7 +1387,7 @@ bool h_World::WaterFlow( h_LiquidBlock* from, short to_x, short to_y, short to_z
 	{
 		h_LiquidBlock* water_block= static_cast<h_LiquidBlock*>(block);
 
-		short water_level_delta= from->LiquidLevel() - water_block->LiquidLevel();
+		int water_level_delta= from->LiquidLevel() - water_block->LiquidLevel();
 		if( water_level_delta > 1 )
 		{
 			water_level_delta/= 2;

@@ -43,8 +43,8 @@ public:
 	h_World* GetWorld();
 	const h_World* GetWorld() const;
 
-	short Longitude() const;
-	short Latitude() const;
+	int Longitude() const;
+	int Latitude() const;
 	bool IsEdgeChunk() const;
 
 	unsigned int GetWaterColumnHeight( short x, short y, short z );
@@ -226,12 +226,12 @@ inline h_World* h_Chunk::GetWorld()
 	return world_;
 }
 
-inline short h_Chunk::Longitude() const
+inline int h_Chunk::Longitude() const
 {
 	return longitude_;
 }
 
-inline short h_Chunk::Latitude () const
+inline int h_Chunk::Latitude () const
 {
 	return latitude_ ;
 }
