@@ -1243,9 +1243,28 @@ void h_World::TestMobTick()
 
 void h_World::WaterPhysTick()
 {
+	const m_Vec3 player_pos= player_->EyesPos();
+	int player_coord_global[2];
+	pGetHexogonCoord( player_pos.xy(), &player_coord_global[0], &player_coord_global[1] );
+
+	int player_chunk[2];
+	player_chunk[0]= ( player_coord_global[0] - Longitude() * H_CHUNK_WIDTH ) >> H_CHUNK_WIDTH_LOG2;
+	player_chunk[1]= ( player_coord_global[1] - Latitude () * H_CHUNK_WIDTH ) >> H_CHUNK_WIDTH_LOG2;
+
 	for( unsigned int i= active_area_margins_[0]; i< ChunkNumberX() - active_area_margins_[0]; i++ )
 	for( unsigned int j= active_area_margins_[1]; j< ChunkNumberY() - active_area_margins_[1]; j++ )
 	{
+		// More rarely update distant water chunks.
+		const int distance_to_player= std::abs( int(i) - player_chunk[0] ) + std::abs( int(j) - player_chunk[1] );
+		if( distance_to_player > 4 )
+		{
+			if( ( phys_tick_count_ & 2 ) != 0 ) continue; // Update each 2 ticks
+		}
+		if( distance_to_player > 8 )
+		{
+			if( ( phys_tick_count_ & 4 ) != 0 ) continue; // Update each 4 ticks
+		}
+
 		// Update only each second cluster of size 3x3 per tick.
 		int cluster_x= m_Math::DivNonNegativeRemainder(int(i) + longitude_, 3);
 		int cluster_y= m_Math::DivNonNegativeRemainder(int(j) + latitude_ , 3);
