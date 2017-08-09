@@ -33,8 +33,8 @@ public:
 		const char* world_directory );
 	~h_World();
 
-	h_Chunk* GetChunk( short X, short Y );//relative chunk coordinates
-	const h_Chunk* GetChunk( short X, short Y ) const;//relative chunk coordinates
+	h_Chunk* GetChunk( int X, int Y );//relative chunk coordinates
+	const h_Chunk* GetChunk( int X, int Y ) const;//relative chunk coordinates
 
 	//really, returns longitude/2 and latitude/2
 	int ChunkCoordToQuadchunkX( int longitude ) const;
@@ -44,20 +44,20 @@ public:
 	unsigned int ChunkNumberX() const;
 	unsigned int ChunkNumberY() const;
 
-	short Longitude() const;
-	short Latitude () const;
+	int Longitude() const;
+	int Latitude () const;
 
 	// Add events. Thread safe. Coordinates - global.
 	void AddBuildEvent(
-		short x, short y, short z,
+		int x, int y, int z,
 		h_BlockType block_type,
 		h_Direction horizontal_direction, h_Direction vertical_direction );
 
-	void AddDestroyEvent( short x, short y, short z );
+	void AddDestroyEvent( int x, int y, int z );
 
 	//replace all blocks in radius in this layer( z=const )
 	//ACHTUNG! This function unfinished. It ignores destruction of light sources. also, danger of stack owerflow. time ~ 6^radius
-	void Blast( short x, short y, short z, short radius );
+	void Blast( int x, int y, int z, int radius );
 
 	// Start main phys loop of world.
 	// Call in ui thread.
@@ -77,12 +77,12 @@ public:
 
 	void Save();//save world data to disk
 
-	unsigned char SunLightLevel( short x, short y, short z ) const;
-	unsigned char FireLightLevel( short x, short y, short z ) const;
+	unsigned char SunLightLevel( int x, int y, int z ) const;
+	unsigned char FireLightLevel( int x, int y, int z ) const;
 	//returns light level of forward-forwardright upper vertex of prism X16. coordinates - relative
-	void GetForwardVertexLight( short x, short y, short z, unsigned char* out_light ) const;
+	void GetForwardVertexLight( int x, int y, int z, unsigned char* out_light ) const;
 	//returns light level of back-backleft upper vertex of prism X16. coordinates - relative
-	void GetBackVertexLight( short x, short y, short z, unsigned char* out_light ) const;
+	void GetBackVertexLight( int x, int y, int z, unsigned char* out_light ) const;
 
 	// Get time, calendar, latitude. All methods thread safe.
 	// Time of year, in ticks. 0 - midnight of first year day.
@@ -102,18 +102,18 @@ public:
 private:
 	//coordinates - relative
 	void Build(
-		short x, short y, short z,
+		int x, int y, int z,
 		h_BlockType block_type,
 		h_Direction horizontal_direction, h_Direction vertical_direction );
 
-	void Destroy( short x, short y, short z );
+	void Destroy( int x, int y, int z );
 	void FlushActionQueue();
 
 	void RemoveFire( int x, int y, int z );
-	void CheckBlockNeighbors( short x, short y, short z );
+	void CheckBlockNeighbors( int x, int y, int z );
 
-	void UpdateInRadius( short x, short y, short r );//update chunks in square [x-r;x+r] [y-r;x+r]
-	void UpdateWaterInRadius( short x, short y, short r );//update chunks water in square [x-r;x+r] [y-r;x+r]
+	void UpdateInRadius( int x, int y, int r );//update chunks in square [x-r;x+r] [y-r;x+r]
+	void UpdateWaterInRadius( int x, int y, int r );//update chunks water in square [x-r;x+r] [y-r;x+r]
 
 	void MoveWorld( h_WorldMoveDirection dir );
 	void SaveChunk( h_Chunk* ch );
@@ -123,43 +123,43 @@ private:
 	void AddLightToBorderChunk( unsigned int X, unsigned int Y );
 
 	//function uses local coordinates of loaded zone
-	void UpdatePhysMesh( short x_min, short x_max, short y_min, short y_max, short z_min, short z_max );
+	void UpdatePhysMesh( int x_min, int x_max, int y_min, int y_max, int z_min, int z_max );
 
 	//clamp coordinates to [ 0; H_CHUNK_WIDTH * chunk_number - 1 ) for x and y
 	//and to [ 0; H_CHUNK_HEIGHT - 1 ] for z
-	short ClampX( short x ) const;
-	short ClampY( short y ) const;
-	short ClampZ( short z ) const;
+	int ClampX( int x ) const;
+	int ClampY( int y ) const;
+	int ClampZ( int z ) const;
 	//safe versions of lighting methods.
 
 	//lighting. relative coordinates
-	void SetSunLightLevel( short x, short y, short z, unsigned char l );
-	void SetFireLightLevel( short x, short y, short z, unsigned char l );
+	void SetSunLightLevel( int x, int y, int z, unsigned char l );
+	void SetFireLightLevel( int x, int y, int z, unsigned char l );
 
 	void LightWorld();
 	//return update radius
-	short RelightBlockAdd( short x, short y, short z );
-	void RelightBlockRemove( short x, short y, short z );
+	int RelightBlockAdd( int x, int y, int z );
+	void RelightBlockRemove( int x, int y, int z );
 
-	void AddSunLight_r( short x, short y, short z, unsigned char l );
-	void AddFireLight_r( short x, short y, short z, unsigned char l );
-	void AddSunLightSafe_r( short x, short y, short z, unsigned char l );
-	void AddFireLightSafe_r( short x, short y, short z, unsigned char l );
+	void AddSunLight_r( int x, int y, int z, unsigned char l );
+	void AddFireLight_r( int x, int y, int z, unsigned char l );
+	void AddSunLightSafe_r( int x, int y, int z, unsigned char l );
+	void AddFireLightSafe_r( int x, int y, int z, unsigned char l );
 
 	//add light from light sources in cube
-	void ShineFireLight( short x_min, short y_min, short z_min, short x_max, short y_max, short z_max );
+	void ShineFireLight( int x_min, int y_min, int z_min, int x_max, int y_max, int z_max );
 
-	void BlastBlock_r( short x, short y, short z, short blast_power );
-	bool InBorders( short x, short y, short z ) const;
-	bool CanBuild( short x, short y, short z ) const;
+	void BlastBlock_r( int x, int y, int z, int blast_power );
+	bool InBorders( int x, int y, int z ) const;
+	bool CanBuild( int x, int y, int z ) const;
 
 	void PhysTick();
 	void TestMobTick();
 
 	void RelightWaterModifedChunksLight();//relight chunks, where water was modifed in last ticks
 	void WaterPhysTick();
-	bool WaterFlow( h_LiquidBlock* from, short to_x, short to_y, short to_z ); //returns true if chunk was midifed
-	bool WaterFlowDown( h_LiquidBlock* from, short to_x, short to_y, short to_z );
+	bool WaterFlow( h_LiquidBlock* from, int to_x, int to_y, int to_z ); //returns true if chunk was midifed
+	bool WaterFlowDown( h_LiquidBlock* from, int to_x, int to_y, int to_z );
 
 	void GrassPhysTick();
 	void FirePhysTick();
@@ -249,17 +249,17 @@ inline unsigned int h_World::ChunkNumberY() const
 	return chunk_number_y_;
 }
 
-inline short h_World::Longitude() const
+inline int h_World::Longitude() const
 {
 	return longitude_;
 }
 
-inline short h_World::Latitude () const
+inline int h_World::Latitude () const
 {
 	return latitude_;
 }
 
-inline h_Chunk* h_World::GetChunk( short X, short Y )
+inline h_Chunk* h_World::GetChunk( int X, int Y )
 {
 	H_ASSERT( X >= 0 && X < (int)chunk_number_x_ );
 	H_ASSERT( Y >= 0 && Y < (int)chunk_number_y_ );
@@ -267,7 +267,7 @@ inline h_Chunk* h_World::GetChunk( short X, short Y )
 	return chunks_[ X | ( Y << H_MAX_CHUNKS_LOG2 ) ];
 }
 
-inline const h_Chunk* h_World::GetChunk( short X, short Y ) const
+inline const h_Chunk* h_World::GetChunk( int X, int Y ) const
 {
 	H_ASSERT( X >= 0 && X < (int)chunk_number_x_ );
 	H_ASSERT( Y >= 0 && Y < (int)chunk_number_y_ );
@@ -285,27 +285,27 @@ inline h_GrassBlock* h_World::UnactiveGrassBlock()
 	return &unactive_grass_block_;
 }
 
-inline short h_World::ClampX( short x ) const
+inline int h_World::ClampX( int x ) const
 {
 	if( x < 0 )
 		return 0;
-	short max_x= chunk_number_x_ * H_CHUNK_WIDTH;
+	int max_x= chunk_number_x_ * H_CHUNK_WIDTH;
 	if ( x >= max_x )
 		return max_x - 1;
 	return x;
 }
 
-inline short h_World::ClampY( short y ) const
+inline int h_World::ClampY( int y ) const
 {
 	if( y < 0 )
 		return 0;
-	short max_y= chunk_number_y_ * H_CHUNK_WIDTH;
+	int max_y= chunk_number_y_ * H_CHUNK_WIDTH;
 	if ( y >= max_y )
 		return max_y - 1;
 	return y;
 }
 
-inline short h_World::ClampZ( short z ) const
+inline int h_World::ClampZ( int z ) const
 {
 	if( z < 0 )
 		return 0;

@@ -1208,8 +1208,8 @@ void r_WorldRenderer::GenRainZoneHeightmap()
 	rain_zone_matrix_= translate_mat * scale_mat;
 
 	m_Vec2 zone_size( R_RAIN_ZONE_RADIUS_M + 1.5f, R_RAIN_ZONE_RADIUS_M + 1.5f );
-	short start_coord[2];
-	short   end_coord[2];
+	int start_coord[2];
+	int   end_coord[2];
 	pGetHexogonCoord( cam_pos_.xy() - zone_size, &start_coord[0], &start_coord[1] );
 	pGetHexogonCoord( cam_pos_.xy() + zone_size, &  end_coord[0], &  end_coord[1] );
 	for( unsigned int i= 0; i < 2; i++ )

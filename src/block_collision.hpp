@@ -47,7 +47,7 @@ struct p_WaterBlock
 	float water_level;
 };
 
-void pGetHexogonCoord( const m_Vec2& pos, short* x, short* y );
+void pGetHexogonCoord( const m_Vec2& pos, int* x, int* y );
 
 bool pRayHasIniersectWithTriangle(
 	const m_Vec3* triangle, const m_Vec3& normal,

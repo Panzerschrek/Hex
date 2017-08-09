@@ -282,7 +282,7 @@ void h_Player::TestMobSetPosition()
 
 void h_Player::CheckUnderwater( const p_WorldPhysMesh& phys_mesh )
 {
-	short player_world_space_xy[2];
+	int player_world_space_xy[2];
 	pGetHexogonCoord( pos_.xy(), &player_world_space_xy[0], &player_world_space_xy[1] );
 
 	float feet_z= pos_.z;

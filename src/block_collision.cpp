@@ -299,7 +299,7 @@ bool pRayHasIniersectWithTriangle(
 	else return false;
 }
 
-void pGetHexogonCoord( const m_Vec2& pos, short* x, short* y )
+void pGetHexogonCoord( const m_Vec2& pos, int* x, int* y )
 {
 	float transformed_x= pos.x / H_SPACE_SCALE_VECTOR_X;
 	float floor_x= std::floor( transformed_x );
