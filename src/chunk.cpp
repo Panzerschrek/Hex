@@ -329,7 +329,7 @@ void h_Chunk::PlantTrees( const g_WorldGenerator* generator )
 		});
 }
 
-void h_Chunk::PlantTree( short x, short y, short z )
+void h_Chunk::PlantTree( int x, int y, int z )
 {
 	int h;
 	for( h= z; h< z + 4; h++ )
@@ -362,9 +362,9 @@ void h_Chunk::PlantTree( short x, short y, short z )
 		SetBlock( x, y, h, world_->NormalBlock( h_BlockType::Foliage ) );
 }
 
-void h_Chunk::PlantBigTree( short x, short y, short z )
+void h_Chunk::PlantBigTree( int x, int y, int z )
 {
-	for( short zz= z; zz< z+7; zz++ )
+	for( int zz= z; zz< z+7; zz++ )
 	{
 		if( InChunkBorders( x, y ) )
 			SetBlock( x, y, zz, world_->NormalBlock( h_BlockType::Wood ) );
@@ -373,7 +373,7 @@ void h_Chunk::PlantBigTree( short x, short y, short z )
 		if( InChunkBorders( x+1, y-(x&1) ) )
 			SetBlock( x+1, y-(x&1), zz, world_->NormalBlock( h_BlockType::Wood ) );
 	}
-	for( short zz= z+7; zz< z+9; zz++ )
+	for( int zz= z+7; zz< z+9; zz++ )
 	{
 		h_Block* b= world_->NormalBlock( h_BlockType::Foliage );
 		if( InChunkBorders( x, y ) )
@@ -385,7 +385,7 @@ void h_Chunk::PlantBigTree( short x, short y, short z )
 	}
 
 
-	for( short zz= z+2; zz< z+8; zz++ )
+	for( int zz= z+2; zz< z+8; zz++ )
 	{
 		h_Block* b= world_->NormalBlock( h_BlockType::Foliage );
 		if( InChunkBorders( x, y+1 ) )
@@ -407,7 +407,7 @@ void h_Chunk::PlantBigTree( short x, short y, short z )
 		if( InChunkBorders( x+1, y-1-(x&1) ) )
 			SetBlock( x+1, y-1-(x&1), zz, b );
 	}
-	for( short zz= z+3; zz< z+7; zz++ )
+	for( int zz= z+3; zz< z+7; zz++ )
 	{
 		h_Block* b= world_->NormalBlock( h_BlockType::Foliage );
 		if( InChunkBorders( x, y+2 ) )
@@ -426,7 +426,7 @@ void h_Chunk::PlantBigTree( short x, short y, short z )
 			SetBlock( x+3, y-(x&1), zz, b );
 	}
 
-	for( short zz= z+4; zz< z+6; zz++ )
+	for( int zz= z+4; zz< z+6; zz++ )
 	{
 		h_Block* b= world_->NormalBlock( h_BlockType::Foliage );
 		if( InChunkBorders( x-2, y ) )
@@ -495,7 +495,7 @@ unsigned int h_Chunk::CalculateWaterBlockCount()
 
 void h_Chunk::GenWaterBlocks()
 {
-	short x, y, z, addr = 0;
+	int x, y, z, addr = 0;
 	for( x= 0; x< H_CHUNK_WIDTH; x++ )
 	for( y= 0; y< H_CHUNK_WIDTH; y++ )
 	for( z= 0; z< H_CHUNK_HEIGHT; z++, addr++ )
@@ -570,7 +570,7 @@ void h_Chunk::DeleteWaterBlock( h_LiquidBlock* b )
 	water_blocks_allocator_.Delete(b);
 }
 
-h_LightSource* h_Chunk::NewLightSource( short x, short y, short z, h_BlockType type )
+h_LightSource* h_Chunk::NewLightSource( int x, int y, int z, h_BlockType type )
 {
 	h_LightSource* s= new h_LightSource( type );
 	light_source_list_.push_back(s);
@@ -598,7 +598,7 @@ void h_Chunk::DeleteLightSource( h_LightSource* source )
 	H_ASSERT( false );
 }
 
-void h_Chunk::DeleteLightSource( short x, short y, short z )
+void h_Chunk::DeleteLightSource( int x, int y, int z )
 {
 	DeleteLightSource( static_cast<h_LightSource*>( GetBlock( x, y, z ) ) );
 }
@@ -690,7 +690,7 @@ void h_Chunk::ProcessFailingBlocks()
 	}
 }
 
-unsigned int h_Chunk::GetWaterColumnHeight( short x, short y, short z )
+unsigned int h_Chunk::GetWaterColumnHeight( int x, int y, int z )
 {
 	unsigned int h= (z-1) * H_MAX_WATER_LEVEL;
 	unsigned int addr= BlockAddr( x, y, z );

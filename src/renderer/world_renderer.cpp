@@ -430,7 +430,7 @@ void r_WorldRenderer::Update()
 	updates_counter_.Tick();
 }
 
-void r_WorldRenderer::UpdateChunk(unsigned short X,  unsigned short Y, bool immediately )
+void r_WorldRenderer::UpdateChunk(unsigned int X, unsigned int Y, bool immediately )
 {
 	H_ASSERT( X < chunks_info_.matrix_size[0] );
 	H_ASSERT( Y < chunks_info_.matrix_size[1] );
@@ -444,7 +444,7 @@ void r_WorldRenderer::UpdateChunk(unsigned short X,  unsigned short Y, bool imme
 		chunks_info_.chunk_matrix[ ind ]->update_requested_= true;
 }
 
-void r_WorldRenderer::UpdateChunkWater(unsigned short X,  unsigned short Y, bool immediately )
+void r_WorldRenderer::UpdateChunkWater(unsigned int X,  unsigned int Y, bool immediately )
 {
 	H_ASSERT( X < chunks_info_.matrix_size[0] );
 	H_ASSERT( Y < chunks_info_.matrix_size[1] );
