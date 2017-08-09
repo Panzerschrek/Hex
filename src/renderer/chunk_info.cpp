@@ -38,13 +38,12 @@ void r_ChunkInfo::BuildWaterSurfaceMesh()
 {
 	const std::vector< h_LiquidBlock* >& water_block_list= chunk_->GetWaterList();
 
-	const h_World* world= chunk_->GetWorld();
+	const h_World& world= *chunk_->GetWorld();
 
-	short X= chunk_->Longitude() << H_CHUNK_WIDTH_LOG2;
-	short Y= chunk_->Latitude()  << H_CHUNK_WIDTH_LOG2;
-
-	short chunk_loaded_zone_X= ( chunk_->Longitude() - world->Longitude() ) << H_CHUNK_WIDTH_LOG2;
-	short chunk_loaded_zone_Y= ( chunk_->Latitude () - world->Latitude () ) << H_CHUNK_WIDTH_LOG2;
+	const int X= chunk_->Longitude() << H_CHUNK_WIDTH_LOG2;
+	const int Y= chunk_->Latitude()  << H_CHUNK_WIDTH_LOG2;
+	const int chunk_loaded_zone_X= ( chunk_->Longitude() - world.Longitude() ) << H_CHUNK_WIDTH_LOG2;
+	const int chunk_loaded_zone_Y= ( chunk_->Latitude () - world.Latitude () ) << H_CHUNK_WIDTH_LOG2;
 
 	r_WaterVertex* v= water_vertex_data_;
 
@@ -73,12 +72,12 @@ void r_ChunkInfo::BuildWaterSurfaceMesh()
 				vertex_water_block_count[0]= vertex_water_block_count[1]= vertex_water_block_count[2]=
 				vertex_water_block_count[3]= vertex_water_block_count[4]= vertex_water_block_count[5]= 1;
 
-				int global_x= chunk_loaded_zone_X + b->x_;
-				int global_y= chunk_loaded_zone_Y + b->y_;
-				int forward_side_y= global_y + ( (global_x^1) & 1 );
-				int back_side_y= global_y - (global_x & 1);
+				const int global_x= chunk_loaded_zone_X + b->x_;
+				const int global_y= chunk_loaded_zone_Y + b->y_;
+				const int forward_side_y= global_y + ( (global_x^1) & 1 );
+				const int back_side_y= global_y - (global_x & 1);
 
-				int neighbors[6][2]=
+				const int neighbors[6][2]=
 				{
 					{ global_x - 1, forward_side_y },
 					{ global_x, global_y + 1 },
@@ -90,21 +89,21 @@ void r_ChunkInfo::BuildWaterSurfaceMesh()
 
 				for( unsigned int d= 0; d < 6; d++ )
 				{
-					int local_x= neighbors[d][0] & (H_CHUNK_WIDTH - 1);
-					int local_y= neighbors[d][1] & (H_CHUNK_WIDTH - 1);
+					const int local_x= neighbors[d][0] & (H_CHUNK_WIDTH - 1);
+					const int local_y= neighbors[d][1] & (H_CHUNK_WIDTH - 1);
 
 					const h_Chunk* ch2=
-						world->GetChunk(
+						world.GetChunk(
 							neighbors[d][0] >> H_CHUNK_WIDTH_LOG2,
 							neighbors[d][1] >> H_CHUNK_WIDTH_LOG2 );
 
 					unsigned int addr= BlockAddr( local_x, local_y, b->z_ );
-					const h_Block* b2= ch2->GetBlock( addr );
-					const h_Block* b3= ch2->GetBlock( addr+ 1 );
+					const h_Block* const b2= ch2->GetBlock( addr );
+					const h_Block* const b3= ch2->GetBlock( addr+ 1 );
 
 					static const unsigned int c_next_vi[6]= { 1, 2, 3, 4, 5, 0 };
-					unsigned int vi0= d;
-					unsigned int vi1= c_next_vi[d];
+					const unsigned int vi0= d;
+					const unsigned int vi1= c_next_vi[d];
 
 					if( b3->Type() == h_BlockType::Water )
 						upper_block_is_water[vi0]= upper_block_is_water[vi1]= true;
@@ -112,7 +111,7 @@ void r_ChunkInfo::BuildWaterSurfaceMesh()
 						nearby_block_is_air[vi0]= nearby_block_is_air[vi1]= true;
 					else if( b2->Type() == h_BlockType::Water )
 					{
-						auto water_block= static_cast<const h_LiquidBlock*>(b2);
+						const auto water_block= static_cast<const h_LiquidBlock*>(b2);
 
 						vertex_water_level[vi0]+= water_block->LiquidLevel();
 						vertex_water_level[vi1]+= water_block->LiquidLevel();
@@ -148,12 +147,12 @@ void r_ChunkInfo::BuildWaterSurfaceMesh()
 					}
 				} // for vertices
 
-				world->GetForwardVertexLight( b->x_ + chunk_loaded_zone_X - 1, b->y_ + chunk_loaded_zone_Y - (b->x_&1), b->z_, v[0].light );
-				world->GetBackVertexLight( b->x_ + chunk_loaded_zone_X, b->y_ + chunk_loaded_zone_Y + 1, b->z_, v[1].light );
-				world->GetForwardVertexLight( b->x_ + chunk_loaded_zone_X, b->y_ + chunk_loaded_zone_Y, b->z_, v[2].light );
-				world->GetBackVertexLight( b->x_ + chunk_loaded_zone_X + 1, b->y_ + chunk_loaded_zone_Y + ((1+b->x_)&1), b->z_, v[3].light );
-				world->GetForwardVertexLight( b->x_ + chunk_loaded_zone_X, b->y_ + chunk_loaded_zone_Y - 1, b->z_, v[4].light );
-				world->GetBackVertexLight(  b->x_ + chunk_loaded_zone_X, b->y_ + chunk_loaded_zone_Y, b->z_, v[5].light );
+				world.GetForwardVertexLight( b->x_ + chunk_loaded_zone_X - 1, b->y_ + chunk_loaded_zone_Y - (b->x_&1), b->z_, v[0].light );
+				world.GetBackVertexLight( b->x_ + chunk_loaded_zone_X, b->y_ + chunk_loaded_zone_Y + 1, b->z_, v[1].light );
+				world.GetForwardVertexLight( b->x_ + chunk_loaded_zone_X, b->y_ + chunk_loaded_zone_Y, b->z_, v[2].light );
+				world.GetBackVertexLight( b->x_ + chunk_loaded_zone_X + 1, b->y_ + chunk_loaded_zone_Y + ((1+b->x_)&1), b->z_, v[3].light );
+				world.GetForwardVertexLight( b->x_ + chunk_loaded_zone_X, b->y_ + chunk_loaded_zone_Y - 1, b->z_, v[4].light );
+				world.GetBackVertexLight(  b->x_ + chunk_loaded_zone_X, b->y_ + chunk_loaded_zone_Y, b->z_, v[5].light );
 
 				v+= 6;
 			}
@@ -175,11 +174,11 @@ void r_ChunkInfo::BuildWaterSurfaceMesh()
 				v[1].coord[1]= v[2].coord[1]= v[0].coord[1] + 1;
 				v[4].coord[1]= v[5].coord[1]= v[0].coord[1] - 1;
 
-				short h=
+				const int h=
 					( b->z_ << R_WATER_VERTICES_Z_SCALER_LOG2 ) +
 					( b->LiquidLevel() >> ( H_MAX_WATER_LEVEL_LOG2 - R_WATER_VERTICES_Z_SCALER_LOG2 ) );
 
-				v[0].coord[2]= v[1].coord[2]= v[2].coord[2]= v[3].coord[2]= v[4].coord[2]= v[5].coord[2]= h;
+				v[0].coord[2]= v[1].coord[2]= v[2].coord[2]= v[3].coord[2]= v[4].coord[2]= v[5].coord[2]= short(h);
 
 				unsigned char light[2][2];
 				chunk_->GetLightsLevel( b->x_, b->y_, b->z_ + 0, light[0] );
@@ -303,11 +302,11 @@ void r_ChunkInfo::GetQuadCount()
 		int column_max_geometry_height= 0;
 		for( int z= 0; z< H_CHUNK_HEIGHT - 2; z++ )
 		{
-			unsigned char t= t_p[z] & H_VISIBLY_TRANSPARENCY_BITS;
-			unsigned char t_fr= t_fr_p[z] & H_VISIBLY_TRANSPARENCY_BITS;
-			unsigned char t_br= t_br_p[z] & H_VISIBLY_TRANSPARENCY_BITS;
-			unsigned char t_up= t_p[z+1] & H_VISIBLY_TRANSPARENCY_BITS;
-			unsigned char t_f= t_f_p[z] & H_VISIBLY_TRANSPARENCY_BITS;
+			const unsigned char t= t_p[z] & H_VISIBLY_TRANSPARENCY_BITS;
+			const unsigned char t_fr= t_fr_p[z] & H_VISIBLY_TRANSPARENCY_BITS;
+			const unsigned char t_br= t_br_p[z] & H_VISIBLY_TRANSPARENCY_BITS;
+			const unsigned char t_up= t_p[z+1] & H_VISIBLY_TRANSPARENCY_BITS;
+			const unsigned char t_f= t_f_p[z] & H_VISIBLY_TRANSPARENCY_BITS;
 
 			if( t != t_up )
 			{
@@ -388,13 +387,13 @@ void r_ChunkInfo::BuildChunkMesh()
 {
 	r_WorldVertex* v= vertex_data_;
 
-	const h_World* w= chunk_->GetWorld();
-	int X= chunk_->Longitude() * H_CHUNK_WIDTH;
-	int Y= chunk_->Latitude () * H_CHUNK_WIDTH;
-	int relative_X= ( chunk_->Longitude() - w->Longitude() ) * H_CHUNK_WIDTH;
-	int relative_Y= ( chunk_->Latitude () - w->Latitude () ) * H_CHUNK_WIDTH;
+	const h_World& world= *chunk_->GetWorld();
+	const int X= chunk_->Longitude() * H_CHUNK_WIDTH;
+	const int Y= chunk_->Latitude () * H_CHUNK_WIDTH;
+	const int relative_X= ( chunk_->Longitude() - world.Longitude() ) * H_CHUNK_WIDTH;
+	const int relative_Y= ( chunk_->Latitude () - world.Latitude () ) * H_CHUNK_WIDTH;
 
-	bool flat_lighting= chunk_->IsEdgeChunk();
+	const bool flat_lighting= chunk_->IsEdgeChunk();
 
 	for( int x= 0; x< H_CHUNK_WIDTH; x++ )
 	for( int y= 0; y< H_CHUNK_WIDTH; y++ )
@@ -630,12 +629,12 @@ void r_ChunkInfo::BuildChunkMesh()
 				}
 				else
 				{
-					w->GetForwardVertexLight( x + relative_X - 1, y + relative_Y - (x&1), z, v[0].light );
-					w->GetBackVertexLight( x + relative_X, y + relative_Y + 1, z, v[1].light );
-					w->GetForwardVertexLight( x + relative_X, y + relative_Y, z, v[2].light );
-					w->GetBackVertexLight( x + relative_X + 1, y + relative_Y + ((1+x)&1), z, v[3].light );
-					w->GetForwardVertexLight( x + relative_X, y + relative_Y - 1, z, v[7].light );
-					w->GetBackVertexLight(  x + relative_X, y + relative_Y, z, v[4].light );
+					world.GetForwardVertexLight( x + relative_X - 1, y + relative_Y - (x&1), z, v[0].light );
+					world.GetBackVertexLight( x + relative_X, y + relative_Y + 1, z, v[1].light );
+					world.GetForwardVertexLight( x + relative_X, y + relative_Y, z, v[2].light );
+					world.GetBackVertexLight( x + relative_X + 1, y + relative_Y + ((1+x)&1), z, v[3].light );
+					world.GetForwardVertexLight( x + relative_X, y + relative_Y - 1, z, v[7].light );
+					world.GetBackVertexLight(  x + relative_X, y + relative_Y, z, v[4].light );
 				}
 				v[5]= v[0];
 				v[6]= v[3];
@@ -693,10 +692,10 @@ void r_ChunkInfo::BuildChunkMesh()
 				}
 				else
 				{
-					w->GetBackVertexLight( x + relative_X + 1, y + relative_Y + ((x+1)&1), z, v[0].light );
-					w->GetForwardVertexLight( x + relative_X, y + relative_Y, z, v[1].light );
-					w->GetForwardVertexLight( x + relative_X, y + relative_Y, z-1, v[2].light  );
-					w->GetBackVertexLight( x + relative_X + 1, y + relative_Y + ((x+1)&1), z-1, v[3].light  );
+					world.GetBackVertexLight( x + relative_X + 1, y + relative_Y + ((x+1)&1), z, v[0].light );
+					world.GetForwardVertexLight( x + relative_X, y + relative_Y, z, v[1].light );
+					world.GetForwardVertexLight( x + relative_X, y + relative_Y, z-1, v[2].light  );
+					world.GetBackVertexLight( x + relative_X + 1, y + relative_Y + ((x+1)&1), z-1, v[3].light  );
 				}
 				//v[0].normal_id= v[1].normal_id= v[2].normal_id= v[3].normal_id= normal_id;
 				if( normal_id == static_cast<unsigned char>(h_Direction::BackLeft) )
@@ -750,10 +749,10 @@ void r_ChunkInfo::BuildChunkMesh()
 				}
 				else
 				{
-					w->GetBackVertexLight( x + relative_X + 1, y + relative_Y + ((x+1)&1), z, v[0].light );
-					w->GetBackVertexLight( x + relative_X + 1, y + relative_Y + ((x+1)&1), z - 1, v[3].light );
-					w->GetForwardVertexLight( x + relative_X, y + relative_Y - 1, z - 1, v[2].light );
-					w->GetForwardVertexLight( x + relative_X, y + relative_Y - 1, z, v[1].light );
+					world.GetBackVertexLight( x + relative_X + 1, y + relative_Y + ((x+1)&1), z, v[0].light );
+					world.GetBackVertexLight( x + relative_X + 1, y + relative_Y + ((x+1)&1), z - 1, v[3].light );
+					world.GetForwardVertexLight( x + relative_X, y + relative_Y - 1, z - 1, v[2].light );
+					world.GetForwardVertexLight( x + relative_X, y + relative_Y - 1, z, v[1].light );
 				}
 				//v[0].normal_id= v[1].normal_id= v[2].normal_id= v[3].normal_id= normal_id;
 				if( normal_id == static_cast<unsigned char>(h_Direction::BackRight) )
@@ -807,10 +806,10 @@ void r_ChunkInfo::BuildChunkMesh()
 				}
 				else
 				{
-					w->GetBackVertexLight( x + relative_X, y + relative_Y + 1, z, v[0].light );
-					w->GetBackVertexLight( x + relative_X, y + relative_Y + 1, z - 1, v[1].light  );
-					w->GetForwardVertexLight( x + relative_X, y + relative_Y, z - 1, v[2].light  );
-					w->GetForwardVertexLight( x + relative_X, y + relative_Y, z, v[3].light  );
+					world.GetBackVertexLight( x + relative_X, y + relative_Y + 1, z, v[0].light );
+					world.GetBackVertexLight( x + relative_X, y + relative_Y + 1, z - 1, v[1].light  );
+					world.GetForwardVertexLight( x + relative_X, y + relative_Y, z - 1, v[2].light  );
+					world.GetForwardVertexLight( x + relative_X, y + relative_Y, z, v[3].light  );
 				}
 				//v[0].normal_id= v[1].normal_id= v[2].normal_id= v[3].normal_id= normal_id;
 				if( normal_id == static_cast<unsigned char>(h_Direction::Back) )
@@ -858,21 +857,19 @@ unsigned int r_ChunkInfo::GetNonstandardFormBlocksQuadCount()
 
 r_WorldVertex* r_ChunkInfo::BuildNonstandardFormBlocks( r_WorldVertex* v )
 {
-	//static const unsigned int c_next_index[8]= { 2, 2, 3, 4, 5, 6, 7, 8 };
+	const h_World& world= *chunk_->GetWorld();
 
-	const h_World* world= chunk_->GetWorld();
+	const int X= chunk_->Longitude() << H_CHUNK_WIDTH_LOG2;
+	const int Y= chunk_->Latitude () << H_CHUNK_WIDTH_LOG2;
 
-	int X= chunk_->Longitude() << H_CHUNK_WIDTH_LOG2;
-	int Y= chunk_->Latitude () << H_CHUNK_WIDTH_LOG2;
+	const int relative_X= ( chunk_->Longitude() - world.Longitude() ) * H_CHUNK_WIDTH;
+	const int relative_Y= ( chunk_->Latitude () - world.Latitude () ) * H_CHUNK_WIDTH;
 
-	int relative_X= ( chunk_->Longitude() - world->Longitude() ) * H_CHUNK_WIDTH;
-	int relative_Y= ( chunk_->Latitude () - world->Latitude () ) * H_CHUNK_WIDTH;
-
-	bool flat_lighting= chunk_->IsEdgeChunk();
+	const bool flat_lighting= chunk_->IsEdgeChunk();
 
 	const std::vector< h_NonstandardFormBlock* >& blocks= chunk_->GetNonstandartFormBlocksList();
 
-	for( const h_NonstandardFormBlock* block : blocks )
+	for( const h_NonstandardFormBlock* const block : blocks )
 	{
 		switch( h_Block::Form(block->Type()) )
 		{
@@ -907,22 +904,22 @@ r_WorldVertex* r_ChunkInfo::BuildNonstandardFormBlocks( r_WorldVertex* v )
 				unsigned char light[12][2];
 				if( !flat_lighting )
 				{
-					int x= block->GetX() + relative_X;
-					int y= block->GetY() + relative_Y;
+					const int x= block->GetX() + relative_X;
+					const int y= block->GetY() + relative_Y;
 
 					for( unsigned int i= 0; i < 2; i++ )
 					{
-						int h= block->GetZ() - 1 + int(i);
-						world->GetForwardVertexLight( x-1, y - (x&1)    , h, light[6*i+0] );
-						world->GetBackVertexLight   ( x  , y + 1        , h, light[6*i+1] );
-						world->GetForwardVertexLight( x  , y            , h, light[6*i+2] );
-						world->GetBackVertexLight   ( x+1, y + ((1+x)&1), h, light[6*i+3] );
-						world->GetForwardVertexLight( x  , y - 1        , h, light[6*i+4] );
-						world->GetBackVertexLight   ( x  , y            , h, light[6*i+5] );
+						const int h= block->GetZ() - 1 + int(i);
+						world.GetForwardVertexLight( x-1, y - (x&1)    , h, light[6*i+0] );
+						world.GetBackVertexLight   ( x  , y + 1        , h, light[6*i+1] );
+						world.GetForwardVertexLight( x  , y            , h, light[6*i+2] );
+						world.GetBackVertexLight   ( x+1, y + ((1+x)&1), h, light[6*i+3] );
+						world.GetForwardVertexLight( x  , y - 1        , h, light[6*i+4] );
+						world.GetBackVertexLight   ( x  , y            , h, light[6*i+5] );
 					}
 
 					// Calculate light for vertices in block center.
-					unsigned int avg_index= block->Direction() == h_Direction::Up ? 6 : 0;
+					const unsigned int avg_index= block->Direction() == h_Direction::Up ? 6 : 0;
 					for( unsigned int i= 0; i < 6; i++ )
 					{
 						light[i+avg_index][0]= (light[i][0] + light[i+6][0]) >> 1;
@@ -931,7 +928,7 @@ r_WorldVertex* r_ChunkInfo::BuildNonstandardFormBlocks( r_WorldVertex* v )
 				}
 				else
 				{
-					unsigned int addr= BlockAddr( block->GetX(), block->GetY(), block->GetZ() );
+					const unsigned int addr= BlockAddr( block->GetX(), block->GetY(), block->GetZ() );
 					light[0][0]= chunk_->GetSunLightData ()[ addr ] << 4;
 					light[0][1]= chunk_->GetFireLightData()[ addr ] << 4;
 					for( unsigned int i= 1; i < 12; i++ )
@@ -952,7 +949,7 @@ r_WorldVertex* r_ChunkInfo::BuildNonstandardFormBlocks( r_WorldVertex* v )
 					v[7].coord[0]= xy[7][0];
 					v[7].coord[1]= xy[7][1];
 
-					unsigned char tex_id= r_TextureManager::GetTextureId(
+					const unsigned char tex_id= r_TextureManager::GetTextureId(
 						block_type,
 						side + (unsigned int)h_Direction::Up );
 
@@ -969,7 +966,7 @@ r_WorldVertex* r_ChunkInfo::BuildNonstandardFormBlocks( r_WorldVertex* v )
 					}
 					else
 					{
-						unsigned char tex_scale= r_TextureManager::GetTextureScale( tex_id );
+						const unsigned char tex_scale= r_TextureManager::GetTextureScale( tex_id );
 
 						v[0].tex_coord[0]= tex_scale * xy[0][0];
 						v[1].tex_coord[0]= v[4].tex_coord[0]= v[0].tex_coord[0] + 1*tex_scale;
@@ -1025,10 +1022,10 @@ r_WorldVertex* r_ChunkInfo::BuildNonstandardFormBlocks( r_WorldVertex* v )
 				// forward and back part
 				for( unsigned int side= 0; side < 2; side++ )
 				{
-					unsigned char tex_id= r_TextureManager::GetTextureId(
+					const unsigned char tex_id= r_TextureManager::GetTextureId(
 						block_type,
 						static_cast<unsigned char>(h_Direction::Forward) + side );
-					unsigned char tex_scale= r_TextureManager::GetTextureScale( tex_id );
+					const unsigned char tex_scale= r_TextureManager::GetTextureScale( tex_id );
 
 					v[0].coord[0]= v[ 1 ].coord[0]= 3 * ( block->GetX() + X ) + 1;
 					v[0].coord[1]= v[ 1 ].coord[1]= v[2].coord[1]= v[ 3 ].coord[1]= 2 * ( block->GetY() + Y - int(side) ) - (block->GetX()&1) + 2 + 1;
@@ -1067,10 +1064,10 @@ r_WorldVertex* r_ChunkInfo::BuildNonstandardFormBlocks( r_WorldVertex* v )
 				// forward_right and back_left
 				for( unsigned int side= 0; side < 2; side++ )
 				{
-					unsigned char tex_id= r_TextureManager::GetTextureId(
+					const unsigned char tex_id= r_TextureManager::GetTextureId(
 						block_type,
 						static_cast<unsigned char>(h_Direction::ForwardRight) + side );
-					unsigned char tex_scale= r_TextureManager::GetTextureScale( tex_id );
+					const unsigned char tex_scale= r_TextureManager::GetTextureScale( tex_id );
 
 					v[ 1 ].coord[0]= v[2].coord[0]= 3 * ( block->GetX() + X ) + 3 - int(3*side);
 					v[0].coord[0]= v[ 3 ].coord[0]= v[ 1 ].coord[0] + 1;
@@ -1110,10 +1107,10 @@ r_WorldVertex* r_ChunkInfo::BuildNonstandardFormBlocks( r_WorldVertex* v )
 				// back_right and forward_left
 				for( unsigned int side= 0; side < 2; side++ )
 				{
-					unsigned char tex_id= r_TextureManager::GetTextureId(
+					const unsigned char tex_id= r_TextureManager::GetTextureId(
 						block_type,
 						static_cast<unsigned char>(h_Direction::ForwardLeft) + side );
-					unsigned char tex_scale= r_TextureManager::GetTextureScale( tex_id );
+					const unsigned char tex_scale= r_TextureManager::GetTextureScale( tex_id );
 
 					v[ 1 ].coord[0]= v[2].coord[0]= 3 * ( block->GetX() + X ) + 3 - int(side*3);
 					v[0].coord[0]= v[ 3 ].coord[0]= v[ 1 ].coord[0] + 1;
@@ -1146,9 +1143,9 @@ r_WorldVertex* r_ChunkInfo::BuildNonstandardFormBlocks( r_WorldVertex* v )
 				{ 0, 1, 2, 3, 4, 5,  0, 1, 2, 3, 4, 5,  0, 1, 2, 3, 4, 5, };
 				static const unsigned int c_dir_to_rot_table[6]=
 				{ 0, 3,  1, 4,  5, 2 };
-				unsigned int rot= c_dir_to_rot_table[ ((unsigned int)block->Direction()) - ((unsigned int)h_Direction::Forward) ];
+				const unsigned int rot= c_dir_to_rot_table[ ((unsigned int)block->Direction()) - ((unsigned int)h_Direction::Forward) ];
 
-				int z= block->GetZ() << 1;
+				const int z= block->GetZ() << 1;
 
 				int xy[6][2];
 				xy[0][0]= 3 * ( X + block->GetX() );
@@ -1172,17 +1169,17 @@ r_WorldVertex* r_ChunkInfo::BuildNonstandardFormBlocks( r_WorldVertex* v )
 					for( unsigned int i= 0; i < 2; i++ )
 					{
 						int h= block->GetZ() - 1 + int(i);
-						world->GetForwardVertexLight( x-1, y - (x&1)    , h, light[6*i+0] );
-						world->GetBackVertexLight   ( x  , y + 1        , h, light[6*i+1] );
-						world->GetForwardVertexLight( x  , y            , h, light[6*i+2] );
-						world->GetBackVertexLight   ( x+1, y + ((1+x)&1), h, light[6*i+3] );
-						world->GetForwardVertexLight( x  , y - 1        , h, light[6*i+4] );
-						world->GetBackVertexLight   ( x  , y            , h, light[6*i+5] );
+						world.GetForwardVertexLight( x-1, y - (x&1)    , h, light[6*i+0] );
+						world.GetBackVertexLight   ( x  , y + 1        , h, light[6*i+1] );
+						world.GetForwardVertexLight( x  , y            , h, light[6*i+2] );
+						world.GetBackVertexLight   ( x+1, y + ((1+x)&1), h, light[6*i+3] );
+						world.GetForwardVertexLight( x  , y - 1        , h, light[6*i+4] );
+						world.GetBackVertexLight   ( x  , y            , h, light[6*i+5] );
 					}
 				}
 				else
 				{
-					unsigned int addr= BlockAddr( block->GetX(), block->GetY(), block->GetZ() );
+					const unsigned int addr= BlockAddr( block->GetX(), block->GetY(), block->GetZ() );
 					light[0][0]= chunk_->GetSunLightData ()[ addr ] << 4;
 					light[0][1]= chunk_->GetFireLightData()[ addr ] << 4;
 					for( unsigned int i= 1; i < 12; i++ )
@@ -1242,11 +1239,11 @@ r_WorldVertex* r_ChunkInfo::BuildNonstandardFormBlocks( r_WorldVertex* v )
 				// Up and down sides
 				for( unsigned int side= 0; side < 2; side++ )
 				{
-					unsigned char tex_id= r_TextureManager::GetTextureId(
+					const unsigned char tex_id= r_TextureManager::GetTextureId(
 						block->Type(),
 						(unsigned int)h_Direction::Up + side )
 						;
-					unsigned char tex_scale= r_TextureManager::GetTextureScale( tex_id );
+					const unsigned char tex_scale= r_TextureManager::GetTextureScale( tex_id );
 
 					v[0].coord[0]= xy[ c_rot_table[rot+0] ][0];
 					v[0].coord[1]= xy[ c_rot_table[rot+0] ][1];
@@ -1302,12 +1299,12 @@ void rBuildChunkFailingBlocks( const r_ChunkInfo& chunk_info, std::vector<r_Worl
 	out_vertices.resize( out_vertices.size() + vertex_count );
 	r_WorldVertex* v= out_vertices.data() + out_vertices.size() - vertex_count;
 
-	const h_World* world= chunk_info.chunk_->GetWorld();
+	const h_World& world= *chunk_info.chunk_->GetWorld();
 
 	int X= chunk_info.chunk_->Longitude() << H_CHUNK_WIDTH_LOG2;
 	int Y= chunk_info.chunk_->Latitude () << H_CHUNK_WIDTH_LOG2;
-	int relative_X= ( chunk_info.chunk_->Longitude() - world->Longitude() ) << H_CHUNK_WIDTH_LOG2;
-	int relative_Y= ( chunk_info.chunk_->Latitude () - world->Latitude () ) << H_CHUNK_WIDTH_LOG2;
+	int relative_X= ( chunk_info.chunk_->Longitude() - world.Longitude() ) << H_CHUNK_WIDTH_LOG2;
+	int relative_Y= ( chunk_info.chunk_->Latitude () - world.Latitude () ) << H_CHUNK_WIDTH_LOG2;
 
 	bool flat_lighting= chunk_info.chunk_->IsEdgeChunk();
 
@@ -1330,12 +1327,12 @@ void rBuildChunkFailingBlocks( const r_ChunkInfo& chunk_info, std::vector<r_Worl
 			for( unsigned int i= 0; i < 3; i++ )
 			{
 				int h= int_z - 1 + int(i);
-				world->GetForwardVertexLight( x-1, y - (x&1)    , h, primary_light[6*i+0] );
-				world->GetBackVertexLight   ( x  , y + 1        , h, primary_light[6*i+1] );
-				world->GetForwardVertexLight( x  , y            , h, primary_light[6*i+2] );
-				world->GetBackVertexLight   ( x+1, y + ((1+x)&1), h, primary_light[6*i+3] );
-				world->GetForwardVertexLight( x  , y - 1        , h, primary_light[6*i+4] );
-				world->GetBackVertexLight   ( x  , y            , h, primary_light[6*i+5] );
+				world.GetForwardVertexLight( x-1, y - (x&1)    , h, primary_light[6*i+0] );
+				world.GetBackVertexLight   ( x  , y + 1        , h, primary_light[6*i+1] );
+				world.GetForwardVertexLight( x  , y            , h, primary_light[6*i+2] );
+				world.GetBackVertexLight   ( x+1, y + ((1+x)&1), h, primary_light[6*i+3] );
+				world.GetForwardVertexLight( x  , y - 1        , h, primary_light[6*i+4] );
+				world.GetBackVertexLight   ( x  , y            , h, primary_light[6*i+5] );
 			}
 
 			fixed8_t k= z & 255;
