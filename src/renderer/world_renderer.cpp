@@ -263,7 +263,16 @@ void r_WorldRenderer::Update()
 
 		if( chunk_info_ptr->updated_ )
 		{
-			chunk_info_ptr->GetQuadCount();
+			// TODO - mayb set in other place?
+			chunk_info_ptr->is_points_mesh_ =
+				std::abs( int(x) - int(chunks_info_.matrix_size[0]>>1) ) +
+				std::abs( int(y) - int(chunks_info_.matrix_size[1]>>1) )
+					> 4;
+
+			if( chunk_info_ptr->is_points_mesh_ )
+				chunk_info_ptr->GetPointsMeshPointCount();
+			else
+				chunk_info_ptr->GetQuadCount();
 
 			r_WorldVBOCluster& cluster=
 				wvb->GetCluster( longitude, latitude );
@@ -393,7 +402,10 @@ void r_WorldRenderer::Update()
 			chunk_info_ptr->vertex_data_=
 				reinterpret_cast<r_WorldVertex*>(
 				cluster.vertices_.data() + segment.first_vertex_index * sizeof(r_WorldVertex) );
-			chunk_info_ptr->BuildChunkMesh();
+			if( chunk_info_ptr->is_points_mesh_ )
+				chunk_info_ptr->BuildPointsMesh();
+			else
+				chunk_info_ptr->BuildChunkMesh();
 
 			// Finally, reset updated flag.
 			chunk_info_ptr->updated_= false;
@@ -903,11 +915,23 @@ unsigned int r_WorldRenderer::DrawClusterMatrix( r_WVB* wvb, unsigned int triang
 			r_WorldVBOClusterSegment& segment= cluster->segments_[ x + y * wvb->cluster_size_[0] ];
 			if( segment.vertex_count > 0 )
 			{
-				glDrawElementsBaseVertex(
-					GL_TRIANGLES,
-					segment.vertex_count * 3 * triangles_per_primitive / vertices_per_primitive,
-					GL_UNSIGNED_SHORT,
-					nullptr, segment.first_vertex_index );
+				if( vertices_per_primitive == 1 )
+				{
+					H_ASSERT( triangles_per_primitive == 1 );
+					glDrawArrays(
+						GL_POINTS,
+						segment.first_vertex_index,
+						segment.vertex_count );
+				}
+				else
+				{
+
+					glDrawElementsBaseVertex(
+						GL_TRIANGLES,
+						segment.vertex_count * 3 * triangles_per_primitive / vertices_per_primitive,
+						GL_UNSIGNED_SHORT,
+						nullptr, segment.first_vertex_index );
+				}
 
 				vertex_count+= segment.vertex_count;
 			}
@@ -976,6 +1000,7 @@ unsigned int r_WorldRenderer::DrawClusterMatrix(
 
 void r_WorldRenderer::DrawWorld()
 {
+	static const float c_point_size_for_points_mode= 4.0f; // TODO - calibrate
 	static const GLenum state_blend_mode[]= { GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA };
 	static const r_OGLState state(
 		false, true, true, false,
@@ -984,6 +1009,7 @@ void r_WorldRenderer::DrawWorld()
 		r_OGLState::default_clear_depth,
 		GL_FRONT );
 	r_OGLStateManager::UpdateState( state );
+	glPointSize( c_point_size_for_points_mode );
 
 	texture_manager_->BindTextureArray( 0 );
 
@@ -999,8 +1025,16 @@ void r_WorldRenderer::DrawWorld()
 	world_shader_.Uniform( "fire_light_color", lighting_data_.current_fire_light );
 	world_shader_.Uniform( "ambient_light_color", lighting_data_.current_ambient_light );
 
-	unsigned int vertex_count= DrawClusterMatrix( world_vertex_buffer_.get(), 2, 4 );
-	world_quads_in_frame_= vertex_count / 4;
+	if( false )
+	{
+		unsigned int vertex_count= DrawClusterMatrix( world_vertex_buffer_.get(), 2, 4 );
+		world_quads_in_frame_= vertex_count / 4;
+	}
+	else
+	{
+		DrawClusterMatrix( world_vertex_buffer_.get(), 1, 1 );
+		world_quads_in_frame_++;
+	}
 
 	// Failing blocks
 
@@ -1010,6 +1044,8 @@ void r_WorldRenderer::DrawWorld()
 
 	failing_blocks_vbo_.Bind();
 	glDrawElements( GL_TRIANGLES, failing_blocks_vertex_count_ / 4 * 6, GL_UNSIGNED_SHORT, nullptr );
+
+	glPointSize(1.0f);
 }
 
 void r_WorldRenderer::DrawRain()

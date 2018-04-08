@@ -47,6 +47,8 @@ public:
 	unsigned int water_vertex_count_= 0;
 	bool water_updated_= true;
 
+	bool is_points_mesh_= false;
+
 	// Flags, setted by world.
 	// Chunk can really updates later, after this flags setted.
 	bool update_requested_= false;
