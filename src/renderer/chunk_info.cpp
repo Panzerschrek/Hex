@@ -1861,9 +1861,9 @@ void r_ChunkInfo::BuildPointsMesh()
 				tex_id= r_TextureManager::GetTextureId( b->Type(), normal_id );
 				tex_scale= r_TextureManager::GetTextureScale( tex_id );
 
-				v->coord[0]= 3 * ( x + X );
+				v->coord[0]= 3 * ( x + X ) + 2;
 				v->coord[1]= 2 * ( y + Y ) - (x&1) + 2;
-				v->coord[2]= z * 2;
+				v->coord[2]= z * 2 + 2;
 				v->light[0]= light[0] << 4; v->light[1]= light[1] << 4;
 				v->tex_coord[0]= v->tex_coord[1]= 0;
 				v->tex_coord[2]= tex_id;
@@ -1892,7 +1892,7 @@ void r_ChunkInfo::BuildPointsMesh()
 
 				v->coord[0]= 3 * ( x + X ) + 3 + 1;
 				v->coord[1]= 2 * ( y + Y ) - (x&1) + 2;
-				v->coord[2]= z * 2;
+				v->coord[2]= z * 2 + 1;
 				v->light[0]= light[0] << 4; v->light[1]= light[1] << 4;
 				v->tex_coord[0]= v->tex_coord[1]= 0;
 				v->tex_coord[2]= tex_id;
@@ -1919,9 +1919,9 @@ void r_ChunkInfo::BuildPointsMesh()
 				tex_id= r_TextureManager::GetTextureId( b->Type(), normal_id );
 				tex_scale= r_TextureManager::GetTextureScale( tex_id );
 
-				v->coord[0]= 3 * ( x + X ) + 3 + 1;
-				v->coord[1]= v[ 3 ].coord[1]= 2 * ( y + Y ) - (x&1) + 2;
-				v->coord[2]= z * 2;
+				v->coord[0]= 3 * ( x + X ) + 3;
+				v->coord[1]= v[ 3 ].coord[1]= 2 * ( y + Y ) - (x&1) + 1;
+				v->coord[2]= z * 2 + 1;
 				v->light[0]= light[0] << 4; v->light[1]= light[1] << 4;
 				v->tex_coord[0]= v->tex_coord[1]= 0;
 				v->tex_coord[2]= tex_id;
@@ -1948,9 +1948,9 @@ void r_ChunkInfo::BuildPointsMesh()
 				tex_id= r_TextureManager::GetTextureId( b->Type(), normal_id );
 				tex_scale= r_TextureManager::GetTextureScale( tex_id );
 
-				v->coord[0]= 3 * ( x + X ) + 1;
+				v->coord[0]= 3 * ( x + X ) + 2;
 				v->coord[1]= 2 * ( y + Y ) - (x&1) + 2 + 1;
-				v->coord[2]= z * 2;
+				v->coord[2]= z * 2 + 1;
 				v->light[0]= light[0] << 4; v->light[1]= light[1] << 4;
 				v->tex_coord[0]= v->tex_coord[1]= 0;
 				v->tex_coord[2]= tex_id;

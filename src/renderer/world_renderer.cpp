@@ -264,10 +264,7 @@ void r_WorldRenderer::Update()
 		if( chunk_info_ptr->updated_ )
 		{
 			// TODO - mayb set in other place?
-			chunk_info_ptr->is_points_mesh_ =
-				std::abs( int(x) - int(chunks_info_.matrix_size[0]>>1) ) +
-				std::abs( int(y) - int(chunks_info_.matrix_size[1]>>1) )
-					> 4;
+			chunk_info_ptr->is_points_mesh_ = true;
 
 			if( chunk_info_ptr->is_points_mesh_ )
 				chunk_info_ptr->GetPointsMeshPointCount();
@@ -925,7 +922,6 @@ unsigned int r_WorldRenderer::DrawClusterMatrix( r_WVB* wvb, unsigned int triang
 				}
 				else
 				{
-
 					glDrawElementsBaseVertex(
 						GL_TRIANGLES,
 						segment.vertex_count * 3 * triangles_per_primitive / vertices_per_primitive,
