@@ -38,6 +38,7 @@ struct r_WorldVBOClusterSegment
 	unsigned int first_vertex_index;
 	unsigned int vertex_count;
 	unsigned int capacity;
+	unsigned int primitive_type; // specific data for rendering
 
 	// for GPU thread. Set true - CPU thread, set false - GPU thread.
 	bool updated;

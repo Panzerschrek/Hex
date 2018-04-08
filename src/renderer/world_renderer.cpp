@@ -25,6 +25,14 @@
 #include "../player.hpp"
 #include "../world.hpp"
 
+
+enum class MeshPrimitiveType : unsigned int
+{
+	Quads,
+	Hexagons,
+	Points,
+};
+
 struct r_ClipPlane
 {
 	m_Vec3 n;
@@ -261,11 +269,20 @@ void r_WorldRenderer::Update()
 		int longitude= chunks_info_.matrix_position[0] + int(x);
 		int latitude = chunks_info_.matrix_position[1] + int(y);
 
+		// TODO - select point mesh mode not so fast ( not for each world position change )
+		const bool is_points_mesh=
+			std::abs( int(x) - int(chunks_info_.matrix_size[0]/2u) ) +
+			std::abs( int(y) - int(chunks_info_.matrix_size[1]/2u) )
+				> 8;
+		if( is_points_mesh != chunk_info_ptr->is_points_mesh_ )
+		{
+			chunk_info_ptr->updated_= true;
+			chunk_info_ptr->update_requested_= true;
+			chunk_info_ptr->is_points_mesh_= is_points_mesh;
+		}
+
 		if( chunk_info_ptr->updated_ )
 		{
-			// TODO - mayb set in other place?
-			chunk_info_ptr->is_points_mesh_ = true;
-
 			if( chunk_info_ptr->is_points_mesh_ )
 				chunk_info_ptr->GetPointsMeshPointCount();
 			else
@@ -275,6 +292,8 @@ void r_WorldRenderer::Update()
 				wvb->GetCluster( longitude, latitude );
 			r_WorldVBOClusterSegment& segment=
 				wvb->GetClusterSegment( longitude, latitude );
+
+			segment.primitive_type= static_cast<unsigned int>( chunk_info_ptr->is_points_mesh_ ? MeshPrimitiveType::Points : MeshPrimitiveType::Quads );
 
 			segment.vertex_count= chunk_info_ptr->vertex_count_;
 			if( segment.vertex_count > segment.capacity )
@@ -288,6 +307,8 @@ void r_WorldRenderer::Update()
 				wvb_water->GetCluster( longitude, latitude );
 			r_WorldVBOClusterSegment& segment=
 				wvb_water->GetClusterSegment( longitude, latitude );
+
+			segment.primitive_type= static_cast<unsigned int>( MeshPrimitiveType::Hexagons );
 
 			segment.vertex_count= chunk_info_ptr->water_vertex_count_;
 			if( segment.vertex_count > segment.capacity )
@@ -912,21 +933,22 @@ unsigned int r_WorldRenderer::DrawClusterMatrix( r_WVB* wvb, unsigned int triang
 			r_WorldVBOClusterSegment& segment= cluster->segments_[ x + y * wvb->cluster_size_[0] ];
 			if( segment.vertex_count > 0 )
 			{
-				if( vertices_per_primitive == 1 )
+				if( segment.primitive_type == static_cast<unsigned int>(MeshPrimitiveType::Points) )
 				{
-					H_ASSERT( triangles_per_primitive == 1 );
-					glDrawArrays(
-						GL_POINTS,
-						segment.first_vertex_index,
-						segment.vertex_count );
+					if( vertices_per_primitive == 1u && triangles_per_primitive == 1u )
+						glDrawArrays(
+							GL_POINTS,
+							segment.first_vertex_index,
+							segment.vertex_count );
 				}
 				else
 				{
-					glDrawElementsBaseVertex(
-						GL_TRIANGLES,
-						segment.vertex_count * 3 * triangles_per_primitive / vertices_per_primitive,
-						GL_UNSIGNED_SHORT,
-						nullptr, segment.first_vertex_index );
+					if( vertices_per_primitive > 1u )
+						glDrawElementsBaseVertex(
+							GL_TRIANGLES,
+							segment.vertex_count * 3 * triangles_per_primitive / vertices_per_primitive,
+							GL_UNSIGNED_SHORT,
+							nullptr, segment.first_vertex_index );
 				}
 
 				vertex_count+= segment.vertex_count;
@@ -1021,16 +1043,10 @@ void r_WorldRenderer::DrawWorld()
 	world_shader_.Uniform( "fire_light_color", lighting_data_.current_fire_light );
 	world_shader_.Uniform( "ambient_light_color", lighting_data_.current_ambient_light );
 
-	if( false )
-	{
-		unsigned int vertex_count= DrawClusterMatrix( world_vertex_buffer_.get(), 2, 4 );
-		world_quads_in_frame_= vertex_count / 4;
-	}
-	else
-	{
-		DrawClusterMatrix( world_vertex_buffer_.get(), 1, 1 );
-		world_quads_in_frame_++;
-	}
+	unsigned int vertex_count= DrawClusterMatrix( world_vertex_buffer_.get(), 2, 4 );
+	world_quads_in_frame_= vertex_count / 4;
+
+	DrawClusterMatrix( world_vertex_buffer_.get(), 1, 1 ); // Points mode
 
 	// Failing blocks
 
@@ -1185,8 +1201,8 @@ void r_WorldRenderer::DrawWater()
 	water_shader_.Uniform( "fire_light_color", lighting_data_.current_fire_light );
 	water_shader_.Uniform( "ambient_light_color", R_AMBIENT_LIGHT_COLOR );
 
-	unsigned int vertex_count= DrawClusterMatrix( world_water_vertex_buffer_.get(), 4, 6 );
-	water_hexagons_in_frame_= vertex_count / 6;
+	//unsigned int vertex_count= DrawClusterMatrix( world_water_vertex_buffer_.get(), 4, 6 );
+	//water_hexagons_in_frame_= vertex_count / 6;
 }
 
 void r_WorldRenderer::DrawFire()

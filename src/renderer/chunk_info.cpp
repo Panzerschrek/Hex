@@ -1655,7 +1655,7 @@ void r_ChunkInfo::GetPointsMeshPointCount()
 			max_geometry_height_= column_max_geometry_height;
 	}//for xy
 
-	vertex_count_= point_count * 4;
+	vertex_count_= point_count;
 }
 
 void r_ChunkInfo::BuildPointsMesh()
@@ -1958,8 +1958,6 @@ void r_ChunkInfo::BuildPointsMesh()
 			}//forward quad
 		}//for z
 	}//for xy
-
-	v= BuildNonstandardFormBlocks( v );
 
 	H_ASSERT( v - vertex_data_ == (int)vertex_count_ );
 }
