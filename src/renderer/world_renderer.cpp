@@ -1046,7 +1046,10 @@ void r_WorldRenderer::DrawWorld()
 	unsigned int vertex_count= DrawClusterMatrix( world_vertex_buffer_.get(), 2, 4 );
 	world_quads_in_frame_= vertex_count / 4;
 
-	DrawClusterMatrix( world_vertex_buffer_.get(), 1, 1 ); // Points mode
+	// Draw points meshes.
+	glTexParameteri( GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_LOD, 10 ); // Hack! Select 1x1 texture mip level!
+	DrawClusterMatrix( world_vertex_buffer_.get(), 1, 1 );
+	glTexParameteri( GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_LOD, 0 );
 
 	// Failing blocks
 
