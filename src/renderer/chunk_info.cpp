@@ -1540,3 +1540,414 @@ void rBuildChunkFailingBlocks( const r_ChunkInfo& chunk_info, std::vector<r_Worl
 		}
 	} // for failing blocks in chunk
 }
+
+void r_ChunkInfo::GetPointsMeshPointCount()
+{
+	unsigned int point_count= 0;
+
+	min_geometry_height_= H_CHUNK_HEIGHT;
+	max_geometry_height_= 0;
+
+	for( int x= 0; x< H_CHUNK_WIDTH; x++ )
+	for( int y= 0; y< H_CHUNK_WIDTH; y++ )
+	{
+		const unsigned char* t_p= chunk_->GetTransparencyData() + BlockAddr(x,y,0);
+		const unsigned char* t_fr_p= chunk_->GetTransparencyData() + BlockAddr(x + 1, y + (1&(x+1)),0);
+		const unsigned char* t_br_p= chunk_->GetTransparencyData() + BlockAddr(x + 1, y - ( 1&x )  ,0);
+		const unsigned char* t_f_p= chunk_->GetTransparencyData() + BlockAddr(x,y+1,0);
+
+		//front chunk border
+		if( y == H_CHUNK_WIDTH - 1 && x < H_CHUNK_WIDTH - 1 )
+		{
+			if( chunk_front_ != nullptr )
+				t_f_p= chunk_front_->GetTransparencyData() + BlockAddr( x, 0, 0 );
+			else
+				t_f_p= t_p;//this block transparency
+			if(x&1)
+				t_fr_p= chunk_->GetTransparencyData() + BlockAddr( x + 1, H_CHUNK_WIDTH - 1, 0 );
+			else if( chunk_front_ != nullptr )
+				t_fr_p= chunk_front_->GetTransparencyData() + BlockAddr( x + 1, 0, 0 );
+			else
+				t_fr_p= t_p;//this block transparency
+		}
+		//back chunk border
+		else if( y == 0 && x < H_CHUNK_WIDTH - 1 )
+		{
+			if(!(x&1))
+				t_br_p= chunk_->GetTransparencyData() + BlockAddr( x + 1, 0, 0 );
+			else if( chunk_back_ != nullptr )
+				t_br_p= chunk_back_->GetTransparencyData() + BlockAddr( x+ 1, H_CHUNK_WIDTH - 1, 0 );
+			else
+				t_br_p= t_p;//this block transparency
+		}
+		//right chunk border
+		else if( x == H_CHUNK_WIDTH - 1 && y> 0 && y< H_CHUNK_WIDTH-1 )
+		{
+			if( chunk_right_ != nullptr )
+			{
+				t_fr_p= chunk_right_->GetTransparencyData() + BlockAddr( 0, y, 0 );
+				t_br_p= chunk_right_->GetTransparencyData() + BlockAddr( 0, y - 1, 0 );
+			}
+			else
+				t_fr_p= t_br_p= t_p;//this block transparency
+		}
+		else if( x == H_CHUNK_WIDTH - 1 && y == H_CHUNK_WIDTH - 1 )
+		{
+			if( chunk_front_ != nullptr )
+				t_f_p= chunk_front_->GetTransparencyData() + BlockAddr( H_CHUNK_WIDTH - 1, 0, 0 );
+			else
+				t_f_p= t_p;//this block transparency;
+			if( chunk_right_ != nullptr )
+			{
+				t_fr_p= chunk_right_->GetTransparencyData() + BlockAddr( 0, H_CHUNK_WIDTH  - 1, 0 );
+				t_br_p= chunk_right_->GetTransparencyData() + BlockAddr( 0, H_CHUNK_WIDTH  - 2, 0 );
+			}
+			else
+				t_fr_p= t_br_p= t_p;//this block transparency;
+		}
+		else if( x == H_CHUNK_WIDTH - 1 && y == 0 )
+		{
+			if( chunk_right_ != nullptr )
+				t_fr_p= chunk_right_->GetTransparencyData() + BlockAddr( 0, 0, 0 );
+			else
+				t_fr_p= t_p;//this block transparency;
+			if( chunk_back_right_ != nullptr )
+				t_br_p= chunk_back_right_->GetTransparencyData() + BlockAddr( 0, H_CHUNK_WIDTH - 1, 0 );
+			else
+				t_br_p= t_p;//this block transparency;
+		}
+		int column_max_geometry_height= 0;
+		for( int z= 0; z< H_CHUNK_HEIGHT - 2; z++ )
+		{
+			const unsigned char t= t_p[z] & H_VISIBLY_TRANSPARENCY_BITS;
+			const unsigned char t_fr= t_fr_p[z] & H_VISIBLY_TRANSPARENCY_BITS;
+			const unsigned char t_br= t_br_p[z] & H_VISIBLY_TRANSPARENCY_BITS;
+			const unsigned char t_up= t_p[z+1] & H_VISIBLY_TRANSPARENCY_BITS;
+			const unsigned char t_f= t_f_p[z] & H_VISIBLY_TRANSPARENCY_BITS;
+
+			if( t != t_up )
+			{
+				point_count++;
+				column_max_geometry_height= z;
+				if( z < min_geometry_height_ ) min_geometry_height_= z;
+			}
+			if( t != t_fr )
+			{
+				point_count++;
+				column_max_geometry_height= z;
+				if( z < min_geometry_height_ ) min_geometry_height_= z;
+			}
+			if( t != t_br )
+			{
+				point_count++;
+				column_max_geometry_height= z;
+				if( z < min_geometry_height_ ) min_geometry_height_= z;
+			}
+			if( t!= t_f )
+			{
+				point_count++;
+				column_max_geometry_height= z;
+				if( z < min_geometry_height_ ) min_geometry_height_= z;
+			}
+		}//for z
+
+		if( column_max_geometry_height > max_geometry_height_ )
+			max_geometry_height_= column_max_geometry_height;
+	}//for xy
+
+	vertex_count_= point_count * 4;
+}
+
+void r_ChunkInfo::BuildPointsMesh()
+{
+	r_WorldVertex* v= vertex_data_;
+
+	const h_World& world= *chunk_->GetWorld();
+	const int X= chunk_->Longitude() * H_CHUNK_WIDTH;
+	const int Y= chunk_->Latitude () * H_CHUNK_WIDTH;
+	const int relative_X= ( chunk_->Longitude() - world.Longitude() ) * H_CHUNK_WIDTH;
+	const int relative_Y= ( chunk_->Latitude () - world.Latitude () ) * H_CHUNK_WIDTH;
+
+	// TODO - combine light and fetch texture data.
+	// Check some coordinates.
+
+	for( int x= 0; x< H_CHUNK_WIDTH; x++ )
+	for( int y= 0; y< H_CHUNK_WIDTH; y++ )
+	{
+		int offset;
+
+		offset= BlockAddr(x,y,0);
+		const unsigned char* t_p= chunk_->GetTransparencyData() + offset;
+		const h_Block* const* b_p= chunk_->GetBlocksData() + offset;
+		const unsigned char* ls_p= chunk_->GetSunLightData() + offset;
+		const unsigned char* lf_p= chunk_->GetFireLightData() + offset;
+
+		offset= BlockAddr(x + 1, y + (1&(x+1)),0);
+		const unsigned char* t_fr_p= chunk_->GetTransparencyData() + offset;
+		const h_Block* const* b_fr_p= chunk_->GetBlocksData() + offset;
+		const unsigned char* ls_fr_p= chunk_->GetSunLightData() + offset;
+		const unsigned char* lf_fr_p= chunk_->GetFireLightData() + offset;
+
+		offset= BlockAddr(x + 1, y - ( 1&x )  ,0);
+		const unsigned char* t_br_p= chunk_->GetTransparencyData() + offset;
+		const h_Block* const* b_br_p= chunk_->GetBlocksData() + offset;
+		const unsigned char* ls_br_p= chunk_->GetSunLightData() + offset;
+		const unsigned char* lf_br_p= chunk_->GetFireLightData() + offset;
+
+		offset= BlockAddr(x,y+1,0);
+		const unsigned char* t_f_p= chunk_->GetTransparencyData() + offset;
+		const h_Block* const* b_f_p= chunk_->GetBlocksData() + offset;
+		const unsigned char* ls_f_p= chunk_->GetSunLightData() + offset;
+		const unsigned char* lf_f_p= chunk_->GetFireLightData() + offset;
+
+		//front chunk border
+		if( y == H_CHUNK_WIDTH - 1 && x < H_CHUNK_WIDTH - 1 )
+		{
+			if( chunk_front_ != nullptr )
+			{
+				offset= BlockAddr( x, 0, 0 );
+				t_f_p= chunk_front_->GetTransparencyData() + offset;
+				b_f_p= chunk_front_->GetBlocksData() + offset;
+				ls_f_p= chunk_front_->GetSunLightData() + offset;
+				lf_f_p= chunk_front_->GetFireLightData() + offset;
+			}
+			else
+				t_f_p= t_p;//this block transparency
+
+			if(x&1)
+			{
+				offset= BlockAddr( x + 1, H_CHUNK_WIDTH - 1, 0 );
+				t_fr_p= chunk_->GetTransparencyData() + offset;
+				b_fr_p= chunk_->GetBlocksData() + offset;
+				ls_fr_p= chunk_->GetSunLightData() + offset;
+				lf_fr_p= chunk_->GetFireLightData() + offset;
+			}
+			else if( chunk_front_ != nullptr )
+			{
+				offset= BlockAddr( x + 1, 0, 0 );
+				t_fr_p= chunk_front_->GetTransparencyData() + offset;
+				b_fr_p= chunk_front_->GetBlocksData() + offset;
+				ls_fr_p= chunk_front_->GetSunLightData() + offset;
+				lf_fr_p= chunk_front_->GetFireLightData() + offset;
+			}
+			else
+				t_fr_p= t_p;//this block transparency
+		}
+		//back chunk border
+		else if( y == 0 && x < H_CHUNK_WIDTH - 1 )
+		{
+			if(!(x&1))
+			{
+				offset= BlockAddr( x + 1, 0, 0 );
+				t_br_p= chunk_->GetTransparencyData() + offset;
+				b_br_p= chunk_->GetBlocksData() + offset;
+				ls_br_p= chunk_->GetSunLightData() + offset;
+				lf_br_p= chunk_->GetFireLightData() + offset;
+			}
+			else if( chunk_back_ != nullptr )
+			{
+				offset= BlockAddr( x+ 1, H_CHUNK_WIDTH - 1, 0 );
+				t_br_p= chunk_back_->GetTransparencyData() + offset;
+				b_br_p= chunk_back_->GetBlocksData() + offset;
+				ls_br_p= chunk_back_->GetSunLightData() + offset;
+				lf_br_p= chunk_back_->GetFireLightData() + offset;
+			}
+			else
+				t_br_p= t_p;//this block transparency
+		}
+		//right chunk border
+		else if( x == H_CHUNK_WIDTH - 1 && y> 0 && y< H_CHUNK_WIDTH-1 )
+		{
+			if( chunk_right_ != nullptr )
+			{
+				offset= BlockAddr( 0, y, 0 );
+				t_fr_p= chunk_right_->GetTransparencyData() + offset;
+				b_fr_p= chunk_right_->GetBlocksData() + offset;
+				ls_fr_p= chunk_right_->GetSunLightData() + offset;
+				lf_fr_p= chunk_right_->GetFireLightData() + offset;
+
+				offset= BlockAddr( 0, y - 1, 0 );
+				t_br_p= chunk_right_->GetTransparencyData() + offset;
+				b_br_p= chunk_right_->GetBlocksData() + offset;
+				ls_br_p= chunk_right_->GetSunLightData() + offset;
+				lf_br_p= chunk_right_->GetFireLightData() + offset;
+
+			}
+			else
+				t_fr_p= t_br_p= t_p;//this block transparency
+		}
+		else if( x == H_CHUNK_WIDTH - 1 && y == H_CHUNK_WIDTH - 1 )
+		{
+			if( chunk_front_ != nullptr )
+			{
+				offset= BlockAddr( H_CHUNK_WIDTH - 1, 0, 0 );
+				t_f_p= chunk_front_->GetTransparencyData() + offset;
+				b_f_p= chunk_front_->GetBlocksData() + offset;
+				ls_f_p= chunk_front_->GetSunLightData() + offset;
+				lf_f_p= chunk_front_->GetFireLightData() + offset;
+			}
+			else
+				t_f_p= t_p;//this block transparency;
+			if( chunk_right_ != nullptr )
+			{
+				offset= BlockAddr( 0, H_CHUNK_WIDTH  - 1, 0 );
+				t_fr_p= chunk_right_->GetTransparencyData() + offset;
+				b_fr_p= chunk_right_->GetBlocksData() + offset;
+				ls_fr_p= chunk_right_->GetSunLightData() + offset;
+				lf_fr_p= chunk_right_->GetFireLightData() + offset;
+
+				offset= BlockAddr( 0, H_CHUNK_WIDTH  - 2, 0 );
+				t_br_p= chunk_right_->GetTransparencyData() + offset;
+				b_br_p= chunk_right_->GetBlocksData() + offset;
+				ls_br_p= chunk_right_->GetSunLightData() + offset;
+				lf_br_p= chunk_right_->GetFireLightData() + offset;
+			}
+			else
+				t_fr_p= t_br_p= t_p;//this block transparency;
+		}
+		else if( x == H_CHUNK_WIDTH - 1 && y == 0 )
+		{
+			if( chunk_right_ != nullptr )
+			{
+				offset= BlockAddr( 0, 0, 0 );
+				t_fr_p= chunk_right_->GetTransparencyData() + offset;
+				b_fr_p= chunk_right_->GetBlocksData() + offset;
+				ls_fr_p= chunk_right_->GetSunLightData() + offset;
+				lf_fr_p= chunk_right_->GetFireLightData() + offset;
+			}
+			else
+				t_fr_p= t_p;//this block transparency;
+			if( chunk_back_right_ != nullptr )
+			{
+				offset= BlockAddr( 0, H_CHUNK_WIDTH - 1, 0 );
+				t_br_p= chunk_back_right_->GetTransparencyData() + offset;
+				b_br_p= chunk_back_right_->GetBlocksData() + offset;
+				ls_br_p= chunk_back_right_->GetSunLightData() + offset;
+				lf_br_p= chunk_back_right_->GetFireLightData() + offset;
+			}
+			else
+				t_br_p= t_p;//this block transparency;
+		}
+
+		for( int z= min_geometry_height_; z<= max_geometry_height_; z++ )
+		{
+			unsigned char normal_id;
+			unsigned char tex_id, tex_scale, light[2];
+			const h_Block* b;
+
+			unsigned char t= t_p[z] & H_VISIBLY_TRANSPARENCY_BITS;
+			unsigned char t_fr= t_fr_p[z] & H_VISIBLY_TRANSPARENCY_BITS;
+			unsigned char t_br= t_br_p[z] & H_VISIBLY_TRANSPARENCY_BITS;
+			unsigned char t_up= t_p[z+1] & H_VISIBLY_TRANSPARENCY_BITS;
+			unsigned char t_f= t_f_p[z] & H_VISIBLY_TRANSPARENCY_BITS;
+
+			if( t != t_up )//up
+			{
+				if( t > t_up )
+				{
+					normal_id= static_cast<unsigned char>(h_Direction::Down);
+					b= b_p[z+1];
+					light[0]= ls_p[z];
+					light[1]= lf_p[z];
+				}
+				else
+				{
+					normal_id= static_cast<unsigned char>(h_Direction::Up);
+					b= b_p[z];
+					light[0]= ls_p[z+1];
+					light[1]= lf_p[z+1];
+				}
+
+				tex_id= r_TextureManager::GetTextureId( b->Type(), normal_id );
+				tex_scale= r_TextureManager::GetTextureScale( tex_id );
+
+				v->coord[0]= 3 * ( x + X );
+				v->coord[1]= 2 * ( y + Y ) - (x&1) + 2;
+				v->coord[2]= z * 2;
+				v++;
+			}
+
+			if( t != t_fr )//forward right
+			{
+				if( t > t_fr )
+				{
+					normal_id= static_cast<unsigned char>(h_Direction::BackLeft);
+					b= b_fr_p[z];
+					light[0]= ls_p[z];
+					light[1]= lf_p[z];
+				}
+				else
+				{
+					normal_id= static_cast<unsigned char>(h_Direction::ForwardRight);
+					b= b_p[z];
+					light[0]= ls_fr_p[z];
+					light[1]= lf_fr_p[z];
+				}
+
+				tex_id= r_TextureManager::GetTextureId( b->Type(), normal_id );
+				tex_scale= r_TextureManager::GetTextureScale( tex_id );
+
+				v->coord[0]= 3 * ( x + X ) + 3 + 1;
+				v->coord[1]= 2 * ( y + Y ) - (x&1) + 2;
+				v->coord[2]= z * 2;
+				v++;
+			}
+
+			if( t != t_br )//back right
+			{
+				if( t > t_br )
+				{
+					normal_id= static_cast<unsigned char>(h_Direction::ForwardLeft);
+					b= b_br_p[z];
+					light[0]= ls_p[z];
+					light[1]= lf_p[z];
+				}
+				else
+				{
+					normal_id= static_cast<unsigned char>(h_Direction::BackRight);
+					b= b_p[z];
+					light[0]= ls_br_p[z];
+					light[1]= lf_br_p[z];
+				}
+
+				tex_id= r_TextureManager::GetTextureId( b->Type(), normal_id );
+				tex_scale= r_TextureManager::GetTextureScale( tex_id );
+
+				v->coord[0]= 3 * ( x + X ) + 3 + 1;
+				v->coord[1]= v[ 3 ].coord[1]= 2 * ( y + Y ) - (x&1) + 2;
+				v->coord[2]= z * 2;
+				v++;
+			}
+
+			if( t != t_f )//forward
+			{
+				if( t > t_f )
+				{
+					normal_id= static_cast<unsigned char>(h_Direction::Back);
+					b= b_f_p[z];
+					light[0]= ls_p[z];
+					light[1]= lf_p[z];
+				}
+				else
+				{
+					normal_id= static_cast<unsigned char>(h_Direction::Forward);
+					b= b_p[z];
+					light[0]= ls_f_p[z];
+					light[1]= lf_f_p[z];
+				}
+
+				tex_id= r_TextureManager::GetTextureId( b->Type(), normal_id );
+				tex_scale= r_TextureManager::GetTextureScale( tex_id );
+
+				v->coord[0]= 3 * ( x + X ) + 1;
+				v->coord[1]= 2 * ( y + Y ) - (x&1) + 2 + 1;
+				v->coord[2]= z * 2;
+				v++;
+			}//forward quad
+		}//for z
+	}//for xy
+
+	v= BuildNonstandardFormBlocks( v );
+
+	H_ASSERT( v - vertex_data_ == (int)vertex_count_ );
+}
