@@ -71,6 +71,11 @@ static const char* const g_supersampling_antialiasing_key_value= "ss";
 static const char* const g_depth_based_antialiasing_key_value= "depth_based";
 static const char* const g_fast_approximate_antialiasing_key_value= "fxaa";
 
+static const GLenum g_postprocessing_state_blend_mode[]= { GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA };
+static const r_OGLState g_postprocessing_state(
+	false, false, false, false,
+	g_postprocessing_state_blend_mode );
+
 static std::vector<unsigned short> GetQuadsIndeces()
 {
 	unsigned int quad_count= 65536 / 6 - 1;
@@ -273,7 +278,7 @@ void r_WorldRenderer::Update()
 		const bool is_points_mesh=
 			std::abs( int(x) - int(chunks_info_.matrix_size[0]/2u) ) +
 			std::abs( int(y) - int(chunks_info_.matrix_size[1]/2u) )
-				> 8;
+				> 2;
 		if( is_points_mesh != chunk_info_ptr->is_points_mesh_ )
 		{
 			chunk_info_ptr->updated_= true;
@@ -666,14 +671,9 @@ void r_WorldRenderer::Draw()
 	if( draw_to_additional_framebuffer )
 		r_Framebuffer::BindScreenFramebuffer();
 
-	static const GLenum postprocessing_state_blend_mode[]= { GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA };
-	static const r_OGLState postprocessing_state(
-		false, false, false, false,
-		postprocessing_state_blend_mode );
-
 	if( antialiasing_ == Antialiasing::SuperSampling2x2 )
 	{
-		r_OGLStateManager::UpdateState( postprocessing_state );
+		r_OGLStateManager::UpdateState( g_postprocessing_state );
 
 		additional_framebuffer_.GetTextures()[0].Bind(0);
 
@@ -684,7 +684,7 @@ void r_WorldRenderer::Draw()
 	}
 	else if( antialiasing_ == Antialiasing::DepthBased  )
 	{
-		r_OGLStateManager::UpdateState( postprocessing_state );
+		r_OGLStateManager::UpdateState( g_postprocessing_state );
 
 		additional_framebuffer_.GetTextures()[0].Bind(0);
 		additional_framebuffer_.GetDepthTexture().Bind(1);
@@ -697,7 +697,7 @@ void r_WorldRenderer::Draw()
 	}
 	else if( antialiasing_ == Antialiasing::FastApproximate )
 	{
-		r_OGLStateManager::UpdateState( postprocessing_state );
+		r_OGLStateManager::UpdateState( g_postprocessing_state );
 
 		additional_framebuffer_.GetTextures()[0].Bind(0);
 
@@ -1018,7 +1018,7 @@ unsigned int r_WorldRenderer::DrawClusterMatrix(
 
 void r_WorldRenderer::DrawWorld()
 {
-	static const float c_point_size_for_points_mode= 4.0f; // TODO - calibrate
+	static const float c_point_size_for_points_mode= 1.0f; // TODO - calibrate
 	static const GLenum state_blend_mode[]= { GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA };
 	static const r_OGLState state(
 		false, true, true, false,
@@ -1029,27 +1029,72 @@ void r_WorldRenderer::DrawWorld()
 	r_OGLStateManager::UpdateState( state );
 	glPointSize( c_point_size_for_points_mode );
 
+	const auto prepare_world_drawing=
+	[&]
+	{
+		r_OGLStateManager::UpdateState( state );
+
+		texture_manager_->BindTextureArray( 0 );
+
+		world_shader_.Bind();
+		world_shader_.Uniform( "tex", 0 );
+
+		m_Mat4 z_scale_mat;
+		z_scale_mat.Scale( m_Vec3( 1.0f, 1.0f, 0.5f ) );
+
+		world_shader_.Uniform( "view_matrix", z_scale_mat * block_final_matrix_ );
+
+		world_shader_.Uniform( "sun_light_color", lighting_data_.current_sun_light );
+		world_shader_.Uniform( "fire_light_color", lighting_data_.current_fire_light );
+		world_shader_.Uniform( "ambient_light_color", lighting_data_.current_ambient_light );
+	};
+
+	// Draw points cloud
+	{
+		point_cloud_fbo_[0].Bind();
+		glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+
+		prepare_world_drawing();
+
+		glTexParameteri( GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_LOD, 10 ); // Hack! Select 1x1 texture mip level!
+		DrawClusterMatrix( world_vertex_buffer_.get(), 1, 1 );
+		glTexParameteri( GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_LOD, 0 );
+
+		// Copy points cloud to main framebuffer.
+
+		static const r_OGLState point_cloud_state(
+			false, false, true, false,
+			g_postprocessing_state_blend_mode );
+
+		r_OGLStateManager::UpdateState( point_cloud_state );
+
+		point_cloud_fbo_[1].Bind();
+		glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+		point_cloud_fbo_[0].GetTextures().front().Bind(0);
+		point_cloud_fbo_[0].GetDepthTexture().Bind(1);
+		point_cloud_depth_filter_shader_.Bind();
+		point_cloud_depth_filter_shader_.Uniform( "frame_buffer", 0 );
+		point_cloud_depth_filter_shader_.Uniform( "depth_buffer", 1 );
+		point_cloud_depth_filter_shader_.Uniform( "m10", perspective_matrix_.value[10] );
+		point_cloud_depth_filter_shader_.Uniform( "m14", perspective_matrix_.value[14] );
+		glDrawArrays( GL_TRIANGLES, 0, 6 );
+
+		r_Framebuffer::BindScreenFramebuffer();
+		point_cloud_fbo_[1].GetTextures().front().Bind(0);
+		point_cloud_fbo_[1].GetDepthTexture().Bind(1);
+		point_cloud_shader_.Bind();
+		point_cloud_shader_.Uniform( "frame_buffer", 0 );
+		point_cloud_shader_.Uniform( "depth_buffer", 1 );
+		glDrawArrays( GL_TRIANGLES, 0, 6 );
+	}
+
+	// Draw world using polygons.
 	texture_manager_->BindTextureArray( 0 );
 
-	world_shader_.Bind();
-	world_shader_.Uniform( "tex", 0 );
-
-	m_Mat4 z_scale_mat;
-	z_scale_mat.Scale( m_Vec3( 1.0f, 1.0f, 0.5f ) );
-
-	world_shader_.Uniform( "view_matrix", z_scale_mat * block_final_matrix_ );
-
-	world_shader_.Uniform( "sun_light_color", lighting_data_.current_sun_light );
-	world_shader_.Uniform( "fire_light_color", lighting_data_.current_fire_light );
-	world_shader_.Uniform( "ambient_light_color", lighting_data_.current_ambient_light );
+	prepare_world_drawing();
 
 	unsigned int vertex_count= DrawClusterMatrix( world_vertex_buffer_.get(), 2, 4 );
 	world_quads_in_frame_= vertex_count / 4;
-
-	// Draw points meshes.
-	glTexParameteri( GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_LOD, 10 ); // Hack! Select 1x1 texture mip level!
-	DrawClusterMatrix( world_vertex_buffer_.get(), 1, 1 );
-	glTexParameteri( GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_LOD, 0 );
 
 	// Failing blocks
 
@@ -1701,6 +1746,16 @@ void r_WorldRenderer::LoadShaders()
 		rLoadShader( "fxaa_frag.glsl", glsl_version ),
 		rLoadShader( "fullscreen_quad_vert.glsl", glsl_version ) );
 	fast_approximate_antialiasing_shader_.Create();
+
+	point_cloud_shader_.ShaderSource(
+		rLoadShader( "point_cloud_frag.glsl", glsl_version ),
+		rLoadShader( "fullscreen_quad_vert.glsl", glsl_version ) );
+	point_cloud_shader_.Create();
+
+	point_cloud_depth_filter_shader_.ShaderSource(
+		rLoadShader( "point_cloud_depth_filter_frag.glsl", glsl_version ),
+		rLoadShader( "fullscreen_quad_vert.glsl", glsl_version ) );
+	point_cloud_depth_filter_shader_.Create();
 }
 
 void r_WorldRenderer::InitFrameBuffers()
@@ -1745,6 +1800,17 @@ void r_WorldRenderer::InitFrameBuffers()
 
 	rain_zone_heightmap_framebuffer_.GetDepthTexture().Bind();
 	rain_zone_heightmap_framebuffer_.GetDepthTexture().SetCompareMode( r_Texture::CompareMode::Less );
+
+	for( size_t i= 0u; i < 2u; ++i )
+	point_cloud_fbo_[i]=
+		r_Framebuffer(
+			std::vector<r_Texture::PixelFormat>{ r_Texture::PixelFormat::RGBA8 },
+			r_Texture::PixelFormat::Depth24Stencil8,
+			viewport_width_ ,
+			viewport_height_ );
+
+
+	r_Framebuffer::BindScreenFramebuffer();
 }
 
 void r_WorldRenderer::InitVertexBuffers()

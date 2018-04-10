@@ -126,6 +126,8 @@ private:
 	r_GLSLProgram supersampling_final_shader_;
 	r_GLSLProgram depth_based_antialiasing_shader_;
 	r_GLSLProgram fast_approximate_antialiasing_shader_;
+	r_GLSLProgram point_cloud_depth_filter_shader_;
+	r_GLSLProgram point_cloud_shader_;
 
 	//VBO
 	r_PolygonBuffer failing_blocks_vbo_;
@@ -153,6 +155,7 @@ private:
 	unsigned viewport_width_, viewport_height_;
 	r_Framebuffer rain_zone_heightmap_framebuffer_;
 	r_Framebuffer additional_framebuffer_; // used in supersampling and depth based antialiasing
+	r_Framebuffer point_cloud_fbo_[2];
 	Antialiasing antialiasing_;
 	unsigned int pixel_size_;
 
