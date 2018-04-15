@@ -35,6 +35,8 @@ public:
 
 	void SetViewportSize( unsigned int viewport_width, unsigned int viewport_height );
 
+	void DebugToggleLowDetailMode();
+
 private:
 	enum class Antialiasing
 	{
@@ -210,6 +212,8 @@ private:
 	std::unique_ptr< r_WeatherEffectsParticleManager > weather_effects_particle_manager_;
 
 	uint64_t startup_time_;
+
+	bool debug_is_low_detail_mode_= false;
 };
 
 inline void r_WorldRenderer::SetViewportSize( unsigned int viewport_width, unsigned int viewport_height )

@@ -34,6 +34,9 @@ public:
 	void GetQuadCount();
 	void BuildChunkMesh();
 
+	void GetQuadCountLowDetail();
+	void BuildChunkMeshLowDetail();
+
 	// Pointer to external storage for vertices.
 	r_WorldVertex* vertex_data_= nullptr;
 	unsigned int vertex_count_= 0;
