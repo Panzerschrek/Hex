@@ -1899,8 +1899,8 @@ void r_ChunkInfo::BuildChunkMeshLowDetail()
 
 				normal_id= static_cast<unsigned char>(h_Direction::Forward);
 				tex_id= r_TextureManager::GetTextureId( b->Type(), normal_id );
-				light[0]= H_MAX_SUN_LIGHT;
-				light[1]= H_MAX_FIRE_LIGHT;
+				light[0]= ls_p[side][z] << 4;
+				light[1]= lf_p[side][z] << 4;
 				tex_scale= r_TextureManager::GetTextureScale( tex_id );
 
 				const r_WorldVertex& side_v0= cv[side];
@@ -1919,8 +1919,8 @@ void r_ChunkInfo::BuildChunkMeshLowDetail()
 
 				v[0].tex_coord[2]= v[1].tex_coord[2]= v[2].tex_coord[2]= v[3].tex_coord[2]= tex_id;
 
-				v[0].light[0]= v[1].light[0]= v[2].light[0]= v[3].light[0]= light[0] << 4;
-				v[0].light[1]= v[1].light[1]= v[2].light[1]= v[3].light[1]= light[1] << 4;
+				v[0].light[0]= v[1].light[0]= v[2].light[0]= v[3].light[0]= light[0];
+				v[0].light[1]= v[1].light[1]= v[2].light[1]= v[3].light[1]= light[1];
 
 				v+= 4u;
 				++quad_count;
@@ -1938,8 +1938,9 @@ void r_ChunkInfo::BuildChunkMeshLowDetail()
 
 				normal_id= static_cast<unsigned char>(h_Direction::Up);
 				tex_id= r_TextureManager::GetTextureId( b->Type(), normal_id );
-				light[0]= H_MAX_SUN_LIGHT;
-				light[1]= H_MAX_FIRE_LIGHT;
+				int light_z= up_down == 0 ? (z-1) : (z+1);
+				light[0]= ls_p[6][light_z] << 4;
+				light[1]= lf_p[6][light_z] << 4;
 				tex_scale= r_TextureManager::GetTextureScale( tex_id );
 
 				v[0]= cv[5];
@@ -1952,8 +1953,8 @@ void r_ChunkInfo::BuildChunkMeshLowDetail()
 				for( unsigned int vn= 0; vn < 8; ++vn )
 				{
 					v[vn].coord[2]= ( z + up_down ) << 1;
-					v[vn].light[0]= light[0] << 4;
-					v[vn].light[1]= light[1] << 4;
+					v[vn].light[0]= light[0];
+					v[vn].light[1]= light[1];
 					v[vn].tex_coord[2]= tex_id;
 				}
 
