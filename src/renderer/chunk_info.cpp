@@ -1874,13 +1874,17 @@ void r_ChunkInfo::BuildChunkMeshLowDetail()
 			unsigned char t_down= t_p[6][z+1]  & H_VISIBLY_TRANSPARENCY_BITS;
 			const h_Block* const b= b_p[6][z];
 
-			bool have_up_side= false;
-			bool have_down_side= false;
+			bool have_up_face= false;
+			bool have_down_face= false;
 			bool have_sides[6]= { false, false, false, false, false, false };
-			if( t < t_up ) have_up_side= true;
-			if( t < t_down ) have_down_side= true;
+			bool have_any_side= false;
+			if( t < t_up ) have_up_face= true;
+			if( t < t_down ) have_down_face= true;
 			for( unsigned int side= 0u; side < 6u; ++side )
+			{
 				have_sides[side]= t < ( t_p[side][z] & H_VISIBLY_TRANSPARENCY_BITS );
+				if( have_sides[side] ) have_any_side= true;
+			}
 
 			r_WorldVertex cv[6u];
 			cv[0].coord[0]= cv[4].coord[0]= 3 * ( x + X ) + 1;
@@ -1892,48 +1896,80 @@ void r_ChunkInfo::BuildChunkMeshLowDetail()
 			cv[2].coord[1]= cv[5].coord[1]= cv[0].coord[1] - 1;
 			cv[3].coord[1]= cv[4].coord[1]= cv[0].coord[1] - 2;
 
-			for( unsigned int side= 0u; side < 6u; ++side )
+
+			if( have_any_side )
 			{
-				if( !have_sides[side] )
-					continue;
+				unsigned int first_existent_side_index= 0u;
+				for( unsigned int side= 0u; side < 6u; ++side )
+					if( !have_sides[side] && have_sides[(side + 1u)% 6u] )
+					{
+						first_existent_side_index= ( side + 1u )% 6u;
+						break;
+					}
 
-				normal_id= static_cast<unsigned char>(h_Direction::Forward);
-				tex_id= r_TextureManager::GetTextureId( b->Type(), normal_id );
-				light[0]= ls_p[side][z] << 4;
-				light[1]= lf_p[side][z] << 4;
-				tex_scale= r_TextureManager::GetTextureScale( tex_id );
+				for( unsigned int side= first_existent_side_index; side < first_existent_side_index + 6u; )
+				{
+					unsigned int side_b= side % 6u;
+					if( !have_sides[side_b] )
+					{
+						++side;
+						continue;
+					}
+					unsigned int side_b_next= ( side + 1u ) % 6u;
+					unsigned int side_b_next_next= ( side + 2u ) % 6u;
 
-				const r_WorldVertex& side_v0= cv[side];
-				const r_WorldVertex& side_v1= cv[ ( side + 1u ) % 6u ];
-				v[0]= v[1]= side_v0;
-				v[2]= v[3]= side_v1;
+					normal_id= static_cast<unsigned char>(h_Direction::Forward);
+					tex_id= r_TextureManager::GetTextureId( b->Type(), normal_id );
+					tex_scale= r_TextureManager::GetTextureScale( tex_id );
 
-				v[0].coord[2]= v[3].coord[2]= (z+1) << 1;
-				v[1].coord[2]= v[2].coord[2]= z << 1;
+					const r_WorldVertex* quad_v0;
+					const r_WorldVertex* quad_v1;
+					if( have_sides[side_b_next] )
+					{
+						light[0]= ( ls_p[side_b][z] + ls_p[side_b_next][z] ) << 3;
+						light[1]= ( lf_p[side_b][z] + lf_p[side_b_next][z] ) << 3;
+						quad_v0= &cv[side_b];
+						quad_v1= & cv[side_b_next_next];
+						side+= 2u;
+					}
+					else
+					{
+						light[0]= ls_p[side_b][z] << 4;
+						light[1]= lf_p[side_b][z] << 4;
+						quad_v0= &cv[side_b];
+						quad_v1= & cv[side_b_next];
+						++side;
+					}
 
-				v[0].tex_coord[0]= v[1].tex_coord[0]=  ( v[1].coord[1]  + v[1].coord[0] ) * tex_scale;
-				v[2].tex_coord[0]= v[3].tex_coord[0]= v[0].tex_coord[0] + 2 * tex_scale;
+					v[0]= v[1]= *quad_v0;
+					v[2]= v[3]= *quad_v1;
 
-				v[0].tex_coord[1]= v[3].tex_coord[1]= ( z * tex_scale ) << 1;
-				v[1].tex_coord[1]= v[2].tex_coord[1]= v[0].tex_coord[1] + (tex_scale << 1);
+					v[0].coord[2]= v[3].coord[2]= (z+1) << 1;
+					v[1].coord[2]= v[2].coord[2]= z << 1;
 
-				v[0].tex_coord[2]= v[1].tex_coord[2]= v[2].tex_coord[2]= v[3].tex_coord[2]= tex_id;
+					v[0].tex_coord[0]= v[1].tex_coord[0]=  ( v[1].coord[1]  + v[1].coord[0] ) * tex_scale;
+					v[2].tex_coord[0]= v[3].tex_coord[0]= v[0].tex_coord[0] + 2 * tex_scale;
 
-				v[0].light[0]= v[1].light[0]= v[2].light[0]= v[3].light[0]= light[0];
-				v[0].light[1]= v[1].light[1]= v[2].light[1]= v[3].light[1]= light[1];
+					v[0].tex_coord[1]= v[3].tex_coord[1]= ( z * tex_scale ) << 1;
+					v[1].tex_coord[1]= v[2].tex_coord[1]= v[0].tex_coord[1] + (tex_scale << 1);
 
-				v+= 4u;
-				++quad_count;
-				if( quad_count * 4u >= vertex_count_ )
-					return;
+					v[0].tex_coord[2]= v[1].tex_coord[2]= v[2].tex_coord[2]= v[3].tex_coord[2]= tex_id;
 
-			} // for sides
+					v[0].light[0]= v[1].light[0]= v[2].light[0]= v[3].light[0]= light[0];
+					v[0].light[1]= v[1].light[1]= v[2].light[1]= v[3].light[1]= light[1];
+
+					v+= 4u;
+					++quad_count;
+					if( quad_count * 4u >= vertex_count_ )
+						return;
+				} // for sides
+			} // if have any side
 
 			for( unsigned int up_down= 0; up_down < 2; ++up_down )
 			{
-				if( up_down == 1 && !have_up_side )
+				if( up_down == 1 && !have_up_face )
 					continue;
-				else if( !have_down_side )
+				else if( !have_down_face )
 					continue;
 
 				normal_id= static_cast<unsigned char>(h_Direction::Up);
