@@ -1832,6 +1832,23 @@ void r_ChunkInfo::BuildChunkMeshLowDetail()
 			}
 			else
 				t_p[5]= t_p[6];//this block transparency
+
+			if( chunk_front_ != nullptr )
+			{
+				offset= BlockAddr( x, 0, 0 );
+				t_p [0]= chunk_front_->GetTransparencyData() + offset;
+				b_p [0]= chunk_front_->GetBlocksData() + offset;
+				ls_p[0]= chunk_front_->GetSunLightData() + offset;
+				lf_p[0]= chunk_front_->GetFireLightData() + offset;
+
+				offset= BlockAddr( x + 1, 0, 0 );
+				t_p [1]= chunk_front_->GetTransparencyData() + offset;
+				b_p [1]= chunk_front_->GetBlocksData() + offset;
+				ls_p[1]= chunk_front_->GetSunLightData() + offset;
+				lf_p[1]= chunk_front_->GetFireLightData() + offset;
+			}
+			else
+				t_p[0]= t_p[1]= t_p[6];//this block transparency
 		}
 		// left back corner
 		else if( x == 0 && y == 0 )
