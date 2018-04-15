@@ -1545,7 +1545,7 @@ void r_ChunkInfo::GetQuadCountLowDetail()
 {
 	// TODO
 	min_geometry_height_= 1;
-	max_geometry_height_= H_CHUNK_HEIGHT - 1;
+	max_geometry_height_= H_CHUNK_HEIGHT - 2;
 
 	vertex_count_= 8192 * 4;
 }
@@ -1865,20 +1865,20 @@ void r_ChunkInfo::BuildChunkMeshLowDetail()
 				t_p[3]= t_p[6];//this block transparency
 		}
 
-		for( int z= min_geometry_height_; z<= max_geometry_height_; z++ )
+		for( int z= min_geometry_height_; z<= max_geometry_height_; )
 		{
 			unsigned char tex_id, tex_scale, light[2], normal_id;
 
 			unsigned char t= t_p[6][z] & H_VISIBLY_TRANSPARENCY_BITS;
 			unsigned char t_up= t_p[6][z+1]  & H_VISIBLY_TRANSPARENCY_BITS;
-			unsigned char t_down= t_p[6][z+1]  & H_VISIBLY_TRANSPARENCY_BITS;
+			unsigned char t_down= t_p[6][z-1]  & H_VISIBLY_TRANSPARENCY_BITS;
 			const h_Block* const b= b_p[6][z];
 
 			bool have_up_face= false;
 			bool have_down_face= false;
 			bool have_sides[6]= { false, false, false, false, false, false };
 			bool have_any_side= false;
-			if( t < t_up ) have_up_face= true;
+			if( t < t_up   ) have_up_face= true;
 			if( t < t_down ) have_down_face= true;
 			for( unsigned int side= 0u; side < 6u; ++side )
 			{
@@ -1896,9 +1896,50 @@ void r_ChunkInfo::BuildChunkMeshLowDetail()
 			cv[2].coord[1]= cv[5].coord[1]= cv[0].coord[1] - 1;
 			cv[3].coord[1]= cv[4].coord[1]= cv[0].coord[1] - 2;
 
-
+			int dz= 1;
 			if( have_any_side )
 			{
+				// Combine this block with upper block, if block type, sides set, lighting is same
+				while( z + dz < H_CHUNK_HEIGHT - 2 )
+				{
+					if( b_p[6][z+dz]->Type() != b->Type() )
+						break;
+					unsigned char dz_t= t_p[6][z+dz] & H_VISIBLY_TRANSPARENCY_BITS;
+					bool sides_ok= true;
+					for( unsigned int side= 0u; side < 6u; ++side )
+					{
+						bool have_side= dz_t < ( t_p[side][z+dz] & H_VISIBLY_TRANSPARENCY_BITS );
+						if( have_side != have_sides[side] )
+						{
+							sides_ok= false;
+							break;
+						}
+					}
+					if( !sides_ok )
+						break;
+
+					bool light_ok= true;
+					for( unsigned int side= 0u; side < 6u; ++side )
+					{
+						if( have_sides[side] )
+						{
+							if( std::abs( int(ls_p[side][z]) - int(ls_p[side][z+dz]) ) > 1 ||
+								std::abs( int(lf_p[side][z]) - int(lf_p[side][z+dz]) ) > 1 )
+							{
+								light_ok= false;
+								break;
+							}
+						}
+					}
+					if( !light_ok )
+						break;
+
+					++dz;
+				}
+				have_up_face=
+					(t_p[6][z+dz-1] & H_VISIBLY_TRANSPARENCY_BITS) <
+					(t_p[6][z+dz-0] & H_VISIBLY_TRANSPARENCY_BITS);
+
 				unsigned int first_existent_side_index= 0u;
 				for( unsigned int side= 0u; side < 6u; ++side )
 					if( !have_sides[side] && have_sides[(side + 1u)% 6u] )
@@ -1944,14 +1985,14 @@ void r_ChunkInfo::BuildChunkMeshLowDetail()
 					v[0]= v[1]= *quad_v0;
 					v[2]= v[3]= *quad_v1;
 
-					v[0].coord[2]= v[3].coord[2]= (z+1) << 1;
+					v[0].coord[2]= v[3].coord[2]= (z+dz) << 1;
 					v[1].coord[2]= v[2].coord[2]= z << 1;
 
 					v[0].tex_coord[0]= v[1].tex_coord[0]=  ( v[1].coord[1]  + v[1].coord[0] ) * tex_scale;
 					v[2].tex_coord[0]= v[3].tex_coord[0]= v[0].tex_coord[0] + 2 * tex_scale;
 
 					v[0].tex_coord[1]= v[3].tex_coord[1]= ( z * tex_scale ) << 1;
-					v[1].tex_coord[1]= v[2].tex_coord[1]= v[0].tex_coord[1] + (tex_scale << 1);
+					v[1].tex_coord[1]= v[2].tex_coord[1]= v[0].tex_coord[1] + (tex_scale << 1) * dz;
 
 					v[0].tex_coord[2]= v[1].tex_coord[2]= v[2].tex_coord[2]= v[3].tex_coord[2]= tex_id;
 
@@ -1967,14 +2008,20 @@ void r_ChunkInfo::BuildChunkMeshLowDetail()
 
 			for( unsigned int up_down= 0; up_down < 2; ++up_down )
 			{
-				if( up_down == 1 && !have_up_face )
-					continue;
-				else if( !have_down_face )
-					continue;
+				if( up_down == 0 )
+				{
+					if( !have_down_face )
+						continue;
+				}
+				else
+				{
+					if( !have_up_face )
+						continue;
+				}
 
 				normal_id= static_cast<unsigned char>(h_Direction::Up);
 				tex_id= r_TextureManager::GetTextureId( b->Type(), normal_id );
-				int light_z= up_down == 0 ? (z-1) : (z+1);
+				int light_z= up_down == 0 ? (z-1) : (z+dz);
 				light[0]= ls_p[6][light_z] << 4;
 				light[1]= lf_p[6][light_z] << 4;
 				tex_scale= r_TextureManager::GetTextureScale( tex_id );
@@ -1988,7 +2035,7 @@ void r_ChunkInfo::BuildChunkMeshLowDetail()
 
 				for( unsigned int vn= 0; vn < 8; ++vn )
 				{
-					v[vn].coord[2]= ( z + up_down ) << 1;
+					v[vn].coord[2]= ( z + ( up_down == 0 ? 0 : dz ) ) << 1;
 					v[vn].light[0]= light[0];
 					v[vn].light[1]= light[1];
 					v[vn].tex_coord[2]= tex_id;
@@ -2029,8 +2076,9 @@ void r_ChunkInfo::BuildChunkMeshLowDetail()
 				quad_count+= 2u;
 				if( quad_count * 4u >= vertex_count_ )
 					return;
-			}
+			} // for up and down sides
 
+			z+= dz;
 		} // for z
 	} // for xy
 
