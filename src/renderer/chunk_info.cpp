@@ -1547,7 +1547,7 @@ void r_ChunkInfo::GetQuadCountLowDetail()
 	min_geometry_height_= 1;
 	max_geometry_height_= H_CHUNK_HEIGHT - 1;
 
-	vertex_count_= 4096 * 4;
+	vertex_count_= 8192 * 4;
 }
 
 void r_ChunkInfo::BuildChunkMeshLowDetail()
@@ -1752,17 +1752,21 @@ void r_ChunkInfo::BuildChunkMeshLowDetail()
 			unsigned char tex_id, tex_scale, light[2], normal_id;
 
 			unsigned char t= t_p[z] & H_VISIBLY_TRANSPARENCY_BITS;
+			unsigned char t_up= t_p[z+1]  & H_VISIBLY_TRANSPARENCY_BITS;
+			unsigned char t_down= t_p[z+1]  & H_VISIBLY_TRANSPARENCY_BITS;
 			unsigned char t_fr= t_fr_p[z] & H_VISIBLY_TRANSPARENCY_BITS;
 			unsigned char t_br= t_br_p[z] & H_VISIBLY_TRANSPARENCY_BITS;
 			unsigned char t_fl= t_fl_p[z] & H_VISIBLY_TRANSPARENCY_BITS;
 			unsigned char t_bl= t_bl_p[z] & H_VISIBLY_TRANSPARENCY_BITS;
-			unsigned char t_up= t_p[z+1]  & H_VISIBLY_TRANSPARENCY_BITS;
 			unsigned char t_f= t_f_p[z]   & H_VISIBLY_TRANSPARENCY_BITS;
 			unsigned char t_b= t_b_p[z]   & H_VISIBLY_TRANSPARENCY_BITS;
 			const h_Block* const b= b_p[z];
 
 			bool have_up_side= false;
+			bool have_down_side= false;
 			bool have_sides[6]= { false, false, false, false, false, false };
+			if( t < t_up ) have_up_side= true;
+			if( t < t_down ) have_down_side= true;
 			if( t < t_up ) have_up_side= true;
 			if( t < t_f  ) have_sides[0]= true;
 			if( t < t_fr ) have_sides[1]= true;
@@ -1817,6 +1821,72 @@ void r_ChunkInfo::BuildChunkMeshLowDetail()
 					return;
 
 			} // for sides
+
+			for( unsigned int up_down= 0; up_down < 2; ++up_down )
+			{
+				if( up_down == 1 && !have_up_side )
+					continue;
+				else if( !have_down_side )
+					continue;
+
+				normal_id= static_cast<unsigned char>(h_Direction::Up);
+				tex_id= r_TextureManager::GetTextureId( b->Type(), normal_id );
+				light[0]= H_MAX_SUN_LIGHT;
+				light[1]= H_MAX_FIRE_LIGHT;
+				tex_scale= r_TextureManager::GetTextureScale( tex_id );
+
+				v[0]= cv[5];
+				v[1]= cv[0];
+				v[2]= cv[1];
+				v[3]= cv[2];
+				v[4]= cv[4];
+				v[7]= cv[3];
+
+				for( unsigned int vn= 0; vn < 8; ++vn )
+				{
+					v[vn].coord[2]= ( z + up_down ) << 1;
+					v[vn].light[0]= light[0] << 4;
+					v[vn].light[1]= light[1] << 4;
+					v[vn].tex_coord[2]= tex_id;
+				}
+
+				if( r_TextureManager::TexturePerBlock( tex_id ) )
+				{
+					v[0].tex_coord[0]= 0;
+					v[1].tex_coord[0]= v[4].tex_coord[0]= 1*H_TEXTURE_SCALE_MULTIPLIER;
+					v[2].tex_coord[0]= v[7].tex_coord[0]= 3*H_TEXTURE_SCALE_MULTIPLIER;
+					v[3].tex_coord[0]= 4*H_TEXTURE_SCALE_MULTIPLIER;
+
+					v[0].tex_coord[1]= v[3].tex_coord[1]= 1*H_TEXTURE_SCALE_MULTIPLIER;
+					v[1].tex_coord[1]= v[2].tex_coord[1]= 2*H_TEXTURE_SCALE_MULTIPLIER;
+					v[7].tex_coord[1]= v[4].tex_coord[1]= 0;
+				}
+				else
+				{
+					v[0].tex_coord[0]= tex_scale * v[0].coord[0];
+					v[1].tex_coord[0]= v[4].tex_coord[0]= v[0].tex_coord[0] + 1*tex_scale;
+					v[2].tex_coord[0]= v[7].tex_coord[0]= v[0].tex_coord[0] + 3*tex_scale;
+					v[3].tex_coord[0]= v[0].tex_coord[0] + 4*tex_scale;
+
+					v[0].tex_coord[1]= v[3].tex_coord[1]= tex_scale * v[0].coord[1];
+					v[1].tex_coord[1]= v[2].tex_coord[1]= v[0].tex_coord[1] + 1*tex_scale;
+					v[7].tex_coord[1]= v[4].tex_coord[1]= v[0].tex_coord[1] - 1*tex_scale;
+				}
+
+				v[5]= v[0];
+				v[6]= v[3];
+
+				if( up_down == 0 )
+				{
+					std::swap( v[1], v[3] );
+					std::swap( v[5], v[7] );
+				}
+				v+= 8;
+				quad_count+= 2u;
+				if( quad_count * 4u >= vertex_count_ )
+					return;
+			}
+
 		} // for z
 	} // for xy
 
