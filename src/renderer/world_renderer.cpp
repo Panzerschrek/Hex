@@ -1379,18 +1379,33 @@ void r_WorldRenderer::UpdateChunkMatrixPointers()
 		chunk_info_ptr->chunk_= world_->GetChunk( x, y );
 		H_ASSERT( chunk_info_ptr->chunk_ );
 
-		if( x < int(chunks_info_.matrix_size[0] - 1) )
-			chunk_info_ptr->chunk_right_= world_->GetChunk( x + 1, y );
-		else chunk_info_ptr->chunk_right_= nullptr;
 		if( y < int(chunks_info_.matrix_size[1] - 1) )
 			chunk_info_ptr->chunk_front_= world_->GetChunk( x, y + 1 );
-		else chunk_info_ptr->chunk_front_= nullptr;
+		else
+			chunk_info_ptr->chunk_front_= nullptr;
 		if( y > 0 )
 			chunk_info_ptr->chunk_back_= world_->GetChunk( x, y - 1 );
-		else chunk_info_ptr->chunk_back_= nullptr;
+		else
+			chunk_info_ptr->chunk_back_= nullptr;
+
+		if( x > 0 )
+			chunk_info_ptr->chunk_left_= world_->GetChunk( x - 1, y );
+		else
+			chunk_info_ptr->chunk_left_= nullptr;
+		if( x < int(chunks_info_.matrix_size[0] - 1) )
+			chunk_info_ptr->chunk_right_= world_->GetChunk( x + 1, y );
+		else
+			chunk_info_ptr->chunk_right_= nullptr;
+
+		if( x > 0 && y < int(chunks_info_.matrix_size[1] - 1) )
+			chunk_info_ptr->chunk_front_left_= world_->GetChunk( x - 1, y + 1 );
+		else
+			chunk_info_ptr->chunk_front_left_= nullptr;
+
 		if( y > 0 && x < int(chunks_info_.matrix_size[0] - 1) )
 			chunk_info_ptr->chunk_back_right_= world_->GetChunk( x + 1, y - 1 );
-		else chunk_info_ptr->chunk_back_right_= nullptr;
+		else
+			chunk_info_ptr->chunk_back_right_= nullptr;
 	}
 }
 

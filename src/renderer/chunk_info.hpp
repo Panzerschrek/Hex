@@ -53,7 +53,7 @@ public:
 	int max_geometry_height_, min_geometry_height_;
 
 	const h_Chunk* chunk_;
-	const h_Chunk* chunk_front_, *chunk_right_, *chunk_back_right_, *chunk_back_;
+	const h_Chunk* chunk_front_, *chunk_back_, *chunk_left_, *chunk_right_, *chunk_front_left_, *chunk_back_right_;
 
 private:
 	unsigned int GetNonstandardFormBlocksQuadCount();
