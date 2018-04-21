@@ -2200,8 +2200,8 @@ void r_ChunkInfo::BuildChunkMeshLowDetail()
 					v[0].tex_coord[0]= v[1].tex_coord[0]=  ( v[1].coord[1]  + v[1].coord[0] ) * tex_scale;
 					v[2].tex_coord[0]= v[3].tex_coord[0]= v[0].tex_coord[0] + 2 * tex_scale;
 
-					v[0].tex_coord[1]= v[3].tex_coord[1]= ( z * tex_scale ) << 1;
-					v[1].tex_coord[1]= v[2].tex_coord[1]= v[0].tex_coord[1] + (tex_scale << 1) * dz;
+					v[1].tex_coord[1]= v[2].tex_coord[1]= ( z * tex_scale ) << 1;
+					v[0].tex_coord[1]= v[3].tex_coord[1]= ( ( z + dz ) * tex_scale ) << 1;
 
 					v[0].tex_coord[2]= v[1].tex_coord[2]= v[2].tex_coord[2]= v[3].tex_coord[2]= tex_id;
 
