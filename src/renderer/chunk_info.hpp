@@ -50,6 +50,9 @@ public:
 	// Flags, setted by world.
 	// Chunk can really updates later, after this flags setted.
 	bool update_requested_= false;
+
+	bool low_detail_= false;
+
 	bool water_update_requested_= false;
 
 	//geomentry up and down range borders. Used only for generation of center chunk blocks( not for border blocks )

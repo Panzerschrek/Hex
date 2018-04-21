@@ -261,9 +261,19 @@ void r_WorldRenderer::Update()
 		int longitude= chunks_info_.matrix_position[0] + int(x);
 		int latitude = chunks_info_.matrix_position[1] + int(y);
 
+		// TODO - maybe select low detail mesh mode in other place?
+		const int dx= int(x) - int(chunks_info_.matrix_size[0] / 2u);
+		const int dy= int(y) - int(chunks_info_.matrix_size[1] / 2u);
+		const bool low_detail= dx * dx * 3 + dy * dy * 4 > 7 * 7 * 4 || debug_is_low_detail_mode_;
+		if( low_detail != chunk_info_ptr->low_detail_ )
+		{
+			chunk_info_ptr->low_detail_= low_detail;
+			chunk_info_ptr->updated_= true;
+		}
+
 		if( chunk_info_ptr->updated_ )
 		{
-			if( debug_is_low_detail_mode_ )
+			if( chunk_info_ptr->low_detail_ )
 				chunk_info_ptr->GetQuadCountLowDetail();
 			else
 				chunk_info_ptr->GetQuadCount();
@@ -396,7 +406,7 @@ void r_WorldRenderer::Update()
 			chunk_info_ptr->vertex_data_=
 				reinterpret_cast<r_WorldVertex*>(
 				cluster.vertices_.data() + segment.first_vertex_index * sizeof(r_WorldVertex) );
-			if( debug_is_low_detail_mode_ )
+			if( chunk_info_ptr->low_detail_ )
 				chunk_info_ptr->BuildChunkMeshLowDetail();
 			else
 				chunk_info_ptr->BuildChunkMesh();
