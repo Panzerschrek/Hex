@@ -1800,8 +1800,6 @@ void r_ChunkInfo::BuildChunkMeshLowDetail()
 		ls_p[5]= chunk_->GetSunLightData() + offset;
 		lf_p[5]= chunk_->GetFireLightData() + offset;
 
-		// TODO - something is wrong here. Check it twice.
-
 		//front chunk border
 		if( y == H_CHUNK_WIDTH - 1 && x > 0 && x < H_CHUNK_WIDTH - 1 )
 		{
@@ -1814,7 +1812,10 @@ void r_ChunkInfo::BuildChunkMeshLowDetail()
 				lf_p[0]= chunk_front_->GetFireLightData() + offset;
 			}
 			else
+			{
 				t_p[0]= t_p[6];//this block transparency
+				b_p[0]= b_p[6];
+			}
 
 			if( (x&1) == 0 )
 			{
@@ -1848,7 +1849,10 @@ void r_ChunkInfo::BuildChunkMeshLowDetail()
 				lf_p[3]= chunk_back_->GetFireLightData() + offset;
 			}
 			else
+			{
 				t_p[3]= t_p[6];//this block transparency
+				b_p[3]= b_p[6];
+			}
 
 			if( (x&1) != 0 )
 			{
@@ -1922,7 +1926,10 @@ void r_ChunkInfo::BuildChunkMeshLowDetail()
 				lf_p[0]= chunk_front_->GetFireLightData() + offset;
 			}
 			else
+			{
 				t_p[0]= t_p[6];//this block transparency
+				b_p[0]= b_p[6];
+			}
 
 			if( chunk_right_ != nullptr )
 			{
@@ -1979,7 +1986,10 @@ void r_ChunkInfo::BuildChunkMeshLowDetail()
 				lf_p[4]= chunk_back_->GetFireLightData() + offset;
 			}
 			else
+			{
 				t_p[3]= t_p[4]= t_p[6];//this block transparency;
+				b_p[3]= b_p[6];
+			}
 		}
 		// left front corner
 		else if( x == 0 && y == H_CHUNK_WIDTH - 1 )
@@ -2021,7 +2031,10 @@ void r_ChunkInfo::BuildChunkMeshLowDetail()
 				lf_p[1]= chunk_front_->GetFireLightData() + offset;
 			}
 			else
+			{
 				t_p[0]= t_p[1]= t_p[6];//this block transparency
+				b_p[0]= b_p[6];
+			}
 		}
 		// left back corner
 		else if( x == 0 && y == 0 )
@@ -2052,7 +2065,10 @@ void r_ChunkInfo::BuildChunkMeshLowDetail()
 				lf_p[3]= chunk_back_->GetFireLightData() + offset;
 			}
 			else
+			{
 				t_p[3]= t_p[6];//this block transparency
+				b_p[3]= b_p[6];
+			}
 		}
 
 		for( int z= min_geometry_height_; z<= max_geometry_height_; )
@@ -2275,17 +2291,50 @@ void r_ChunkInfo::BuildChunkMeshLowDetail()
 					v[vn].tex_coord[2]= tex_id;
 				}
 
-				if( !flat_lighting )
+				// Try combine here two faces of same type.
+				const unsigned int unite_y_index= (y&1) == 0 ? 0 : 3;
+
+				bool skip_quad= false;
+				int forward_light_fetch_y= y + relative_Y;
+				if( b_p[6][z]->Type() == b_p[unite_y_index][z]->Type() &&
+					t_p[6][light_z]   == t_p[unite_y_index][light_z] &&
+					std::abs( ls_p[6][light_z] - ls_p[unite_y_index][light_z] ) <= 1 &&
+					std::abs( lf_p[6][light_z] - lf_p[unite_y_index][light_z] ) <= 1 )
 				{
-					world.GetBackVertexLight   ( x + relative_X, y + relative_Y + 1, face_z - 1, v[0].light );
-					world.GetForwardVertexLight( x + relative_X, y + relative_Y    , face_z - 1, v[1].light );
-					world.GetForwardVertexLight( x + relative_X, y + relative_Y - 1, face_z - 1, v[2].light );
-					world.GetBackVertexLight   ( x + relative_X, y + relative_Y    , face_z - 1, v[3].light );
+					if( (y&1) != 0 )
+						skip_quad= true;
+					else
+					{
+						v[0].coord[1]+= 2;
+						v[1].coord[1]+= 2;
+						if( r_TextureManager::TexturePerBlock( tex_id ) )
+						{
+							v[0].tex_coord[1]+= 2 * H_TEXTURE_SCALE_MULTIPLIER;
+							v[1].tex_coord[1]+= 2 * H_TEXTURE_SCALE_MULTIPLIER;
+						}
+						else
+						{
+							v[0].tex_coord[1]+= 2 * tex_scale;
+							v[1].tex_coord[1]+= 2 * tex_scale;
+						}
+						++forward_light_fetch_y;
+					}
 				}
 
-				if( up_down == 0 )
-					std::swap( v[1], v[3] );
-				v+= 4;
+				if( !skip_quad )
+				{
+					if( !flat_lighting )
+					{
+						world.GetBackVertexLight   ( x + relative_X, forward_light_fetch_y + 1, face_z - 1, v[0].light );
+						world.GetForwardVertexLight( x + relative_X, forward_light_fetch_y    , face_z - 1, v[1].light );
+						world.GetForwardVertexLight( x + relative_X, y + relative_Y - 1, face_z - 1, v[2].light );
+						world.GetBackVertexLight   ( x + relative_X, y + relative_Y    , face_z - 1, v[3].light );
+					}
+
+					if( up_down == 0 )
+						std::swap( v[1], v[3] );
+					v+= 4;
+				}
 			} // for up and down sides
 
 			z+= dz;
