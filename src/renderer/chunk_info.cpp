@@ -1565,6 +1565,9 @@ void r_ChunkInfo::BuildChunkMeshLowDetail()
    \__/  \__/
 
 */
+
+	const bool combine_block_sides= false;
+
 	r_WorldVertex* v= vertex_data_;
 
 	const h_World& world= *chunk_->GetWorld();
@@ -1982,7 +1985,7 @@ void r_ChunkInfo::BuildChunkMeshLowDetail()
 
 					const r_WorldVertex* quad_v0;
 					const r_WorldVertex* quad_v1;
-					if( have_sides[side_b_next] )
+					if( combine_block_sides && have_sides[side_b_next] )
 					{
 						light[0]= ( ls_p[side_b][z] + ls_p[side_b_next][z] ) << 3;
 						light[1]= ( lf_p[side_b][z] + lf_p[side_b_next][z] ) << 3;
