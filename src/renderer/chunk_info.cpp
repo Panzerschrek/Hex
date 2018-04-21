@@ -1567,6 +1567,7 @@ void r_ChunkInfo::BuildChunkMeshLowDetail()
 */
 
 	const bool combine_block_sides= false;
+	const bool flat_lighting= chunk_->IsEdgeChunk();
 
 	r_WorldVertex* v= vertex_data_;
 
@@ -1960,6 +1961,21 @@ void r_ChunkInfo::BuildChunkMeshLowDetail()
 					(t_p[6][z+dz-1] & H_VISIBLY_TRANSPARENCY_BITS) <
 					(t_p[6][z+dz-0] & H_VISIBLY_TRANSPARENCY_BITS);
 
+				unsigned char cl[6u][2u][2u];
+				if( !flat_lighting )
+				{
+					for( unsigned int i= 0u; i < 2u; ++i )
+					{
+						const int light_fetch_z= ( i == 0u ? z : z + dz ) - 1;
+						world.GetBackVertexLight   ( x + relative_X    , y + relative_Y +       1, light_fetch_z, cl[0][i] );
+						world.GetForwardVertexLight( x + relative_X    , y + relative_Y +       0, light_fetch_z, cl[1][i] );
+						world.GetBackVertexLight   ( x + relative_X + 1, y + relative_Y + 1-(x&1), light_fetch_z, cl[2][i] );
+						world.GetForwardVertexLight( x + relative_X    , y + relative_Y -       1, light_fetch_z, cl[3][i] );
+						world.GetBackVertexLight   ( x + relative_X    , y + relative_Y          , light_fetch_z, cl[4][i] );
+						world.GetForwardVertexLight( x + relative_X - 1, y + relative_Y -   (x&1), light_fetch_z, cl[5][i] );
+					}
+				}
+
 				unsigned int first_existent_side_index= 0u;
 				for( unsigned int side= 0u; side < 6u; ++side )
 					if( !have_sides[side] && have_sides[(side + 1u)% 6u] )
@@ -1985,8 +2001,10 @@ void r_ChunkInfo::BuildChunkMeshLowDetail()
 
 					const r_WorldVertex* quad_v0;
 					const r_WorldVertex* quad_v1;
+					unsigned int final_next_side;
 					if( combine_block_sides && have_sides[side_b_next] )
 					{
+						final_next_side= side_b_next_next;
 						light[0]= ( ls_p[side_b][z] + ls_p[side_b_next][z] ) << 3;
 						light[1]= ( lf_p[side_b][z] + lf_p[side_b_next][z] ) << 3;
 						quad_v0= &cv[side_b];
@@ -1995,6 +2013,7 @@ void r_ChunkInfo::BuildChunkMeshLowDetail()
 					}
 					else
 					{
+						final_next_side= side_b_next;
 						light[0]= ls_p[side_b][z] << 4;
 						light[1]= lf_p[side_b][z] << 4;
 						quad_v0= &cv[side_b];
@@ -2018,6 +2037,14 @@ void r_ChunkInfo::BuildChunkMeshLowDetail()
 
 					v[0].light[0]= v[1].light[0]= v[2].light[0]= v[3].light[0]= light[0];
 					v[0].light[1]= v[1].light[1]= v[2].light[1]= v[3].light[1]= light[1];
+
+					if( !flat_lighting )
+					{
+						v[0].light[0]= cl[side_b][1][0];           v[0].light[1]= cl[side_b][1][1];
+						v[1].light[0]= cl[side_b][0][0];           v[1].light[1]= cl[side_b][0][1];
+						v[2].light[0]= cl[final_next_side][0][0];  v[2].light[1]= cl[final_next_side][0][1];
+						v[3].light[0]= cl[final_next_side][1][0];  v[3].light[1]= cl[final_next_side][1][1];
+					}
 
 					v+= 4u;
 					++quad_count;
@@ -2075,12 +2102,21 @@ void r_ChunkInfo::BuildChunkMeshLowDetail()
 						}
 					}
 
+					const int face_z= z + ( up_down == 0 ? 0 : dz );
 					for( unsigned int vn= 0; vn < 4; ++vn )
 					{
-						v[vn].coord[2]= ( z + ( up_down == 0 ? 0 : dz ) ) << 1;
+						v[vn].coord[2]= face_z << 1;
 						v[vn].light[0]= light[0];
 						v[vn].light[1]= light[1];
 						v[vn].tex_coord[2]= tex_id;
+					}
+
+					if( !flat_lighting )
+					{
+						world.GetBackVertexLight   ( x + relative_X, y + relative_Y + 1, face_z - 1, v[0].light );
+						world.GetForwardVertexLight( x + relative_X, y + relative_Y    , face_z - 1, v[1].light );
+						world.GetForwardVertexLight( x + relative_X, y + relative_Y - 1, face_z - 1, v[2].light );
+						world.GetBackVertexLight   ( x + relative_X, y + relative_Y    , face_z - 1, v[3].light );
 					}
 
 					if( up_down == 0 )
