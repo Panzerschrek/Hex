@@ -1543,11 +1543,182 @@ void rBuildChunkFailingBlocks( const r_ChunkInfo& chunk_info, std::vector<r_Worl
 
 void r_ChunkInfo::GetQuadCountLowDetail()
 {
-	// TODO
-	min_geometry_height_= 1;
-	max_geometry_height_= H_CHUNK_HEIGHT - 2;
+	min_geometry_height_= H_CHUNK_HEIGHT;
+	max_geometry_height_= 0;
 
-	vertex_count_= 8192 * 4;
+	unsigned int quad_count= 0u;
+
+	// Calculate max potential quad count - withous sides combine.
+	for( int x= 0; x< H_CHUNK_WIDTH; x++ )
+	for( int y= 0; y< H_CHUNK_WIDTH; y++ )
+	{
+		const unsigned char* t_p [7];
+
+		t_p [6]= chunk_->GetTransparencyData() + BlockAddr(x,y,0); // BLock itself;
+		t_p [0]= chunk_->GetTransparencyData() + BlockAddr(x,y+1,0); // forward;
+		t_p [1]= chunk_->GetTransparencyData() + BlockAddr(x + 1, y + (1&(x+1)),0); // forward right;
+		t_p [2]= chunk_->GetTransparencyData() + BlockAddr(x + 1, y - ( 1&x )  ,0); // back right;
+		t_p [3]= chunk_->GetTransparencyData() + BlockAddr(x,y-1,0); // back;
+		t_p [4]= chunk_->GetTransparencyData() + BlockAddr(x - 1, y - ( 1&x )  ,0); // back left;
+		t_p [5]= chunk_->GetTransparencyData() + BlockAddr(x - 1, y + (1&(x+1)),0); // forward left;
+
+		//front chunk border
+		if( y == H_CHUNK_WIDTH - 1 && x > 0 && x < H_CHUNK_WIDTH - 1 )
+		{
+			if( chunk_front_ != nullptr )
+				t_p [0]= chunk_front_->GetTransparencyData() + BlockAddr( x, 0, 0 );
+			else
+				t_p[0]= t_p[6];//this block transparency
+
+			if( (x&1) == 0 )
+			{
+				if( chunk_front_ != nullptr )
+				{
+					t_p [1]= chunk_front_->GetTransparencyData() + BlockAddr( x + 1, 0, 0 );
+					t_p [5]= chunk_front_->GetTransparencyData() + BlockAddr( x - 1, 0, 0 );
+				}
+				else
+					t_p[1]= t_p[5]= t_p[6];//this block transparency
+			}
+		}
+		//back chunk border
+		else if( y == 0 && x > 0 && x < H_CHUNK_WIDTH - 1 )
+		{
+			if( chunk_back_ != nullptr )
+				t_p [3]= chunk_back_->GetTransparencyData() + BlockAddr( x, H_CHUNK_WIDTH - 1, 0 );
+			else
+				t_p[3]= t_p[6];//this block transparency
+
+			if( (x&1) != 0 )
+			{
+				if( chunk_back_ != nullptr )
+				{
+					t_p [2]= chunk_back_->GetTransparencyData() + BlockAddr( x+ 1, H_CHUNK_WIDTH - 1, 0 );
+					t_p [4]= chunk_back_->GetTransparencyData() + BlockAddr( x- 1, H_CHUNK_WIDTH - 1, 0 );
+				}
+				else
+					t_p[2]= t_p[4]= t_p[6];//this block transparency
+			}
+		}
+		//right chunk border
+		else if( x == H_CHUNK_WIDTH - 1 && y > 0 && y < H_CHUNK_WIDTH-1 )
+		{
+			if( chunk_right_ != nullptr )
+			{
+				t_p [1]= chunk_right_->GetTransparencyData() + BlockAddr( 0, y, 0 );
+				t_p [2]= chunk_right_->GetTransparencyData() + BlockAddr( 0, y - 1, 0 );
+			}
+			else
+				t_p[1]= t_p[2]= t_p[6];//this block transparency
+		}
+		// left chunk border
+		else if( x == 0 && y > 0 && y < H_CHUNK_WIDTH - 1 )
+		{
+			if( chunk_left_ != nullptr )
+			{
+				t_p [4]= chunk_left_->GetTransparencyData() + BlockAddr( H_CHUNK_WIDTH - 1, y, 0 );
+				t_p [5]= chunk_left_->GetTransparencyData() + BlockAddr( H_CHUNK_WIDTH - 1, y + 1, 0 );
+			}
+			else
+				t_p[4]= t_p[5]= t_p[6];//this block transparency
+		}
+		// right front corner
+		else if( x == H_CHUNK_WIDTH - 1 && y == H_CHUNK_WIDTH - 1 )
+		{
+			if( chunk_front_ != nullptr )
+				t_p [0]= chunk_front_->GetTransparencyData() + BlockAddr( H_CHUNK_WIDTH - 1, 0, 0 );
+			else
+				t_p[0]= t_p[6];//this block transparency
+
+			if( chunk_right_ != nullptr )
+			{
+				t_p [1]= chunk_right_->GetTransparencyData() + BlockAddr( 0, H_CHUNK_WIDTH - 1, 0 );
+				t_p [2]= chunk_right_->GetTransparencyData() + BlockAddr( 0, H_CHUNK_WIDTH - 2, 0 );
+			}
+			else
+				t_p[1]= t_p[2]= t_p[6];//this block transparency
+		}
+		// right back corner
+		else if( x == H_CHUNK_WIDTH - 1 && y == 0 )
+		{
+			if( chunk_right_ != nullptr )
+				t_p [1]= chunk_right_->GetTransparencyData() + BlockAddr( 0, 0, 0 );
+			else
+				t_p[1]= t_p[6];//this block transparency;
+			if( chunk_back_right_ != nullptr )
+				t_p [2]= chunk_back_right_->GetTransparencyData() + BlockAddr( 0, H_CHUNK_WIDTH - 1, 0 );
+			else
+				t_p[2]= t_p[6];//this block transparency;
+			if( chunk_back_ != nullptr )
+			{
+				t_p [3]= chunk_back_->GetTransparencyData() + BlockAddr( H_CHUNK_WIDTH - 1, H_CHUNK_WIDTH - 1, 0 );
+				t_p [4]= chunk_back_->GetTransparencyData() + BlockAddr( H_CHUNK_WIDTH - 2, H_CHUNK_WIDTH - 1, 0 );
+			}
+			else
+				t_p[3]= t_p[4]= t_p[6];//this block transparency;
+		}
+		// left front corner
+		else if( x == 0 && y == H_CHUNK_WIDTH - 1 )
+		{
+			if( chunk_left_ != nullptr )
+				t_p [4]= chunk_left_->GetTransparencyData() + BlockAddr( H_CHUNK_WIDTH - 1, H_CHUNK_WIDTH - 1, 0 );
+			else
+				t_p[4]= t_p[6];//this block transparency
+
+			if( chunk_front_left_ != nullptr )
+				t_p [5]= chunk_front_left_->GetTransparencyData() + BlockAddr( H_CHUNK_WIDTH - 1, 0, 0 );
+			else
+				t_p[5]= t_p[6];//this block transparency
+
+			if( chunk_front_ != nullptr )
+			{
+				t_p [0]= chunk_front_->GetTransparencyData() + BlockAddr( x, 0, 0 );
+				t_p [1]= chunk_front_->GetTransparencyData() + BlockAddr( x + 1, 0, 0 );
+			}
+			else
+				t_p[0]= t_p[1]= t_p[6];//this block transparency
+		}
+		// left back corner
+		else if( x == 0 && y == 0 )
+		{
+			if( chunk_left_ != nullptr )
+			{
+				t_p [4]= chunk_left_->GetTransparencyData() + BlockAddr( H_CHUNK_WIDTH - 1, 0, 0 );
+				t_p [5]= chunk_left_->GetTransparencyData() + BlockAddr( H_CHUNK_WIDTH - 1, 1, 0 );
+			}
+			else
+				t_p[4]= t_p[5]= t_p[6];//this block transparency
+
+			if( chunk_back_ != nullptr )
+				t_p [3]= chunk_back_->GetTransparencyData() + BlockAddr( 0, H_CHUNK_WIDTH - 1, 0 );
+			else
+				t_p[3]= t_p[6];//this block transparency
+		}
+
+		for( int z= 1; z< H_CHUNK_HEIGHT - 2; ++z )
+		{
+			unsigned char t= t_p[6][z] & H_VISIBLY_TRANSPARENCY_BITS;
+			unsigned char t_up= t_p[6][z+1]  & H_VISIBLY_TRANSPARENCY_BITS;
+			unsigned char t_down= t_p[6][z-1]  & H_VISIBLY_TRANSPARENCY_BITS;
+
+			const unsigned int quads_before= quad_count;
+			if( t < t_up   ) ++quad_count;
+			if( t < t_down ) ++quad_count;
+			for( unsigned int side= 0u; side < 6u; ++side )
+			{
+				if( t < ( t_p[side][z] & H_VISIBLY_TRANSPARENCY_BITS ) )
+					++quad_count;
+			}
+
+			if( quads_before < quad_count )
+			{
+				min_geometry_height_= std::min( min_geometry_height_, z );
+				max_geometry_height_= std::max( max_geometry_height_, z );
+			}
+		}
+	} // for xy
+
+	vertex_count_= quad_count * 4u;
 }
 
 void r_ChunkInfo::BuildChunkMeshLowDetail()
@@ -1576,8 +1747,6 @@ void r_ChunkInfo::BuildChunkMeshLowDetail()
 	const int Y= chunk_->Latitude () * H_CHUNK_WIDTH;
 	const int relative_X= ( chunk_->Longitude() - world.Longitude() ) * H_CHUNK_WIDTH;
 	const int relative_Y= ( chunk_->Latitude () - world.Latitude () ) * H_CHUNK_WIDTH;
-
-	unsigned int quad_count= 0u;
 
 	for( int x= 0; x< H_CHUNK_WIDTH; x++ )
 	for( int y= 0; y< H_CHUNK_WIDTH; y++ )
@@ -2048,9 +2217,6 @@ void r_ChunkInfo::BuildChunkMeshLowDetail()
 					}
 
 					v+= 4u;
-					++quad_count;
-					if( quad_count * 4u >= vertex_count_ )
-						return;
 				} // for sides
 			} // if have any side
 
@@ -2120,15 +2286,12 @@ void r_ChunkInfo::BuildChunkMeshLowDetail()
 				if( up_down == 0 )
 					std::swap( v[1], v[3] );
 				v+= 4;
-				++quad_count;
-
-				if( quad_count * 4u >= vertex_count_ )
-					return;
 			} // for up and down sides
 
 			z+= dz;
 		} // for z
 	} // for xy
 
-	vertex_count_= quad_count * 4u;
+	H_ASSERT( v - vertex_data_ <= vertex_count_ );
+	vertex_count_= v - vertex_data_;
 }
