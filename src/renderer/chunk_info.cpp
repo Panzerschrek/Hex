@@ -1718,6 +1718,8 @@ void r_ChunkInfo::GetQuadCountLowDetail()
 		}
 	} // for xy
 
+	quad_count+= GetNonstandardFormBlocksQuadCount();
+
 	vertex_count_= quad_count * 4u;
 }
 
@@ -2340,6 +2342,10 @@ void r_ChunkInfo::BuildChunkMeshLowDetail()
 			z+= dz;
 		} // for z
 	} // for xy
+
+	// Total amount of nonstandard form blocks in world is unsignificant.
+	// We can just leave such blocks with full detalization.
+	v= BuildNonstandardFormBlocks( v );
 
 	H_ASSERT( v - vertex_data_ <= vertex_count_ );
 	vertex_count_= v - vertex_data_;
