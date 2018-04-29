@@ -245,10 +245,9 @@ void r_WorldRenderer::Update()
 		r_ChunkInfoPtr& chunk_info_ptr= chunks_info_.chunk_matrix[ x + y * chunks_info_.matrix_size[0] ];
 		H_ASSERT( chunk_info_ptr );
 
-		if( chunk_info_ptr->update_requested_ || chunk_info_ptr->water_update_requested_ )
+		if( NeedRebuildChunkInThisTick( x, y ) )
 		{
-			bool need_update_in_this_tick= NeedRebuildChunkInThisTick( x, y );
-			if( need_update_in_this_tick )
+			if( chunk_info_ptr->update_requested_ || chunk_info_ptr->water_update_requested_ )
 			{
 				chunk_info_ptr->updated_= chunk_info_ptr->updated_ || chunk_info_ptr->update_requested_;
 				chunk_info_ptr->water_updated_= chunk_info_ptr->water_updated_ || chunk_info_ptr->water_update_requested_;
@@ -256,21 +255,19 @@ void r_WorldRenderer::Update()
 				chunk_info_ptr->update_requested_= false;
 				chunk_info_ptr->water_update_requested_= false;
 			}
+
+			const int dx= int(x) - int(chunks_info_.matrix_size[0] / 2u);
+			const int dy= int(y) - int(chunks_info_.matrix_size[1] / 2u);
+			const bool low_detail= dx * dx * 3 + dy * dy * 4 > 8 * 8 * 4 || debug_is_low_detail_mode_;
+			if( low_detail != chunk_info_ptr->low_detail_ )
+			{
+				chunk_info_ptr->low_detail_= low_detail;
+				chunk_info_ptr->updated_= true;
+			}
 		}
 
-		int longitude= chunks_info_.matrix_position[0] + int(x);
-		int latitude = chunks_info_.matrix_position[1] + int(y);
-
-		// TODO - maybe select low detail mesh mode in other place?
-		const int dx= int(x) - int(chunks_info_.matrix_size[0] / 2u);
-		const int dy= int(y) - int(chunks_info_.matrix_size[1] / 2u);
-		const bool low_detail= dx * dx * 3 + dy * dy * 4 > 7 * 7 * 4 || debug_is_low_detail_mode_;
-		if( low_detail != chunk_info_ptr->low_detail_ )
-		{
-			chunk_info_ptr->low_detail_= low_detail;
-			chunk_info_ptr->updated_= true;
-		}
-
+		const int longitude= chunks_info_.matrix_position[0] + int(x);
+		const int latitude = chunks_info_.matrix_position[1] + int(y);
 		if( chunk_info_ptr->updated_ )
 		{
 			if( chunk_info_ptr->low_detail_ )
