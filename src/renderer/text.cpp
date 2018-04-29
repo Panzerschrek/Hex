@@ -4,7 +4,6 @@
 #include "ogl_state_manager.hpp"
 #include "shaders_loading.hpp"
 
-#include "../console.hpp"
 #include "img_utils.hpp"
 
 #include "text.hpp"

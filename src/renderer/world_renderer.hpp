@@ -97,7 +97,6 @@ private:
 	void DrawStars();
 	void DrawSun();
 	void DrawClouds();
-	void DrawConsole();
 
 private:
 	const h_SettingsPtr settings_;
@@ -123,7 +122,6 @@ private:
 	r_GLSLProgram stars_shader_;
 	r_GLSLProgram sun_shader_;
 	r_GLSLProgram clouds_shader_;
-	r_GLSLProgram console_bg_shader_;
 	r_GLSLProgram crosshair_shader_;
 	r_GLSLProgram supersampling_final_shader_;
 	r_GLSLProgram depth_based_antialiasing_shader_;
@@ -161,7 +159,6 @@ private:
 	//textures
 	std::unique_ptr<r_TextureManager> texture_manager_;
 	r_Texture sun_texture_;
-	r_Texture console_bg_texture_;
 	r_Texture crosshair_texture_;
 	r_Texture clouds_texture_;
 

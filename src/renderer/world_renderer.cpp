@@ -5,7 +5,6 @@
 #include "world_renderer.hpp"
 #include "glcorearb.h"
 #include "rendering_constants.hpp"
-#include "../console.hpp"
 #include "../settings.hpp"
 #include "../settings_keys.hpp"
 #include "../time.hpp"
@@ -693,9 +692,8 @@ void r_WorldRenderer::Draw()
 	}
 
 	DrawCrosshair();
-	DrawConsole();
 
-	if( settings_->GetBool( h_SettingsKeys::show_debug_info, false ) && h_Console::GetPosition() == 0.0f )
+	if( settings_->GetBool( h_SettingsKeys::show_debug_info, false ) )
 	{
 		float text_scale= 0.25f;
 		int i= 0;
@@ -756,32 +754,6 @@ void r_WorldRenderer::Draw()
 	}
 
 	frames_counter_.Tick();
-}
-
-void r_WorldRenderer::DrawConsole()
-{
-	static const GLenum state_blend_mode[]= { GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA };
-	static const r_OGLState state(
-		false, false, true, false,
-		state_blend_mode );
-
-	h_Console::Move( 0.016f );
-
-	if( h_Console::GetPosition() == 0.0f )
-		return;
-
-	r_OGLStateManager::UpdateState( state );
-
-	console_bg_shader_.Bind();
-	console_bg_shader_.Uniform( "tex", 0 );
-	console_bg_shader_.Uniform( "pos", 1.0f - h_Console::GetPosition() );
-	console_bg_shader_.Uniform( "screen_size", m_Vec3( viewport_width_, viewport_height_, 0.0f ) );
-
-	console_bg_texture_.Bind(0);
-
-	glDrawArrays( GL_POINTS, 0, 1 );
-	h_Console::Draw( text_manager_.get() );
-	text_manager_->Draw();
 }
 
 void r_WorldRenderer::CalculateChunksVisibility()
@@ -1670,12 +1642,6 @@ void r_WorldRenderer::LoadShaders()
 		rLoadShader( "clouds_vert.glsl", glsl_version ) );
 	clouds_shader_.Create();
 
-	console_bg_shader_.ShaderSource(
-		rLoadShader( "console_bg_frag.glsl", glsl_version ),
-		rLoadShader( "console_bg_vert.glsl", glsl_version ),
-		rLoadShader( "console_bg_geom.glsl", glsl_version ) );
-	console_bg_shader_.Create();
-
 	crosshair_shader_.ShaderSource(
 		rLoadShader( "crosshair_frag.glsl", glsl_version ),
 		rLoadShader( "crosshair_vert.glsl", glsl_version ) );
@@ -1874,7 +1840,6 @@ void r_WorldRenderer::LoadTextures()
 			settings_->GetBool( h_SettingsKeys::filter_textures, true ) ) );
 
 	r_ImgUtils::LoadTexture( &sun_texture_, "textures/sun.tga" );
-	r_ImgUtils::LoadTexture( &console_bg_texture_, "textures/console_bg_normalized.png" );
 	r_ImgUtils::LoadTexture( &crosshair_texture_, "textures/crosshair.bmp" );
 
 	{

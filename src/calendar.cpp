@@ -1,4 +1,5 @@
 #include <cmath>
+#include <cstdint>
 
 #include "math_lib/math.hpp"
 #include "math_lib/assert.hpp"
@@ -6,8 +7,6 @@
 #include "matrix.hpp"
 
 #include "calendar.hpp"
-
-#include "console.hpp"
 
 h_Calendar::h_Calendar(
 	unsigned int ticks_in_day,

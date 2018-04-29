@@ -61,6 +61,7 @@ set( HEX_LIB_HEADERS
 	src/world.hpp
 	src/world_action.hpp
 	src/world_loading.hpp
+	src/ui/console_menu.hpp
 	src/ui/ingame_menu.hpp
 	src/ui/loading_menu.hpp
 	src/ui/main_menu.hpp
@@ -98,6 +99,7 @@ set( HEX_LIB_SOURCES
 	src/settings_keys.cpp
 	src/ticks_counter.cpp
 	src/time.cpp
+	src/ui/console_menu.cpp
 	src/ui/ingame_menu.cpp
 	src/ui/loading_menu.cpp
 	src/ui/main_menu.cpp

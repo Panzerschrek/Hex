@@ -83,6 +83,7 @@ static ui_Key TranslateKey( const SDL_Scancode scan_code )
 
 	case SDL_SCANCODE_SEMICOLON: return ui_Key::Semicolon;
 	case SDL_SCANCODE_APOSTROPHE: return ui_Key::Apostrophe;
+	case SDL_SCANCODE_GRAVE: return ui_Key::GraveAccent;
 
 	case SDL_SCANCODE_COMMA: return ui_Key::Comma;
 	case SDL_SCANCODE_PERIOD: return ui_Key::Dot;

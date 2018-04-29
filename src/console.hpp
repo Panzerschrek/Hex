@@ -13,11 +13,6 @@
 class h_Console
 {
 public:
-	static float GetPosition();
-	static void Toggle();//open or close console
-	static void Move( float dt );//roll up or roll down colsole
-
-public:
 	template<class ... Args>
 	static void Info( const Args &... args )
 	{
@@ -38,7 +33,7 @@ public:
 
 	static void Draw( r_Text* text );
 
-private:
+public:
 
 	enum class Color : unsigned char
 	{
@@ -58,6 +53,8 @@ private:
 		MessageLine& operator=( const MessageLine& )= delete;
 		MessageLine& operator=( MessageLine&& other );
 	};
+
+	static const std::list<MessageLine>& GetLines(){ return lines_; }
 
 private:
 	static void MessageExpand(){}

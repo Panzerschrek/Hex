@@ -8,7 +8,7 @@
 #include "../player.hpp"
 #include "styles.hpp"
 #include "ui_painter.hpp"
-
+#include "console_menu.hpp"
 #include "ingame_menu.hpp"
 
 static const ui_Key g_inventory_key= ui_Key::E;
@@ -254,6 +254,31 @@ void ui_IngameMenu::KeyPress( ui_Key key )
 		this->SetActive( false );
 		for( auto& key : keys_ ) key.second= false;
 	}
+	if( key == ui_ConsoleMenu::c_activation_key )
+	{
+		child_menu_.reset(
+			new ui_ConsoleMenu(
+				this,
+				size_x_, size_y_ ) );
+
+		this->SetActive( false );
+		for( auto& key : keys_ ) key.second= false;
+	}
+	else if( key == ui_Key::Escape )
+	{
+		child_menu_.reset(
+			new ui_EscMenu(
+				this,
+				0, 0,
+				size_x_, size_y_,
+				main_loop_ ) );
+
+		this->SetActive( false );
+		for( auto& key : keys_ ) key.second= false;
+
+		player_->PauseWorldUpdates();
+		game_paused_= true;
+	}
 	else if( key == ui_Key::Escape )
 	{
 		child_menu_.reset(
@@ -300,16 +325,21 @@ void ui_IngameMenu::Tick()
 {
 	ui_CursorHandler::GrabMouse( this->IsActive() );
 
-	if( child_menu_ && child_menu_->IsMarkedForKilling() )
+	if( child_menu_ != nullptr )
 	{
-		child_menu_.reset();
-		this->SetActive( true );
-
-		if( game_paused_ )
+		if( child_menu_->IsMarkedForKilling() )
 		{
-			game_paused_= false;
-			player_->UnpauseWorldUpdates();
+			child_menu_.reset();
+			this->SetActive( true );
+
+			if( game_paused_ )
+			{
+				game_paused_= false;
+				player_->UnpauseWorldUpdates();
+			}
 		}
+		else
+			child_menu_->Tick();
 	}
 
 	if( this->IsActive() )
