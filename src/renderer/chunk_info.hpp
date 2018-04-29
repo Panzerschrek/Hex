@@ -34,6 +34,9 @@ public:
 	void GetQuadCount();
 	void BuildChunkMesh();
 
+	void GetQuadCountLowDetail();
+	void BuildChunkMeshLowDetail();
+
 	// Pointer to external storage for vertices.
 	r_WorldVertex* vertex_data_= nullptr;
 	unsigned int vertex_count_= 0;
@@ -47,13 +50,16 @@ public:
 	// Flags, setted by world.
 	// Chunk can really updates later, after this flags setted.
 	bool update_requested_= false;
+
+	bool low_detail_= false;
+
 	bool water_update_requested_= false;
 
 	//geomentry up and down range borders. Used only for generation of center chunk blocks( not for border blocks )
 	int max_geometry_height_, min_geometry_height_;
 
 	const h_Chunk* chunk_;
-	const h_Chunk* chunk_front_, *chunk_right_, *chunk_back_right_, *chunk_back_;
+	const h_Chunk* chunk_front_, *chunk_back_, *chunk_left_, *chunk_right_, *chunk_front_left_, *chunk_back_right_;
 
 private:
 	unsigned int GetNonstandardFormBlocksQuadCount();

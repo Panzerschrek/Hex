@@ -290,6 +290,8 @@ void h_MainLoop::ProcessEvents()
 					else
 						root_menu_->KeyRelease( key );
 				}
+				if( key == ui_Key::L && event.type == SDL_KEYUP  && world_renderer_ != nullptr )
+					world_renderer_->DebugToggleLowDetailMode();
 			}
 			break;
 

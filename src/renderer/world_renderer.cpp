@@ -245,10 +245,9 @@ void r_WorldRenderer::Update()
 		r_ChunkInfoPtr& chunk_info_ptr= chunks_info_.chunk_matrix[ x + y * chunks_info_.matrix_size[0] ];
 		H_ASSERT( chunk_info_ptr );
 
-		if( chunk_info_ptr->update_requested_ || chunk_info_ptr->water_update_requested_ )
+		if( NeedRebuildChunkInThisTick( x, y ) )
 		{
-			bool need_update_in_this_tick= NeedRebuildChunkInThisTick( x, y );
-			if( need_update_in_this_tick )
+			if( chunk_info_ptr->update_requested_ || chunk_info_ptr->water_update_requested_ )
 			{
 				chunk_info_ptr->updated_= chunk_info_ptr->updated_ || chunk_info_ptr->update_requested_;
 				chunk_info_ptr->water_updated_= chunk_info_ptr->water_updated_ || chunk_info_ptr->water_update_requested_;
@@ -256,14 +255,25 @@ void r_WorldRenderer::Update()
 				chunk_info_ptr->update_requested_= false;
 				chunk_info_ptr->water_update_requested_= false;
 			}
+
+			const int dx= int(x) - int(chunks_info_.matrix_size[0] / 2u);
+			const int dy= int(y) - int(chunks_info_.matrix_size[1] / 2u);
+			const bool low_detail= dx * dx * 3 + dy * dy * 4 > 8 * 8 * 4 || debug_is_low_detail_mode_;
+			if( low_detail != chunk_info_ptr->low_detail_ )
+			{
+				chunk_info_ptr->low_detail_= low_detail;
+				chunk_info_ptr->updated_= true;
+			}
 		}
 
-		int longitude= chunks_info_.matrix_position[0] + int(x);
-		int latitude = chunks_info_.matrix_position[1] + int(y);
-
+		const int longitude= chunks_info_.matrix_position[0] + int(x);
+		const int latitude = chunks_info_.matrix_position[1] + int(y);
 		if( chunk_info_ptr->updated_ )
 		{
-			chunk_info_ptr->GetQuadCount();
+			if( chunk_info_ptr->low_detail_ )
+				chunk_info_ptr->GetQuadCountLowDetail();
+			else
+				chunk_info_ptr->GetQuadCount();
 
 			r_WorldVBOCluster& cluster=
 				wvb->GetCluster( longitude, latitude );
@@ -393,7 +403,12 @@ void r_WorldRenderer::Update()
 			chunk_info_ptr->vertex_data_=
 				reinterpret_cast<r_WorldVertex*>(
 				cluster.vertices_.data() + segment.first_vertex_index * sizeof(r_WorldVertex) );
-			chunk_info_ptr->BuildChunkMesh();
+			if( chunk_info_ptr->low_detail_ )
+				chunk_info_ptr->BuildChunkMeshLowDetail();
+			else
+				chunk_info_ptr->BuildChunkMesh();
+
+			segment.vertex_count= chunk_info_ptr->vertex_count_; // HACK
 
 			// Finally, reset updated flag.
 			chunk_info_ptr->updated_= false;
@@ -1379,18 +1394,33 @@ void r_WorldRenderer::UpdateChunkMatrixPointers()
 		chunk_info_ptr->chunk_= world_->GetChunk( x, y );
 		H_ASSERT( chunk_info_ptr->chunk_ );
 
-		if( x < int(chunks_info_.matrix_size[0] - 1) )
-			chunk_info_ptr->chunk_right_= world_->GetChunk( x + 1, y );
-		else chunk_info_ptr->chunk_right_= nullptr;
 		if( y < int(chunks_info_.matrix_size[1] - 1) )
 			chunk_info_ptr->chunk_front_= world_->GetChunk( x, y + 1 );
-		else chunk_info_ptr->chunk_front_= nullptr;
+		else
+			chunk_info_ptr->chunk_front_= nullptr;
 		if( y > 0 )
 			chunk_info_ptr->chunk_back_= world_->GetChunk( x, y - 1 );
-		else chunk_info_ptr->chunk_back_= nullptr;
+		else
+			chunk_info_ptr->chunk_back_= nullptr;
+
+		if( x > 0 )
+			chunk_info_ptr->chunk_left_= world_->GetChunk( x - 1, y );
+		else
+			chunk_info_ptr->chunk_left_= nullptr;
+		if( x < int(chunks_info_.matrix_size[0] - 1) )
+			chunk_info_ptr->chunk_right_= world_->GetChunk( x + 1, y );
+		else
+			chunk_info_ptr->chunk_right_= nullptr;
+
+		if( x > 0 && y < int(chunks_info_.matrix_size[1] - 1) )
+			chunk_info_ptr->chunk_front_left_= world_->GetChunk( x - 1, y + 1 );
+		else
+			chunk_info_ptr->chunk_front_left_= nullptr;
+
 		if( y > 0 && x < int(chunks_info_.matrix_size[0] - 1) )
 			chunk_info_ptr->chunk_back_right_= world_->GetChunk( x + 1, y - 1 );
-		else chunk_info_ptr->chunk_back_right_= nullptr;
+		else
+			chunk_info_ptr->chunk_back_right_= nullptr;
 	}
 }
 
@@ -1538,6 +1568,21 @@ void r_WorldRenderer::InitGL( const h_LongLoadingCallback& long_loading_callback
 
 	InitVertexBuffers();
 	long_loading_callback( progress+= c_vertex_buffers_progress * progress_scaler );
+}
+
+void r_WorldRenderer::DebugToggleLowDetailMode()
+{
+	debug_is_low_detail_mode_= !debug_is_low_detail_mode_;
+
+	std::lock_guard<std::mutex> lock(world_vertex_buffer_mutex_);
+
+	for( unsigned int y= 0; y < chunks_info_.matrix_size[1]; y++ )
+	for( unsigned int x= 0; x < chunks_info_.matrix_size[0]; x++ )
+	{
+		r_ChunkInfoPtr& chunk_info_ptr= chunks_info_.chunk_matrix[ x + y * chunks_info_.matrix_size[0] ];
+		H_ASSERT( chunk_info_ptr );
+		chunk_info_ptr->updated_= true;
+	} // for chunks in matrix
 }
 
 void r_WorldRenderer::LoadShaders()
