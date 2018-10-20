@@ -133,9 +133,9 @@ void r_ChunkInfo::BuildWaterSurfaceMesh()
 					};
 
 					if( upper_block_is_water[k] )
-						v[k].coord[2]= (b->z_+1) << R_WATER_VERTICES_Z_SCALER_LOG2;
+						v[k].coord[2]= ( (b->z_+1) << R_WATER_VERTICES_Z_SCALER_LOG2 ) + 1;
 					else if( nearby_block_is_air[k] )
-						v[k].coord[2]= b->z_ << R_WATER_VERTICES_Z_SCALER_LOG2;
+						v[k].coord[2]= ( b->z_ << R_WATER_VERTICES_Z_SCALER_LOG2 ) + 1;
 					else
 					{
 						unsigned int avg_water_level=
@@ -143,7 +143,7 @@ void r_ChunkInfo::BuildWaterSurfaceMesh()
 
 						v[k].coord[2]=
 							( b->z_ << R_WATER_VERTICES_Z_SCALER_LOG2 )+
-							( avg_water_level >> ( H_MAX_WATER_LEVEL_LOG2 - R_WATER_VERTICES_Z_SCALER_LOG2 ) );
+							std::max( avg_water_level >> ( H_MAX_WATER_LEVEL_LOG2 - R_WATER_VERTICES_Z_SCALER_LOG2 ), 1u );
 					}
 				} // for vertices
 
@@ -176,7 +176,7 @@ void r_ChunkInfo::BuildWaterSurfaceMesh()
 
 				const int h=
 					( b->z_ << R_WATER_VERTICES_Z_SCALER_LOG2 ) +
-					( b->LiquidLevel() >> ( H_MAX_WATER_LEVEL_LOG2 - R_WATER_VERTICES_Z_SCALER_LOG2 ) );
+					std::max( b->LiquidLevel() >> ( H_MAX_WATER_LEVEL_LOG2 - R_WATER_VERTICES_Z_SCALER_LOG2 ), 1 );
 
 				v[0].coord[2]= v[1].coord[2]= v[2].coord[2]= v[3].coord[2]= v[4].coord[2]= v[5].coord[2]= short(h);
 
