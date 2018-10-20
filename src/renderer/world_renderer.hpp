@@ -43,6 +43,7 @@ private:
 		SuperSampling2x2,
 		DepthBased,
 		FastApproximate,
+		HexGrid,
 		Other,
 	};
 
@@ -126,6 +127,7 @@ private:
 	r_GLSLProgram supersampling_final_shader_;
 	r_GLSLProgram depth_based_antialiasing_shader_;
 	r_GLSLProgram fast_approximate_antialiasing_shader_;
+	r_GLSLProgram hex_grid_antialiasing_shader_;
 
 	//VBO
 	r_PolygonBuffer failing_blocks_vbo_;

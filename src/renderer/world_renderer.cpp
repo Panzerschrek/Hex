@@ -58,10 +58,6 @@ static const unsigned short g_build_prism_indeces[]=
 	6,9, 7,10, 8,11, // upper side additional
 };
 
-static const char* const g_supersampling_antialiasing_key_value= "ss";
-static const char* const g_depth_based_antialiasing_key_value= "depth_based";
-static const char* const g_fast_approximate_antialiasing_key_value= "fxaa";
-
 static std::vector<unsigned short> GetQuadsIndeces()
 {
 	unsigned int quad_count= 65536 / 6 - 1;
@@ -126,19 +122,24 @@ r_WorldRenderer::r_WorldRenderer(
 	, startup_time_(hGetTimeMS())
 {
 	const char* antialiasing= settings_->GetString( h_SettingsKeys::antialiasing );
-	if( strcmp( antialiasing, g_supersampling_antialiasing_key_value ) == 0 )
+	if( strcmp( antialiasing, "ss" ) == 0 )
 	{
 		antialiasing_= Antialiasing::SuperSampling2x2;
 		pixel_size_= 2;
 	}
-	else if( std::strcmp( antialiasing, g_depth_based_antialiasing_key_value ) == 0 )
+	else if( std::strcmp( antialiasing, "depth_based" ) == 0 )
 	{
 		antialiasing_= Antialiasing::DepthBased;
 		pixel_size_= 1;
 	}
-	else if( std::strcmp( antialiasing, g_fast_approximate_antialiasing_key_value ) == 0 )
+	else if( std::strcmp( antialiasing, "fxaa" ) == 0 )
 	{
 		antialiasing_= Antialiasing::FastApproximate;
+		pixel_size_= 1;
+	}
+	else if( std::strcmp( antialiasing, "hex_grid" ) == 0 )
+	{
+		antialiasing_= Antialiasing::HexGrid;
 		pixel_size_= 1;
 	}
 	else
@@ -548,6 +549,13 @@ void r_WorldRenderer::CalculateMatrices()
 	rotation_matrix_= rotate_z * rotate_x * basis_change * perspective_matrix_;
 	view_matrix_= translate * rotation_matrix_;
 
+	if( antialiasing_ == Antialiasing::HexGrid )
+	{
+		m_Mat4 scale_compensate;
+		scale_compensate.Scale( m_Vec3( H_SPACE_SCALE_VECTOR_X, 1.0f, 1.0f ) );
+		view_matrix_= view_matrix_ * scale_compensate;
+	}
+
 	block_final_matrix_= block_scale_matrix_ * view_matrix_;
 }
 
@@ -617,7 +625,8 @@ void r_WorldRenderer::Draw()
 	bool draw_to_additional_framebuffer=
 		antialiasing_ == Antialiasing::SuperSampling2x2 ||
 		antialiasing_ == Antialiasing::DepthBased ||
-		antialiasing_ == Antialiasing::FastApproximate;
+		antialiasing_ == Antialiasing::FastApproximate ||
+		antialiasing_ == Antialiasing::HexGrid;
 
 	if( draw_to_additional_framebuffer )
 	{
@@ -666,7 +675,7 @@ void r_WorldRenderer::Draw()
 
 		glDrawArrays( GL_TRIANGLES, 0, 6 );
 	}
-	else if( antialiasing_ == Antialiasing::DepthBased  )
+	else if( antialiasing_ == Antialiasing::DepthBased )
 	{
 		r_OGLStateManager::UpdateState( postprocessing_state );
 
@@ -687,6 +696,18 @@ void r_WorldRenderer::Draw()
 
 		fast_approximate_antialiasing_shader_.Bind();
 		fast_approximate_antialiasing_shader_.Uniform( "frame_buffer", 0 );
+
+		glDrawArrays( GL_TRIANGLES, 0, 6 );
+	}
+	else if( antialiasing_ == Antialiasing::HexGrid )
+	{
+		r_OGLStateManager::UpdateState( postprocessing_state );
+
+		additional_framebuffer_.GetTextures()[0].Bind(0);
+		additional_framebuffer_.GetTextures()[0].BuildMips();
+
+		hex_grid_antialiasing_shader_.Bind();
+		hex_grid_antialiasing_shader_.Uniform( "frame_buffer", 0 );
 
 		glDrawArrays( GL_TRIANGLES, 0, 6 );
 	}
@@ -1661,6 +1682,11 @@ void r_WorldRenderer::LoadShaders()
 		rLoadShader( "fxaa_frag.glsl", glsl_version ),
 		rLoadShader( "fullscreen_quad_vert.glsl", glsl_version ) );
 	fast_approximate_antialiasing_shader_.Create();
+
+	hex_grid_antialiasing_shader_.ShaderSource(
+		rLoadShader( "hex_grid_frag.glsl", glsl_version ),
+		rLoadShader( "fullscreen_quad_vert.glsl", glsl_version ) );
+	hex_grid_antialiasing_shader_.Create();
 }
 
 void r_WorldRenderer::InitFrameBuffers()
@@ -1695,6 +1721,21 @@ void r_WorldRenderer::InitFrameBuffers()
 		additional_framebuffer_.GetTextures().front().SetFiltration(
 			r_Texture::Filtration::Linear,
 			r_Texture::Filtration::Linear );
+	}
+	else if( antialiasing_ == Antialiasing::HexGrid )
+	{
+		additional_framebuffer_=
+			r_Framebuffer(
+				std::vector<r_Texture::PixelFormat>{ r_Texture::PixelFormat::RGBA8 },
+				r_Texture::PixelFormat::Depth24Stencil8,
+				viewport_width_ ,
+				viewport_height_ );
+
+		additional_framebuffer_.GetTextures().front().Bind();
+		additional_framebuffer_.GetTextures().front().SetFiltration(
+			r_Texture::Filtration::LinearMipmapLinear,
+			r_Texture::Filtration::Linear );
+		additional_framebuffer_.GetTextures().front().BuildMips();
 	}
 
 	rain_zone_heightmap_framebuffer_=
