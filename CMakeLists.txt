@@ -6,18 +6,10 @@ set( CMAKE_CXX_STANDARD 11 )
 
 if( ${CMAKE_BUILD_TYPE} STREQUAL Debug )
 	add_definitions( -DDEBUG )
-else()
 endif()
 
-# Set path to your SDL2 here.
-if( WIN32 )
-	set( SDL_BASE_DIR ../SDL2-2.0.3 )
-	set( SDL_INCLUDES_DIR ${SDL_BASE_DIR}/include )
-	set( SDL_LIBS_DIR ${SDL_BASE_DIR}/lib/x86 )
-	get_filename_component( SDL_LIBS_DIR_ABSOLUTE ${SDL_LIBS_DIR} ABSOLUTE )
-else()
-	set( SDL_INCLUDES_DIR /usr/include/SDL2 )
-endif()
+find_package( SDL2 REQUIRED )
+find_package( ZLIB REQUIRED )
 
 #
 # HexLib
@@ -158,10 +150,6 @@ set( PANZER_JSON_SOURCES
 
 set( STB_IMAGE_HEADERS stb/stb_image.h )
 
-include_directories( panzer_ogl_lib )
-include_directories( PanzerJson/include )
-include_directories( ${SDL_INCLUDES_DIR} )
-
 add_library(
 	HexLib
 	${HEX_LIB_HEADERS} ${HEX_LIB_SOURCES}
@@ -169,27 +157,20 @@ add_library(
 	${PANZER_JSON_HEADERS} ${PANZER_JSON_SOURCES}
 	${STB_IMAGE_HEADERS} )
 
+target_include_directories( HexLib PUBLIC panzer_ogl_lib PanzerJson/include ${SDL2_INCLUDE_DIRS} ${ZLIB_INCLUDE_DIRS} )
+
+target_link_libraries( HexLib ${SDL2_LIBRARIES} ${ZLIB_LIBRARIES} )
 if( WIN32 )
 	target_link_libraries( HexLib opengl32 )
-	target_link_libraries( HexLib ${SDL_LIBS_DIR_ABSOLUTE}/SDL2main.lib )
-	target_link_libraries( HexLib ${SDL_LIBS_DIR_ABSOLUTE}/SDL2.lib )
 else()
-	target_link_libraries( HexLib GL )
-	target_link_libraries( HexLib SDL2 )
+	target_link_libraries( HexLib GL pthread )
 endif()
-
-# On GNU/Linux systems zlib is system, so we can found it.
-# MinGW contains zlib too.
-target_link_libraries( HexLib z )
 
 #
 # Hex
 #
 
-set( HEX_SOURCES
-	src/main.cpp )
-
-add_executable( Hex ${HEX_SOURCES} )
+add_executable( Hex src/main.cpp )
 target_link_libraries( Hex HexLib )
 
 #
