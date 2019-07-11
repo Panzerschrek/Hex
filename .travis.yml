@@ -1,4 +1,5 @@
+dist: xenial
+addons: { apt: { packages: libsdl2-dev } }
 language: cpp
 compiler: gcc
-addons: { apt: { packages: libsdl2-dev } }
 script: cmake -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug && make
